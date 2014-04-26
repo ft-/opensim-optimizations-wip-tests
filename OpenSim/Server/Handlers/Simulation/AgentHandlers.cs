@@ -236,14 +236,16 @@ namespace OpenSim.Server.Handlers.Simulation
             httpResponse.KeepAlive = false;
             Encoding encoding = Encoding.UTF8;
 
-            if (httpRequest.ContentType != "application/json")
+            Stream inputStream = request;
+            if (httpRequest.ContentType == "application/x-gzip")
+                inputStream = new GZipStream(request, CompressionMode.Decompress);
+            else if (httpRequest.ContentType != "application/json")
             {
+                // no go
                 httpResponse.StatusCode = 406;
                 return encoding.GetBytes("false");
             }
-
-            Stream inputStream = request;
-            if ((httpRequest.Headers["Content-Encoding"] == "gzip") || (httpRequest.Headers["X-Content-Encoding"] == "gzip"))
+            else if ((httpRequest.Headers["Content-Encoding"] == "gzip") || (httpRequest.Headers["X-Content-Encoding"] == "gzip"))
                 inputStream = new GZipStream(inputStream, CompressionMode.Decompress);
 
             StreamReader reader = new StreamReader(inputStream, encoding);
@@ -454,7 +456,8 @@ namespace OpenSim.Server.Handlers.Simulation
             keysvals.Add("querystringkeys", querystringkeys);
 
             Stream inputStream = request;
-            if ((httpRequest.Headers["Content-Encoding"] == "gzip") || (httpRequest.Headers["X-Content-Encoding"] == "gzip"))
+            if ((httpRequest.Headers["Content-Encoding"] == "gzip") || (httpRequest.Headers["X-Content-Encoding"] == "gzip") ||
+                (httpRequest.ContentType == "application/x-gzip"))
                 inputStream = new GZipStream(inputStream, CompressionMode.Decompress);
 
             Encoding encoding = Encoding.UTF8;
