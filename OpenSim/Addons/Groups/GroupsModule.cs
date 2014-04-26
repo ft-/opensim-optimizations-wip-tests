@@ -29,6 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Timers;
+using System.Threading;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
@@ -49,6 +50,7 @@ namespace OpenSim.Groups
             LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private List<Scene> m_sceneList = new List<Scene>();
+        private ReaderWriterLock m_sceneRwLock = new ReaderWriterLock();
 
         private IMessageTransferModule m_msgTransferModule = null;
         
@@ -177,9 +179,14 @@ namespace OpenSim.Groups
                     m_log.Warn("[Groups]: Could not get UserManagementModule");
             }
 
-            lock (m_sceneList)
+            m_sceneRwLock.AcquireWriterLock(-1);
+            try
             {
                 m_sceneList.Add(scene);
+            }
+            finally
+            {
+                m_sceneRwLock.ReleaseWriterLock();
             }
 
 
@@ -197,9 +204,14 @@ namespace OpenSim.Groups
             scene.EventManager.OnMakeChildAgent -= OnMakeChild;
             scene.EventManager.OnIncomingInstantMessage -= OnGridInstantMessage;
 
-            lock (m_sceneList)
+            m_sceneRwLock.AcquireWriterLock(-1);
+            try
             {
                 m_sceneList.Remove(scene);
+            }
+            finally
+            {
+                m_sceneRwLock.ReleaseWriterLock();
             }
         }
 
@@ -1310,12 +1322,17 @@ namespace OpenSim.Groups
 
             // TODO: Probably isn't nessesary to update every client in every scene.
             // Need to examine client updates and do only what's nessesary.
-            lock (m_sceneList)
+            m_sceneRwLock.AcquireReaderLock(-1);
+            try
             {
                 foreach (Scene scene in m_sceneList)
                 {
                     scene.ForEachClient(delegate(IClientAPI client) { SendAgentGroupDataUpdate(client, dataForClientID); });
                 }
+            }
+            finally
+            {
+                m_sceneRwLock.ReleaseReaderLock();
             }
         }
 
