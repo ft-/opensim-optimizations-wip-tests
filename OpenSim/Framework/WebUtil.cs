@@ -760,7 +760,7 @@ namespace OpenSim.Framework
 
         public static OSDMap ServiceFormRequest(string url, NameValueCollection data, int timeout)
         {
-            lock (EndPointLock(url))
+            //lock (EndPointLock(url))
             {
                 return ServiceFormRequestWorker(url, data, timeout);
             }
