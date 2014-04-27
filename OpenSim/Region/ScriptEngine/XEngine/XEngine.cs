@@ -101,6 +101,7 @@ namespace OpenSim.Region.ScriptEngine.XEngine
         private int m_MinThreads;
         private Dictionary<uint, List<UUID>> m_PrimObjects =
                 new Dictionary<uint, List<UUID>>();
+        private ReaderWriterLock m_PrimObjectsRwLock = new ReaderWriterLock();
 
         private ThreadPriority m_Prio;
         private ExpiringCache<UUID, bool> m_runFlags = new ExpiringCache<UUID, bool>();
@@ -966,7 +967,8 @@ namespace OpenSim.Region.ScriptEngine.XEngine
 
             //                bool objectRemoved = false;
 
-            lock (m_PrimObjects)
+            m_PrimObjectsRwLock.AcquireWriterLock(-1);
+            try
             {
                 // Remove the script from it's prim
                 if (m_PrimObjects.ContainsKey(localID))
@@ -982,6 +984,10 @@ namespace OpenSim.Region.ScriptEngine.XEngine
                         //                            objectRemoved = true;
                     }
                 }
+            }
+            finally
+            {
+                m_PrimObjectsRwLock.ReleaseWriterLock();
             }
 
             instance.RemoveState();
@@ -1198,7 +1204,8 @@ namespace OpenSim.Region.ScriptEngine.XEngine
             bool result = false;
             List<UUID> uuids = null;
 
-            lock (m_PrimObjects)
+            m_PrimObjectsRwLock.AcquireReaderLock(-1);
+            try
             {
                 if (!m_PrimObjects.ContainsKey(localID))
                     return false;
@@ -1221,6 +1228,10 @@ namespace OpenSim.Region.ScriptEngine.XEngine
                         result = true;
                     }
                 }
+            }
+            finally
+            {
+                m_PrimObjectsRwLock.ReleaseReaderLock();
             }
 
             return result;
@@ -1988,13 +1999,18 @@ namespace OpenSim.Region.ScriptEngine.XEngine
                 m_ScriptsRwLock.ReleaseWriterLock();
             }
 
-            lock (m_PrimObjects)
+            m_PrimObjectsRwLock.AcquireWriterLock(-1);
+            try
             {
                 if (!m_PrimObjects.ContainsKey(localID))
                     m_PrimObjects[localID] = new List<UUID>();
 
                 if (!m_PrimObjects[localID].Contains(itemID))
                     m_PrimObjects[localID].Add(itemID);
+            }
+            finally
+            {
+                m_PrimObjectsRwLock.ReleaseWriterLock();
             }
 
             if (!m_Assemblies.ContainsKey(assetID))
