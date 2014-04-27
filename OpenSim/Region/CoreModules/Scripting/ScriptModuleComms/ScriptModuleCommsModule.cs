@@ -392,12 +392,12 @@ namespace OpenSim.Region.CoreModules.Scripting.ScriptModuleComms
                 }
                 finally
                 {
-                    m_ConstantsRwLock.DowngradeFromWriterLock(ref lc);
+                    m_ScriptInvocationRwLock.DowngradeFromWriterLock(ref lc);
                 }
             }
             finally
             {
-                m_ConstantsRwLock.ReleaseReaderLock();
+                m_ScriptInvocationRwLock.ReleaseReaderLock();
             }
         }
 
