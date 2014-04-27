@@ -35,6 +35,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Xml;
+using System.Threading;
 using PermissionMask = OpenSim.Framework.PermissionMask;
 
 namespace OpenSim.Region.Framework.Scenes
@@ -589,8 +590,15 @@ namespace OpenSim.Region.Framework.Scenes
         /// <returns>A list of the sitting avatars.  Returns an empty list if there are no sitting avatars.</returns>
         public List<ScenePresence> GetSittingAvatars()
         {
-            lock (m_sittingAvatars)
+            m_sittingAvatarsRwLock.AcquireReaderLock(-1);
+            try
+            {
                 return new List<ScenePresence>(m_sittingAvatars);
+            }
+            finally
+            {
+                m_sittingAvatarsRwLock.ReleaseReaderLock();
+            }
         }
 
         /// <summary>
@@ -600,8 +608,15 @@ namespace OpenSim.Region.Framework.Scenes
         /// <returns></returns>
         public int GetSittingAvatarsCount()
         {
-            lock (m_sittingAvatars)
+            m_sittingAvatarsRwLock.AcquireReaderLock(-1);
+            try
+            {
                 return m_sittingAvatars.Count;
+            }
+            finally
+            {
+                m_sittingAvatarsRwLock.ReleaseReaderLock();
+            }
         }
 
         public ushort GetTimeDilation()
@@ -1097,6 +1112,7 @@ namespace OpenSim.Region.Framework.Scenes
         /// Do not manipulate this list directly - use the Add/Remove sitting avatar methods on SceneObjectPart.
         /// </remarks>
         protected internal List<ScenePresence> m_sittingAvatars = new List<ScenePresence>();
+        protected internal ReaderWriterLock m_sittingAvatarsRwLock = new ReaderWriterLock();
 
         /// <summary>
         /// Added because the Parcel code seems to use it
