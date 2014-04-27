@@ -115,6 +115,7 @@ namespace OpenSim.Region.ScriptEngine.XEngine
         private int m_ScriptFailCount;
         private Dictionary<UUID, IScriptInstance> m_Scripts =
                 new Dictionary<UUID, IScriptInstance>();
+        private ReaderWriterLock m_ScriptsRwLock = new ReaderWriterLock();
 
         /// <summary>
         /// Is the entire simulator in the process of shutting down?
@@ -290,9 +291,14 @@ namespace OpenSim.Region.ScriptEngine.XEngine
                     break;
             }
 
-            lock (m_ScriptEngines)
+            m_ScriptsRwLock.AcquireWriterLock(-1);
+            try
             {
                 m_ScriptEngines.Add(this);
+            }
+            finally
+            {
+                m_ScriptsRwLock.ReleaseWriterLock();
             }
 
             // Needs to be here so we can queue the scripts that need starting
@@ -386,10 +392,15 @@ namespace OpenSim.Region.ScriptEngine.XEngine
             if (!m_Enabled)
                 return;
 
-            lock (m_ScriptEngines)
+            m_ScriptsRwLock.AcquireWriterLock(-1);
+            try
             {
                 if (m_ScriptEngines.Contains(this))
                     m_ScriptEngines.Remove(this);
+            }
+            finally
+            {
+                m_ScriptsRwLock.ReleaseWriterLock();
             }
         }
 
@@ -405,21 +416,31 @@ namespace OpenSim.Region.ScriptEngine.XEngine
 
             List<IScriptInstance> instances = new List<IScriptInstance>();
 
-            lock (m_Scripts)
+            m_ScriptsRwLock.AcquireReaderLock(-1);
+            try
             {
                 foreach (IScriptInstance instance in m_Scripts.Values)
                     instances.Add(instance);
+            }
+            finally
+            {
+                m_ScriptsRwLock.ReleaseReaderLock();
             }
 
             foreach (IScriptInstance i in instances)
             {
                 string assembly = String.Empty;
 
-                lock (m_Scripts)
+                m_ScriptsRwLock.AcquireReaderLock(-1);
+                try
                 {
                     if (!m_Assemblies.ContainsKey(i.AssetID))
                         continue;
                     assembly = m_Assemblies[i.AssetID];
+                }
+                finally
+                {
+                    m_ScriptsRwLock.ReleaseReaderLock();
                 }
 
                 try
@@ -532,7 +553,8 @@ namespace OpenSim.Region.ScriptEngine.XEngine
             long tickNow = Util.EnvironmentTickCount();
             Dictionary<uint, float> topScripts = new Dictionary<uint, float>();
 
-            lock (m_Scripts)
+            m_ScriptsRwLock.AcquireReaderLock(-1);
+            try
             {
                 foreach (IScriptInstance si in m_Scripts.Values)
                 {
@@ -541,6 +563,10 @@ namespace OpenSim.Region.ScriptEngine.XEngine
 
                     topScripts[si.RootLocalID] += CalculateAdjustedExectionTime(si, tickNow);
                 }
+            }
+            finally
+            {
+                m_ScriptsRwLock.ReleaseReaderLock();
             }
 
             return topScripts;
@@ -603,7 +629,8 @@ namespace OpenSim.Region.ScriptEngine.XEngine
 
             long scriptsLoaded, eventsQueued = 0, eventsProcessed = 0;
 
-            lock (m_Scripts)
+            m_ScriptsRwLock.AcquireReaderLock(-1);
+            try
             {
                 scriptsLoaded = m_Scripts.Count;
 
@@ -612,6 +639,10 @@ namespace OpenSim.Region.ScriptEngine.XEngine
                     eventsQueued += si.EventsQueued;
                     eventsProcessed += si.EventsProcessed;
                 }
+            }
+            finally
+            {
+                m_ScriptsRwLock.ReleaseReaderLock();
             }
 
             sb.AppendFormat("Scripts loaded             : {0}\n", scriptsLoaded);
@@ -803,10 +834,15 @@ namespace OpenSim.Region.ScriptEngine.XEngine
 
             if (cmdparams.Length == 2)
             {
-                lock (m_Scripts)
+                m_ScriptsRwLock.AcquireReaderLock(-1);
+                try
                 {
                     MainConsole.Instance.OutputFormat(
                         "Showing {0} scripts in {1}", m_Scripts.Count, m_Scene.RegionInfo.RegionName);
+                }
+                finally
+                {
+                    m_ScriptsRwLock.ReleaseReaderLock();
                 }
             }
 
@@ -909,7 +945,8 @@ namespace OpenSim.Region.ScriptEngine.XEngine
 
             IScriptInstance instance = null;
 
-            lock (m_Scripts)
+            m_ScriptsRwLock.AcquireWriterLock(-1);
+            try
             {
                 // Do we even have it?
                 if (!m_Scripts.ContainsKey(itemID))
@@ -917,6 +954,10 @@ namespace OpenSim.Region.ScriptEngine.XEngine
 
                 instance = m_Scripts[itemID];
                 m_Scripts.Remove(itemID);
+            }
+            finally
+            {
+                m_ScriptsRwLock.ReleaseWriterLock();
             }
 
             instance.ClearQueue();
@@ -1109,10 +1150,15 @@ namespace OpenSim.Region.ScriptEngine.XEngine
 
             List<IScriptInstance> instances = new List<IScriptInstance>();
 
-            lock (m_Scripts)
+            m_ScriptsRwLock.AcquireReaderLock(-1);
+            try
             {
                 foreach (IScriptInstance instance in m_Scripts.Values)
                     instances.Add(instance);
+            }
+            finally
+            {
+                m_ScriptsRwLock.ReleaseReaderLock();
             }
 
             foreach (IScriptInstance i in instances)
@@ -1294,7 +1340,8 @@ namespace OpenSim.Region.ScriptEngine.XEngine
             if (!m_Enabled)
                 return;
 
-            lock (m_Scripts)
+            m_ScriptsRwLock.AcquireReaderLock(-1);
+            try
             {
                 m_log.InfoFormat(
                     "[XEngine]: Shutting down {0} scripts in {1}", m_Scripts.Count, m_Scene.RegionInfo.RegionName);
@@ -1337,11 +1384,19 @@ namespace OpenSim.Region.ScriptEngine.XEngine
                     // down since it takes a long time with many scripts.
                     if (!m_SimulatorShuttingDown)
                     {
-                        m_DomainScripts[instance.AppDomain].Remove(instance.ItemID);
-                        if (m_DomainScripts[instance.AppDomain].Count == 0)
+                        LockCookie lc = m_ScriptsRwLock.UpgradeToWriterLock(-1);
+                        try
                         {
-                            m_DomainScripts.Remove(instance.AppDomain);
-                            UnloadAppDomain(instance.AppDomain);
+                            m_DomainScripts[instance.AppDomain].Remove(instance.ItemID);
+                            if (m_DomainScripts[instance.AppDomain].Count == 0)
+                            {
+                                m_DomainScripts.Remove(instance.AppDomain);
+                                UnloadAppDomain(instance.AppDomain);
+                            }
+                        }
+                        finally
+                        {
+                            m_ScriptsRwLock.DowngradeFromWriterLock(ref lc);
                         }
                     }
                 }
@@ -1350,6 +1405,10 @@ namespace OpenSim.Region.ScriptEngine.XEngine
                 m_PrimObjects.Clear();
                 m_Assemblies.Clear();
                 m_DomainScripts.Clear();
+            }
+            finally
+            {
+                m_ScriptsRwLock.ReleaseReaderLock();
             }
             lock (m_ScriptEngines)
             {
@@ -1728,109 +1787,113 @@ namespace OpenSim.Region.ScriptEngine.XEngine
 
             Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>> linemap;
 
-            lock (m_ScriptErrors)
+            try
             {
-                try
+                m_Compiler.PerformScriptCompile(script, assetID.ToString(), item.OwnerID, out assembly, out linemap);
+
+                lock (m_AddingAssemblies)
                 {
-                    lock (m_AddingAssemblies)
+                    if (!m_AddingAssemblies.ContainsKey(assembly))
                     {
-                        m_Compiler.PerformScriptCompile(script, assetID.ToString(), item.OwnerID, out assembly, out linemap);
-
-                        if (!m_AddingAssemblies.ContainsKey(assembly))
-                        {
-                            m_AddingAssemblies[assembly] = 1;
-                        }
-                        else
-                        {
-                            m_AddingAssemblies[assembly]++;
-                        }
+                        m_AddingAssemblies[assembly] = 1;
                     }
-
-                    string[] warnings = m_Compiler.GetWarnings();
-
-                    if (warnings != null && warnings.Length != 0)
+                    else
                     {
-                        foreach (string warning in warnings)
+                        m_AddingAssemblies[assembly]++;
+                    }
+                }
+
+                string[] warnings = m_Compiler.GetWarnings();
+
+                if (warnings != null && warnings.Length != 0)
+                {
+                    foreach (string warning in warnings)
+                    {
+                        lock (m_ScriptErrors)
                         {
                             if (!m_ScriptErrors.ContainsKey(itemID))
                                 m_ScriptErrors[itemID] = new ArrayList();
 
                             m_ScriptErrors[itemID].Add(warning);
-                            //                        try
-                            //                        {
-                            //                            // DISPLAY WARNING INWORLD
-                            //                            string text = "Warning:\n" + warning;
-                            //                            if (text.Length > 1000)
-                            //                                text = text.Substring(0, 1000);
-                            //                            if (!ShowScriptSaveResponse(item.OwnerID,
-                            //                                    assetID, text, true))
-                            //                            {
-                            //                                if (presence != null && (!postOnRez))
-                            //                                    presence.ControllingClient.SendAgentAlertMessage("Script saved with warnings, check debug window!", false);
-                            //
-                            //                                World.SimChat(Utils.StringToBytes(text),
-                            //                                              ChatTypeEnum.DebugChannel, 2147483647,
-                            //                                              part.AbsolutePosition,
-                            //                                              part.Name, part.UUID, false);
-                            //                            }
-                            //                        }
-                            //                        catch (Exception e2) // LEGIT: User Scripting
-                            //                        {
-                            //                            m_log.Error("[XEngine]: " +
-                            //                                    "Error displaying warning in-world: " +
-                            //                                    e2.ToString());
-                            //                            m_log.Error("[XEngine]: " +
-                            //                                    "Warning:\r\n" +
-                            //                                    warning);
-                            //                        }
                         }
+                        //                        try
+                        //                        {
+                        //                            // DISPLAY WARNING INWORLD
+                        //                            string text = "Warning:\n" + warning;
+                        //                            if (text.Length > 1000)
+                        //                                text = text.Substring(0, 1000);
+                        //                            if (!ShowScriptSaveResponse(item.OwnerID,
+                        //                                    assetID, text, true))
+                        //                            {
+                        //                                if (presence != null && (!postOnRez))
+                        //                                    presence.ControllingClient.SendAgentAlertMessage("Script saved with warnings, check debug window!", false);
+                        //
+                        //                                World.SimChat(Utils.StringToBytes(text),
+                        //                                              ChatTypeEnum.DebugChannel, 2147483647,
+                        //                                              part.AbsolutePosition,
+                        //                                              part.Name, part.UUID, false);
+                        //                            }
+                        //                        }
+                        //                        catch (Exception e2) // LEGIT: User Scripting
+                        //                        {
+                        //                            m_log.Error("[XEngine]: " +
+                        //                                    "Error displaying warning in-world: " +
+                        //                                    e2.ToString());
+                        //                            m_log.Error("[XEngine]: " +
+                        //                                    "Warning:\r\n" +
+                        //                                    warning);
+                        //                        }
                     }
                 }
-                catch (Exception e)
-                {
-                    //                    m_log.ErrorFormat(
-                    //                        "[XEngine]: Exception when rezzing script with item ID {0}, {1}{2}",
-                    //                        itemID, e.Message, e.StackTrace);
+            }
+            catch (Exception e)
+            {
+                //                    m_log.ErrorFormat(
+                //                        "[XEngine]: Exception when rezzing script with item ID {0}, {1}{2}",
+                //                        itemID, e.Message, e.StackTrace);
 
-                    //                try
-                    //                {
+                //                try
+                //                {
+                // DISPLAY ERROR INWORLD
+                //                    m_ScriptErrorMessage += "Failed to compile script in object: '" + part.ParentGroup.RootPart.Name + "' Script name: '" + item.Name + "' Error message: " + e.Message.ToString();
+                //
+                lock (m_ScriptErrors)
+                {
                     if (!m_ScriptErrors.ContainsKey(itemID))
                         m_ScriptErrors[itemID] = new ArrayList();
-                    // DISPLAY ERROR INWORLD
-                    //                    m_ScriptErrorMessage += "Failed to compile script in object: '" + part.ParentGroup.RootPart.Name + "' Script name: '" + item.Name + "' Error message: " + e.Message.ToString();
-                    //
                     m_ScriptFailCount++;
                     m_ScriptErrors[itemID].Add(e.Message.ToString());
-                    //                    string text = "Error compiling script '" + item.Name + "':\n" + e.Message.ToString();
-                    //                    if (text.Length > 1000)
-                    //                        text = text.Substring(0, 1000);
-                    //                    if (!ShowScriptSaveResponse(item.OwnerID,
-                    //                            assetID, text, false))
-                    //                    {
-                    //                        if (presence != null && (!postOnRez))
-                    //                            presence.ControllingClient.SendAgentAlertMessage("Script saved with errors, check debug window!", false);
-                    //                        World.SimChat(Utils.StringToBytes(text),
-                    //                                      ChatTypeEnum.DebugChannel, 2147483647,
-                    //                                      part.AbsolutePosition,
-                    //                                      part.Name, part.UUID, false);
-                    //                    }
-                    //                }
-                    //                catch (Exception e2) // LEGIT: User Scripting
-                    //                {
-                    //                    m_log.Error("[XEngine]: "+
-                    //                            "Error displaying error in-world: " +
-                    //                            e2.ToString());
-                    //                    m_log.Error("[XEngine]: " +
-                    //                            "Errormessage: Error compiling script:\r\n" +
-                    //                            e.Message.ToString());
-                    //                }
-
-                    return false;
                 }
+                //                    string text = "Error compiling script '" + item.Name + "':\n" + e.Message.ToString();
+                //                    if (text.Length > 1000)
+                //                        text = text.Substring(0, 1000);
+                //                    if (!ShowScriptSaveResponse(item.OwnerID,
+                //                            assetID, text, false))
+                //                    {
+                //                        if (presence != null && (!postOnRez))
+                //                            presence.ControllingClient.SendAgentAlertMessage("Script saved with errors, check debug window!", false);
+                //                        World.SimChat(Utils.StringToBytes(text),
+                //                                      ChatTypeEnum.DebugChannel, 2147483647,
+                //                                      part.AbsolutePosition,
+                //                                      part.Name, part.UUID, false);
+                //                    }
+                //                }
+                //                catch (Exception e2) // LEGIT: User Scripting
+                //                {
+                //                    m_log.Error("[XEngine]: "+
+                //                            "Error displaying error in-world: " +
+                //                            e2.ToString());
+                //                    m_log.Error("[XEngine]: " +
+                //                            "Errormessage: Error compiling script:\r\n" +
+                //                            e.Message.ToString());
+                //                }
+
+                return false;
             }
 
             ScriptInstance instance = null;
-            lock (m_Scripts)
+            m_ScriptsRwLock.AcquireWriterLock(-1);
+            try
             {
                 // Create the object record
                 if ((!m_Scripts.ContainsKey(itemID)) ||
@@ -1920,6 +1983,10 @@ namespace OpenSim.Region.ScriptEngine.XEngine
                     m_Scripts[itemID] = instance;
                 }
             }
+            finally
+            {
+                m_ScriptsRwLock.ReleaseWriterLock();
+            }
 
             lock (m_PrimObjects)
             {
@@ -1955,11 +2022,16 @@ namespace OpenSim.Region.ScriptEngine.XEngine
         private IScriptInstance GetInstance(UUID itemID)
         {
             IScriptInstance instance;
-            lock (m_Scripts)
+            m_ScriptsRwLock.AcquireReaderLock(-1);
+            try
             {
                 if (!m_Scripts.ContainsKey(itemID))
                     return null;
                 instance = m_Scripts[itemID];
+            }
+            finally
+            {
+                m_ScriptsRwLock.ReleaseReaderLock();
             }
             return instance;
         }
@@ -1987,12 +2059,17 @@ namespace OpenSim.Region.ScriptEngine.XEngine
 
             IScriptInstance si;
 
-            lock (m_Scripts)
+            m_ScriptsRwLock.AcquireReaderLock(-1);
+            try
             {
                 // XXX: We can't give the user feedback on a bad item id because this may apply to a different script
                 // engine
                 if (!m_Scripts.TryGetValue(itemId, out si))
                     return;
+            }
+            finally
+            {
+                m_ScriptsRwLock.ReleaseReaderLock();
             }
 
             si.DebugLevel = newLevel;
@@ -2061,7 +2138,8 @@ namespace OpenSim.Region.ScriptEngine.XEngine
             if (!(MainConsole.Instance.ConsoleScene == null || MainConsole.Instance.ConsoleScene == m_Scene))
                 return;
 
-            lock (m_Scripts)
+            m_ScriptsRwLock.AcquireReaderLock(-1);
+            try
             {
                 string rawItemId;
                 UUID itemId = UUID.Zero;
@@ -2106,6 +2184,10 @@ namespace OpenSim.Region.ScriptEngine.XEngine
                         }
                     }
                 }
+            }
+            finally
+            {
+                m_ScriptsRwLock.ReleaseReaderLock();
             }
         }
 
