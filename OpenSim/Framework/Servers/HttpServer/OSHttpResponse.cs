@@ -25,10 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using HttpServer;
 using System.IO;
 using System.Net;
 using System.Text;
-using HttpServer;
 
 namespace OpenSim.Framework.Servers.HttpServer
 {
@@ -38,6 +38,101 @@ namespace OpenSim.Framework.Servers.HttpServer
     /// </summary>
     public class OSHttpResponse : IOSHttpResponse
     {
+        protected IHttpResponse _httpResponse;
+
+        private IHttpClientContext _httpClientContext;
+
+        public OSHttpResponse()
+        {
+        }
+
+        public OSHttpResponse(IHttpResponse resp)
+        {
+            _httpResponse = resp;
+        }
+
+        /// <summary>
+        /// Instantiate an OSHttpResponse object from an OSHttpRequest
+        /// object.
+        /// </summary
+        /// <param name="req">Incoming OSHttpRequest to which we are
+        /// replying</param>
+        public OSHttpResponse(OSHttpRequest req)
+        {
+            _httpResponse = new HttpResponse(req.IHttpClientContext, req.IHttpRequest);
+            _httpClientContext = req.IHttpClientContext;
+        }
+
+        public OSHttpResponse(HttpResponse resp, IHttpClientContext clientContext)
+        {
+            _httpResponse = resp;
+            _httpClientContext = clientContext;
+        }
+
+        /// <summary>
+        /// Return the output stream feeding the body.
+        /// </summary>
+        public Stream Body
+        {
+            get
+            {
+                return _httpResponse.Body;
+            }
+        }
+
+        /// <summary>
+        /// Encoding of the body content.
+        /// </summary>
+        public Encoding ContentEncoding
+        {
+            get
+            {
+                return _httpResponse.Encoding;
+            }
+
+            set
+            {
+                _httpResponse.Encoding = value;
+            }
+        }
+
+        /// <summary>
+        /// Length of the body content; 0 if there is no body.
+        /// </summary>
+        public long ContentLength
+        {
+            get
+            {
+                return _httpResponse.ContentLength;
+            }
+
+            set
+            {
+                _httpResponse.ContentLength = value;
+            }
+        }
+
+        /// <summary>
+        /// Boolean property indicating whether the content type
+        /// property actively has been set.
+        /// </summary>
+        /// <remarks>
+        /// IsContentTypeSet will go away together with .NET base.
+        /// </remarks>
+        // public bool IsContentTypeSet
+        // {
+        //     get { return _contentTypeSet; }
+        // }
+        // private bool _contentTypeSet;
+        /// <summary>
+        /// Alias for ContentLength.
+        /// </summary>
+        public long ContentLength64
+        {
+            get { return ContentLength; }
+            set { ContentLength = value; }
+        }
+
         /// <summary>
         /// Content type property.
         /// </summary>
@@ -57,65 +152,9 @@ namespace OpenSim.Framework.Servers.HttpServer
                 _httpResponse.ContentType = value;
             }
         }
-
-        /// <summary>
-        /// Boolean property indicating whether the content type
-        /// property actively has been set.
-        /// </summary>
-        /// <remarks>
-        /// IsContentTypeSet will go away together with .NET base.
-        /// </remarks>
-        // public bool IsContentTypeSet
-        // {
-        //     get { return _contentTypeSet; }
-        // }
-        // private bool _contentTypeSet;
-
-
-        /// <summary>
-        /// Length of the body content; 0 if there is no body.
-        /// </summary>
-        public long ContentLength
-        {
-            get
-            {
-                return _httpResponse.ContentLength;
-            }
-
-            set
-            {
-                _httpResponse.ContentLength = value;
-            }
-        }
-
-        /// <summary>
-        /// Alias for ContentLength.
-        /// </summary>
-        public long ContentLength64
-        {
-            get { return ContentLength; }
-            set { ContentLength = value; }
-        }
-
-        /// <summary>
-        /// Encoding of the body content.
-        /// </summary>
-        public Encoding ContentEncoding
-        {
-            get
-            {
-                return _httpResponse.Encoding;
-            }
-
-            set
-            {
-                _httpResponse.Encoding = value;
-            }
-        }
-
         public bool KeepAlive
         {
-            get 
+            get
             {
                 return _httpResponse.Connection == ConnectionType.KeepAlive;
             }
@@ -182,18 +221,6 @@ namespace OpenSim.Framework.Servers.HttpServer
                 _httpResponse.ProtocolVersion = value;
             }
         }
-
-        /// <summary>
-        /// Return the output stream feeding the body.
-        /// </summary>
-        public Stream Body
-        {
-            get
-            {
-                return _httpResponse.Body;
-            }
-        }
-
         /// <summary>
         /// Set a redirct location.
         /// </summary>
@@ -206,6 +233,24 @@ namespace OpenSim.Framework.Servers.HttpServer
             }
         }
 
+        public bool ReuseContext
+        {
+            get
+            {
+                if (_httpClientContext != null)
+                {
+                    return !_httpClientContext.EndWhenDone;
+                }
+                return true;
+            }
+            set
+            {
+                if (_httpClientContext != null)
+                {
+                    _httpClientContext.EndWhenDone = !value;
+                }
+            }
+        }
 
         /// <summary>
         /// Chunk transfers.
@@ -214,7 +259,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         {
             get
             {
-                    return _httpResponse.Chunked;
+                return _httpResponse.Chunked;
             }
 
             set
@@ -239,7 +284,6 @@ namespace OpenSim.Framework.Servers.HttpServer
             }
         }
 
-
         /// <summary>
         /// HTTP status description.
         /// </summary>
@@ -255,53 +299,6 @@ namespace OpenSim.Framework.Servers.HttpServer
                 _httpResponse.Reason = value;
             }
         }
-
-        public bool ReuseContext
-        {
-            get
-            {
-                if (_httpClientContext != null)
-                {
-                    return !_httpClientContext.EndWhenDone;
-                }
-                return true;
-            }
-            set
-            {
-                if (_httpClientContext != null)
-                {
-                    _httpClientContext.EndWhenDone = !value;
-                }
-            }
-        }
-
-        protected IHttpResponse _httpResponse;
-        private IHttpClientContext _httpClientContext;
-
-        public OSHttpResponse() {}
-
-        public OSHttpResponse(IHttpResponse resp)
-        {
-            _httpResponse = resp;
-        }
-
-        /// <summary>
-        /// Instantiate an OSHttpResponse object from an OSHttpRequest
-        /// object.
-        /// </summary
-        /// <param name="req">Incoming OSHttpRequest to which we are
-        /// replying</param>
-        public OSHttpResponse(OSHttpRequest req)
-        {
-            _httpResponse = new HttpResponse(req.IHttpClientContext, req.IHttpRequest);
-            _httpClientContext = req.IHttpClientContext;
-        }
-        public OSHttpResponse(HttpResponse resp, IHttpClientContext clientContext)
-        {
-            _httpResponse = resp;
-            _httpClientContext = clientContext;
-        }
-
         /// <summary>
         /// Add a header field and content to the response.
         /// </summary>
@@ -314,6 +311,12 @@ namespace OpenSim.Framework.Servers.HttpServer
             _httpResponse.AddHeader(key, value);
         }
 
+        public void FreeContext()
+        {
+            if (_httpClientContext != null)
+                _httpClientContext.Close();
+        }
+
         /// <summary>
         /// Send the response back to the remote client
         /// </summary>
@@ -321,12 +324,6 @@ namespace OpenSim.Framework.Servers.HttpServer
         {
             _httpResponse.Body.Flush();
             _httpResponse.Send();
-        }
-
-        public void FreeContext()
-        {
-            if (_httpClientContext != null)
-                _httpClientContext.Close();
         }
     }
 }

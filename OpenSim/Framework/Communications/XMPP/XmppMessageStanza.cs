@@ -34,11 +34,20 @@ namespace OpenSim.Framework.Communications.XMPP
     /// </summary>
     public enum XmppMessageType
     {
-        [XmlEnum("chat")] chat,
-        [XmlEnum("error")] error,
-        [XmlEnum("groupchat")] groupchat,
-        [XmlEnum("headline")] headline,
-        [XmlEnum("normal")] normal,
+        [XmlEnum("chat")]
+        chat,
+
+        [XmlEnum("error")]
+        error,
+
+        [XmlEnum("groupchat")]
+        groupchat,
+
+        [XmlEnum("headline")]
+        headline,
+
+        [XmlEnum("normal")]
+        normal,
     }
 
     /// <summary>
@@ -65,8 +74,11 @@ namespace OpenSim.Framework.Communications.XMPP
     }
 
     [XmlRoot("message")]
-    public class XmppMessageStanza: XmppStanza
+    public class XmppMessageStanza : XmppStanza
     {
+        [XmlElement("body")]
+        public XmppMessageBody Body;
+
         /// <summary>
         /// IQ type: one of set, get, result, error
         /// </summary>
@@ -75,11 +87,8 @@ namespace OpenSim.Framework.Communications.XMPP
 
         // [XmlAttribute("error")]
         // public XmppError Error;
-
-        [XmlElement("body")]
-        public XmppMessageBody Body;
-
-        public XmppMessageStanza() : base()
+        public XmppMessageStanza()
+            : base()
         {
         }
 

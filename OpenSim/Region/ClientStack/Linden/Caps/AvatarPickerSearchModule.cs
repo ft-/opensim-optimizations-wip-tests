@@ -25,42 +25,48 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Specialized;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Reflection;
-using System.IO;
-using System.Web;
-using log4net;
-using Nini.Config;
 using Mono.Addins;
+using Nini.Config;
 using OpenMetaverse;
-using OpenMetaverse.StructuredData;
+using OpenSim.Capabilities.Handlers;
 using OpenSim.Framework;
-using OpenSim.Framework.Servers;
-using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
+using System;
 using Caps = OpenSim.Framework.Capabilities.Caps;
-using OpenSim.Capabilities.Handlers;
 
 namespace OpenSim.Region.ClientStack.Linden
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "AvatarPickerSearchModule")]
     public class AvatarPickerSearchModule : INonSharedRegionModule
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        
-        private Scene m_scene;
-        private IPeople m_People;
-        private bool m_Enabled = false;
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
+        private bool m_Enabled = false;
+        private IPeople m_People;
+        private Scene m_scene;
         private string m_URL;
 
         #region ISharedRegionModule Members
+
+        public string Name { get { return "AvatarPickerSearchModule"; } }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
+        public void AddRegion(Scene s)
+        {
+            if (!m_Enabled)
+                return;
+
+            m_scene = s;
+        }
+
+        public void Close()
+        {
+        }
 
         public void Initialise(IConfigSource source)
         {
@@ -73,22 +79,8 @@ namespace OpenSim.Region.ClientStack.Linden
             if (m_URL != string.Empty)
                 m_Enabled = true;
         }
-
-        public void AddRegion(Scene s)
+        public void PostInitialise()
         {
-            if (!m_Enabled)
-                return;
-
-            m_scene = s;
-        }
-
-        public void RemoveRegion(Scene s)
-        {
-            if (!m_Enabled)
-                return;
-
-            m_scene.EventManager.OnRegisterCaps -= RegisterCaps;
-            m_scene = null;
         }
 
         public void RegionLoaded(Scene s)
@@ -100,20 +92,15 @@ namespace OpenSim.Region.ClientStack.Linden
             m_scene.EventManager.OnRegisterCaps += RegisterCaps;
         }
 
-        public void PostInitialise()
+        public void RemoveRegion(Scene s)
         {
+            if (!m_Enabled)
+                return;
+
+            m_scene.EventManager.OnRegisterCaps -= RegisterCaps;
+            m_scene = null;
         }
-
-        public void Close() { }
-
-        public string Name { get { return "AvatarPickerSearchModule"; } }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
-        #endregion
+        #endregion ISharedRegionModule Members
 
         public void RegisterCaps(UUID agentID, Caps caps)
         {
@@ -121,7 +108,7 @@ namespace OpenSim.Region.ClientStack.Linden
 
             if (m_URL == "localhost")
             {
-//                m_log.DebugFormat("[AVATAR PICKER SEARCH]: /CAPS/{0} in region {1}", capID, m_scene.RegionInfo.RegionName);
+                //                m_log.DebugFormat("[AVATAR PICKER SEARCH]: /CAPS/{0} in region {1}", capID, m_scene.RegionInfo.RegionName);
                 caps.RegisterHandler(
                     "AvatarPickerSearch",
                     new AvatarPickerSearchHandler("/CAPS/" + capID + "/", m_People, "AvatarPickerSearch", "Search for avatars by name"));

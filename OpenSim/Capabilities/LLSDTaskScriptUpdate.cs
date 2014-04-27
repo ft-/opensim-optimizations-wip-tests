@@ -33,6 +33,11 @@ namespace OpenSim.Framework.Capabilities
     public class LLSDTaskScriptUpdate
     {
         /// <summary>
+        /// Signals whether the script is currently active
+        /// </summary>
+        public int is_script_running;
+
+        /// <summary>
         /// The item containing the script to update
         /// </summary>
         public UUID item_id;
@@ -41,10 +46,5 @@ namespace OpenSim.Framework.Capabilities
         /// The task containing the script
         /// </summary>
         public UUID task_id;
-
-        /// <summary>
-        /// Signals whether the script is currently active
-        /// </summary>
-        public int is_script_running;
     }
 }

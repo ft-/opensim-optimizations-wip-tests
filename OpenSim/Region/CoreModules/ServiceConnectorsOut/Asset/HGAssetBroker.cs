@@ -28,16 +28,13 @@
 using log4net;
 using Mono.Addins;
 using Nini.Config;
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using OpenSim.Framework;
-
-using OpenSim.Server.Base;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using OpenSim.Server.Base;
 using OpenSim.Services.Interfaces;
-using OpenMetaverse;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Asset
 {
@@ -48,25 +45,185 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Asset
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
+        private Scene m_aScene;
+        private AssetPermissions m_AssetPerms;
         private IImprovedAssetCache m_Cache = null;
+        private bool m_Enabled = false;
         private IAssetService m_GridService;
         private IAssetService m_HGService;
-
-        private Scene m_aScene;
         private string m_LocalAssetServiceURI;
-
-        private bool m_Enabled = false;
-
-        private AssetPermissions m_AssetPerms;
-
-        public Type ReplaceableInterface 
-        {
-            get { return null; }
-        }
-
         public string Name
         {
             get { return "HGAssetBroker"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+        public void AddRegion(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+
+            m_aScene = scene;
+
+            m_aScene.RegisterModuleInterface<IAssetService>(this);
+        }
+
+        public virtual bool[] AssetsExist(string[] ids)
+        {
+            int numHG = 0;
+            foreach (string id in ids)
+            {
+                if (IsHG(id))
+                    ++numHG;
+            }
+
+            if (numHG == 0)
+                return m_GridService.AssetsExist(ids);
+            else if (numHG == ids.Length)
+                return m_HGService.AssetsExist(ids);
+            else
+                throw new Exception("[HG ASSET CONNECTOR]: AssetsExist: all the assets must be either local or foreign");
+        }
+
+        public void Close()
+        {
+        }
+
+        public bool Delete(string id)
+        {
+            if (m_Cache != null)
+                m_Cache.Expire(id);
+
+            bool result = false;
+            if (IsHG(id))
+                result = m_HGService.Delete(id);
+            else
+                result = m_GridService.Delete(id);
+
+            if (result && m_Cache != null)
+                m_Cache.Expire(id);
+
+            return result;
+        }
+
+        public AssetBase Get(string id)
+        {
+            //m_log.DebugFormat("[HG ASSET CONNECTOR]: Get {0}", id);
+            AssetBase asset = null;
+
+            if (m_Cache != null)
+            {
+                asset = m_Cache.Get(id);
+
+                if (asset != null)
+                    return asset;
+            }
+
+            if (IsHG(id))
+            {
+                asset = m_HGService.Get(id);
+                if (asset != null)
+                {
+                    // Now store it locally, if allowed
+                    if (m_AssetPerms.AllowedImport(asset.Type))
+                        m_GridService.Store(asset);
+                    else
+                        return null;
+                }
+            }
+            else
+                asset = m_GridService.Get(id);
+
+            if (m_Cache != null)
+                m_Cache.Cache(asset);
+
+            return asset;
+        }
+
+        public bool Get(string id, Object sender, AssetRetrieved handler)
+        {
+            AssetBase asset = null;
+
+            if (m_Cache != null)
+                asset = m_Cache.Get(id);
+
+            if (asset != null)
+            {
+                Util.FireAndForget(delegate { handler(id, sender, asset); });
+                return true;
+            }
+
+            if (IsHG(id))
+            {
+                return m_HGService.Get(id, sender, delegate(string assetID, Object s, AssetBase a)
+                {
+                    if (m_Cache != null)
+                        m_Cache.Cache(a);
+                    handler(assetID, s, a);
+                });
+            }
+            else
+            {
+                return m_GridService.Get(id, sender, delegate(string assetID, Object s, AssetBase a)
+                {
+                    if (m_Cache != null)
+                        m_Cache.Cache(a);
+                    handler(assetID, s, a);
+                });
+            }
+        }
+
+        public AssetBase GetCached(string id)
+        {
+            if (m_Cache != null)
+                return m_Cache.Get(id);
+
+            return null;
+        }
+
+        public byte[] GetData(string id)
+        {
+            AssetBase asset = null;
+
+            if (m_Cache != null)
+            {
+                if (m_Cache != null)
+                    m_Cache.Get(id);
+
+                if (asset != null)
+                    return asset.Data;
+            }
+
+            if (IsHG(id))
+                return m_HGService.GetData(id);
+            else
+                return m_GridService.GetData(id);
+        }
+
+        public AssetMetadata GetMetadata(string id)
+        {
+            AssetBase asset = null;
+
+            if (m_Cache != null)
+            {
+                if (m_Cache != null)
+                    m_Cache.Get(id);
+
+                if (asset != null)
+                    return asset.Metadata;
+            }
+
+            AssetMetadata metadata;
+
+            if (IsHG(id))
+                metadata = m_HGService.GetMetadata(id);
+            else
+                metadata = m_GridService.GetMetadata(id);
+
+            return metadata;
         }
 
         public void Initialise(IConfigSource source)
@@ -143,25 +300,6 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Asset
         public void PostInitialise()
         {
         }
-
-        public void Close()
-        {
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-            
-            m_aScene = scene;
-
-            m_aScene.RegisterModuleInterface<IAssetService>(this);
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-        }
-
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -183,158 +321,15 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Asset
             }
         }
 
-        private bool IsHG(string id)
+        public void RemoveRegion(Scene scene)
         {
-            Uri assetUri;
-
-            if (Uri.TryCreate(id, UriKind.Absolute, out assetUri) &&
-                    assetUri.Scheme == Uri.UriSchemeHttp)
-                return true;
-
-            return false;
         }
-
-        public AssetBase Get(string id)
-        {
-            //m_log.DebugFormat("[HG ASSET CONNECTOR]: Get {0}", id);
-            AssetBase asset = null;
-            
-            if (m_Cache != null)
-            {
-                asset = m_Cache.Get(id);
-
-                if (asset != null)
-                    return asset;
-            }
-
-            if (IsHG(id))
-            {
-                asset = m_HGService.Get(id);
-                if (asset != null)
-                {
-                    // Now store it locally, if allowed
-                    if (m_AssetPerms.AllowedImport(asset.Type))
-                        m_GridService.Store(asset);
-                    else
-                        return null;
-                }
-            }
-            else
-                asset = m_GridService.Get(id);
-
-            if (m_Cache != null)
-                m_Cache.Cache(asset);
-
-            return asset;
-        }
-
-        public AssetBase GetCached(string id)
-        {
-            if (m_Cache != null)
-                return m_Cache.Get(id);
-
-            return null;
-        }
-
-        public AssetMetadata GetMetadata(string id)
-        {
-            AssetBase asset = null;
-            
-            if (m_Cache != null)
-            {
-                if (m_Cache != null)
-                    m_Cache.Get(id);
-
-                if (asset != null)
-                    return asset.Metadata;
-            }
-
-            AssetMetadata metadata;
-
-            if (IsHG(id))
-                metadata = m_HGService.GetMetadata(id);
-            else
-                metadata = m_GridService.GetMetadata(id);
-
-            return metadata;
-        }
-
-        public byte[] GetData(string id)
-        {
-            AssetBase asset = null;
-            
-            if (m_Cache != null)
-            {
-                if (m_Cache != null)
-                    m_Cache.Get(id);
-
-                if (asset != null)
-                    return asset.Data;
-            }
-
-            if (IsHG(id))
-                return m_HGService.GetData(id);
-            else
-                return m_GridService.GetData(id);
-
-        }
-
-        public bool Get(string id, Object sender, AssetRetrieved handler)
-        {
-            AssetBase asset = null;
-            
-            if (m_Cache != null)
-                asset = m_Cache.Get(id);
-
-            if (asset != null)
-            {
-                Util.FireAndForget(delegate { handler(id, sender, asset); });
-                return true;
-            }
-
-            if (IsHG(id))
-            {
-                return m_HGService.Get(id, sender, delegate (string assetID, Object s, AssetBase a)
-                {
-                    if (m_Cache != null)
-                        m_Cache.Cache(a);
-                    handler(assetID, s, a);
-                });
-            }
-            else
-            {
-                return m_GridService.Get(id, sender, delegate (string assetID, Object s, AssetBase a)
-                {
-                    if (m_Cache != null)
-                        m_Cache.Cache(a);
-                    handler(assetID, s, a);
-                });
-            }
-        }
-
-        public virtual bool[] AssetsExist(string[] ids)
-        {
-            int numHG = 0;
-            foreach (string id in ids)
-            {
-                if (IsHG(id))
-                    ++numHG;
-            }
-
-            if (numHG == 0)
-                return m_GridService.AssetsExist(ids);
-            else if (numHG == ids.Length)
-                return m_HGService.AssetsExist(ids);
-            else
-                throw new Exception("[HG ASSET CONNECTOR]: AssetsExist: all the assets must be either local or foreign");
-        }
-
         public string Store(AssetBase asset)
         {
             bool isHG = IsHG(asset.ID);
 
             if ((m_Cache != null) && !isHG)
-                // Don't store it in the cache if the asset is to 
+                // Don't store it in the cache if the asset is to
                 // be sent to the other grid, because this is already
                 // a copy of the local asset.
                 m_Cache.Cache(asset);
@@ -359,7 +354,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Asset
 
             if (String.IsNullOrEmpty(id))
                 return string.Empty;
-            
+
             asset.ID = id;
 
             if (m_Cache != null)
@@ -371,7 +366,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Asset
         public bool UpdateContent(string id, byte[] data)
         {
             AssetBase asset = null;
-            
+
             if (m_Cache != null)
                 asset = m_Cache.Get(id);
 
@@ -387,22 +382,15 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Asset
                 return m_GridService.UpdateContent(id, data);
         }
 
-        public bool Delete(string id)
+        private bool IsHG(string id)
         {
-            if (m_Cache != null)
-                m_Cache.Expire(id);
+            Uri assetUri;
 
-            bool result = false;
-            if (IsHG(id))
-                result = m_HGService.Delete(id);
-            else
-                result = m_GridService.Delete(id);
+            if (Uri.TryCreate(id, UriKind.Absolute, out assetUri) &&
+                    assetUri.Scheme == Uri.UriSchemeHttp)
+                return true;
 
-            if (result && m_Cache != null)
-                m_Cache.Expire(id);
-
-            return result;
+            return false;
         }
-
     }
 }

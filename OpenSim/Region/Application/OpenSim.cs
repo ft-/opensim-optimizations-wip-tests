@@ -25,27 +25,26 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Timers;
 using log4net;
 using NDesk.Options;
 using Nini.Config;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Framework.Console;
-using OpenSim.Framework.Servers;
 using OpenSim.Framework.Monitoring;
+using OpenSim.Framework.Servers;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Timers;
 
 namespace OpenSim
 {
@@ -54,14 +53,12 @@ namespace OpenSim
     /// </summary>
     public class OpenSim : OpenSimBase
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        protected string m_startupCommandsFile;
-        protected string m_shutdownCommandsFile;
-        protected bool m_gui = false;
-        protected string m_consoleType = "local";
         protected uint m_consolePort = 0;
-
+        protected string m_consoleType = "local";
+        protected bool m_gui = false;
+        protected string m_shutdownCommandsFile;
+        protected string m_startupCommandsFile;
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         /// <summary>
         /// Prompt to use for simulator command line.
         /// </summary>
@@ -72,11 +69,11 @@ namespace OpenSim
         /// </summary>
         private Regex m_consolePromptRegex = new Regex(@"([^\\])\\(\w)", RegexOptions.Compiled);
 
+        private Timer m_scriptTimer;
         private string m_timedScript = "disabled";
         private int m_timeInterval = 1200;
-        private Timer m_scriptTimer;
-
-        public OpenSim(IConfigSource configSource) : base(configSource)
+        public OpenSim(IConfigSource configSource)
+            : base(configSource)
         {
         }
 
@@ -98,7 +95,7 @@ namespace OpenSim
                 if (startupConfig.GetString("console", String.Empty) == String.Empty)
                     m_gui = startupConfig.GetBoolean("gui", false);
                 else
-                    m_consoleType= startupConfig.GetString("console", String.Empty);
+                    m_consoleType = startupConfig.GetString("console", String.Empty);
 
                 if (networkConfig != null)
                     m_consolePort = (uint)networkConfig.GetInt("console_port", 0);
@@ -125,6 +122,16 @@ namespace OpenSim
             m_log.Info("[OPENSIM MAIN]: Using async_call_method " + Util.FireAndForgetMethod);
         }
 
+        protected override void ShutdownSpecific()
+        {
+            if (m_shutdownCommandsFile != String.Empty)
+            {
+                RunCommandScript(m_shutdownCommandsFile);
+            }
+
+            base.ShutdownSpecific();
+        }
+
         /// <summary>
         /// Performs initialisation of the scene, such as loading configuration from disk.
         /// </summary>
@@ -147,16 +154,18 @@ namespace OpenSim
             {
                 switch (m_consoleType)
                 {
-                case "basic":
-                    m_console = new CommandConsole("Region");
-                    break;
-                case "rest":
-                    m_console = new RemoteConsole("Region");
-                    ((RemoteConsole)m_console).ReadConfig(Config);
-                    break;
-                default:
-                    m_console = new LocalConsole("Region");
-                    break;
+                    case "basic":
+                        m_console = new CommandConsole("Region");
+                        break;
+
+                    case "rest":
+                        m_console = new RemoteConsole("Region");
+                        ((RemoteConsole)m_console).ReadConfig(Config);
+                        break;
+
+                    default:
+                        m_console = new LocalConsole("Region");
+                        break;
                 }
             }
 
@@ -200,9 +209,9 @@ namespace OpenSim
             // For now, start at the 'root' level by default
             if (SceneManager.Scenes.Count == 1) // If there is only one region, select it
                 ChangeSelectedRegion("region",
-                                     new string[] {"change", "region", SceneManager.Scenes[0].RegionInfo.RegionName});
+                                     new string[] { "change", "region", SceneManager.Scenes[0].RegionInfo.RegionName });
             else
-                ChangeSelectedRegion("region", new string[] {"change", "region", "root"});
+                ChangeSelectedRegion("region", new string[] { "change", "region", "root" });
 
             //Run Startup Commands
             if (String.IsNullOrEmpty(m_startupCommandsFile))
@@ -219,9 +228,20 @@ namespace OpenSim
             {
                 m_scriptTimer = new Timer();
                 m_scriptTimer.Enabled = true;
-                m_scriptTimer.Interval = m_timeInterval*1000;
+                m_scriptTimer.Interval = m_timeInterval * 1000;
                 m_scriptTimer.Elapsed += RunAutoTimerScript;
             }
+        }
+
+        private static string CombineParams(string[] commandParams, int pos)
+        {
+            string result = String.Empty;
+            for (int i = pos; i < commandParams.Length; i++)
+            {
+                result += commandParams[i] + " ";
+            }
+            result = result.TrimEnd(' ');
+            return result;
         }
 
         /// <summary>
@@ -238,17 +258,17 @@ namespace OpenSim
 
             m_console.Commands.AddCommand("General", false, "change region",
                                           "change region <region name>",
-                                          "Change current console region", 
+                                          "Change current console region",
                                           ChangeSelectedRegion);
 
             m_console.Commands.AddCommand("Archiving", false, "save xml",
                                           "save xml",
-                                          "Save a region's data in XML format", 
+                                          "Save a region's data in XML format",
                                           SaveXml);
 
             m_console.Commands.AddCommand("Archiving", false, "save xml2",
                                           "save xml2",
-                                          "Save a region's data in XML2 format", 
+                                          "Save a region's data in XML2 format",
                                           SaveXml2);
 
             m_console.Commands.AddCommand("Archiving", false, "load xml",
@@ -258,12 +278,12 @@ namespace OpenSim
 
             m_console.Commands.AddCommand("Archiving", false, "load xml2",
                                           "load xml2",
-                                          "Load a region's data from XML2 format", 
+                                          "Load a region's data from XML2 format",
                                           LoadXml2);
 
             m_console.Commands.AddCommand("Archiving", false, "save prims xml2",
                                           "save prims xml2 [<prim name> <file name>]",
-                                          "Save named prim to XML2", 
+                                          "Save named prim to XML2",
                                           SavePrimsXml2);
 
             m_console.Commands.AddCommand("Archiving", false, "load oar",
@@ -287,10 +307,10 @@ namespace OpenSim
                                           LoadOar);
 
             m_console.Commands.AddCommand("Archiving", false, "save oar",
-                                          //"save oar [-v|--version=<N>] [-p|--profile=<url>] [<OAR path>]",
+                //"save oar [-v|--version=<N>] [-p|--profile=<url>] [<OAR path>]",
                                           "save oar [-h|--home=<url>] [--noassets] [--publish] [--perm=<permissions>] [--all] [<OAR path>]",
                                           "Save a region's data to an OAR archive.",
-//                                          "-v|--version=<N> generates scene objects as per older versions of the serialization (e.g. -v=0)" + Environment.NewLine
+                //                                          "-v|--version=<N> generates scene objects as per older versions of the serialization (e.g. -v=0)" + Environment.NewLine
                                           "-h|--home=<url> adds the url of the profile service to the saved user information.\n"
                                           + "--noassets stops assets being saved to the OAR.\n"
                                           + "--publish saves an OAR stripped of owner and last owner information.\n"
@@ -305,7 +325,7 @@ namespace OpenSim
 
             m_console.Commands.AddCommand("Objects", false, "edit scale",
                                           "edit scale <name> <x> <y> <z>",
-                                          "Change the scale of a named prim", 
+                                          "Change the scale of a named prim",
                                           HandleEditScale);
 
             m_console.Commands.AddCommand("Objects", false, "rotate scene",
@@ -332,44 +352,44 @@ namespace OpenSim
 
             m_console.Commands.AddCommand("Users", false, "show users",
                                           "show users [full]",
-                                          "Show user data for users currently on the region", 
+                                          "Show user data for users currently on the region",
                                           "Without the 'full' option, only users actually on the region are shown."
                                             + "  With the 'full' option child agents of users in neighbouring regions are also shown.",
                                           HandleShow);
 
             m_console.Commands.AddCommand("Comms", false, "show connections",
                                           "show connections",
-                                          "Show connection data", 
+                                          "Show connection data",
                                           HandleShow);
 
             m_console.Commands.AddCommand("Comms", false, "show circuits",
                                           "show circuits",
-                                          "Show agent circuit data", 
+                                          "Show agent circuit data",
                                           HandleShow);
 
             m_console.Commands.AddCommand("Comms", false, "show pending-objects",
                                           "show pending-objects",
-                                          "Show # of objects on the pending queues of all scene viewers", 
+                                          "Show # of objects on the pending queues of all scene viewers",
                                           HandleShow);
 
             m_console.Commands.AddCommand("General", false, "show modules",
                                           "show modules",
-                                          "Show module data", 
+                                          "Show module data",
                                           HandleShow);
 
             m_console.Commands.AddCommand("Regions", false, "show regions",
                                           "show regions",
-                                          "Show region data", 
+                                          "Show region data",
                                           HandleShow);
-            
+
             m_console.Commands.AddCommand("Regions", false, "show ratings",
                                           "show ratings",
-                                          "Show rating data", 
+                                          "Show rating data",
                                           HandleShow);
 
             m_console.Commands.AddCommand("Objects", false, "backup",
                                           "backup",
-                                          "Persist currently unsaved object changes immediately instead of waiting for the normal persistence call.", 
+                                          "Persist currently unsaved object changes immediately instead of waiting for the normal persistence call.",
                                           RunCommand);
 
             m_console.Commands.AddCommand("Regions", false, "create region",
@@ -383,22 +403,22 @@ namespace OpenSim
 
             m_console.Commands.AddCommand("Regions", false, "restart",
                                           "restart",
-                                          "Restart all sims in this instance", 
+                                          "Restart all sims in this instance",
                                           RunCommand);
 
             m_console.Commands.AddCommand("General", false, "command-script",
                                           "command-script <script>",
-                                          "Run a command script from file", 
+                                          "Run a command script from file",
                                           RunCommand);
 
             m_console.Commands.AddCommand("Regions", false, "remove-region",
                                           "remove-region <name>",
-                                          "Remove a region from this simulator", 
+                                          "Remove a region from this simulator",
                                           RunCommand);
 
             m_console.Commands.AddCommand("Regions", false, "delete-region",
                                           "delete-region <name>",
-                                          "Delete a region from disk", 
+                                          "Delete a region from disk",
                                           RunCommand);
 
             m_console.Commands.AddCommand("Estates", false, "estate set owner",
@@ -411,17 +431,6 @@ namespace OpenSim
                                           "Sets the name of the specified estate to the specified value. New name must be unique.",
                                           SetEstateNameCommand);
         }
-
-        protected override void ShutdownSpecific()
-        {
-            if (m_shutdownCommandsFile != String.Empty)
-            {
-                RunCommandScript(m_shutdownCommandsFile);
-            }
-            
-            base.ShutdownSpecific();
-        }
-
         /// <summary>
         /// Timer to run a specific text file as console commands.  Configured in in the main ini file
         /// </summary>
@@ -449,276 +458,150 @@ namespace OpenSim
 
         #region Console Commands
 
+        // see BaseOpenSimServer
         /// <summary>
-        /// Kicks users off the region
+        /// Many commands list objects for debugging.  Some of the types are listed  here
         /// </summary>
-        /// <param name="module"></param>
-        /// <param name="cmdparams">name of avatar to kick</param>
-        private void KickUserCommand(string module, string[] cmdparams)
+        /// <param name="mod"></param>
+        /// <param name="cmd"></param>
+        public override void HandleShow(string mod, string[] cmd)
         {
-            bool force = false;
-            
-            OptionSet options = new OptionSet().Add("f|force", delegate (string v) { force = v != null; });
+            base.HandleShow(mod, cmd);
 
-            List<string> mainParams = options.Parse(cmdparams);
+            List<string> args = new List<string>(cmd);
+            args.RemoveAt(0);
+            string[] showParams = args.ToArray();
 
-            if (mainParams.Count < 4)
-                return;
-
-            string alert = null;
-            if (mainParams.Count > 4)
-                alert = String.Format("\n{0}\n", String.Join(" ", cmdparams, 4, cmdparams.Length - 4));
-
-            IList agents = SceneManager.GetCurrentSceneAvatars();
-
-            foreach (ScenePresence presence in agents)
+            switch (showParams[0])
             {
-                RegionInfo regionInfo = presence.Scene.RegionInfo;
-
-                if (presence.Firstname.ToLower().Equals(mainParams[2].ToLower()) &&
-                    presence.Lastname.ToLower().Equals(mainParams[3].ToLower()))
-                {
-                    MainConsole.Instance.Output(
-                        String.Format(
-                            "Kicking user: {0,-16} {1,-16} {2,-37} in region: {3,-16}",
-                            presence.Firstname, presence.Lastname, presence.UUID, regionInfo.RegionName));
-
-                    // kick client...
-                    if (alert != null)
-                        presence.ControllingClient.Kick(alert);
+                case "users":
+                    IList agents;
+                    if (showParams.Length > 1 && showParams[1] == "full")
+                    {
+                        agents = SceneManager.GetCurrentScenePresences();
+                    }
                     else
-                        presence.ControllingClient.Kick("\nThe OpenSim manager kicked you out.\n");
-
-                    presence.Scene.CloseAgent(presence.UUID, force);
-                    break;
-                }
-            }
-
-            MainConsole.Instance.Output("");
-        }
-
-        /// <summary>
-        /// Opens a file and uses it as input to the console command parser.
-        /// </summary>
-        /// <param name="fileName">name of file to use as input to the console</param>
-        private static void PrintFileToConsole(string fileName)
-        {
-            if (File.Exists(fileName))
-            {
-                StreamReader readFile = File.OpenText(fileName);
-                string currentLine;
-                while ((currentLine = readFile.ReadLine()) != null)
-                {
-                    m_log.Info("[!]" + currentLine);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Force resending of all updates to all clients in active region(s)
-        /// </summary>
-        /// <param name="module"></param>
-        /// <param name="args"></param>
-        private void HandleForceUpdate(string module, string[] args)
-        {
-            MainConsole.Instance.Output("Updating all clients");
-            SceneManager.ForceCurrentSceneClientUpdate();
-        }
-
-        /// <summary>
-        /// Edits the scale of a primative with the name specified
-        /// </summary>
-        /// <param name="module"></param>
-        /// <param name="args">0,1, name, x, y, z</param>
-        private void HandleEditScale(string module, string[] args)
-        {
-            if (args.Length == 6)
-            {
-                SceneManager.HandleEditCommandOnCurrentScene(args);
-            }
-            else
-            {
-                MainConsole.Instance.Output("Argument error: edit scale <prim name> <x> <y> <z>");
-            }
-        }
-
-        private void HandleRotateScene(string module, string[] args)
-        {
-            string usage = "Usage: rotate scene <angle in degrees> [centerX centerY] (centerX and centerY are optional and default to Constants.RegionSize / 2";
-
-            float centerX = Constants.RegionSize * 0.5f;
-            float centerY = Constants.RegionSize * 0.5f;
-
-            if (args.Length < 3 || args.Length == 4)
-            {
-                MainConsole.Instance.Output(usage);
-                return;
-            }
-            
-            float angle = (float)(Convert.ToSingle(args[2]) / 180.0 * Math.PI);
-            OpenMetaverse.Quaternion rot = OpenMetaverse.Quaternion.CreateFromAxisAngle(0, 0, 1, angle);
-
-            if (args.Length > 4)
-            {
-                centerX = Convert.ToSingle(args[3]);
-                centerY = Convert.ToSingle(args[4]);
-            }
-
-            Vector3 center = new Vector3(centerX, centerY, 0.0f);
-
-            SceneManager.ForEachSelectedScene(delegate(Scene scene) 
-            {
-                scene.ForEachSOG(delegate(SceneObjectGroup sog)
-                {
-                    if (!sog.IsAttachment)
                     {
-                        sog.RootPart.UpdateRotation(rot * sog.GroupRotation);
-                        Vector3 offset = sog.AbsolutePosition - center;
-                        offset *= rot;
-                        sog.UpdateGroupPosition(center + offset);
+                        agents = SceneManager.GetCurrentSceneAvatars();
                     }
-                });
-            });
-        }
 
-        private void HandleScaleScene(string module, string[] args)
-        {
-            string usage = "Usage: scale scene <factor>";
+                    MainConsole.Instance.Output(String.Format("\nAgents connected: {0}\n", agents.Count));
 
-            if (args.Length < 3)
-            {
-                MainConsole.Instance.Output(usage);
-                return;
-            }
+                    MainConsole.Instance.Output(
+                        String.Format("{0,-16} {1,-16} {2,-37} {3,-11} {4,-16} {5,-30}", "Firstname", "Lastname",
+                                      "Agent ID", "Root/Child", "Region", "Position")
+                    );
 
-            float factor = (float)(Convert.ToSingle(args[2]));
-
-            float minZ = float.MaxValue;
-
-            SceneManager.ForEachSelectedScene(delegate(Scene scene)
-            {
-                scene.ForEachSOG(delegate(SceneObjectGroup sog)
-                {
-                    if (!sog.IsAttachment)
+                    foreach (ScenePresence presence in agents)
                     {
-                        if (sog.RootPart.AbsolutePosition.Z < minZ)
-                            minZ = sog.RootPart.AbsolutePosition.Z;
-                    }
-                });
-            });
+                        RegionInfo regionInfo = presence.Scene.RegionInfo;
+                        string regionName;
 
-            SceneManager.ForEachSelectedScene(delegate(Scene scene)
-            {
-                scene.ForEachSOG(delegate(SceneObjectGroup sog)
-                {
-                    if (!sog.IsAttachment)
-                    {
-                        Vector3 tmpRootPos = sog.RootPart.AbsolutePosition;
-                        tmpRootPos.Z -= minZ;
-                        tmpRootPos *= factor;
-                        tmpRootPos.Z += minZ;
-
-                        foreach (SceneObjectPart sop in sog.Parts)
+                        if (regionInfo == null)
                         {
-                            if (sop.ParentID != 0)
-                                sop.OffsetPosition *= factor;
-                            sop.Scale *= factor;
+                            regionName = "Unresolvable";
+                        }
+                        else
+                        {
+                            regionName = regionInfo.RegionName;
                         }
 
-                        sog.UpdateGroupPosition(tmpRootPos);
+                        MainConsole.Instance.Output(
+                            String.Format(
+                                "{0,-16} {1,-16} {2,-37} {3,-11} {4,-16} {5,-30}",
+                                presence.Firstname,
+                                presence.Lastname,
+                                presence.UUID,
+                                presence.IsChildAgent ? "Child" : "Root",
+                                regionName,
+                                presence.AbsolutePosition.ToString())
+                        );
                     }
-                });
-            });
-        }
 
-        private void HandleTranslateScene(string module, string[] args)
-        {
-            string usage = "Usage: translate scene <xOffset, yOffset, zOffset>";
+                    MainConsole.Instance.Output(String.Empty);
+                    break;
 
-            if (args.Length < 5)
-            {
-                MainConsole.Instance.Output(usage);
-                return;
+                case "connections":
+                    HandleShowConnections();
+                    break;
+
+                case "circuits":
+                    HandleShowCircuits();
+                    break;
+
+                case "modules":
+                    SceneManager.ForEachSelectedScene(
+                        scene =>
+                        {
+                            MainConsole.Instance.OutputFormat("Loaded region modules in {0} are:", scene.Name);
+
+                            List<IRegionModuleBase> sharedModules = new List<IRegionModuleBase>();
+                            List<IRegionModuleBase> nonSharedModules = new List<IRegionModuleBase>();
+
+                            foreach (IRegionModuleBase module in scene.RegionModules.Values)
+                            {
+                                if (module.GetType().GetInterface("ISharedRegionModule") != null)
+                                    nonSharedModules.Add(module);
+                                else
+                                    sharedModules.Add(module);
+                            }
+
+                            foreach (IRegionModuleBase module in sharedModules.OrderBy(m => m.Name))
+                                MainConsole.Instance.OutputFormat("New Region Module (Shared): {0}", module.Name);
+
+                            foreach (IRegionModuleBase module in nonSharedModules.OrderBy(m => m.Name))
+                                MainConsole.Instance.OutputFormat("New Region Module (Non-Shared): {0}", module.Name);
+                        }
+                    );
+
+                    MainConsole.Instance.Output("");
+                    break;
+
+                case "regions":
+                    ConsoleDisplayTable cdt = new ConsoleDisplayTable();
+                    cdt.AddColumn("Name", ConsoleDisplayUtil.RegionNameSize);
+                    cdt.AddColumn("ID", ConsoleDisplayUtil.UuidSize);
+                    cdt.AddColumn("Position", ConsoleDisplayUtil.CoordTupleSize);
+                    cdt.AddColumn("Port", ConsoleDisplayUtil.PortSize);
+                    cdt.AddColumn("Ready?", 6);
+                    cdt.AddColumn("Estate", ConsoleDisplayUtil.EstateNameSize);
+                    SceneManager.ForEachScene(
+                        scene =>
+                        {
+                            RegionInfo ri = scene.RegionInfo;
+                            cdt.AddRow(
+                                ri.RegionName, ri.RegionID, string.Format("{0},{1}", ri.RegionLocX, ri.RegionLocY),
+                                ri.InternalEndPoint.Port, scene.Ready ? "Yes" : "No", ri.EstateSettings.EstateName);
+                        }
+                    );
+
+                    MainConsole.Instance.Output(cdt.ToString());
+                    break;
+
+                case "ratings":
+                    SceneManager.ForEachScene(
+                    delegate(Scene scene)
+                    {
+                        string rating = "";
+                        if (scene.RegionInfo.RegionSettings.Maturity == 1)
+                        {
+                            rating = "MATURE";
+                        }
+                        else if (scene.RegionInfo.RegionSettings.Maturity == 2)
+                        {
+                            rating = "ADULT";
+                        }
+                        else
+                        {
+                            rating = "PG";
+                        }
+                        MainConsole.Instance.Output(String.Format(
+                                   "Region Name: {0}, Region Rating {1}",
+                                   scene.RegionInfo.RegionName,
+                                   rating));
+                    });
+                    break;
             }
-
-            float xOFfset = (float)Convert.ToSingle(args[2]);
-            float yOffset = (float)Convert.ToSingle(args[3]);
-            float zOffset = (float)Convert.ToSingle(args[4]);
-
-            Vector3 offset = new Vector3(xOFfset, yOffset, zOffset);
-
-            SceneManager.ForEachSelectedScene(delegate(Scene scene)
-            {
-                scene.ForEachSOG(delegate(SceneObjectGroup sog)
-                {
-                    if (!sog.IsAttachment)
-                        sog.UpdateGroupPosition(sog.AbsolutePosition + offset);
-                });
-            });
-        }
-
-        /// <summary>
-        /// Creates a new region based on the parameters specified.   This will ask the user questions on the console
-        /// </summary>
-        /// <param name="module"></param>
-        /// <param name="cmd">0,1,region name, region ini or XML file</param>
-        private void HandleCreateRegion(string module, string[] cmd)
-        {
-            string regionName = string.Empty;
-            string regionFile = string.Empty;
-
-            if (cmd.Length == 3)
-            {
-                regionFile = cmd[2];
-            }
-            else if (cmd.Length > 3)
-            {
-                regionName = cmd[2];
-                regionFile = cmd[3];
-            }
-
-            string extension = Path.GetExtension(regionFile).ToLower();
-            bool isXml = extension.Equals(".xml");
-            bool isIni = extension.Equals(".ini");
-
-            if (!isXml && !isIni)
-            {
-                MainConsole.Instance.Output("Usage: create region [\"region name\"] <region_file.ini>");
-                return;
-            }
-
-            if (!Path.IsPathRooted(regionFile))
-            {
-                string regionsDir = ConfigSource.Source.Configs["Startup"].GetString("regionload_regionsdir", "Regions").Trim();
-                regionFile = Path.Combine(regionsDir, regionFile);
-            }
-
-            RegionInfo regInfo;
-            if (isXml)
-            {
-                regInfo = new RegionInfo(regionName, regionFile, false, ConfigSource.Source);
-            }
-            else
-            {
-                regInfo = new RegionInfo(regionName, regionFile, false, ConfigSource.Source, regionName);
-            }
-
-            Scene existingScene;
-            if (SceneManager.TryGetScene(regInfo.RegionID, out existingScene))
-            {
-                MainConsole.Instance.OutputFormat(
-                    "ERROR: Cannot create region {0} with ID {1}, this ID is already assigned to region {2}",
-                    regInfo.RegionName, regInfo.RegionID, existingScene.RegionInfo.RegionName);
-
-                return;
-            }
-
-            bool changed = PopulateRegionEstateInfo(regInfo);
-            IScene scene;
-            CreateRegion(regInfo, true, out scene);
-
-            if (changed)
-	            regInfo.EstateSettings.Save();
         }
 
         /// <summary>
@@ -791,37 +674,11 @@ namespace OpenSim
             }
         }
 
-        /// <summary>
-        /// Refreshs prompt with the current selection details.
-        /// </summary>
-        private void RefreshPrompt()
-        {
-            string regionName = (SceneManager.CurrentScene == null ? "root" : SceneManager.CurrentScene.RegionInfo.RegionName);
-            MainConsole.Instance.Output(String.Format("Currently selected region is {0}", regionName));
-
-//            m_log.DebugFormat("Original prompt is {0}", m_consolePrompt);
-            string prompt = m_consolePrompt;
-
-            // Replace "\R" with the region name
-            // Replace "\\" with "\"
-            prompt = m_consolePromptRegex.Replace(prompt, m =>
-            {
-//                m_log.DebugFormat("Matched {0}", m.Groups[2].Value);
-                if (m.Groups[2].Value == "R")
-                    return m.Groups[1].Value + regionName;
-                else
-                    return m.Groups[0].Value;
-            });
-
-            m_console.DefaultPrompt = prompt;
-            m_console.ConsoleScene = SceneManager.CurrentScene;
-        }
-
         protected override void HandleRestartRegion(RegionInfo whichRegion)
         {
             base.HandleRestartRegion(whichRegion);
- 
-            // Where we are restarting multiple scenes at once, a previous call to RefreshPrompt may have set the 
+
+            // Where we are restarting multiple scenes at once, a previous call to RefreshPrompt may have set the
             // m_console.ConsoleScene to null (indicating all scenes).
             if (m_console.ConsoleScene != null && whichRegion.RegionName == ((Scene)m_console.ConsoleScene).Name)
                 SceneManager.TrySetCurrentScene(whichRegion.RegionName);
@@ -829,195 +686,108 @@ namespace OpenSim
             RefreshPrompt();
         }
 
-        // see BaseOpenSimServer
         /// <summary>
-        /// Many commands list objects for debugging.  Some of the types are listed  here
+        /// Load a whole region from an opensimulator archive.
         /// </summary>
-        /// <param name="mod"></param>
-        /// <param name="cmd"></param>
-        public override void HandleShow(string mod, string[] cmd)
+        /// <param name="cmdparams"></param>
+        protected void LoadOar(string module, string[] cmdparams)
         {
-            base.HandleShow(mod, cmd);
-
-            List<string> args = new List<string>(cmd);
-            args.RemoveAt(0);
-            string[] showParams = args.ToArray();
-
-            switch (showParams[0])
+            try
             {
-                case "users":
-                    IList agents;
-                    if (showParams.Length > 1 && showParams[1] == "full")
-                    {
-                        agents = SceneManager.GetCurrentScenePresences();
-                    } else
-                    {
-                        agents = SceneManager.GetCurrentSceneAvatars();
-                    }
-                
-                    MainConsole.Instance.Output(String.Format("\nAgents connected: {0}\n", agents.Count));
-
-                    MainConsole.Instance.Output(
-                        String.Format("{0,-16} {1,-16} {2,-37} {3,-11} {4,-16} {5,-30}", "Firstname", "Lastname",
-                                      "Agent ID", "Root/Child", "Region", "Position")
-                    );
-
-                    foreach (ScenePresence presence in agents)
-                    {
-                        RegionInfo regionInfo = presence.Scene.RegionInfo;
-                        string regionName;
-
-                        if (regionInfo == null)
-                        {
-                            regionName = "Unresolvable";
-                        } else
-                        {
-                            regionName = regionInfo.RegionName;
-                        }
-
-                        MainConsole.Instance.Output(
-                            String.Format(
-                                "{0,-16} {1,-16} {2,-37} {3,-11} {4,-16} {5,-30}",
-                                presence.Firstname,
-                                presence.Lastname,
-                                presence.UUID,
-                                presence.IsChildAgent ? "Child" : "Root",
-                                regionName,
-                                presence.AbsolutePosition.ToString())
-                        );
-                    }
-
-                    MainConsole.Instance.Output(String.Empty);
-                    break;
-
-                case "connections":
-                    HandleShowConnections();
-                    break;
-
-                case "circuits":
-                    HandleShowCircuits();
-                    break;
-
-                case "modules":
-                    SceneManager.ForEachSelectedScene(
-                        scene => 
-                        {
-                            MainConsole.Instance.OutputFormat("Loaded region modules in {0} are:", scene.Name);
-
-                            List<IRegionModuleBase> sharedModules = new List<IRegionModuleBase>();
-                            List<IRegionModuleBase> nonSharedModules = new List<IRegionModuleBase>();
-
-                            foreach (IRegionModuleBase module in scene.RegionModules.Values)
-                            {
-                                if (module.GetType().GetInterface("ISharedRegionModule") != null)
-                                    nonSharedModules.Add(module);
-                                else
-                                    sharedModules.Add(module);
-                            }
-
-                            foreach (IRegionModuleBase module in sharedModules.OrderBy(m => m.Name))
-                                MainConsole.Instance.OutputFormat("New Region Module (Shared): {0}", module.Name);
-
-                            foreach (IRegionModuleBase module in nonSharedModules.OrderBy(m => m.Name))
-                                MainConsole.Instance.OutputFormat("New Region Module (Non-Shared): {0}", module.Name);
-                        }
-                    );
-
-                    MainConsole.Instance.Output("");
-                    break;
-
-                case "regions":
-                    ConsoleDisplayTable cdt = new ConsoleDisplayTable();
-                    cdt.AddColumn("Name", ConsoleDisplayUtil.RegionNameSize);
-                    cdt.AddColumn("ID", ConsoleDisplayUtil.UuidSize);
-                    cdt.AddColumn("Position", ConsoleDisplayUtil.CoordTupleSize);
-                    cdt.AddColumn("Port", ConsoleDisplayUtil.PortSize);
-                    cdt.AddColumn("Ready?", 6);
-                    cdt.AddColumn("Estate", ConsoleDisplayUtil.EstateNameSize);
-                    SceneManager.ForEachScene(
-                        scene => 
-                        { 
-                            RegionInfo ri = scene.RegionInfo; 
-                            cdt.AddRow(
-                                ri.RegionName, ri.RegionID, string.Format("{0},{1}", ri.RegionLocX, ri.RegionLocY), 
-                                ri.InternalEndPoint.Port, scene.Ready ? "Yes" : "No", ri.EstateSettings.EstateName);
-                        }
-                    );
-
-                    MainConsole.Instance.Output(cdt.ToString());
-                    break;
-
-                case "ratings":
-                    SceneManager.ForEachScene(
-                    delegate(Scene scene)
-                    {
-                        string rating = "";
-                        if (scene.RegionInfo.RegionSettings.Maturity == 1)
-                        {
-                            rating = "MATURE";
-                        }
-                        else if (scene.RegionInfo.RegionSettings.Maturity == 2)
-                        {
-                            rating = "ADULT";
-                        }
-                        else
-                        {
-                            rating = "PG";
-                        }
-                        MainConsole.Instance.Output(String.Format(
-                                   "Region Name: {0}, Region Rating {1}",
-                                   scene.RegionInfo.RegionName,
-                                   rating));
-                    });
-                    break;
+                SceneManager.LoadArchiveToCurrentScene(cmdparams);
+            }
+            catch (Exception e)
+            {
+                MainConsole.Instance.Output(e.Message);
             }
         }
 
-        private void HandleShowCircuits()
+        /// <summary>
+        /// Loads data and region objects from XML format.
+        /// </summary>
+        /// <param name="module"></param>
+        /// <param name="cmdparams"></param>
+        protected void LoadXml(string module, string[] cmdparams)
         {
-            ConsoleDisplayTable cdt = new ConsoleDisplayTable();
-            cdt.AddColumn("Region", 20);
-            cdt.AddColumn("Avatar name", 24);
-            cdt.AddColumn("Type", 5);
-            cdt.AddColumn("Code", 10);
-            cdt.AddColumn("IP", 16);
-            cdt.AddColumn("Viewer Name", 24);
+            MainConsole.Instance.Output("PLEASE NOTE, load-xml is DEPRECATED and may be REMOVED soon.  If you are using this and there is some reason you can't use load-xml2, please file a mantis detailing the reason.");
 
-            SceneManager.ForEachScene(
-                s =>
+            Vector3 loadOffset = new Vector3(0, 0, 0);
+            if (cmdparams.Length > 2)
+            {
+                bool generateNewIDS = false;
+                if (cmdparams.Length > 3)
                 {
-                    foreach (AgentCircuitData aCircuit in s.AuthenticateHandler.GetAgentCircuits().Values)
-                        cdt.AddRow(
-                            s.Name,
-                            aCircuit.Name,
-                            aCircuit.child ? "child" : "root",
-                            aCircuit.circuitcode.ToString(),
-                            aCircuit.IPAddress != null ? aCircuit.IPAddress.ToString() : "not set",
-                            Util.GetViewerName(aCircuit));
-                });
-
-            MainConsole.Instance.Output(cdt.ToString());
+                    if (cmdparams[3] == "-newUID")
+                    {
+                        generateNewIDS = true;
+                    }
+                    if (cmdparams.Length > 4)
+                    {
+                        loadOffset.X = (float)Convert.ToDecimal(cmdparams[4], Culture.NumberFormatInfo);
+                        if (cmdparams.Length > 5)
+                        {
+                            loadOffset.Y = (float)Convert.ToDecimal(cmdparams[5], Culture.NumberFormatInfo);
+                        }
+                        if (cmdparams.Length > 6)
+                        {
+                            loadOffset.Z = (float)Convert.ToDecimal(cmdparams[6], Culture.NumberFormatInfo);
+                        }
+                        MainConsole.Instance.Output(String.Format("loadOffsets <X,Y,Z> = <{0},{1},{2}>", loadOffset.X, loadOffset.Y, loadOffset.Z));
+                    }
+                }
+                SceneManager.LoadCurrentSceneFromXml(cmdparams[2], generateNewIDS, loadOffset);
+            }
+            else
+            {
+                try
+                {
+                    SceneManager.LoadCurrentSceneFromXml(DEFAULT_PRIM_BACKUP_FILENAME, false, loadOffset);
+                }
+                catch (FileNotFoundException)
+                {
+                    MainConsole.Instance.Output("Default xml not found. Usage: load-xml <filename>");
+                }
+            }
         }
 
-        private void HandleShowConnections()
+        /// <summary>
+        /// Load region data from Xml2Format
+        /// </summary>
+        /// <param name="module"></param>
+        /// <param name="cmdparams"></param>
+        protected void LoadXml2(string module, string[] cmdparams)
         {
-            ConsoleDisplayTable cdt = new ConsoleDisplayTable();
-            cdt.AddColumn("Region", 20);
-            cdt.AddColumn("Avatar name", 24);
-            cdt.AddColumn("Circuit code", 12);
-            cdt.AddColumn("Endpoint", 23);
-            cdt.AddColumn("Active?", 7);
+            if (cmdparams.Length > 2)
+            {
+                try
+                {
+                    SceneManager.LoadCurrentSceneFromXml2(cmdparams[2]);
+                }
+                catch (FileNotFoundException)
+                {
+                    MainConsole.Instance.Output("Specified xml not found. Usage: load xml2 <filename>");
+                }
+            }
+            else
+            {
+                try
+                {
+                    SceneManager.LoadCurrentSceneFromXml2(DEFAULT_PRIM_BACKUP_FILENAME);
+                }
+                catch (FileNotFoundException)
+                {
+                    MainConsole.Instance.Output("Default xml not found. Usage: load xml2 <filename>");
+                }
+            }
+        }
 
-            SceneManager.ForEachScene(
-                s => s.ForEachClient(
-                    c => cdt.AddRow(
-                        s.Name,
-                        c.Name,
-                        c.CircuitCode.ToString(),
-                        c.RemoteEndPoint.ToString(),                
-                        c.IsActive.ToString())));
-
-            MainConsole.Instance.Output(cdt.ToString());
+        /// <summary>
+        /// Save a region to a file, including all the assets needed to restore it.
+        /// </summary>
+        /// <param name="cmdparams"></param>
+        protected void SaveOar(string module, string[] cmdparams)
+        {
+            SceneManager.SaveCurrentSceneToArchive(cmdparams);
         }
 
         /// <summary>
@@ -1057,53 +827,6 @@ namespace OpenSim
         }
 
         /// <summary>
-        /// Loads data and region objects from XML format.
-        /// </summary>
-        /// <param name="module"></param>
-        /// <param name="cmdparams"></param>
-        protected void LoadXml(string module, string[] cmdparams)
-        {
-            MainConsole.Instance.Output("PLEASE NOTE, load-xml is DEPRECATED and may be REMOVED soon.  If you are using this and there is some reason you can't use load-xml2, please file a mantis detailing the reason.");
-
-            Vector3 loadOffset = new Vector3(0, 0, 0);
-            if (cmdparams.Length > 2)
-            {
-                bool generateNewIDS = false;
-                if (cmdparams.Length > 3)
-                {
-                    if (cmdparams[3] == "-newUID")
-                    {
-                        generateNewIDS = true;
-                    }
-                    if (cmdparams.Length > 4)
-                    {
-                        loadOffset.X = (float)Convert.ToDecimal(cmdparams[4], Culture.NumberFormatInfo);
-                        if (cmdparams.Length > 5)
-                        {
-                            loadOffset.Y = (float)Convert.ToDecimal(cmdparams[5], Culture.NumberFormatInfo);
-                        }
-                        if (cmdparams.Length > 6)
-                        {
-                            loadOffset.Z = (float)Convert.ToDecimal(cmdparams[6], Culture.NumberFormatInfo);
-                        }
-                        MainConsole.Instance.Output(String.Format("loadOffsets <X,Y,Z> = <{0},{1},{2}>",loadOffset.X,loadOffset.Y,loadOffset.Z));
-                    }
-                }
-                SceneManager.LoadCurrentSceneFromXml(cmdparams[2], generateNewIDS, loadOffset);
-            }
-            else
-            {
-                try
-                {
-                    SceneManager.LoadCurrentSceneFromXml(DEFAULT_PRIM_BACKUP_FILENAME, false, loadOffset);
-                }
-                catch (FileNotFoundException)
-                {
-                    MainConsole.Instance.Output("Default xml not found. Usage: load-xml <filename>");
-                }
-            }
-        }
-        /// <summary>
         /// Serialize region data to XML2Format
         /// </summary>
         /// <param name="module"></param>
@@ -1120,60 +843,53 @@ namespace OpenSim
             }
         }
 
-        /// <summary>
-        /// Load region data from Xml2Format
-        /// </summary>
-        /// <param name="module"></param>
-        /// <param name="cmdparams"></param>
-        protected void LoadXml2(string module, string[] cmdparams)
+        protected void SetEstateNameCommand(string module, string[] args)
         {
-            if (cmdparams.Length > 2)
+            string response = null;
+
+            Scene scene = SceneManager.CurrentOrFirstScene;
+            IEstateModule estateModule = scene.RequestModuleInterface<IEstateModule>();
+
+            if (args.Length == 3)
             {
-                try
-                {
-                    SceneManager.LoadCurrentSceneFromXml2(cmdparams[2]);
-                }
-                catch (FileNotFoundException)
-                {
-                    MainConsole.Instance.Output("Specified xml not found. Usage: load xml2 <filename>");
-                }
+                response = "No estate specified.";
             }
             else
             {
-                try
+                int estateId;
+                if (!int.TryParse(args[3], out estateId))
                 {
-                    SceneManager.LoadCurrentSceneFromXml2(DEFAULT_PRIM_BACKUP_FILENAME);
+                    response = String.Format("\"{0}\" is not a valid ID for an Estate", args[3]);
                 }
-                catch (FileNotFoundException)
+                else
                 {
-                    MainConsole.Instance.Output("Default xml not found. Usage: load xml2 <filename>");
+                    if (args.Length == 4)
+                    {
+                        response = "No name specified.";
+                    }
+                    else
+                    {
+                        // everything after the estate ID is "name"
+                        StringBuilder sb = new StringBuilder(args[4]);
+                        for (int i = 5; i < args.Length; i++)
+                            sb.Append(" " + args[i]);
+
+                        string estateName = sb.ToString();
+
+                        // send it off for processing.
+                        response = estateModule.SetEstateName(estateId, estateName);
+
+                        if (response == String.Empty)
+                        {
+                            response = String.Format("Estate {0} renamed to \"{1}\"", estateId, estateName);
+                        }
+                    }
                 }
             }
-        }
 
-        /// <summary>
-        /// Load a whole region from an opensimulator archive.
-        /// </summary>
-        /// <param name="cmdparams"></param>
-        protected void LoadOar(string module, string[] cmdparams)
-        {
-            try
-            {
-                SceneManager.LoadArchiveToCurrentScene(cmdparams);
-            }
-            catch (Exception e)
-            {
-                MainConsole.Instance.Output(e.Message);
-            }
-        }
-
-        /// <summary>
-        /// Save a region to a file, including all the assets needed to restore it.
-        /// </summary>
-        /// <param name="cmdparams"></param>
-        protected void SaveOar(string module, string[] cmdparams)
-        {
-            SceneManager.SaveCurrentSceneToArchive(cmdparams);
+            // give the user some feedback
+            if (response != null)
+                MainConsole.Instance.Output(response);
         }
 
         protected void SetEstateOwnerCommand(string module, string[] args)
@@ -1249,66 +965,349 @@ namespace OpenSim
                 MainConsole.Instance.Output(response);
         }
 
-        protected void SetEstateNameCommand(string module, string[] args)
+        /// <summary>
+        /// Opens a file and uses it as input to the console command parser.
+        /// </summary>
+        /// <param name="fileName">name of file to use as input to the console</param>
+        private static void PrintFileToConsole(string fileName)
         {
-            string response = null;
-
-            Scene scene = SceneManager.CurrentOrFirstScene;
-            IEstateModule estateModule = scene.RequestModuleInterface<IEstateModule>();
-
-            if (args.Length == 3)
+            if (File.Exists(fileName))
             {
-                response = "No estate specified.";
+                StreamReader readFile = File.OpenText(fileName);
+                string currentLine;
+                while ((currentLine = readFile.ReadLine()) != null)
+                {
+                    m_log.Info("[!]" + currentLine);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Creates a new region based on the parameters specified.   This will ask the user questions on the console
+        /// </summary>
+        /// <param name="module"></param>
+        /// <param name="cmd">0,1,region name, region ini or XML file</param>
+        private void HandleCreateRegion(string module, string[] cmd)
+        {
+            string regionName = string.Empty;
+            string regionFile = string.Empty;
+
+            if (cmd.Length == 3)
+            {
+                regionFile = cmd[2];
+            }
+            else if (cmd.Length > 3)
+            {
+                regionName = cmd[2];
+                regionFile = cmd[3];
+            }
+
+            string extension = Path.GetExtension(regionFile).ToLower();
+            bool isXml = extension.Equals(".xml");
+            bool isIni = extension.Equals(".ini");
+
+            if (!isXml && !isIni)
+            {
+                MainConsole.Instance.Output("Usage: create region [\"region name\"] <region_file.ini>");
+                return;
+            }
+
+            if (!Path.IsPathRooted(regionFile))
+            {
+                string regionsDir = ConfigSource.Source.Configs["Startup"].GetString("regionload_regionsdir", "Regions").Trim();
+                regionFile = Path.Combine(regionsDir, regionFile);
+            }
+
+            RegionInfo regInfo;
+            if (isXml)
+            {
+                regInfo = new RegionInfo(regionName, regionFile, false, ConfigSource.Source);
             }
             else
             {
-                int estateId;
-                if (!int.TryParse(args[3], out estateId))
-                {
-                    response = String.Format("\"{0}\" is not a valid ID for an Estate", args[3]);
-                }
-                else
-                {
-                    if (args.Length == 4)
-                    {
-                        response = "No name specified.";
-                    }
-                    else
-                    {
-                        // everything after the estate ID is "name"
-                        StringBuilder sb = new StringBuilder(args[4]);
-                        for (int i = 5; i < args.Length; i++)
-                            sb.Append (" " + args[i]);
-
-                        string estateName = sb.ToString();
-
-                        // send it off for processing.
-                        response = estateModule.SetEstateName(estateId, estateName);
-
-                        if (response == String.Empty)
-                        {
-                            response = String.Format("Estate {0} renamed to \"{1}\"", estateId, estateName);
-                        }
-                    }
-                }
+                regInfo = new RegionInfo(regionName, regionFile, false, ConfigSource.Source, regionName);
             }
 
-            // give the user some feedback
-            if (response != null)
-                MainConsole.Instance.Output(response);
-        }
-
-        #endregion
-
-        private static string CombineParams(string[] commandParams, int pos)
-        {
-            string result = String.Empty;
-            for (int i = pos; i < commandParams.Length; i++)
+            Scene existingScene;
+            if (SceneManager.TryGetScene(regInfo.RegionID, out existingScene))
             {
-                result += commandParams[i] + " ";
+                MainConsole.Instance.OutputFormat(
+                    "ERROR: Cannot create region {0} with ID {1}, this ID is already assigned to region {2}",
+                    regInfo.RegionName, regInfo.RegionID, existingScene.RegionInfo.RegionName);
+
+                return;
             }
-            result = result.TrimEnd(' ');
-            return result;
+
+            bool changed = PopulateRegionEstateInfo(regInfo);
+            IScene scene;
+            CreateRegion(regInfo, true, out scene);
+
+            if (changed)
+                regInfo.EstateSettings.Save();
         }
+
+        /// <summary>
+        /// Edits the scale of a primative with the name specified
+        /// </summary>
+        /// <param name="module"></param>
+        /// <param name="args">0,1, name, x, y, z</param>
+        private void HandleEditScale(string module, string[] args)
+        {
+            if (args.Length == 6)
+            {
+                SceneManager.HandleEditCommandOnCurrentScene(args);
+            }
+            else
+            {
+                MainConsole.Instance.Output("Argument error: edit scale <prim name> <x> <y> <z>");
+            }
+        }
+
+        /// <summary>
+        /// Force resending of all updates to all clients in active region(s)
+        /// </summary>
+        /// <param name="module"></param>
+        /// <param name="args"></param>
+        private void HandleForceUpdate(string module, string[] args)
+        {
+            MainConsole.Instance.Output("Updating all clients");
+            SceneManager.ForceCurrentSceneClientUpdate();
+        }
+
+        private void HandleRotateScene(string module, string[] args)
+        {
+            string usage = "Usage: rotate scene <angle in degrees> [centerX centerY] (centerX and centerY are optional and default to Constants.RegionSize / 2";
+
+            float centerX = Constants.RegionSize * 0.5f;
+            float centerY = Constants.RegionSize * 0.5f;
+
+            if (args.Length < 3 || args.Length == 4)
+            {
+                MainConsole.Instance.Output(usage);
+                return;
+            }
+
+            float angle = (float)(Convert.ToSingle(args[2]) / 180.0 * Math.PI);
+            OpenMetaverse.Quaternion rot = OpenMetaverse.Quaternion.CreateFromAxisAngle(0, 0, 1, angle);
+
+            if (args.Length > 4)
+            {
+                centerX = Convert.ToSingle(args[3]);
+                centerY = Convert.ToSingle(args[4]);
+            }
+
+            Vector3 center = new Vector3(centerX, centerY, 0.0f);
+
+            SceneManager.ForEachSelectedScene(delegate(Scene scene)
+            {
+                scene.ForEachSOG(delegate(SceneObjectGroup sog)
+                {
+                    if (!sog.IsAttachment)
+                    {
+                        sog.RootPart.UpdateRotation(rot * sog.GroupRotation);
+                        Vector3 offset = sog.AbsolutePosition - center;
+                        offset *= rot;
+                        sog.UpdateGroupPosition(center + offset);
+                    }
+                });
+            });
+        }
+
+        private void HandleScaleScene(string module, string[] args)
+        {
+            string usage = "Usage: scale scene <factor>";
+
+            if (args.Length < 3)
+            {
+                MainConsole.Instance.Output(usage);
+                return;
+            }
+
+            float factor = (float)(Convert.ToSingle(args[2]));
+
+            float minZ = float.MaxValue;
+
+            SceneManager.ForEachSelectedScene(delegate(Scene scene)
+            {
+                scene.ForEachSOG(delegate(SceneObjectGroup sog)
+                {
+                    if (!sog.IsAttachment)
+                    {
+                        if (sog.RootPart.AbsolutePosition.Z < minZ)
+                            minZ = sog.RootPart.AbsolutePosition.Z;
+                    }
+                });
+            });
+
+            SceneManager.ForEachSelectedScene(delegate(Scene scene)
+            {
+                scene.ForEachSOG(delegate(SceneObjectGroup sog)
+                {
+                    if (!sog.IsAttachment)
+                    {
+                        Vector3 tmpRootPos = sog.RootPart.AbsolutePosition;
+                        tmpRootPos.Z -= minZ;
+                        tmpRootPos *= factor;
+                        tmpRootPos.Z += minZ;
+
+                        foreach (SceneObjectPart sop in sog.Parts)
+                        {
+                            if (sop.ParentID != 0)
+                                sop.OffsetPosition *= factor;
+                            sop.Scale *= factor;
+                        }
+
+                        sog.UpdateGroupPosition(tmpRootPos);
+                    }
+                });
+            });
+        }
+
+        private void HandleShowCircuits()
+        {
+            ConsoleDisplayTable cdt = new ConsoleDisplayTable();
+            cdt.AddColumn("Region", 20);
+            cdt.AddColumn("Avatar name", 24);
+            cdt.AddColumn("Type", 5);
+            cdt.AddColumn("Code", 10);
+            cdt.AddColumn("IP", 16);
+            cdt.AddColumn("Viewer Name", 24);
+
+            SceneManager.ForEachScene(
+                s =>
+                {
+                    foreach (AgentCircuitData aCircuit in s.AuthenticateHandler.GetAgentCircuits().Values)
+                        cdt.AddRow(
+                            s.Name,
+                            aCircuit.Name,
+                            aCircuit.child ? "child" : "root",
+                            aCircuit.circuitcode.ToString(),
+                            aCircuit.IPAddress != null ? aCircuit.IPAddress.ToString() : "not set",
+                            Util.GetViewerName(aCircuit));
+                });
+
+            MainConsole.Instance.Output(cdt.ToString());
+        }
+
+        private void HandleShowConnections()
+        {
+            ConsoleDisplayTable cdt = new ConsoleDisplayTable();
+            cdt.AddColumn("Region", 20);
+            cdt.AddColumn("Avatar name", 24);
+            cdt.AddColumn("Circuit code", 12);
+            cdt.AddColumn("Endpoint", 23);
+            cdt.AddColumn("Active?", 7);
+
+            SceneManager.ForEachScene(
+                s => s.ForEachClient(
+                    c => cdt.AddRow(
+                        s.Name,
+                        c.Name,
+                        c.CircuitCode.ToString(),
+                        c.RemoteEndPoint.ToString(),
+                        c.IsActive.ToString())));
+
+            MainConsole.Instance.Output(cdt.ToString());
+        }
+
+        private void HandleTranslateScene(string module, string[] args)
+        {
+            string usage = "Usage: translate scene <xOffset, yOffset, zOffset>";
+
+            if (args.Length < 5)
+            {
+                MainConsole.Instance.Output(usage);
+                return;
+            }
+
+            float xOFfset = (float)Convert.ToSingle(args[2]);
+            float yOffset = (float)Convert.ToSingle(args[3]);
+            float zOffset = (float)Convert.ToSingle(args[4]);
+
+            Vector3 offset = new Vector3(xOFfset, yOffset, zOffset);
+
+            SceneManager.ForEachSelectedScene(delegate(Scene scene)
+            {
+                scene.ForEachSOG(delegate(SceneObjectGroup sog)
+                {
+                    if (!sog.IsAttachment)
+                        sog.UpdateGroupPosition(sog.AbsolutePosition + offset);
+                });
+            });
+        }
+
+        /// <summary>
+        /// Kicks users off the region
+        /// </summary>
+        /// <param name="module"></param>
+        /// <param name="cmdparams">name of avatar to kick</param>
+        private void KickUserCommand(string module, string[] cmdparams)
+        {
+            bool force = false;
+
+            OptionSet options = new OptionSet().Add("f|force", delegate(string v) { force = v != null; });
+
+            List<string> mainParams = options.Parse(cmdparams);
+
+            if (mainParams.Count < 4)
+                return;
+
+            string alert = null;
+            if (mainParams.Count > 4)
+                alert = String.Format("\n{0}\n", String.Join(" ", cmdparams, 4, cmdparams.Length - 4));
+
+            IList agents = SceneManager.GetCurrentSceneAvatars();
+
+            foreach (ScenePresence presence in agents)
+            {
+                RegionInfo regionInfo = presence.Scene.RegionInfo;
+
+                if (presence.Firstname.ToLower().Equals(mainParams[2].ToLower()) &&
+                    presence.Lastname.ToLower().Equals(mainParams[3].ToLower()))
+                {
+                    MainConsole.Instance.Output(
+                        String.Format(
+                            "Kicking user: {0,-16} {1,-16} {2,-37} in region: {3,-16}",
+                            presence.Firstname, presence.Lastname, presence.UUID, regionInfo.RegionName));
+
+                    // kick client...
+                    if (alert != null)
+                        presence.ControllingClient.Kick(alert);
+                    else
+                        presence.ControllingClient.Kick("\nThe OpenSim manager kicked you out.\n");
+
+                    presence.Scene.CloseAgent(presence.UUID, force);
+                    break;
+                }
+            }
+
+            MainConsole.Instance.Output("");
+        }
+        /// <summary>
+        /// Refreshs prompt with the current selection details.
+        /// </summary>
+        private void RefreshPrompt()
+        {
+            string regionName = (SceneManager.CurrentScene == null ? "root" : SceneManager.CurrentScene.RegionInfo.RegionName);
+            MainConsole.Instance.Output(String.Format("Currently selected region is {0}", regionName));
+
+            //            m_log.DebugFormat("Original prompt is {0}", m_consolePrompt);
+            string prompt = m_consolePrompt;
+
+            // Replace "\R" with the region name
+            // Replace "\\" with "\"
+            prompt = m_consolePromptRegex.Replace(prompt, m =>
+            {
+                //                m_log.DebugFormat("Matched {0}", m.Groups[2].Value);
+                if (m.Groups[2].Value == "R")
+                    return m.Groups[1].Value + regionName;
+                else
+                    return m.Groups[0].Value;
+            });
+
+            m_console.DefaultPrompt = prompt;
+            m_console.ConsoleScene = SceneManager.CurrentScene;
+        }
+        #endregion Console Commands
     }
 }

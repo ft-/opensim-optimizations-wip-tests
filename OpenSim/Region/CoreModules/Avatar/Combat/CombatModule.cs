@@ -25,15 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
+using Mono.Addins;
 using Nini.Config;
+using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using OpenMetaverse;
-
-using Mono.Addins;
+using System;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.CoreModules.Avatar.Combat.CombatModule
 {
@@ -52,13 +51,14 @@ namespace OpenSim.Region.CoreModules.Avatar.Combat.CombatModule
         /// </summary>
         private Dictionary<ulong, Scene> m_scenel = new Dictionary<ulong, Scene>();
 
-        /// <summary>
-        /// Startup
-        /// </summary>
-        /// <param name="scene"></param>
-        /// <param name="config"></param>
-        public void Initialise(IConfigSource config)
+        public string Name
         {
+            get { return "CombatModule"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
         }
 
         public void AddRegion(Scene scene)
@@ -79,6 +79,27 @@ namespace OpenSim.Region.CoreModules.Avatar.Combat.CombatModule
             scene.EventManager.OnAvatarEnteringNewParcel += AvatarEnteringParcel;
         }
 
+        public void Close()
+        {
+        }
+
+        /// <summary>
+        /// Startup
+        /// </summary>
+        /// <param name="scene"></param>
+        /// <param name="config"></param>
+        public void Initialise(IConfigSource config)
+        {
+        }
+
+        public void PostInitialise()
+        {
+        }
+
+        public void RegionLoaded(Scene scene)
+        {
+        }
+
         public void RemoveRegion(Scene scene)
         {
             if (m_scenel.ContainsKey(scene.RegionInfo.RegionHandle))
@@ -88,34 +109,39 @@ namespace OpenSim.Region.CoreModules.Avatar.Combat.CombatModule
             scene.EventManager.OnAvatarEnteringNewParcel -= AvatarEnteringParcel;
         }
 
-        public void RegionLoaded(Scene scene)
+        private void AvatarEnteringParcel(ScenePresence avatar, int localLandID, UUID regionID)
         {
-        }
+            try
+            {
+                ILandObject obj = avatar.Scene.LandChannel.GetLandObject(avatar.AbsolutePosition.X, avatar.AbsolutePosition.Y);
 
-        public void PostInitialise()
-        {
-        }
+                if (obj == null)
+                    return;
 
-        public void Close()
-        {
+                if ((obj.LandData.Flags & (uint)ParcelFlags.AllowDamage) != 0
+                    || avatar.Scene.RegionInfo.RegionSettings.AllowDamage)
+                {
+                    avatar.Invulnerable = false;
+                }
+                else
+                {
+                    avatar.Invulnerable = true;
+                    if (avatar.Health < 100.0f)
+                    {
+                        avatar.setHealthWithUpdate(100.0f);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+            }
         }
-
-        public string Name
-        {
-            get { return "CombatModule"; }
-        }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
 
         private void KillAvatar(uint killerObjectLocalID, ScenePresence deadAvatar)
         {
             string deadAvatarMessage;
             ScenePresence killingAvatar = null;
-//            string killingAvatarMessage;
+            //            string killingAvatarMessage;
 
             // check to see if it is an NPC and just remove it
             INPCModule NPCmodule = deadAvatar.Scene.RequestModuleInterface<INPCModule>();
@@ -160,7 +186,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Combat.CombatModule
                 }
                 else
                 {
-//                    killingAvatarMessage = String.Format("You fragged {0}!", deadAvatar.Name);
+                    //                    killingAvatarMessage = String.Format("You fragged {0}!", deadAvatar.Name);
                     deadAvatarMessage = String.Format("You got killed by {0}!", killingAvatar.Name);
                 }
             }
@@ -175,34 +201,6 @@ namespace OpenSim.Region.CoreModules.Avatar.Combat.CombatModule
 
             deadAvatar.setHealthWithUpdate(100.0f);
             deadAvatar.Scene.TeleportClientHome(deadAvatar.UUID, deadAvatar.ControllingClient);
-        }
-
-        private void AvatarEnteringParcel(ScenePresence avatar, int localLandID, UUID regionID)
-        {
-            try
-            {
-                ILandObject obj = avatar.Scene.LandChannel.GetLandObject(avatar.AbsolutePosition.X, avatar.AbsolutePosition.Y);
-
-                if (obj == null)
-                    return;
-
-                if ((obj.LandData.Flags & (uint)ParcelFlags.AllowDamage) != 0
-                    || avatar.Scene.RegionInfo.RegionSettings.AllowDamage)
-                {
-                    avatar.Invulnerable = false;
-                }
-                else
-                {
-                    avatar.Invulnerable = true;
-                    if (avatar.Health < 100.0f)
-                    {
-                        avatar.setHealthWithUpdate(100.0f);
-                    }
-                }
-            }
-            catch (Exception)
-            {
-            }
         }
     }
 }

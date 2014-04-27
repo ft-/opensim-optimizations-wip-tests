@@ -25,196 +25,20 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Net;
 using OpenMetaverse;
+using OpenMetaverse.Messages.Linden;
 using OpenMetaverse.Packets;
 using OpenMetaverse.StructuredData;
-using OpenMetaverse.Messages.Linden;
+using System;
+using System.Net;
 
 namespace OpenSim.Region.ClientStack.Linden
 {
     public class EventQueueHelper
     {
-        private EventQueueHelper() {} // no construction possible, it's an utility class
-
-        private static byte[] ulongToByteArray(ulong uLongValue)
+        private EventQueueHelper()
         {
-            // Reverse endianness of RegionHandle
-            return new byte[]
-            {
-                (byte)((uLongValue >> 56) % 256),
-                (byte)((uLongValue >> 48) % 256),
-                (byte)((uLongValue >> 40) % 256),
-                (byte)((uLongValue >> 32) % 256),
-                (byte)((uLongValue >> 24) % 256),
-                (byte)((uLongValue >> 16) % 256),
-                (byte)((uLongValue >> 8) % 256),
-                (byte)(uLongValue % 256)
-            };
-        }
-
-//        private static byte[] uintToByteArray(uint uIntValue)
-//        {
-//            byte[] result = new byte[4];
-//            Utils.UIntToBytesBig(uIntValue, result, 0);
-//            return result;
-//        }
-
-        public static OSD BuildEvent(string eventName, OSD eventBody)
-        {
-            OSDMap llsdEvent = new OSDMap(2);
-            llsdEvent.Add("message", new OSDString(eventName));
-            llsdEvent.Add("body", eventBody);
-
-            return llsdEvent;
-        }
-
-        public static OSD EnableSimulator(ulong handle, IPEndPoint endPoint, int regionSizeX, int regionSizeY)
-        {
-            OSDMap llsdSimInfo = new OSDMap(5);
-
-            llsdSimInfo.Add("Handle", new OSDBinary(ulongToByteArray(handle)));
-            llsdSimInfo.Add("IP", new OSDBinary(endPoint.Address.GetAddressBytes()));
-            llsdSimInfo.Add("Port", new OSDInteger(endPoint.Port));
-            llsdSimInfo.Add("RegionSizeX", OSD.FromUInteger((uint) regionSizeX));
-            llsdSimInfo.Add("RegionSizeY", OSD.FromUInteger((uint) regionSizeY));
-
-            OSDArray arr = new OSDArray(1);
-            arr.Add(llsdSimInfo);
-
-            OSDMap llsdBody = new OSDMap(1);
-            llsdBody.Add("SimulatorInfo", arr);
-
-            return BuildEvent("EnableSimulator", llsdBody);
-        }
-
-        public static OSD DisableSimulator(ulong handle)
-        {
-            //OSDMap llsdSimInfo = new OSDMap(1);
-
-            //llsdSimInfo.Add("Handle", new OSDBinary(regionHandleToByteArray(handle)));
-
-            //OSDArray arr = new OSDArray(1);
-            //arr.Add(llsdSimInfo);
-
-            OSDMap llsdBody = new OSDMap(0);
-            //llsdBody.Add("SimulatorInfo", arr);
-
-            return BuildEvent("DisableSimulator", llsdBody);
-        }
-        
-        public static OSD CrossRegion(ulong handle, Vector3 pos, Vector3 lookAt,
-                                      IPEndPoint newRegionExternalEndPoint,
-                                      string capsURL, UUID agentID, UUID sessionID,
-                                      int regionSizeX, int regionSizeY)
-        {
-            OSDArray lookAtArr = new OSDArray(3);
-            lookAtArr.Add(OSD.FromReal(lookAt.X));
-            lookAtArr.Add(OSD.FromReal(lookAt.Y));
-            lookAtArr.Add(OSD.FromReal(lookAt.Z));
-
-            OSDArray positionArr = new OSDArray(3);
-            positionArr.Add(OSD.FromReal(pos.X));
-            positionArr.Add(OSD.FromReal(pos.Y));
-            positionArr.Add(OSD.FromReal(pos.Z));
-
-            OSDMap infoMap = new OSDMap(2);
-            infoMap.Add("LookAt", lookAtArr);
-            infoMap.Add("Position", positionArr);
-
-            OSDArray infoArr = new OSDArray(1);
-            infoArr.Add(infoMap);
-
-            OSDMap agentDataMap = new OSDMap(2);
-            agentDataMap.Add("AgentID", OSD.FromUUID(agentID));
-            agentDataMap.Add("SessionID",  OSD.FromUUID(sessionID));
-
-            OSDArray agentDataArr = new OSDArray(1);
-            agentDataArr.Add(agentDataMap);
-
-            OSDMap regionDataMap = new OSDMap(6);
-            regionDataMap.Add("RegionHandle", OSD.FromBinary(ulongToByteArray(handle)));
-            regionDataMap.Add("SeedCapability", OSD.FromString(capsURL));
-            regionDataMap.Add("SimIP", OSD.FromBinary(newRegionExternalEndPoint.Address.GetAddressBytes()));
-            regionDataMap.Add("SimPort", OSD.FromInteger(newRegionExternalEndPoint.Port));
-            regionDataMap.Add("RegionSizeX", OSD.FromUInteger((uint)regionSizeX));
-            regionDataMap.Add("RegionSizeY", OSD.FromUInteger((uint)regionSizeY));
-
-            OSDArray regionDataArr = new OSDArray(1);
-            regionDataArr.Add(regionDataMap);
-
-            OSDMap llsdBody = new OSDMap(3);
-            llsdBody.Add("Info", infoArr);
-            llsdBody.Add("AgentData", agentDataArr);
-            llsdBody.Add("RegionData", regionDataArr);
-
-            return BuildEvent("CrossedRegion", llsdBody);
-        }
-
-        public static OSD TeleportFinishEvent(
-                        ulong regionHandle, byte simAccess, IPEndPoint regionExternalEndPoint,
-                        uint locationID, uint flags, string capsURL, UUID agentID,
-                        int regionSizeX, int regionSizeY)
-        {
-            OSDMap info = new OSDMap();
-            info.Add("AgentID", OSD.FromUUID(agentID));
-            info.Add("LocationID", OSD.FromInteger(4)); // TODO what is this?
-            info.Add("RegionHandle", OSD.FromBinary(ulongToByteArray(regionHandle)));
-            info.Add("SeedCapability", OSD.FromString(capsURL));
-            info.Add("SimAccess", OSD.FromInteger(simAccess));
-            info.Add("SimIP", OSD.FromBinary(regionExternalEndPoint.Address.GetAddressBytes()));
-            info.Add("SimPort", OSD.FromInteger(regionExternalEndPoint.Port));
-            info.Add("TeleportFlags", OSD.FromULong(1L << 4)); // AgentManager.TeleportFlags.ViaLocation
-            info.Add("RegionSizeX", OSD.FromUInteger((uint)regionSizeX));
-            info.Add("RegionSizeY", OSD.FromUInteger((uint)regionSizeY));
-
-            OSDArray infoArr = new OSDArray();
-            infoArr.Add(info);
-
-            OSDMap body = new OSDMap();
-            body.Add("Info", infoArr);
-
-            return BuildEvent("TeleportFinish", body);
-        }
-
-        public static OSD ScriptRunningReplyEvent(UUID objectID, UUID itemID, bool running, bool mono)
-        {
-            OSDMap script = new OSDMap();
-            script.Add("ObjectID", OSD.FromUUID(objectID));
-            script.Add("ItemID", OSD.FromUUID(itemID));
-            script.Add("Running", OSD.FromBoolean(running));
-            script.Add("Mono", OSD.FromBoolean(mono));
-            
-            OSDArray scriptArr = new OSDArray();
-            scriptArr.Add(script);
-            
-            OSDMap body = new OSDMap();
-            body.Add("Script", scriptArr);
-            
-            return BuildEvent("ScriptRunningReply", body);
-        }
-
-        public static OSD EstablishAgentCommunication(UUID agentID, string simIpAndPort, string seedcap,
-                                    ulong regionHandle, int regionSizeX, int regionSizeY)
-        {
-            OSDMap body = new OSDMap(6)
-                              {
-                                  {"agent-id", new OSDUUID(agentID)},
-                                  {"sim-ip-and-port", new OSDString(simIpAndPort)},
-                                  {"seed-capability", new OSDString(seedcap)},
-                                  {"region-handle", OSD.FromULong(regionHandle)},
-                                  {"region-size-x", OSD.FromInteger(regionSizeX)},
-                                  {"region-size-y", OSD.FromInteger(regionSizeY)}
-                              };
-
-            return BuildEvent("EstablishAgentCommunication", body);
-        }
-
-        public static OSD KeepAliveEvent()
-        {
-            return BuildEvent("FAKEEVENT", new OSDMap());
-        }
+        } // no construction possible, it's an utility class
 
         public static OSD AgentParams(UUID agentID, bool checkEstate, int godLevel, bool limitedToEstate)
         {
@@ -228,54 +52,14 @@ namespace OpenSim.Region.ClientStack.Linden
             return body;
         }
 
-        public static OSD InstantMessageParams(UUID fromAgent, string message, UUID toAgent,
-            string fromName, byte dialog, uint timeStamp, bool offline, int parentEstateID,
-            Vector3 position, uint ttl, UUID transactionID, bool fromGroup, byte[] binaryBucket)
+        public static OSD BuildEvent(string eventName, OSD eventBody)
         {
-            OSDMap messageParams = new OSDMap(15);
-            messageParams.Add("type", new OSDInteger((int)dialog));
-            
-            OSDArray positionArray = new OSDArray(3);
-            positionArray.Add(OSD.FromReal(position.X));
-            positionArray.Add(OSD.FromReal(position.Y));
-            positionArray.Add(OSD.FromReal(position.Z));
-            messageParams.Add("position", positionArray);
+            OSDMap llsdEvent = new OSDMap(2);
+            llsdEvent.Add("message", new OSDString(eventName));
+            llsdEvent.Add("body", eventBody);
 
-            messageParams.Add("region_id", new OSDUUID(UUID.Zero));
-            messageParams.Add("to_id", new OSDUUID(toAgent));
-            messageParams.Add("source", new OSDInteger(0));
-
-            OSDMap data = new OSDMap(1);
-            data.Add("binary_bucket", OSD.FromBinary(binaryBucket));
-            messageParams.Add("data", data);
-            messageParams.Add("message", new OSDString(message));
-            messageParams.Add("id", new OSDUUID(transactionID));
-            messageParams.Add("from_name", new OSDString(fromName));
-            messageParams.Add("timestamp", new OSDInteger((int)timeStamp));
-            messageParams.Add("offline", new OSDInteger(offline ? 1 : 0));
-            messageParams.Add("parent_estate_id", new OSDInteger(parentEstateID));
-            messageParams.Add("ttl", new OSDInteger((int)ttl));
-            messageParams.Add("from_id", new OSDUUID(fromAgent));
-            messageParams.Add("from_group", new OSDInteger(fromGroup ? 1 : 0));
-
-            return messageParams;
+            return llsdEvent;
         }
-
-        public static OSD InstantMessage(UUID fromAgent, string message, UUID toAgent,
-            string fromName, byte dialog, uint timeStamp, bool offline, int parentEstateID,
-            Vector3 position, uint ttl, UUID transactionID, bool fromGroup, byte[] binaryBucket,
-            bool checkEstate, int godLevel, bool limitedToEstate)
-        {
-            OSDMap im = new OSDMap(2);
-            im.Add("message_params", InstantMessageParams(fromAgent, message, toAgent,
-            fromName, dialog, timeStamp, offline, parentEstateID,
-            position, ttl, transactionID, fromGroup, binaryBucket));
-
-            im.Add("agent_params", AgentParams(fromAgent, checkEstate, godLevel, limitedToEstate));
-
-            return im;
-        }
-
 
         public static OSD ChatterboxInvitation(UUID sessionID, string sessionName,
             UUID fromAgent, string message, UUID toAgent, string fromName, byte dialog,
@@ -324,6 +108,110 @@ namespace OpenSim.Region.ClientStack.Linden
             return chatterBoxSessionAgentListUpdates;
         }
 
+        public static OSD CrossRegion(ulong handle, Vector3 pos, Vector3 lookAt,
+                                      IPEndPoint newRegionExternalEndPoint,
+                                      string capsURL, UUID agentID, UUID sessionID,
+                                      int regionSizeX, int regionSizeY)
+        {
+            OSDArray lookAtArr = new OSDArray(3);
+            lookAtArr.Add(OSD.FromReal(lookAt.X));
+            lookAtArr.Add(OSD.FromReal(lookAt.Y));
+            lookAtArr.Add(OSD.FromReal(lookAt.Z));
+
+            OSDArray positionArr = new OSDArray(3);
+            positionArr.Add(OSD.FromReal(pos.X));
+            positionArr.Add(OSD.FromReal(pos.Y));
+            positionArr.Add(OSD.FromReal(pos.Z));
+
+            OSDMap infoMap = new OSDMap(2);
+            infoMap.Add("LookAt", lookAtArr);
+            infoMap.Add("Position", positionArr);
+
+            OSDArray infoArr = new OSDArray(1);
+            infoArr.Add(infoMap);
+
+            OSDMap agentDataMap = new OSDMap(2);
+            agentDataMap.Add("AgentID", OSD.FromUUID(agentID));
+            agentDataMap.Add("SessionID", OSD.FromUUID(sessionID));
+
+            OSDArray agentDataArr = new OSDArray(1);
+            agentDataArr.Add(agentDataMap);
+
+            OSDMap regionDataMap = new OSDMap(6);
+            regionDataMap.Add("RegionHandle", OSD.FromBinary(ulongToByteArray(handle)));
+            regionDataMap.Add("SeedCapability", OSD.FromString(capsURL));
+            regionDataMap.Add("SimIP", OSD.FromBinary(newRegionExternalEndPoint.Address.GetAddressBytes()));
+            regionDataMap.Add("SimPort", OSD.FromInteger(newRegionExternalEndPoint.Port));
+            regionDataMap.Add("RegionSizeX", OSD.FromUInteger((uint)regionSizeX));
+            regionDataMap.Add("RegionSizeY", OSD.FromUInteger((uint)regionSizeY));
+
+            OSDArray regionDataArr = new OSDArray(1);
+            regionDataArr.Add(regionDataMap);
+
+            OSDMap llsdBody = new OSDMap(3);
+            llsdBody.Add("Info", infoArr);
+            llsdBody.Add("AgentData", agentDataArr);
+            llsdBody.Add("RegionData", regionDataArr);
+
+            return BuildEvent("CrossedRegion", llsdBody);
+        }
+
+        public static OSD DisableSimulator(ulong handle)
+        {
+            //OSDMap llsdSimInfo = new OSDMap(1);
+
+            //llsdSimInfo.Add("Handle", new OSDBinary(regionHandleToByteArray(handle)));
+
+            //OSDArray arr = new OSDArray(1);
+            //arr.Add(llsdSimInfo);
+
+            OSDMap llsdBody = new OSDMap(0);
+            //llsdBody.Add("SimulatorInfo", arr);
+
+            return BuildEvent("DisableSimulator", llsdBody);
+        }
+
+        //        private static byte[] uintToByteArray(uint uIntValue)
+        //        {
+        //            byte[] result = new byte[4];
+        //            Utils.UIntToBytesBig(uIntValue, result, 0);
+        //            return result;
+        //        }
+        public static OSD EnableSimulator(ulong handle, IPEndPoint endPoint, int regionSizeX, int regionSizeY)
+        {
+            OSDMap llsdSimInfo = new OSDMap(5);
+
+            llsdSimInfo.Add("Handle", new OSDBinary(ulongToByteArray(handle)));
+            llsdSimInfo.Add("IP", new OSDBinary(endPoint.Address.GetAddressBytes()));
+            llsdSimInfo.Add("Port", new OSDInteger(endPoint.Port));
+            llsdSimInfo.Add("RegionSizeX", OSD.FromUInteger((uint)regionSizeX));
+            llsdSimInfo.Add("RegionSizeY", OSD.FromUInteger((uint)regionSizeY));
+
+            OSDArray arr = new OSDArray(1);
+            arr.Add(llsdSimInfo);
+
+            OSDMap llsdBody = new OSDMap(1);
+            llsdBody.Add("SimulatorInfo", arr);
+
+            return BuildEvent("EnableSimulator", llsdBody);
+        }
+
+        public static OSD EstablishAgentCommunication(UUID agentID, string simIpAndPort, string seedcap,
+                                    ulong regionHandle, int regionSizeX, int regionSizeY)
+        {
+            OSDMap body = new OSDMap(6)
+                              {
+                                  {"agent-id", new OSDUUID(agentID)},
+                                  {"sim-ip-and-port", new OSDString(simIpAndPort)},
+                                  {"seed-capability", new OSDString(seedcap)},
+                                  {"region-handle", OSD.FromULong(regionHandle)},
+                                  {"region-size-x", OSD.FromInteger(regionSizeX)},
+                                  {"region-size-y", OSD.FromInteger(regionSizeY)}
+                              };
+
+            return BuildEvent("EstablishAgentCommunication", body);
+        }
+
         public static OSD GroupMembership(AgentGroupDataUpdatePacket groupUpdatePacket)
         {
             OSDMap groupUpdate = new OSDMap();
@@ -350,14 +238,95 @@ namespace OpenSim.Region.ClientStack.Linden
                 groupDataMap.Add("AcceptNotices", OSD.FromBoolean(groupDataBlock.AcceptNotices));
 
                 groupData.Add(groupDataMap);
-
             }
             body.Add("GroupData", groupData);
             groupUpdate.Add("body", body);
 
             return groupUpdate;
         }
-        
+
+        public static OSD InstantMessage(UUID fromAgent, string message, UUID toAgent,
+            string fromName, byte dialog, uint timeStamp, bool offline, int parentEstateID,
+            Vector3 position, uint ttl, UUID transactionID, bool fromGroup, byte[] binaryBucket,
+            bool checkEstate, int godLevel, bool limitedToEstate)
+        {
+            OSDMap im = new OSDMap(2);
+            im.Add("message_params", InstantMessageParams(fromAgent, message, toAgent,
+            fromName, dialog, timeStamp, offline, parentEstateID,
+            position, ttl, transactionID, fromGroup, binaryBucket));
+
+            im.Add("agent_params", AgentParams(fromAgent, checkEstate, godLevel, limitedToEstate));
+
+            return im;
+        }
+
+        public static OSD InstantMessageParams(UUID fromAgent, string message, UUID toAgent,
+            string fromName, byte dialog, uint timeStamp, bool offline, int parentEstateID,
+            Vector3 position, uint ttl, UUID transactionID, bool fromGroup, byte[] binaryBucket)
+        {
+            OSDMap messageParams = new OSDMap(15);
+            messageParams.Add("type", new OSDInteger((int)dialog));
+
+            OSDArray positionArray = new OSDArray(3);
+            positionArray.Add(OSD.FromReal(position.X));
+            positionArray.Add(OSD.FromReal(position.Y));
+            positionArray.Add(OSD.FromReal(position.Z));
+            messageParams.Add("position", positionArray);
+
+            messageParams.Add("region_id", new OSDUUID(UUID.Zero));
+            messageParams.Add("to_id", new OSDUUID(toAgent));
+            messageParams.Add("source", new OSDInteger(0));
+
+            OSDMap data = new OSDMap(1);
+            data.Add("binary_bucket", OSD.FromBinary(binaryBucket));
+            messageParams.Add("data", data);
+            messageParams.Add("message", new OSDString(message));
+            messageParams.Add("id", new OSDUUID(transactionID));
+            messageParams.Add("from_name", new OSDString(fromName));
+            messageParams.Add("timestamp", new OSDInteger((int)timeStamp));
+            messageParams.Add("offline", new OSDInteger(offline ? 1 : 0));
+            messageParams.Add("parent_estate_id", new OSDInteger(parentEstateID));
+            messageParams.Add("ttl", new OSDInteger((int)ttl));
+            messageParams.Add("from_id", new OSDUUID(fromAgent));
+            messageParams.Add("from_group", new OSDInteger(fromGroup ? 1 : 0));
+
+            return messageParams;
+        }
+
+        public static OSD KeepAliveEvent()
+        {
+            return BuildEvent("FAKEEVENT", new OSDMap());
+        }
+
+        public static OSD ParcelProperties(ParcelPropertiesMessage parcelPropertiesMessage)
+        {
+            OSDMap message = new OSDMap();
+            message.Add("message", OSD.FromString("ParcelProperties"));
+            OSD message_body = parcelPropertiesMessage.Serialize();
+            message.Add("body", message_body);
+            return message;
+        }
+
+        public static OSD partPhysicsProperties(uint localID, byte physhapetype,
+                        float density, float friction, float bounce, float gravmod)
+        {
+            OSDMap physinfo = new OSDMap(6);
+            physinfo["LocalID"] = localID;
+            physinfo["Density"] = density;
+            physinfo["Friction"] = friction;
+            physinfo["GravityMultiplier"] = gravmod;
+            physinfo["Restitution"] = bounce;
+            physinfo["PhysicsShapeType"] = (int)physhapetype;
+
+            OSDArray array = new OSDArray(1);
+            array.Add(physinfo);
+
+            OSDMap llsdBody = new OSDMap(1);
+            llsdBody.Add("ObjectData", array);
+
+            return BuildEvent("ObjectPhysicsProperties", llsdBody);
+        }
+
         public static OSD PlacesQuery(PlacesReplyPacket PlacesReply)
         {
             OSDMap placesReply = new OSDMap();
@@ -391,7 +360,7 @@ namespace OpenSim.Region.ClientStack.Linden
                 QueryDataMap.Add("SnapShotID", OSD.FromUUID(groupDataBlock.SnapshotID));
                 QueryDataMap.Add("ProductSku", OSD.FromInteger(0));
                 QueryDataMap.Add("Price", OSD.FromInteger(groupDataBlock.Price));
-                
+
                 QueryData.Add(QueryDataMap);
             }
             body.Add("QueryData", QueryData);
@@ -400,34 +369,63 @@ namespace OpenSim.Region.ClientStack.Linden
             return placesReply;
         }
 
-        public static OSD ParcelProperties(ParcelPropertiesMessage parcelPropertiesMessage)
+        public static OSD ScriptRunningReplyEvent(UUID objectID, UUID itemID, bool running, bool mono)
         {
-            OSDMap message = new OSDMap();
-            message.Add("message", OSD.FromString("ParcelProperties"));
-            OSD message_body = parcelPropertiesMessage.Serialize();
-            message.Add("body", message_body);
-            return message;
+            OSDMap script = new OSDMap();
+            script.Add("ObjectID", OSD.FromUUID(objectID));
+            script.Add("ItemID", OSD.FromUUID(itemID));
+            script.Add("Running", OSD.FromBoolean(running));
+            script.Add("Mono", OSD.FromBoolean(mono));
+
+            OSDArray scriptArr = new OSDArray();
+            scriptArr.Add(script);
+
+            OSDMap body = new OSDMap();
+            body.Add("Script", scriptArr);
+
+            return BuildEvent("ScriptRunningReply", body);
         }
 
-        public static OSD partPhysicsProperties(uint localID, byte physhapetype,
-                        float density, float friction, float bounce, float gravmod)
+        public static OSD TeleportFinishEvent(
+                        ulong regionHandle, byte simAccess, IPEndPoint regionExternalEndPoint,
+                        uint locationID, uint flags, string capsURL, UUID agentID,
+                        int regionSizeX, int regionSizeY)
         {
+            OSDMap info = new OSDMap();
+            info.Add("AgentID", OSD.FromUUID(agentID));
+            info.Add("LocationID", OSD.FromInteger(4)); // TODO what is this?
+            info.Add("RegionHandle", OSD.FromBinary(ulongToByteArray(regionHandle)));
+            info.Add("SeedCapability", OSD.FromString(capsURL));
+            info.Add("SimAccess", OSD.FromInteger(simAccess));
+            info.Add("SimIP", OSD.FromBinary(regionExternalEndPoint.Address.GetAddressBytes()));
+            info.Add("SimPort", OSD.FromInteger(regionExternalEndPoint.Port));
+            info.Add("TeleportFlags", OSD.FromULong(1L << 4)); // AgentManager.TeleportFlags.ViaLocation
+            info.Add("RegionSizeX", OSD.FromUInteger((uint)regionSizeX));
+            info.Add("RegionSizeY", OSD.FromUInteger((uint)regionSizeY));
 
-            OSDMap physinfo = new OSDMap(6);
-            physinfo["LocalID"] = localID;
-            physinfo["Density"] = density;
-            physinfo["Friction"] = friction;
-            physinfo["GravityMultiplier"] = gravmod;
-            physinfo["Restitution"] = bounce;
-            physinfo["PhysicsShapeType"] = (int)physhapetype;
+            OSDArray infoArr = new OSDArray();
+            infoArr.Add(info);
 
-            OSDArray array = new OSDArray(1);
-            array.Add(physinfo);
+            OSDMap body = new OSDMap();
+            body.Add("Info", infoArr);
 
-            OSDMap llsdBody = new OSDMap(1);
-            llsdBody.Add("ObjectData", array);
+            return BuildEvent("TeleportFinish", body);
+        }
 
-            return BuildEvent("ObjectPhysicsProperties", llsdBody);
+        private static byte[] ulongToByteArray(ulong uLongValue)
+        {
+            // Reverse endianness of RegionHandle
+            return new byte[]
+            {
+                (byte)((uLongValue >> 56) % 256),
+                (byte)((uLongValue >> 48) % 256),
+                (byte)((uLongValue >> 40) % 256),
+                (byte)((uLongValue >> 32) % 256),
+                (byte)((uLongValue >> 24) % 256),
+                (byte)((uLongValue >> 16) % 256),
+                (byte)((uLongValue >> 8) % 256),
+                (byte)(uLongValue % 256)
+            };
         }
     }
 }

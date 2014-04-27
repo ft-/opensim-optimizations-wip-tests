@@ -25,7 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
 
 namespace OpenSim.Framework
@@ -38,23 +37,6 @@ namespace OpenSim.Framework
     /// </remarks>
     public interface ISceneAgent : ISceneEntity
     {
-        /// <value>
-        /// The client controlling this presence
-        /// </value>
-        IClientAPI ControllingClient { get; }
-
-        /// <summary>
-        /// What type of presence is this?  User, NPC, etc.
-        /// </summary>
-        PresenceType PresenceType { get; }
-
-        /// <summary>
-        /// If true, then the agent has no avatar in the scene.
-        /// The agent exists to relay data from a region that neighbours the current position of the user's avatar.
-        /// Occasionally data is relayed, such as which a user clicks an item in a neighbouring region.
-        /// </summary>
-        bool IsChildAgent { get; }
-
         /// <summary>
         /// Avatar appearance data.
         /// </summary>
@@ -65,6 +47,28 @@ namespace OpenSim.Framework
         /// </remarks>
         AvatarAppearance Appearance { get; set; }
 
+        /// <value>
+        /// The client controlling this presence
+        /// </value>
+        IClientAPI ControllingClient { get; }
+
+        /// <summary>
+        /// If true, then the agent has no avatar in the scene.
+        /// The agent exists to relay data from a region that neighbours the current position of the user's avatar.
+        /// Occasionally data is relayed, such as which a user clicks an item in a neighbouring region.
+        /// </summary>
+        bool IsChildAgent { get; }
+
+        /// <summary>
+        /// Direction in which the scene presence is looking.
+        /// </summary>
+        /// <remarks>Will be Vector3.Zero for a child agent.</remarks>
+        Vector3 Lookat { get; }
+
+        /// <summary>
+        /// What type of presence is this?  User, NPC, etc.
+        /// </summary>
+        PresenceType PresenceType { get; }
         /// <summary>
         /// Send initial scene data to the client controlling this agent
         /// </summary>
@@ -72,11 +76,5 @@ namespace OpenSim.Framework
         /// This includes scene object data and the appearance data of other avatars.
         /// </remarks>
         void SendInitialDataToMe();
-
-        /// <summary>
-        /// Direction in which the scene presence is looking.
-        /// </summary>
-        /// <remarks>Will be Vector3.Zero for a child agent.</remarks>
-        Vector3 Lookat { get; }        
     }
 }

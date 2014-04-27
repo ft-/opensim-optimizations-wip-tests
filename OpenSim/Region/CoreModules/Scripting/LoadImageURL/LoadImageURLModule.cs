@@ -25,19 +25,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Mono.Addins;
+using Nini.Config;
+using OpenMetaverse;
+using OpenMetaverse.Imaging;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
 using System;
 using System.Drawing;
 using System.IO;
 using System.Net;
-using Nini.Config;
-using OpenMetaverse;
-using OpenMetaverse.Imaging;
-using OpenSim.Region.CoreModules.Scripting.DynamicTexture;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
-using log4net;
 using System.Reflection;
-using Mono.Addins;
 
 namespace OpenSim.Region.CoreModules.Scripting.LoadImageURL
 {
@@ -47,43 +46,15 @@ namespace OpenSim.Region.CoreModules.Scripting.LoadImageURL
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private string m_name = "LoadImageURL";
+        private string m_proxyexcepts = "";
+        private string m_proxyurl = "";
         private Scene m_scene;
         private IDynamicTextureManager m_textureManager;
-
-        private string m_proxyurl = "";
-        private string m_proxyexcepts = "";
-
         #region IDynamicTextureRender Members
 
-        public string GetName()
+        public bool AsyncConvertData(UUID id, string bodyData, string extraParams)
         {
-            return m_name;
-        }
-
-        public string GetContentType()
-        {
-            return ("image");
-        }
-
-        public bool SupportsAsynchronous()
-        {
-            return true;
-        }
-
-//        public bool AlwaysIdenticalConversion(string bodyData, string extraParams)
-//        {
-//            // We don't support conversion of body data.
-//            return false;
-//        }
-
-        public IDynamicTexture ConvertUrl(string url, string extraParams)
-        {
-            return null;
-        }
-
-        public IDynamicTexture ConvertData(string bodyData, string extraParams)
-        {
-            return null;
+            return false;
         }
 
         public bool AsyncConvertUrl(UUID id, string url, string extraParams)
@@ -92,21 +63,64 @@ namespace OpenSim.Region.CoreModules.Scripting.LoadImageURL
             return true;
         }
 
-        public bool AsyncConvertData(UUID id, string bodyData, string extraParams)
+        public IDynamicTexture ConvertData(string bodyData, string extraParams)
         {
-            return false;
+            return null;
         }
 
-        public void GetDrawStringSize(string text, string fontName, int fontSize, 
+        public IDynamicTexture ConvertUrl(string url, string extraParams)
+        {
+            return null;
+        }
+
+        public string GetContentType()
+        {
+            return ("image");
+        }
+
+        //        public bool AlwaysIdenticalConversion(string bodyData, string extraParams)
+        //        {
+        //            // We don't support conversion of body data.
+        //            return false;
+        //        }
+        public void GetDrawStringSize(string text, string fontName, int fontSize,
                                       out double xSize, out double ySize)
         {
             xSize = 0;
             ySize = 0;
         }
 
-        #endregion
+        public string GetName()
+        {
+            return m_name;
+        }
+        public bool SupportsAsynchronous()
+        {
+            return true;
+        }
+        #endregion IDynamicTextureRender Members
 
         #region ISharedRegionModule Members
+
+        public string Name
+        {
+            get { return m_name; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
+        public void AddRegion(Scene scene)
+        {
+            if (m_scene == null)
+                m_scene = scene;
+        }
+
+        public void Close()
+        {
+        }
 
         public void Initialise(IConfigSource config)
         {
@@ -117,18 +131,6 @@ namespace OpenSim.Region.CoreModules.Scripting.LoadImageURL
         public void PostInitialise()
         {
         }
-
-        public void AddRegion(Scene scene)
-        {
-            if (m_scene == null)
-                m_scene = scene;
-            
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-        }
-
         public void RegionLoaded(Scene scene)
         {
             if (m_textureManager == null && m_scene == scene)
@@ -141,46 +143,10 @@ namespace OpenSim.Region.CoreModules.Scripting.LoadImageURL
             }
         }
 
-        public void Close()
+        public void RemoveRegion(Scene scene)
         {
         }
-
-        public string Name
-        {
-            get { return m_name; }
-        }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
-        #endregion
-
-        private void MakeHttpRequest(string url, UUID requestID)
-        {
-            WebRequest request = HttpWebRequest.Create(url);
-            
-            if (!string.IsNullOrEmpty(m_proxyurl)) 
-            {
-                if (!string.IsNullOrEmpty(m_proxyexcepts)) 
-                {
-                    string[] elist = m_proxyexcepts.Split(';');
-                    request.Proxy = new WebProxy(m_proxyurl, true, elist);
-                } 
-                else 
-                {
-                    request.Proxy = new WebProxy(m_proxyurl, true);
-                }
-            }
-
-            RequestState state = new RequestState((HttpWebRequest) request, requestID);
-            // IAsyncResult result = request.BeginGetResponse(new AsyncCallback(HttpRequestReturn), state);
-            request.BeginGetResponse(new AsyncCallback(HttpRequestReturn), state);
-
-            TimeSpan t = (DateTime.UtcNow - new DateTime(1970, 1, 1));
-            state.TimeOfRequest = (int) t.TotalSeconds;
-        }
+        #endregion ISharedRegionModule Members
 
         private void HttpRequestReturn(IAsyncResult result)
         {
@@ -190,8 +156,8 @@ namespace OpenSim.Region.CoreModules.Scripting.LoadImageURL
                 return;
             }
 
-            RequestState state = (RequestState) result.AsyncState;
-            WebRequest request = (WebRequest) state.Request;
+            RequestState state = (RequestState)result.AsyncState;
+            WebRequest request = (WebRequest)state.Request;
             Stream stream = null;
             byte[] imageJ2000 = new byte[0];
             Size newSize = new Size(0, 0);
@@ -244,7 +210,7 @@ namespace OpenSim.Region.CoreModules.Scripting.LoadImageURL
                             {
                                 imageJ2000 = OpenJPEG.EncodeFromImage(resize, true);
                             }
-                        } 
+                        }
                         catch (Exception)
                         {
                             m_log.Error("[LOADIMAGEURLMODULE]: OpenJpeg Conversion Failed.  Empty byte data returned!");
@@ -276,6 +242,30 @@ namespace OpenSim.Region.CoreModules.Scripting.LoadImageURL
                     request.RequestUri, null, imageJ2000, newSize, false));
         }
 
+        private void MakeHttpRequest(string url, UUID requestID)
+        {
+            WebRequest request = HttpWebRequest.Create(url);
+
+            if (!string.IsNullOrEmpty(m_proxyurl))
+            {
+                if (!string.IsNullOrEmpty(m_proxyexcepts))
+                {
+                    string[] elist = m_proxyexcepts.Split(';');
+                    request.Proxy = new WebProxy(m_proxyurl, true, elist);
+                }
+                else
+                {
+                    request.Proxy = new WebProxy(m_proxyurl, true);
+                }
+            }
+
+            RequestState state = new RequestState((HttpWebRequest)request, requestID);
+            // IAsyncResult result = request.BeginGetResponse(new AsyncCallback(HttpRequestReturn), state);
+            request.BeginGetResponse(new AsyncCallback(HttpRequestReturn), state);
+
+            TimeSpan t = (DateTime.UtcNow - new DateTime(1970, 1, 1));
+            state.TimeOfRequest = (int)t.TotalSeconds;
+        }
         #region Nested type: RequestState
 
         public class RequestState
@@ -291,6 +281,6 @@ namespace OpenSim.Region.CoreModules.Scripting.LoadImageURL
             }
         }
 
-        #endregion
+        #endregion Nested type: RequestState
     }
 }

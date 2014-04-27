@@ -25,18 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse.StructuredData;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using System.Text;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
-using log4net;
-using OpenMetaverse;
-using OpenMetaverse.StructuredData;
 
 namespace OpenSim.Framework
 {
@@ -52,75 +46,50 @@ namespace OpenSim.Framework
     /// </remarks>
     public class DAMap : IXmlSerializable
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private static readonly int MIN_NAMESPACE_LENGTH = 4;
 
         private OSDMap m_map = new OSDMap();
+
+        /// <summary>
+        /// Get the number of namespaces
+        /// </summary>
+        public int CountNamespaces { get { lock (this) { return m_map.Count; } } }
+
+        /// <summary>
+        /// Get the number of stores.
+        /// </summary>
+        public int CountStores
+        {
+            get
+            {
+                int count = 0;
+
+                lock (this)
+                {
+                    foreach (OSD osdNamespace in m_map)
+                    {
+                        count += ((OSDMap)osdNamespace).Count;
+                    }
+                }
+
+                return count;
+            }
+        }
 
         // WARNING: this is temporary for experimentation only, it will be removed!!!!
         public OSDMap TopLevelMap
         {
             get { return m_map; }
             set { m_map = value; }
-        }        
-        
-        public XmlSchema GetSchema() { return null; } 
+        }
 
         public static DAMap FromXml(string rawXml)
         {
             DAMap map = new DAMap();
             map.ReadXml(rawXml);
             return map;
-        }
-       
-        public void ReadXml(XmlReader reader)
-        { 
-            ReadXml(reader.ReadInnerXml());            
-        }
-
-        public void ReadXml(string rawXml)
-        {            
-            // System.Console.WriteLine("Trying to deserialize [{0}]", rawXml);
-            
-            lock (this)
-            {
-                m_map = (OSDMap)OSDParser.DeserializeLLSDXml(rawXml);         
-                SanitiseMap(this);
-            }
-        }
-
-        public void WriteXml(XmlWriter writer)
-        {
-            writer.WriteRaw(ToXml());
-        }
-
-        public string ToXml()
-        {
-            lock (this)
-                return OSDParser.SerializeLLSDXmlString(m_map);
-        }
-
-        public void CopyFrom(DAMap other)
-        {
-            // Deep copy
-            
-            string data = null;
-            lock (other)
-            {
-                if (other.CountNamespaces > 0)
-                {
-                    data = OSDParser.SerializeLLSDXmlString(other.m_map);
-                }
-            }
-            
-            lock (this)
-            {
-                if (data == null)
-                    Clear();
-                else
-                    m_map = (OSDMap)OSDParser.DeserializeLLSDXml(data);
-            }
         }
 
         /// <summary>
@@ -136,7 +105,7 @@ namespace OpenSim.Framework
 
             foreach (string key in namespacesMap.Keys)
             {
-//                Console.WriteLine("Processing ns {0}", key);
+                //                Console.WriteLine("Processing ns {0}", key);
                 if (!(namespacesMap[key] is OSDMap))
                 {
                     if (keysToRemove == null)
@@ -150,7 +119,7 @@ namespace OpenSim.Framework
             {
                 foreach (string key in keysToRemove)
                 {
-//                    Console.WriteLine ("Removing bad ns {0}", key);
+                    //                    Console.WriteLine ("Removing bad ns {0}", key);
                     namespacesMap.Remove(key);
                 }
             }
@@ -178,31 +147,62 @@ namespace OpenSim.Framework
         }
 
         /// <summary>
-        /// Get the number of namespaces
+        /// Validate the key used for storing separate data stores.
         /// </summary>
-        public int CountNamespaces { get { lock (this) { return m_map.Count; } } }
-
-        /// <summary>
-        /// Get the number of stores.
-        /// </summary>
-        public int CountStores 
+        /// <param name='key'></param>
+        public static void ValidateNamespace(string ns)
         {
-            get 
+            if (ns.Length < MIN_NAMESPACE_LENGTH)
+                throw new Exception("Minimum namespace length is " + MIN_NAMESPACE_LENGTH);
+        }
+
+        public void Clear()
+        {
+            lock (this)
+                m_map.Clear();
+        }
+
+        public bool ContainsStore(string ns, string storeName)
+        {
+            OSD namespaceOsd;
+
+            lock (this)
             {
-                int count = 0;
-
-                lock (this)
+                if (m_map.TryGetValue(ns, out namespaceOsd))
                 {
-                    foreach (OSD osdNamespace in m_map)
-                    {
-                        count += ((OSDMap)osdNamespace).Count;
-                    }
+                    return ((OSDMap)namespaceOsd).ContainsKey(storeName);
                 }
+            }
 
-                return count;
+            return false;
+        }
+
+        public void CopyFrom(DAMap other)
+        {
+            // Deep copy
+
+            string data = null;
+            lock (other)
+            {
+                if (other.CountNamespaces > 0)
+                {
+                    data = OSDParser.SerializeLLSDXmlString(other.m_map);
+                }
+            }
+
+            lock (this)
+            {
+                if (data == null)
+                    Clear();
+                else
+                    m_map = (OSDMap)OSDParser.DeserializeLLSDXml(data);
             }
         }
 
+        public XmlSchema GetSchema()
+        {
+            return null;
+        }
         /// <summary>
         /// Retrieve a Dynamic Attribute store
         /// </summary>
@@ -227,6 +227,42 @@ namespace OpenSim.Framework
             return null;
         }
 
+        public void ReadXml(XmlReader reader)
+        {
+            ReadXml(reader.ReadInnerXml());
+        }
+
+        public void ReadXml(string rawXml)
+        {
+            // System.Console.WriteLine("Trying to deserialize [{0}]", rawXml);
+
+            lock (this)
+            {
+                m_map = (OSDMap)OSDParser.DeserializeLLSDXml(rawXml);
+                SanitiseMap(this);
+            }
+        }
+
+        public bool RemoveStore(string ns, string storeName)
+        {
+            OSD namespaceOsd;
+
+            lock (this)
+            {
+                if (m_map.TryGetValue(ns, out namespaceOsd))
+                {
+                    OSDMap namespaceOsdMap = (OSDMap)namespaceOsd;
+                    namespaceOsdMap.Remove(storeName);
+
+                    // Don't keep empty namespaces around
+                    if (namespaceOsdMap.Count <= 0)
+                        m_map.Remove(ns);
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Saves a Dynamic attribute store
         /// </summary>
@@ -248,35 +284,16 @@ namespace OpenSim.Framework
 
                 nsMap = (OSDMap)m_map[ns];
 
-//                m_log.DebugFormat("[DA MAP]: Setting store to {0}:{1}", ns, storeName);
+                //                m_log.DebugFormat("[DA MAP]: Setting store to {0}:{1}", ns, storeName);
                 nsMap[storeName] = store;
             }
         }
 
-        /// <summary>
-        /// Validate the key used for storing separate data stores.
-        /// </summary>
-        /// <param name='key'></param>
-        public static void ValidateNamespace(string ns)
+        public string ToXml()
         {
-            if (ns.Length < MIN_NAMESPACE_LENGTH)
-                throw new Exception("Minimum namespace length is " + MIN_NAMESPACE_LENGTH);
-        }
-
-        public bool ContainsStore(string ns, string storeName) 
-        {    
-            OSD namespaceOsd;
-
             lock (this)
-            {
-                if (m_map.TryGetValue(ns, out namespaceOsd))
-                {
-                    return ((OSDMap)namespaceOsd).ContainsKey(storeName);
-                }
-            }
-
-            return false;
-        }     
+                return OSDParser.SerializeLLSDXmlString(m_map);
+        }
 
         public bool TryGetStore(string ns, string storeName, out OSDMap store)
         {
@@ -297,32 +314,11 @@ namespace OpenSim.Framework
 
             store = null;
             return false;
-        }    
+        }
 
-        public void Clear()
+        public void WriteXml(XmlWriter writer)
         {
-            lock (this)
-                m_map.Clear();
-        }  
-
-        public bool RemoveStore(string ns, string storeName)
-        {
-            OSD namespaceOsd; 
-
-            lock (this)
-            {
-                if (m_map.TryGetValue(ns, out namespaceOsd))
-                {
-                    OSDMap namespaceOsdMap = (OSDMap)namespaceOsd;
-                    namespaceOsdMap.Remove(storeName);
-
-                    // Don't keep empty namespaces around
-                    if (namespaceOsdMap.Count <= 0)
-                        m_map.Remove(ns);
-                }
-            }
-
-            return false;
-        }     
+            writer.WriteRaw(ToXml());
+        }
     }
 }

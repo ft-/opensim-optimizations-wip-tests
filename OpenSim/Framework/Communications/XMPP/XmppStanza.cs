@@ -33,18 +33,6 @@ namespace OpenSim.Framework.Communications.XMPP
     public abstract class XmppStanza
     {
         /// <summary>
-        /// counter used for generating ID
-        /// </summary>
-        [XmlIgnore]
-        private static ulong _ctr = 0;
-
-        /// <summary>
-        /// recipient JID
-        /// </summary>
-        [XmlAttribute("to")]
-        public string ToJid;
-
-        /// <summary>
         /// sender JID
         /// </summary>
         [XmlAttribute("from")]
@@ -56,6 +44,17 @@ namespace OpenSim.Framework.Communications.XMPP
         [XmlAttribute("id")]
         public string MessageId;
 
+        /// <summary>
+        /// recipient JID
+        /// </summary>
+        [XmlAttribute("to")]
+        public string ToJid;
+
+        /// <summary>
+        /// counter used for generating ID
+        /// </summary>
+        [XmlIgnore]
+        private static ulong _ctr = 0;
         public XmppStanza()
         {
         }

@@ -25,13 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
-using System.Text;
 using System.Timers;
-using log4net;
 
 namespace OpenSim.Framework.Monitoring
 {
@@ -44,27 +42,6 @@ namespace OpenSim.Framework.Monitoring
 
         private static Timer m_loggingTimer;
         private static int m_statsLogIntervalMs = 5000;
-
-        public static void RegisterConsoleCommands(ICommandConsole console)
-        {
-            console.Commands.AddCommand(
-                "General",
-                false,
-                "stats record",
-                "stats record start|stop",
-                "Control whether stats are being regularly recorded to a separate file.",
-                "For debug purposes.  Experimental.",
-                HandleStatsRecordCommand);
-
-            console.Commands.AddCommand(
-                "General",
-                false,
-                "stats save",
-                "stats save <path>",
-                "Save stats snapshot to a file.  If the file already exists, then the report is appended.",
-                "For debug purposes.  Experimental.",
-                HandleStatsSaveCommand);
-        }
 
         public static void HandleStatsRecordCommand(string module, string[] cmd)
         {
@@ -99,16 +76,36 @@ namespace OpenSim.Framework.Monitoring
             }
 
             string path = cmd[2];
-            
+
             using (StreamWriter sw = new StreamWriter(path, true))
             {
                 foreach (string line in GetReport())
                     sw.WriteLine(line);
-            }   
-            
+            }
+
             MainConsole.Instance.OutputFormat("Stats saved to file {0}", path);
         }
 
+        public static void RegisterConsoleCommands(ICommandConsole console)
+        {
+            console.Commands.AddCommand(
+                "General",
+                false,
+                "stats record",
+                "stats record start|stop",
+                "Control whether stats are being regularly recorded to a separate file.",
+                "For debug purposes.  Experimental.",
+                HandleStatsRecordCommand);
+
+            console.Commands.AddCommand(
+                "General",
+                false,
+                "stats save",
+                "stats save <path>",
+                "Save stats snapshot to a file.  If the file already exists, then the report is appended.",
+                "For debug purposes.  Experimental.",
+                HandleStatsSaveCommand);
+        }
         public static void Start()
         {
             if (m_loggingTimer != null)
@@ -128,14 +125,6 @@ namespace OpenSim.Framework.Monitoring
             }
         }
 
-        private static void Log(object sender, ElapsedEventArgs e)
-        {
-            foreach (string line in GetReport())
-                m_statsLog.Info(line);
-
-            m_loggingTimer.Start();
-        }
-
         private static List<string> GetReport()
         {
             List<string> lines = new List<string>();
@@ -146,6 +135,14 @@ namespace OpenSim.Framework.Monitoring
                 lines.Add(report);
 
             return lines;
+        }
+
+        private static void Log(object sender, ElapsedEventArgs e)
+        {
+            foreach (string line in GetReport())
+                m_statsLog.Info(line);
+
+            m_loggingTimer.Start();
         }
     }
 }

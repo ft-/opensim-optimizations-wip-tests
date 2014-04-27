@@ -25,10 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
+using OpenSim.Region.Framework.Interfaces;
 using System;
 using System.Collections.Generic;
-using OpenSim.Region.Framework.Interfaces;
-using OpenMetaverse;
 
 namespace OpenSim.Region.CoreModules.Framework.InterfaceCommander
 {
@@ -43,8 +43,9 @@ namespace OpenSim.Region.CoreModules.Framework.InterfaceCommander
 
         private Action<object[]> m_command;
         private string m_help;
+        private CommandIntentions m_intentions;
         private string m_name;
-        private CommandIntentions m_intentions; //A permission type system could implement this and know what a command intends on doing.
+         //A permission type system could implement this and know what a command intends on doing.
 
         public Command(string name, CommandIntentions intention, Action<Object[]> command, string help)
         {
@@ -55,26 +56,6 @@ namespace OpenSim.Region.CoreModules.Framework.InterfaceCommander
         }
 
         #region ICommand Members
-
-        public void AddArgument(string name, string helptext, string type)
-        {
-            m_args.Add(new CommandArgument(name, helptext, type));
-        }
-
-        public string Name
-        {
-            get { return m_name; }
-        }
-
-        public CommandIntentions Intentions
-        {
-            get { return m_intentions; }
-        }
-
-        public string Help
-        {
-            get { return m_help; }
-        }
 
         public Dictionary<string, string> Arguments
         {
@@ -89,30 +70,25 @@ namespace OpenSim.Region.CoreModules.Framework.InterfaceCommander
             }
         }
 
-        public string ShortHelp()
+        public string Help
         {
-            string help = m_name;
-
-            foreach (CommandArgument arg in m_args)
-            {
-                help += " <" + arg.Name + ">";
-            }
-
-            return help;
+            get { return m_help; }
         }
 
-        public void ShowConsoleHelp()
+        public CommandIntentions Intentions
         {
-            Console.WriteLine("== " + Name + " ==");
-            Console.WriteLine(m_help);
-            Console.WriteLine("= Parameters =");
-            foreach (CommandArgument arg in m_args)
-            {
-                Console.WriteLine("* " + arg.Name + " (" + arg.ArgumentType + ")");
-                Console.WriteLine("\t" + arg.HelpText);
-            }
+            get { return m_intentions; }
         }
 
+        public string Name
+        {
+            get { return m_name; }
+        }
+
+        public void AddArgument(string name, string helptext, string type)
+        {
+            m_args.Add(new CommandArgument(name, helptext, type));
+        }
         public void Run(Object[] args)
         {
             Object[] cleanArgs = new Object[m_args.Count];
@@ -144,18 +120,23 @@ namespace OpenSim.Region.CoreModules.Framework.InterfaceCommander
                         case "String":
                             m_args[i].ArgumentValue = arg.ToString();
                             break;
+
                         case "Integer":
                             m_args[i].ArgumentValue = Int32.Parse(arg.ToString());
                             break;
+
                         case "Double":
                             m_args[i].ArgumentValue = Double.Parse(arg.ToString(), OpenSim.Framework.Culture.NumberFormatInfo);
                             break;
+
                         case "Boolean":
                             m_args[i].ArgumentValue = Boolean.Parse(arg.ToString());
                             break;
+
                         case "UUID":
                             m_args[i].ArgumentValue = UUID.Parse(arg.ToString());
                             break;
+
                         default:
                             Console.WriteLine("ERROR: Unknown desired type for argument " + m_args[i].Name + " on command " + m_name);
                             break;
@@ -176,7 +157,30 @@ namespace OpenSim.Region.CoreModules.Framework.InterfaceCommander
             m_command.Invoke(cleanArgs);
         }
 
-        #endregion
+        public string ShortHelp()
+        {
+            string help = m_name;
+
+            foreach (CommandArgument arg in m_args)
+            {
+                help += " <" + arg.Name + ">";
+            }
+
+            return help;
+        }
+
+        public void ShowConsoleHelp()
+        {
+            Console.WriteLine("== " + Name + " ==");
+            Console.WriteLine(m_help);
+            Console.WriteLine("= Parameters =");
+            foreach (CommandArgument arg in m_args)
+            {
+                Console.WriteLine("* " + arg.Name + " (" + arg.ArgumentType + ")");
+                Console.WriteLine("\t" + arg.HelpText);
+            }
+        }
+        #endregion ICommand Members
     }
 
     /// <summary>
@@ -196,16 +200,6 @@ namespace OpenSim.Region.CoreModules.Framework.InterfaceCommander
             m_type = type;
         }
 
-        public string Name
-        {
-            get { return m_name; }
-        }
-
-        public string HelpText
-        {
-            get { return m_help; }
-        }
-
         public string ArgumentType
         {
             get { return m_type; }
@@ -215,6 +209,16 @@ namespace OpenSim.Region.CoreModules.Framework.InterfaceCommander
         {
             get { return m_val; }
             set { m_val = value; }
+        }
+
+        public string HelpText
+        {
+            get { return m_help; }
+        }
+
+        public string Name
+        {
+            get { return m_name; }
         }
     }
 }

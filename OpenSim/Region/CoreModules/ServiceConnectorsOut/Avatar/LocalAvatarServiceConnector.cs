@@ -25,19 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
+using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Server.Base;
 using OpenSim.Services.Interfaces;
-
-using OpenMetaverse;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Avatar
 {
@@ -54,14 +52,27 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Avatar
 
         #region ISharedRegionModule
 
-        public Type ReplaceableInterface 
-        {
-            get { return null; }
-        }
-
         public string Name
         {
             get { return "LocalAvatarServicesConnector"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+        public void AddRegion(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+
+            scene.RegisterModuleInterface<IAvatarService>(this);
+        }
+
+        public void Close()
+        {
+            if (!m_Enabled)
+                return;
         }
 
         public void Initialise(IConfigSource source)
@@ -109,19 +120,10 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Avatar
             if (!m_Enabled)
                 return;
         }
-
-        public void Close()
+        public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
                 return;
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-            scene.RegisterModuleInterface<IAvatarService>(this);
         }
 
         public void RemoveRegion(Scene scene)
@@ -129,14 +131,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Avatar
             if (!m_Enabled)
                 return;
         }
-
-        public void RegionLoaded(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-        }
-
-        #endregion
+        #endregion ISharedRegionModule
 
         #region IAvatarService
 
@@ -144,20 +139,15 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Avatar
         {
             return m_AvatarService.GetAppearance(userID);
         }
-        
-        public bool SetAppearance(UUID userID, AvatarAppearance appearance)
-        {
-            return m_AvatarService.SetAppearance(userID,appearance);
-        }
-            
+
         public AvatarData GetAvatar(UUID userID)
         {
             return m_AvatarService.GetAvatar(userID);
         }
 
-        public bool SetAvatar(UUID userID, AvatarData avatar)
+        public bool RemoveItems(UUID userID, string[] names)
         {
-            return m_AvatarService.SetAvatar(userID, avatar);
+            return m_AvatarService.RemoveItems(userID, names);
         }
 
         public bool ResetAvatar(UUID userID)
@@ -165,17 +155,18 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Avatar
             return m_AvatarService.ResetAvatar(userID);
         }
 
+        public bool SetAppearance(UUID userID, AvatarAppearance appearance)
+        {
+            return m_AvatarService.SetAppearance(userID, appearance);
+        }
+        public bool SetAvatar(UUID userID, AvatarData avatar)
+        {
+            return m_AvatarService.SetAvatar(userID, avatar);
+        }
         public bool SetItems(UUID userID, string[] names, string[] values)
         {
             return m_AvatarService.SetItems(userID, names, values);
         }
-
-        public bool RemoveItems(UUID userID, string[] names)
-        {
-            return m_AvatarService.RemoveItems(userID, names);
-        }
-        
-        #endregion
-
+        #endregion IAvatarService
     }
 }

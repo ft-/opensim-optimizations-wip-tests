@@ -35,16 +35,15 @@ namespace OpenSim.Framework
     {
         private static readonly CultureInfo m_cultureInfo = new CultureInfo("en-US", false);
 
-        public static NumberFormatInfo NumberFormatInfo
-        {
-            get { return m_cultureInfo.NumberFormat; }
-        }
-
         public static IFormatProvider FormatProvider
         {
             get { return m_cultureInfo; }
         }
 
+        public static NumberFormatInfo NumberFormatInfo
+        {
+            get { return m_cultureInfo.NumberFormat; }
+        }
         /// <summary>
         /// Set Culture to en-US to make string processing of numbers simpler.
         /// </summary>

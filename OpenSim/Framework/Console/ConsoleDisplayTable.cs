@@ -25,13 +25,42 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace OpenSim.Framework.Console
 {
+    public struct ConsoleDisplayTableColumn
+    {
+        public ConsoleDisplayTableColumn(string header, int width)
+            : this()
+        {
+            Header = header;
+            Width = width;
+        }
+
+        public string Header { get; set; }
+
+        public int Width { get; set; }
+    }
+
+    public struct ConsoleDisplayTableRow
+    {
+        public ConsoleDisplayTableRow(List<object> cells)
+            : this()
+        {
+            Cells = cells;
+        }
+
+        public ConsoleDisplayTableRow(params object[] cells)
+            : this()
+        {
+            Cells = new List<object>(cells);
+        }
+
+        public List<object> Cells { get; private set; }
+    }
+
     /// <summary>
     /// Used to generated a formatted table for the console.
     /// </summary>
@@ -45,26 +74,6 @@ namespace OpenSim.Framework.Console
         /// </summary>
         public const int DefaultTableSpacing = 2;
 
-        /// <summary>
-        /// Table columns.
-        /// </summary>
-        public List<ConsoleDisplayTableColumn> Columns { get; private set; }
-
-        /// <summary>
-        /// Table rows
-        /// </summary>
-        public List<ConsoleDisplayTableRow> Rows { get; private set; }
-
-        /// <summary>
-        /// Number of spaces to indent the whole table.
-        /// </summary>
-        public int Indent { get; set; }
-
-        /// <summary>
-        /// Spacing between table columns
-        /// </summary>
-        public int TableSpacing { get; set; }
-
         public ConsoleDisplayTable()
         {
             TableSpacing = DefaultTableSpacing;
@@ -72,13 +81,24 @@ namespace OpenSim.Framework.Console
             Rows = new List<ConsoleDisplayTableRow>();
         }
 
-        public override string ToString()
-        {
-            StringBuilder sb = new StringBuilder();
-            AddToStringBuilder(sb);
-            return sb.ToString();
-        }
+        /// <summary>
+        /// Table columns.
+        /// </summary>
+        public List<ConsoleDisplayTableColumn> Columns { get; private set; }
 
+        /// <summary>
+        /// Number of spaces to indent the whole table.
+        /// </summary>
+        public int Indent { get; set; }
+
+        /// <summary>
+        /// Table rows
+        /// </summary>
+        public List<ConsoleDisplayTableRow> Rows { get; private set; }
+        /// <summary>
+        /// Spacing between table columns
+        /// </summary>
+        public int TableSpacing { get; set; }
         public void AddColumn(string name, int width)
         {
             Columns.Add(new ConsoleDisplayTableColumn(name, width));
@@ -92,7 +112,7 @@ namespace OpenSim.Framework.Console
         public void AddToStringBuilder(StringBuilder sb)
         {
             string formatString = GetFormatString();
-//            System.Console.WriteLine("FORMAT STRING [{0}]", formatString);
+            //            System.Console.WriteLine("FORMAT STRING [{0}]", formatString);
 
             // columns
             sb.AppendFormat(formatString, Columns.ConvertAll(c => c.Header).ToArray());
@@ -102,6 +122,12 @@ namespace OpenSim.Framework.Console
                 sb.AppendFormat(formatString, row.Cells.ToArray());
         }
 
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            AddToStringBuilder(sb);
+            return sb.ToString();
+        }
         /// <summary>
         /// Gets the format string for the table.
         /// </summary>
@@ -123,33 +149,6 @@ namespace OpenSim.Framework.Console
             formatSb.Append('\n');
 
             return formatSb.ToString();
-        }
-    }
-
-    public struct ConsoleDisplayTableColumn
-    {
-        public string Header { get; set; }
-        public int Width { get; set; }
-
-        public ConsoleDisplayTableColumn(string header, int width) : this()
-        {
-            Header = header;
-            Width = width;
-        }
-    }
-
-    public struct ConsoleDisplayTableRow
-    {
-        public List<object> Cells { get; private set; }
-
-        public ConsoleDisplayTableRow(List<object> cells) : this()
-        {
-            Cells = cells;
-        }
-
-        public ConsoleDisplayTableRow(params object[] cells) : this()
-        {
-            Cells = new List<object>(cells);
         }
     }
 }

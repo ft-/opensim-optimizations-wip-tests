@@ -25,14 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Nini.Config;
+using OpenMetaverse;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Xml;
-using log4net;
-using Nini.Config;
-using OpenMetaverse;
 
 /// <summary>
 /// Loads assets from the filesystem location.  Not yet a plugin, though it should be.
@@ -43,51 +43,6 @@ namespace OpenSim.Framework.AssetLoader.Filesystem
     {
         private static readonly UUID LIBRARY_OWNER_ID = new UUID("11111111-1111-0000-0000-000100bba000");
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        protected static AssetBase CreateAsset(string assetIdStr, string name, string path, sbyte type)
-        {
-            AssetBase asset = new AssetBase(new UUID(assetIdStr), name, type, LIBRARY_OWNER_ID.ToString());
-
-            if (!String.IsNullOrEmpty(path))
-            {
-                //m_log.InfoFormat("[ASSETS]: Loading: [{0}][{1}]", name, path);
-
-                LoadAsset(asset, path);
-            }
-            else
-            {
-                m_log.InfoFormat("[ASSETS]: Instantiated: [{0}]", name);
-            }
-
-            return asset;
-        }
-
-        protected static void LoadAsset(AssetBase info, string path)
-        {
-//            bool image =
-//               (info.Type == (sbyte)AssetType.Texture ||
-//                info.Type == (sbyte)AssetType.TextureTGA ||
-//                info.Type == (sbyte)AssetType.ImageJPEG ||
-//                info.Type == (sbyte)AssetType.ImageTGA);
-
-            FileInfo fInfo = new FileInfo(path);
-            long numBytes = fInfo.Length;
-            if (fInfo.Exists)
-            {
-                FileStream fStream = new FileStream(path, FileMode.Open, FileAccess.Read);
-                byte[] idata = new byte[numBytes];
-                BinaryReader br = new BinaryReader(fStream);
-                idata = br.ReadBytes((int)numBytes);
-                br.Close();
-                fStream.Close();
-                info.Data = idata;
-                //info.loaded=true;
-            }
-            else
-            {
-                m_log.ErrorFormat("[ASSETS]: file: [{0}] not found !", path);
-            }
-        }
 
         public void ForEachDefaultXmlAsset(string assetSetFilename, Action<AssetBase> action)
         {
@@ -122,6 +77,50 @@ namespace OpenSim.Framework.AssetLoader.Filesystem
             assets.ForEach(action);
         }
 
+        protected static AssetBase CreateAsset(string assetIdStr, string name, string path, sbyte type)
+        {
+            AssetBase asset = new AssetBase(new UUID(assetIdStr), name, type, LIBRARY_OWNER_ID.ToString());
+
+            if (!String.IsNullOrEmpty(path))
+            {
+                //m_log.InfoFormat("[ASSETS]: Loading: [{0}][{1}]", name, path);
+
+                LoadAsset(asset, path);
+            }
+            else
+            {
+                m_log.InfoFormat("[ASSETS]: Instantiated: [{0}]", name);
+            }
+
+            return asset;
+        }
+
+        protected static void LoadAsset(AssetBase info, string path)
+        {
+            //            bool image =
+            //               (info.Type == (sbyte)AssetType.Texture ||
+            //                info.Type == (sbyte)AssetType.TextureTGA ||
+            //                info.Type == (sbyte)AssetType.ImageJPEG ||
+            //                info.Type == (sbyte)AssetType.ImageTGA);
+
+            FileInfo fInfo = new FileInfo(path);
+            long numBytes = fInfo.Length;
+            if (fInfo.Exists)
+            {
+                FileStream fStream = new FileStream(path, FileMode.Open, FileAccess.Read);
+                byte[] idata = new byte[numBytes];
+                BinaryReader br = new BinaryReader(fStream);
+                idata = br.ReadBytes((int)numBytes);
+                br.Close();
+                fStream.Close();
+                info.Data = idata;
+                //info.loaded=true;
+            }
+            else
+            {
+                m_log.ErrorFormat("[ASSETS]: file: [{0}] not found !", path);
+            }
+        }
         /// <summary>
         /// Use the asset set information at path to load assets
         /// </summary>

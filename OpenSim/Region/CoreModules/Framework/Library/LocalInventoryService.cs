@@ -1,4 +1,9 @@
-﻿/*
+﻿using log4net;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Services.Interfaces;
+
+/*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
  *
@@ -24,16 +29,9 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-using System;
+
 using System.Collections.Generic;
 using System.Reflection;
-
-using OpenSim.Framework;
-
-using OpenSim.Services.Interfaces;
-
-using OpenMetaverse;
-using log4net;
 
 namespace OpenSim.Region.CoreModules.Framework.Library
 {
@@ -46,45 +44,6 @@ namespace OpenSim.Region.CoreModules.Framework.Library
         public LocalInventoryService(InventoryFolderImpl lib)
         {
             m_Library = lib;
-        }
-
-        /// <summary>
-        /// Retrieve the root inventory folder for the given user.
-        /// </summary>
-        /// <param name="userID"></param>
-        /// <returns>null if no root folder was found</returns>
-        public InventoryFolderBase GetRootFolder(UUID userID) { return m_Library; }
-
-        /// <summary>
-        /// Gets everything (folders and items) inside a folder
-        /// </summary>
-        /// <param name="userId"></param>
-        /// <param name="folderID"></param>
-        /// <returns></returns>
-        public InventoryCollection GetFolderContent(UUID userID, UUID folderID)
-        {
-            InventoryFolderImpl folder = null;
-            InventoryCollection inv = new InventoryCollection();
-            inv.UserID = m_Library.Owner;
-
-            if (folderID != m_Library.ID)
-            {
-                folder = m_Library.FindFolder(folderID);
-                if (folder == null)
-                {
-                    inv.Folders = new List<InventoryFolderBase>();
-                    inv.Items = new List<InventoryItemBase>();
-                    return inv;
-                }
-            }
-            else
-                folder = m_Library;
-
-            inv.Folders = folder.RequestListOfFolders();
-            inv.Items = folder.RequestListOfItems();
-
-            m_log.DebugFormat("[LIBRARY MODULE]: Got content for folder {0}", folder.Name);
-            return inv;
         }
 
         /// <summary>
@@ -132,14 +91,97 @@ namespace OpenSim.Region.CoreModules.Framework.Library
             return true;
         }
 
-        public bool CreateUserInventory(UUID user) { return false; }
+        public bool CreateUserInventory(UUID user)
+        {
+            return false;
+        }
 
         /// <summary>
-        /// Gets the skeleton of the inventory -- folders only
+        /// Delete an item from the user's inventory
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns>true if the item was successfully deleted</returns>
+        //bool DeleteItem(InventoryItemBase item);
+        public bool DeleteFolders(UUID userID, List<UUID> folderIDs)
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Delete an item from the user's inventory
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns>true if the item was successfully deleted</returns>
+        //bool DeleteItem(InventoryItemBase item);
+        public bool DeleteItems(UUID userID, List<UUID> itemIDs)
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Get the active gestures of the agent.
         /// </summary>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public List<InventoryFolderBase> GetInventorySkeleton(UUID userId) { return null; }
+        public List<InventoryItemBase> GetActiveGestures(UUID userId)
+        {
+            return null;
+        }
+
+        /// <summary>
+        /// Get the union of permissions of all inventory items
+        /// that hold the given assetID.
+        /// </summary>
+        /// <param name="userID"></param>
+        /// <param name="assetID"></param>
+        /// <returns>The permissions or 0 if no such asset is found in
+        /// the user's inventory</returns>
+        public int GetAssetPermissions(UUID userID, UUID assetID)
+        {
+            return 0;
+        }
+
+        /// <summary>
+        /// Get a folder, given by its UUID
+        /// </summary>
+        /// <param name="folder"></param>
+        /// <returns></returns>
+        public InventoryFolderBase GetFolder(InventoryFolderBase folder)
+        {
+            return null;
+        }
+
+        /// <summary>
+        /// Gets everything (folders and items) inside a folder
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="folderID"></param>
+        /// <returns></returns>
+        public InventoryCollection GetFolderContent(UUID userID, UUID folderID)
+        {
+            InventoryFolderImpl folder = null;
+            InventoryCollection inv = new InventoryCollection();
+            inv.UserID = m_Library.Owner;
+
+            if (folderID != m_Library.ID)
+            {
+                folder = m_Library.FindFolder(folderID);
+                if (folder == null)
+                {
+                    inv.Folders = new List<InventoryFolderBase>();
+                    inv.Items = new List<InventoryItemBase>();
+                    return inv;
+                }
+            }
+            else
+                folder = m_Library;
+
+            inv.Folders = folder.RequestListOfFolders();
+            inv.Items = folder.RequestListOfItems();
+
+            m_log.DebugFormat("[LIBRARY MODULE]: Got content for folder {0}", folder.Name);
+            return inv;
+        }
 
         /// <summary>
         /// Gets the user folder for the given folder-type
@@ -147,8 +189,10 @@ namespace OpenSim.Region.CoreModules.Framework.Library
         /// <param name="userID"></param>
         /// <param name="type"></param>
         /// <returns></returns>
-        public InventoryFolderBase GetFolderForType(UUID userID, AssetType type) { return null; }
-
+        public InventoryFolderBase GetFolderForType(UUID userID, AssetType type)
+        {
+            return null;
+        }
 
         /// <summary>
         /// Gets the items inside a folder
@@ -156,92 +200,92 @@ namespace OpenSim.Region.CoreModules.Framework.Library
         /// <param name="userID"></param>
         /// <param name="folderID"></param>
         /// <returns></returns>
-        public List<InventoryItemBase> GetFolderItems(UUID userID, UUID folderID) { return null; }
-
-
-        /// <summary>
-        /// Update a folder in the user's inventory
-        /// </summary>
-        /// <param name="folder"></param>
-        /// <returns>true if the folder was successfully updated</returns>
-        public bool UpdateFolder(InventoryFolderBase folder) { return false; }
+        public List<InventoryItemBase> GetFolderItems(UUID userID, UUID folderID)
+        {
+            return null;
+        }
 
         /// <summary>
-        /// Move an inventory folder to a new location
+        /// Gets the skeleton of the inventory -- folders only
         /// </summary>
-        /// <param name="folder">A folder containing the details of the new location</param>
-        /// <returns>true if the folder was successfully moved</returns>
-        public bool MoveFolder(InventoryFolderBase folder) { return false; }
-
-        /// <summary>
-        /// Delete an item from the user's inventory
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns>true if the item was successfully deleted</returns>
-        //bool DeleteItem(InventoryItemBase item);
-        public bool DeleteFolders(UUID userID, List<UUID> folderIDs) { return false; }
-
-        /// <summary>
-        /// Purge an inventory folder of all its items and subfolders.
-        /// </summary>
-        /// <param name="folder"></param>
-        /// <returns>true if the folder was successfully purged</returns>
-        public bool PurgeFolder(InventoryFolderBase folder) { return false; }
-
-
-        /// <summary>
-        /// Update an item in the user's inventory
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns>true if the item was successfully updated</returns>
-        public bool UpdateItem(InventoryItemBase item) { return false; }
-
-        public bool MoveItems(UUID ownerID, List<InventoryItemBase> items) { return false; }
-
-        /// <summary>
-        /// Delete an item from the user's inventory
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns>true if the item was successfully deleted</returns>
-        //bool DeleteItem(InventoryItemBase item);
-        public bool DeleteItems(UUID userID, List<UUID> itemIDs) { return false; }
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public List<InventoryFolderBase> GetInventorySkeleton(UUID userId)
+        {
+            return null;
+        }
 
         /// <summary>
         /// Get an item, given by its UUID
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        public InventoryItemBase GetItem(InventoryItemBase item) { return null; }
+        public InventoryItemBase GetItem(InventoryItemBase item)
+        {
+            return null;
+        }
 
         /// <summary>
-        /// Get a folder, given by its UUID
+        /// Retrieve the root inventory folder for the given user.
         /// </summary>
-        /// <param name="folder"></param>
-        /// <returns></returns>
-        public InventoryFolderBase GetFolder(InventoryFolderBase folder) { return null; }
-
+        /// <param name="userID"></param>
+        /// <returns>null if no root folder was found</returns>
+        public InventoryFolderBase GetRootFolder(UUID userID)
+        {
+            return m_Library;
+        }
         /// <summary>
         /// Does the given user have an inventory structure?
         /// </summary>
         /// <param name="userID"></param>
         /// <returns></returns>
-        public bool HasInventoryForUser(UUID userID) { return false; }
+        public bool HasInventoryForUser(UUID userID)
+        {
+            return false;
+        }
 
         /// <summary>
-        /// Get the active gestures of the agent.
+        /// Move an inventory folder to a new location
         /// </summary>
-        /// <param name="userId"></param>
-        /// <returns></returns>
-        public List<InventoryItemBase> GetActiveGestures(UUID userId) { return null; }
+        /// <param name="folder">A folder containing the details of the new location</param>
+        /// <returns>true if the folder was successfully moved</returns>
+        public bool MoveFolder(InventoryFolderBase folder)
+        {
+            return false;
+        }
+
+        public bool MoveItems(UUID ownerID, List<InventoryItemBase> items)
+        {
+            return false;
+        }
 
         /// <summary>
-        /// Get the union of permissions of all inventory items
-        /// that hold the given assetID. 
+        /// Purge an inventory folder of all its items and subfolders.
         /// </summary>
-        /// <param name="userID"></param>
-        /// <param name="assetID"></param>
-        /// <returns>The permissions or 0 if no such asset is found in 
-        /// the user's inventory</returns>
-        public int GetAssetPermissions(UUID userID, UUID assetID) { return 0; }
+        /// <param name="folder"></param>
+        /// <returns>true if the folder was successfully purged</returns>
+        public bool PurgeFolder(InventoryFolderBase folder)
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Update a folder in the user's inventory
+        /// </summary>
+        /// <param name="folder"></param>
+        /// <returns>true if the folder was successfully updated</returns>
+        public bool UpdateFolder(InventoryFolderBase folder)
+        {
+            return false;
+        }
+        /// <summary>
+        /// Update an item in the user's inventory
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns>true if the item was successfully updated</returns>
+        public bool UpdateItem(InventoryItemBase item)
+        {
+            return false;
+        }
     }
 }

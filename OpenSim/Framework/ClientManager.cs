@@ -25,12 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Net;
-using OpenMetaverse;
-using OpenMetaverse.Packets;
 
 namespace OpenSim.Framework
 {
@@ -40,20 +38,19 @@ namespace OpenSim.Framework
     /// </summary>
     public class ClientManager
     {
-        /// <summary>A dictionary mapping from <seealso cref="UUID"/>
-        /// to <seealso cref="IClientAPI"/> references</summary>
-        private Dictionary<UUID, IClientAPI> m_dict1;
-        /// <summary>A dictionary mapping from <seealso cref="IPEndPoint"/>
-        /// to <seealso cref="IClientAPI"/> references</summary>
-        private Dictionary<IPEndPoint, IClientAPI> m_dict2;
         /// <summary>An immutable collection of <seealso cref="IClientAPI"/>
         /// references</summary>
         private IClientAPI[] m_array;
+
+        /// <summary>A dictionary mapping from <seealso cref="UUID"/>
+        /// to <seealso cref="IClientAPI"/> references</summary>
+        private Dictionary<UUID, IClientAPI> m_dict1;
+
+        /// <summary>A dictionary mapping from <seealso cref="IPEndPoint"/>
+        /// to <seealso cref="IClientAPI"/> references</summary>
+        private Dictionary<IPEndPoint, IClientAPI> m_dict2;
         /// <summary>Synchronization object for writing to the collections</summary>
         private object m_syncRoot = new object();
-
-        /// <summary>Number of clients in the collection</summary>
-        public int Count { get { return m_dict1.Count; } }
 
         /// <summary>
         /// Default constructor
@@ -65,6 +62,8 @@ namespace OpenSim.Framework
             m_array = new IClientAPI[0];
         }
 
+        /// <summary>Number of clients in the collection</summary>
+        public int Count { get { return m_dict1.Count; } }
         /// <summary>
         /// Add a client reference to the collection if it does not already
         /// exist
@@ -94,41 +93,6 @@ namespace OpenSim.Framework
             }
 
             return true;
-        }
-
-        /// <summary>
-        /// Remove a client from the collection
-        /// </summary>
-        /// <param name="key">UUID of the client to remove</param>
-        /// <returns>True if a client was removed, or false if the given UUID
-        /// was not present in the collection</returns>
-        public bool Remove(UUID key)
-        {
-            lock (m_syncRoot)
-            {
-                IClientAPI value;
-                if (m_dict1.TryGetValue(key, out value))
-                {
-                    m_dict1.Remove(key);
-                    m_dict2.Remove(value.RemoteEndPoint);
-
-                    IClientAPI[] oldArray = m_array;
-                    int oldLength = oldArray.Length;
-
-                    IClientAPI[] newArray = new IClientAPI[oldLength - 1];
-                    int j = 0;
-                    for (int i = 0; i < oldLength; i++)
-                    {
-                        if (oldArray[i] != value)
-                            newArray[j++] = oldArray[i];
-                    }
-
-                    m_array = newArray;
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         /// <summary>
@@ -165,6 +129,66 @@ namespace OpenSim.Framework
         }
 
         /// <summary>
+        /// Performs a given task in parallel for each of the elements in the
+        /// collection
+        /// </summary>
+        /// <param name="action">Action to perform on each element</param>
+        public void ForEach(Action<IClientAPI> action)
+        {
+            IClientAPI[] localArray = m_array;
+            Parallel.For(0, localArray.Length,
+                delegate(int i)
+                { action(localArray[i]); }
+            );
+        }
+
+        /// <summary>
+        /// Performs a given task synchronously for each of the elements in
+        /// the collection
+        /// </summary>
+        /// <param name="action">Action to perform on each element</param>
+        public void ForEachSync(Action<IClientAPI> action)
+        {
+            IClientAPI[] localArray = m_array;
+            for (int i = 0; i < localArray.Length; i++)
+                action(localArray[i]);
+        }
+
+        /// <summary>
+        /// Remove a client from the collection
+        /// </summary>
+        /// <param name="key">UUID of the client to remove</param>
+        /// <returns>True if a client was removed, or false if the given UUID
+        /// was not present in the collection</returns>
+        public bool Remove(UUID key)
+        {
+            lock (m_syncRoot)
+            {
+                IClientAPI value;
+                if (m_dict1.TryGetValue(key, out value))
+                {
+                    m_dict1.Remove(key);
+                    m_dict2.Remove(value.RemoteEndPoint);
+
+                    IClientAPI[] oldArray = m_array;
+                    int oldLength = oldArray.Length;
+
+                    IClientAPI[] newArray = new IClientAPI[oldLength - 1];
+                    int j = 0;
+                    for (int i = 0; i < oldLength; i++)
+                    {
+                        if (oldArray[i] != value)
+                            newArray[j++] = oldArray[i];
+                    }
+
+                    m_array = newArray;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        /// <summary>
         /// Attempts to fetch a value out of the collection
         /// </summary>
         /// <param name="key">UUID of the client to retrieve</param>
@@ -194,32 +218,6 @@ namespace OpenSim.Framework
                 value = null;
                 return false;
             }
-        }
-
-        /// <summary>
-        /// Performs a given task in parallel for each of the elements in the
-        /// collection
-        /// </summary>
-        /// <param name="action">Action to perform on each element</param>
-        public void ForEach(Action<IClientAPI> action)
-        {
-            IClientAPI[] localArray = m_array;
-            Parallel.For(0, localArray.Length,
-                delegate(int i)
-                { action(localArray[i]); }
-            );
-        }
-
-        /// <summary>
-        /// Performs a given task synchronously for each of the elements in
-        /// the collection
-        /// </summary>
-        /// <param name="action">Action to perform on each element</param>
-        public void ForEachSync(Action<IClientAPI> action)
-        {
-            IClientAPI[] localArray = m_array;
-            for (int i = 0; i < localArray.Length; i++)
-                action(localArray[i]);
         }
     }
 }

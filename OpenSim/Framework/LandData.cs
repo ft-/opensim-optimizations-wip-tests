@@ -25,12 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
 using System;
 using System.Collections.Generic;
 using System.Xml;
 using System.Xml.Serialization;
-
-using OpenMetaverse;
 
 namespace OpenSim.Framework
 {
@@ -56,143 +55,52 @@ namespace OpenSim.Framework
         private int _area = 0;
         private uint _auctionID = 0; //Unemplemented. If set to 0, not being auctioned
         private UUID _authBuyerID = UUID.Zero; //Unemplemented. Authorized Buyer's UUID
+        private byte[] _bitmap = new byte[512];
         private ParcelCategory _category = ParcelCategory.None; //Unemplemented. Parcel's chosen category
         private int _claimDate = 0;
         private int _claimPrice = 0; //Unemplemented
-        private UUID _globalID = UUID.Zero;
-        private UUID _groupID = UUID.Zero;
-        private bool _isGroupOwned = false;
-        private byte[] _bitmap = new byte[512];
         private string _description = String.Empty;
-
+        private float _dwell = 0;
         private uint _flags = (uint)ParcelFlags.AllowFly | (uint)ParcelFlags.AllowLandmark |
                                 (uint)ParcelFlags.AllowAPrimitiveEntry |
                                 (uint)ParcelFlags.AllowDeedToGroup | (uint)ParcelFlags.AllowTerraform |
                                 (uint)ParcelFlags.CreateObjects | (uint)ParcelFlags.AllowOtherScripts |
                                 (uint)ParcelFlags.SoundLocal | (uint)ParcelFlags.AllowVoiceChat;
 
+        private UUID _globalID = UUID.Zero;
+        private UUID _groupID = UUID.Zero;
+        private bool _isGroupOwned = false;
         private byte _landingType = 0;
-        private string _name = "Your Parcel";
-        private ParcelStatus _status = ParcelStatus.Leased;
         private int _localID = 0;
         private byte _mediaAutoScale = 0;
+        private string _mediaDescription = "";
+        private int _mediaHeight = 0;
         private UUID _mediaID = UUID.Zero;
+        private bool _mediaLoop = false;
+        private string _mediaType = "none/none";
         private string _mediaURL = String.Empty;
+        private int _mediaWidth = 0;
         private string _musicURL = String.Empty;
+        private string _name = "Your Parcel";
+        private bool _obscureMedia = false;
+        private bool _obscureMusic = false;
+        private int _otherCleanTime = 0;
         private UUID _ownerID = UUID.Zero;
         private List<LandAccessEntry> _parcelAccessList = new List<LandAccessEntry>();
         private float _passHours = 0;
         private int _passPrice = 0;
-        private int _salePrice = 0; //Unemeplemented. Parcels price.
+        private int _salePrice = 0;
+        //Unemeplemented. Parcels price.
         private int _simwideArea = 0;
+
         private int _simwidePrims = 0;
         private UUID _snapshotID = UUID.Zero;
+        private ParcelStatus _status = ParcelStatus.Leased;
         private Vector3 _userLocation = new Vector3();
         private Vector3 _userLookAt = new Vector3();
-        private int _otherCleanTime = 0;
-        private string _mediaType = "none/none";
-        private string _mediaDescription = "";
-        private int _mediaHeight = 0;
-        private int _mediaWidth = 0;
-        private bool _mediaLoop = false;
-        private bool _obscureMusic = false;
-        private bool _obscureMedia = false;
-        private float _dwell = 0;
-
-        /// <summary>
-        /// Traffic count of parcel
-        /// </summary>
-        [XmlIgnore]
-        public float Dwell
+        public LandData()
         {
-            get
-            {
-                return _dwell;
-            }
-            set
-            {
-                _dwell = value;
-            }
-        }
-
-        /// <summary>
-        /// Whether to obscure parcel media URL
-        /// </summary>
-        [XmlIgnore]
-        public bool ObscureMedia
-        {
-            get
-            {
-                return _obscureMedia;
-            }
-            set
-            {
-                _obscureMedia = value;
-            }
-        }
-
-        /// <summary>
-        /// Whether to obscure parcel music URL
-        /// </summary>
-        [XmlIgnore]
-        public bool ObscureMusic
-        {
-            get
-            {
-                return _obscureMusic;
-            }
-            set
-            {
-                _obscureMusic = value;
-            }
-        }
-
-        /// <summary>
-        /// Whether to loop parcel media
-        /// </summary>
-        [XmlIgnore]
-        public bool MediaLoop
-        {
-            get
-            {
-                return _mediaLoop;
-            }
-            set
-            {
-                _mediaLoop = value;
-            }
-        }
-
-        /// <summary>
-        /// Height of parcel media render
-        /// </summary>
-        [XmlIgnore]
-        public int MediaHeight
-        {
-            get
-            {
-                return _mediaHeight;
-            }
-            set
-            {
-                _mediaHeight = value;
-            }
-        }
-
-        /// <summary>
-        /// Width of parcel media render
-        /// </summary>
-        [XmlIgnore]
-        public int MediaWidth
-        {
-            get
-            {
-                return _mediaWidth;
-            }
-            set
-            {
-                _mediaWidth = value;
-            }
+            _globalID = UUID.Random();
         }
 
         /// <summary>
@@ -210,6 +118,7 @@ namespace OpenSim.Framework
                 _AABBMax = value;
             }
         }
+
         /// <summary>
         /// Lower corner of the AABB for the parcel
         /// </summary>
@@ -272,6 +181,21 @@ namespace OpenSim.Framework
         }
 
         /// <summary>
+        /// jp2 data for the image representative of the parcel in the parcel dialog
+        /// </summary>
+        public byte[] Bitmap
+        {
+            get
+            {
+                return _bitmap;
+            }
+            set
+            {
+                _bitmap = value;
+            }
+        }
+
+        /// <summary>
         /// Category of parcel.  Used for classifying the parcel in classified listings
         /// </summary>
         public ParcelCategory Category
@@ -313,6 +237,52 @@ namespace OpenSim.Framework
             set
             {
                 _claimPrice = value;
+            }
+        }
+
+        /// <summary>
+        /// Parcel Description
+        /// </summary>
+        public string Description
+        {
+            get
+            {
+                return _description;
+            }
+            set
+            {
+                _description = value;
+            }
+        }
+
+        /// <summary>
+        /// Traffic count of parcel
+        /// </summary>
+        [XmlIgnore]
+        public float Dwell
+        {
+            get
+            {
+                return _dwell;
+            }
+            set
+            {
+                _dwell = value;
+            }
+        }
+
+        /// <summary>
+        /// Parcel settings.  Access flags, Fly, NoPush, Voice, Scripts allowed, etc.  ParcelFlags
+        /// </summary>
+        public uint Flags
+        {
+            get
+            {
+                return _flags;
+            }
+            set
+            {
+                _flags = value;
             }
         }
 
@@ -362,52 +332,7 @@ namespace OpenSim.Framework
         }
 
         /// <summary>
-        /// jp2 data for the image representative of the parcel in the parcel dialog
-        /// </summary>
-        public byte[] Bitmap
-        {
-            get
-            {
-                return _bitmap;
-            }
-            set
-            {
-                _bitmap = value;
-            }
-        }
-
-        /// <summary>
-        /// Parcel Description
-        /// </summary>
-        public string Description
-        {
-            get
-            {
-                return _description;
-            }
-            set
-            {
-                _description = value;
-            }
-        }
-
-        /// <summary>
-        /// Parcel settings.  Access flags, Fly, NoPush, Voice, Scripts allowed, etc.  ParcelFlags
-        /// </summary>
-        public uint Flags
-        {
-            get
-            {
-                return _flags;
-            }
-            set
-            {
-                _flags = value;
-            }
-        }
-
-        /// <summary>
-        /// Determines if people are able to teleport where they please on the parcel or if they 
+        /// Determines if people are able to teleport where they please on the parcel or if they
         /// get constrainted to a specific point on teleport within the parcel
         /// </summary>
         public byte LandingType
@@ -419,36 +344,6 @@ namespace OpenSim.Framework
             set
             {
                 _landingType = value;
-            }
-        }
-
-        /// <summary>
-        /// Parcel Name
-        /// </summary>
-        public string Name
-        {
-            get
-            {
-                return _name;
-            }
-            set
-            {
-                _name = value;
-            }
-        }
-
-        /// <summary>
-        /// Status of Parcel, Leased, Abandoned, For Sale
-        /// </summary>
-        public ParcelStatus Status
-        {
-            get
-            {
-                return _status;
-            }
-            set
-            {
-                _status = value;
             }
         }
 
@@ -483,6 +378,37 @@ namespace OpenSim.Framework
         }
 
         /// <summary>
+        /// parcel media description
+        /// </summary>
+        public string MediaDescription
+        {
+            get
+            {
+                return _mediaDescription;
+            }
+            set
+            {
+                _mediaDescription = value;
+            }
+        }
+
+        /// <summary>
+        /// Height of parcel media render
+        /// </summary>
+        [XmlIgnore]
+        public int MediaHeight
+        {
+            get
+            {
+                return _mediaHeight;
+            }
+            set
+            {
+                _mediaHeight = value;
+            }
+        }
+
+        /// <summary>
         /// Texture Guid to replace with the output of the media stream
         /// </summary>
         public UUID MediaID
@@ -494,6 +420,34 @@ namespace OpenSim.Framework
             set
             {
                 _mediaID = value;
+            }
+        }
+
+        /// <summary>
+        /// Whether to loop parcel media
+        /// </summary>
+        [XmlIgnore]
+        public bool MediaLoop
+        {
+            get
+            {
+                return _mediaLoop;
+            }
+            set
+            {
+                _mediaLoop = value;
+            }
+        }
+
+        public string MediaType
+        {
+            get
+            {
+                return _mediaType;
+            }
+            set
+            {
+                _mediaType = value;
             }
         }
 
@@ -512,15 +466,19 @@ namespace OpenSim.Framework
             }
         }
 
-        public string MediaType
+        /// <summary>
+        /// Width of parcel media render
+        /// </summary>
+        [XmlIgnore]
+        public int MediaWidth
         {
             get
             {
-                return _mediaType;
+                return _mediaWidth;
             }
             set
             {
-                _mediaType = value;
+                _mediaWidth = value;
             }
         }
 
@@ -536,6 +494,68 @@ namespace OpenSim.Framework
             set
             {
                 _musicURL = value;
+            }
+        }
+
+        /// <summary>
+        /// Parcel Name
+        /// </summary>
+        public string Name
+        {
+            get
+            {
+                return _name;
+            }
+            set
+            {
+                _name = value;
+            }
+        }
+
+        /// <summary>
+        /// Whether to obscure parcel media URL
+        /// </summary>
+        [XmlIgnore]
+        public bool ObscureMedia
+        {
+            get
+            {
+                return _obscureMedia;
+            }
+            set
+            {
+                _obscureMedia = value;
+            }
+        }
+
+        /// <summary>
+        /// Whether to obscure parcel music URL
+        /// </summary>
+        [XmlIgnore]
+        public bool ObscureMusic
+        {
+            get
+            {
+                return _obscureMusic;
+            }
+            set
+            {
+                _obscureMusic = value;
+            }
+        }
+        /// <summary>
+        /// Autoreturn number of minutes to return SceneObjectGroup that are owned by someone who doesn't own
+        /// the parcel and isn't set to the same 'group' as the parcel.
+        /// </summary>
+        public int OtherCleanTime
+        {
+            get
+            {
+                return _otherCleanTime;
+            }
+            set
+            {
+                _otherCleanTime = value;
             }
         }
 
@@ -663,7 +683,21 @@ namespace OpenSim.Framework
         }
 
         /// <summary>
-        /// When teleporting is restricted to a certain point, this is the location 
+        /// Status of Parcel, Leased, Abandoned, For Sale
+        /// </summary>
+        public ParcelStatus Status
+        {
+            get
+            {
+                return _status;
+            }
+            set
+            {
+                _status = value;
+            }
+        }
+        /// <summary>
+        /// When teleporting is restricted to a certain point, this is the location
         /// that the user will be redirected to
         /// </summary>
         public Vector3 UserLocation
@@ -679,7 +713,7 @@ namespace OpenSim.Framework
         }
 
         /// <summary>
-        /// When teleporting is restricted to a certain point, this is the rotation 
+        /// When teleporting is restricted to a certain point, this is the rotation
         /// that the user will be positioned
         /// </summary>
         public Vector3 UserLookAt
@@ -693,41 +727,16 @@ namespace OpenSim.Framework
                 _userLookAt = value;
             }
         }
-
         /// <summary>
-        /// Autoreturn number of minutes to return SceneObjectGroup that are owned by someone who doesn't own 
-        /// the parcel and isn't set to the same 'group' as the parcel.
+        /// Restore a LandData object from the serialized xml representation.
         /// </summary>
-        public int OtherCleanTime
+        /// <param name="xmlReader"></param>
+        /// <returns></returns>
+        public static LandData FromXml(XmlReader xmlReader)
         {
-            get
-            {
-                return _otherCleanTime;
-            }
-            set
-            {
-                _otherCleanTime = value;
-            }
-        }
+            LandData land = (LandData)serializer.Deserialize(xmlReader);
 
-        /// <summary>
-        /// parcel media description
-        /// </summary>
-        public string MediaDescription
-        {
-            get
-            {
-                return _mediaDescription;
-            }
-            set
-            {
-                _mediaDescription = value;
-            }
-        }
-
-        public LandData()
-        {
-            _globalID = UUID.Random();
+            return land;
         }
 
         /// <summary>
@@ -796,18 +805,6 @@ namespace OpenSim.Framework
         public void ToXml(XmlWriter xmlWriter)
         {
             serializer.Serialize(xmlWriter, this);
-        }
-
-        /// <summary>
-        /// Restore a LandData object from the serialized xml representation.
-        /// </summary>
-        /// <param name="xmlReader"></param>
-        /// <returns></returns>
-        public static LandData FromXml(XmlReader xmlReader)
-        {
-            LandData land = (LandData)serializer.Deserialize(xmlReader);
-
-            return land;
         }
     }
 }

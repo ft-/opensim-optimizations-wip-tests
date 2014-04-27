@@ -30,16 +30,15 @@ using System.IO;
 
 namespace OpenSim.Framework.Servers.HttpServer
 {
+    public interface IGenericHTTPHandler : IRequestHandler
+    {
+        Hashtable Handle(string path, Hashtable request);
+    }
+
     public interface IRequestHandler
     {
-        /// <summary>
-        /// Name for this handler.
-        /// </summary>
-        /// <remarks>
-        /// Used for diagnostics.  The path doesn't always describe what the handler does.  Can be null if none
-        /// specified.
-        /// </remarks>
-        string Name { get; }
+        // Return response content type
+        string ContentType { get; }
 
         /// <summary>
         /// Description for this handler.
@@ -50,19 +49,19 @@ namespace OpenSim.Framework.Servers.HttpServer
         /// </remarks>
         string Description { get; }
 
-        // Return response content type
-        string ContentType { get; }
-
         // Return required http method
         string HttpMethod { get; }
 
+        /// <summary>
+        /// Name for this handler.
+        /// </summary>
+        /// <remarks>
+        /// Used for diagnostics.  The path doesn't always describe what the handler does.  Can be null if none
+        /// specified.
+        /// </remarks>
+        string Name { get; }
         // Return path
         string Path { get; }
-
-        /// <summary>
-        /// Number of requests received by this handler
-        /// </summary>
-        int RequestsReceived { get; }
 
         /// <summary>
         /// Number of requests handled.
@@ -71,6 +70,11 @@ namespace OpenSim.Framework.Servers.HttpServer
         /// Should be equal to RequestsReceived unless requested are being handled slowly or there is deadlock.
         /// </remarks>
         int RequestsHandled { get; }
+
+        /// <summary>
+        /// Number of requests received by this handler
+        /// </summary>
+        int RequestsReceived { get; }
     }
 
     public interface IStreamedRequestHandler : IRequestHandler
@@ -82,10 +86,5 @@ namespace OpenSim.Framework.Servers.HttpServer
     public interface IStreamHandler : IRequestHandler
     {
         void Handle(string path, Stream request, Stream response, IOSHttpRequest httpReqbuest, IOSHttpResponse httpResponse);
-    }
-    
-    public interface IGenericHTTPHandler : IRequestHandler
-    {
-        Hashtable Handle(string path, Hashtable request);
     }
 }

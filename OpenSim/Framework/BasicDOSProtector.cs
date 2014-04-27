@@ -1,4 +1,6 @@
-﻿/*
+﻿using log4net;
+
+/*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
  *
@@ -24,30 +26,37 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using log4net;
 
 namespace OpenSim.Framework
 {
-   
     public class BasicDOSProtector
     {
-        public enum ThrottleAction
-        {
-            DoThrottledMethod,
-            DoThrow
-        }
-        private readonly CircularBuffer<int> _generalRequestTimes; // General request checker
-        private readonly BasicDosProtectorOptions _options;
-        private readonly Dictionary<string, CircularBuffer<int>> _deeperInspection;   // per client request checker
-        private readonly Dictionary<string, int> _tempBlocked;  // blocked list
-        private readonly Dictionary<string, int> _sessions; 
-        private readonly System.Timers.Timer _forgetTimer;  // Cleanup timer
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         private readonly System.Threading.ReaderWriterLockSlim _blockLockSlim = new System.Threading.ReaderWriterLockSlim();
+
+        private readonly Dictionary<string, CircularBuffer<int>> _deeperInspection;
+
+        private readonly System.Timers.Timer _forgetTimer;
+
+        private readonly CircularBuffer<int> _generalRequestTimes;
+
+        // General request checker
+        private readonly BasicDosProtectorOptions _options;
+
+        // Cleanup timer
         private readonly System.Threading.ReaderWriterLockSlim _sessionLockSlim = new System.Threading.ReaderWriterLockSlim();
+
+        private readonly Dictionary<string, int> _sessions;
+
+        // per client request checker
+        private readonly Dictionary<string, int> _tempBlocked;
+
+        // blocked list
         public BasicDOSProtector(BasicDosProtectorOptions options)
         {
             _generalRequestTimes = new CircularBuffer<int>(options.MaxRequestsInTimeframe + 1, true);
@@ -96,6 +105,11 @@ namespace OpenSim.Framework
             _forgetTimer.Interval = _options.ForgetTimeSpan.TotalMilliseconds;
         }
 
+        public enum ThrottleAction
+        {
+            DoThrottledMethod,
+            DoThrow
+        }
         /// <summary>
         /// Given a string Key, Returns if that context is blocked
         /// </summary>
@@ -104,7 +118,7 @@ namespace OpenSim.Framework
         public bool IsBlocked(string key)
         {
             bool ret = false;
-             _blockLockSlim.EnterReadLock();
+            _blockLockSlim.EnterReadLock();
             ret = _tempBlocked.ContainsKey(key);
             _blockLockSlim.ExitReadLock();
             return ret;
@@ -133,7 +147,7 @@ namespace OpenSim.Framework
                 else
                     throw new System.Security.SecurityException("Throttled");
             }
-           
+
             _blockLockSlim.ExitReadLock();
 
             lock (_generalRequestTimes)
@@ -158,21 +172,17 @@ namespace OpenSim.Framework
                         {
                             _tempBlocked.Add(clientstring,
                                              Util.EnvironmentTickCount() +
-                                             (int) _options.ForgetTimeSpan.TotalMilliseconds);
+                                             (int)_options.ForgetTimeSpan.TotalMilliseconds);
                             _forgetTimer.Enabled = true;
                             m_log.WarnFormat("[{0}]: client: {1} is blocked for {2} milliseconds based on concurrency, X-ForwardedForAllowed status is {3}, endpoint:{4}", _options.ReportingName, clientstring, _options.ForgetTimeSpan.TotalMilliseconds, _options.AllowXForwardedFor, endpoint);
-
                         }
                         else
                             _tempBlocked[clientstring] = Util.EnvironmentTickCount() +
-                                                         (int) _options.ForgetTimeSpan.TotalMilliseconds;
+                                                         (int)_options.ForgetTimeSpan.TotalMilliseconds;
                         _blockLockSlim.ExitWriteLock();
-
                     }
-                    
-
                 }
-                else 
+                else
                     ProcessConcurrency(key, endpoint);
             }
             if (_generalRequestTimes.Size == _generalRequestTimes.Capacity &&
@@ -189,15 +199,7 @@ namespace OpenSim.Framework
             }
             return true;
         }
-        private void ProcessConcurrency(string key, string endpoint)
-        {
-            _sessionLockSlim.EnterWriteLock();
-            if (_sessions.ContainsKey(key))
-                _sessions[key] = _sessions[key] + 1;
-            else 
-                _sessions.Add(key,1);
-            _sessionLockSlim.ExitWriteLock();
-        }
+
         public void ProcessEnd(string key, string endpoint)
         {
             _sessionLockSlim.EnterWriteLock();
@@ -209,7 +211,7 @@ namespace OpenSim.Framework
             }
             else
                 _sessions.Add(key, 1);
-           
+
             _sessionLockSlim.ExitWriteLock();
         }
 
@@ -224,7 +226,6 @@ namespace OpenSim.Framework
             lock (_deeperInspection)
             {
                 string clientstring = key;
-
 
                 if (_deeperInspection.ContainsKey(clientstring))
                 {
@@ -254,22 +255,29 @@ namespace OpenSim.Framework
                     _deeperInspection[clientstring].Put(Util.EnvironmentTickCount());
                     _forgetTimer.Enabled = true;
                 }
-
             }
             return true;
         }
 
+        private void ProcessConcurrency(string key, string endpoint)
+        {
+            _sessionLockSlim.EnterWriteLock();
+            if (_sessions.ContainsKey(key))
+                _sessions[key] = _sessions[key] + 1;
+            else
+                _sessions.Add(key, 1);
+            _sessionLockSlim.ExitWriteLock();
+        }
     }
-
 
     public class BasicDosProtectorOptions
     {
-        public int MaxRequestsInTimeframe;
-        public TimeSpan RequestTimeSpan;
-        public TimeSpan ForgetTimeSpan;
         public bool AllowXForwardedFor;
-        public string ReportingName = "BASICDOSPROTECTOR";
-        public BasicDOSProtector.ThrottleAction ThrottledAction = BasicDOSProtector.ThrottleAction.DoThrottledMethod;
+        public TimeSpan ForgetTimeSpan;
         public int MaxConcurrentSessions;
+        public int MaxRequestsInTimeframe;
+        public string ReportingName = "BASICDOSPROTECTOR";
+        public TimeSpan RequestTimeSpan;
+        public BasicDOSProtector.ThrottleAction ThrottledAction = BasicDOSProtector.ThrottleAction.DoThrottledMethod;
     }
 }

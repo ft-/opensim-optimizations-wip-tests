@@ -25,9 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Text;
 using OpenMetaverse;
+using System;
 
 namespace OpenSim.Framework
 {
@@ -39,8 +38,8 @@ namespace OpenSim.Framework
 
     public class CachedTextureResponseArg
     {
-        public int BakedTextureIndex;
         public UUID BakedTextureID;
+        public int BakedTextureIndex;
         public String HostName;
     }
 }

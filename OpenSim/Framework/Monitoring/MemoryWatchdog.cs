@@ -28,9 +28,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Threading;
-using log4net;
 
 namespace OpenSim.Framework.Monitoring
 {
@@ -39,41 +36,19 @@ namespace OpenSim.Framework.Monitoring
     /// </summary>
     public static class MemoryWatchdog
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        /// <summary>
-        /// Is this watchdog active?
-        /// </summary>
-        public static bool Enabled
-        {
-            get { return m_enabled; }
-            set
-            {
-//                m_log.DebugFormat("[MEMORY WATCHDOG]: Setting MemoryWatchdog.Enabled to {0}", value);
-
-                if (value && !m_enabled)
-                    UpdateLastRecord(GC.GetTotalMemory(false), Util.EnvironmentTickCount());
-
-                m_enabled = value;
-            }
-        }
         private static bool m_enabled;
 
         /// <summary>
-        /// Average heap allocation rate in bytes per millisecond.
+        /// Memory used at time of last watchdog update.
         /// </summary>
-        public static double AverageHeapAllocationRate
-        {
-            get { if (m_samples.Count > 0) return m_samples.Average(); else return 0; }
-        }
+        private static long m_lastUpdateMemory;
 
         /// <summary>
-        /// Last heap allocation in bytes
+        /// Time when the watchdog was last updated.
         /// </summary>
-        public static double LastHeapAllocationRate
-        {
-            get { if (m_samples.Count > 0) return m_samples.Last(); else return 0; }
-        }
+        private static int m_lastUpdateTick;
 
         /// <summary>
         /// Maximum number of statistical samples.
@@ -85,25 +60,45 @@ namespace OpenSim.Framework.Monitoring
         private static int m_maxSamples = 24;
 
         /// <summary>
-        /// Time when the watchdog was last updated.
-        /// </summary>
-        private static int m_lastUpdateTick;
-
-        /// <summary>
-        /// Memory used at time of last watchdog update.
-        /// </summary>
-        private static long m_lastUpdateMemory;
-
-        /// <summary>
-        /// Memory churn rate per millisecond.
-        /// </summary>
-//        private static double m_churnRatePerMillisecond;
-
-        /// <summary>
         /// Historical samples for calculating moving average.
         /// </summary>
         private static Queue<double> m_samples = new Queue<double>(m_maxSamples);
 
+        /// <summary>
+        /// Average heap allocation rate in bytes per millisecond.
+        /// </summary>
+        public static double AverageHeapAllocationRate
+        {
+            get { if (m_samples.Count > 0) return m_samples.Average(); else return 0; }
+        }
+
+        /// <summary>
+        /// Is this watchdog active?
+        /// </summary>
+        public static bool Enabled
+        {
+            get { return m_enabled; }
+            set
+            {
+                //                m_log.DebugFormat("[MEMORY WATCHDOG]: Setting MemoryWatchdog.Enabled to {0}", value);
+
+                if (value && !m_enabled)
+                    UpdateLastRecord(GC.GetTotalMemory(false), Util.EnvironmentTickCount());
+
+                m_enabled = value;
+            }
+        }
+        /// <summary>
+        /// Last heap allocation in bytes
+        /// </summary>
+        public static double LastHeapAllocationRate
+        {
+            get { if (m_samples.Count > 0) return m_samples.Last(); else return 0; }
+        }
+        /// <summary>
+        /// Memory churn rate per millisecond.
+        /// </summary>
+        //        private static double m_churnRatePerMillisecond;
         public static void Update()
         {
             int now = Util.EnvironmentTickCount();

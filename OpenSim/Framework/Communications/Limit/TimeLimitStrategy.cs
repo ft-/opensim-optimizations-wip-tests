@@ -39,19 +39,14 @@ namespace OpenSim.Framework.Communications.Limit
     public class TimeLimitStrategy<TId> : IRequestLimitStrategy<TId>
     {
         /// <summary>
-        /// Record the time at which an asset request occurs.
-        /// </summary>
-        private readonly Dictionary<TId, Request> requests = new Dictionary<TId, Request>();
-
-        /// <summary>
         /// The minimum time period between which requests for the same data will be serviced.
         /// </summary>
         private readonly TimeSpan m_repeatPeriod;
-        public TimeSpan RepeatPeriod
-        {
-            get { return m_repeatPeriod; }
-        }
 
+        /// <summary>
+        /// Record the time at which an asset request occurs.
+        /// </summary>
+        private readonly Dictionary<TId, Request> requests = new Dictionary<TId, Request>();
         /// <summary></summary>
         /// <param name="repeatPeriod"></param>
         public TimeLimitStrategy(TimeSpan repeatPeriod)
@@ -59,6 +54,10 @@ namespace OpenSim.Framework.Communications.Limit
             m_repeatPeriod = repeatPeriod;
         }
 
+        public TimeSpan RepeatPeriod
+        {
+            get { return m_repeatPeriod; }
+        }
         /// <summary>
         /// <see cref="IRequestLimitStrategy"/>
         /// </summary>
@@ -100,6 +99,14 @@ namespace OpenSim.Framework.Communications.Limit
         /// <summary>
         /// <see cref="IRequestLimitStrategy"/>
         /// </summary>
+        public bool IsMonitoringRequests(TId id)
+        {
+            return requests.ContainsKey(id);
+        }
+
+        /// <summary>
+        /// <see cref="IRequestLimitStrategy"/>
+        /// </summary>
         public void MonitorRequests(TId id)
         {
             if (!IsMonitoringRequests(id))
@@ -107,31 +114,22 @@ namespace OpenSim.Framework.Communications.Limit
                 requests.Add(id, new Request(DateTime.Now));
             }
         }
-
-        /// <summary>
-        /// <see cref="IRequestLimitStrategy"/>
-        /// </summary>
-        public bool IsMonitoringRequests(TId id)
-        {
-            return requests.ContainsKey(id);
-        }
     }
 
     /// <summary>
     /// Private request details.
     /// </summary>
-    class Request
+    internal class Request
     {
-        /// <summary>
-        /// Time of last request
-        /// </summary>
-        public DateTime Time;
-
         /// <summary>
         /// Number of refusals associated with this request
         /// </summary>
         public int Refusals;
 
+        /// <summary>
+        /// Time of last request
+        /// </summary>
+        public DateTime Time;
         public Request(DateTime time)
         {
             Time = time;

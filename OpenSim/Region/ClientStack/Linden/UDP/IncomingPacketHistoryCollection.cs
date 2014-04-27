@@ -25,7 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using System.Collections.Generic;
 
 namespace OpenSim.Region.ClientStack.LindenUDP
@@ -37,11 +36,10 @@ namespace OpenSim.Region.ClientStack.LindenUDP
     public sealed class IncomingPacketHistoryCollection
     {
         private readonly uint[] m_items;
-        private HashSet<uint> m_hashSet;
-        private int m_first;
-        private int m_next;
         private int m_capacity;
-
+        private int m_first;
+        private HashSet<uint> m_hashSet;
+        private int m_next;
         public IncomingPacketHistoryCollection(int capacity)
         {
             this.m_capacity = capacity;

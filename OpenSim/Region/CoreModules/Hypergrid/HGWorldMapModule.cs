@@ -25,19 +25,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using log4net;
+using Mono.Addins;
 using Nini.Config;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
-using Mono.Addins;
 using OpenSim.Framework;
 using OpenSim.Region.CoreModules.World.WorldMap;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.Hypergrid
 {
@@ -45,34 +44,18 @@ namespace OpenSim.Region.CoreModules.Hypergrid
     public class HGWorldMapModule : WorldMapModule
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        
-        // Remember the map area that each client has been exposed to in this region
-        private Dictionary<UUID, List<MapBlockData>> m_SeenMapBlocks = new Dictionary<UUID, List<MapBlockData>>();
 
         private string m_MapImageServerURL = string.Empty;
 
+        // Remember the map area that each client has been exposed to in this region
+        private Dictionary<UUID, List<MapBlockData>> m_SeenMapBlocks = new Dictionary<UUID, List<MapBlockData>>();
         private IUserManagement m_UserManagement;
 
         #region INonSharedRegionModule Members
 
-        public override void Initialise(IConfigSource source)
+        public override string Name
         {
-            if (Util.GetConfigVarFromSections<string>(
-                source, "WorldMapModule", new string[] { "Map", "Startup" }, "WorldMap") == "HGWorldMap")
-            {
-                m_Enabled = true;
-
-                m_MapImageServerURL = Util.GetConfigVarFromSections<string>(source, "MapTileURL", new string[] {"LoginService", "HGWorldMap", "SimulatorFeatures"});
-
-                if (!string.IsNullOrEmpty(m_MapImageServerURL))
-                {
-                    m_MapImageServerURL = m_MapImageServerURL.Trim();
-                    if (!m_MapImageServerURL.EndsWith("/"))
-                        m_MapImageServerURL = m_MapImageServerURL + "/";
-                }
-
-
-            }
+            get { return "HGWorldMap"; }
         }
 
         public override void AddRegion(Scene scene)
@@ -85,6 +68,23 @@ namespace OpenSim.Region.CoreModules.Hypergrid
             scene.EventManager.OnClientClosed += EventManager_OnClientClosed;
         }
 
+        public override void Initialise(IConfigSource source)
+        {
+            if (Util.GetConfigVarFromSections<string>(
+                source, "WorldMapModule", new string[] { "Map", "Startup" }, "WorldMap") == "HGWorldMap")
+            {
+                m_Enabled = true;
+
+                m_MapImageServerURL = Util.GetConfigVarFromSections<string>(source, "MapTileURL", new string[] { "LoginService", "HGWorldMap", "SimulatorFeatures" });
+
+                if (!string.IsNullOrEmpty(m_MapImageServerURL))
+                {
+                    m_MapImageServerURL = m_MapImageServerURL.Trim();
+                    if (!m_MapImageServerURL.EndsWith("/"))
+                        m_MapImageServerURL = m_MapImageServerURL + "/";
+                }
+            }
+        }
         public override void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -97,7 +97,6 @@ namespace OpenSim.Region.CoreModules.Hypergrid
                 featuresModule.OnSimulatorFeaturesRequest += OnSimulatorFeaturesRequest;
 
             m_UserManagement = m_scene.RequestModuleInterface<IUserManagement>();
-
         }
 
         public override void RemoveRegion(Scene scene)
@@ -107,39 +106,11 @@ namespace OpenSim.Region.CoreModules.Hypergrid
 
             scene.EventManager.OnClientClosed -= EventManager_OnClientClosed;
         }
-
-        public override string Name
-        {
-            get { return "HGWorldMap"; }
-        }
-
-        #endregion
-
-        void EventManager_OnClientClosed(UUID clientID, Scene scene)
-        {
-            ScenePresence sp = scene.GetScenePresence(clientID);
-            if (sp != null)
-            {
-                if (m_SeenMapBlocks.ContainsKey(clientID))
-                {
-                    List<MapBlockData> mapBlocks = m_SeenMapBlocks[clientID];
-                    foreach (MapBlockData b in mapBlocks)
-                    {
-                        b.Name = string.Empty;
-                        // Set 'simulator is offline'. We need this because the viewer ignores SimAccess.Unknown (255)
-                        b.Access = (byte)SimAccess.Down;
-                    }
-
-                    m_log.DebugFormat("[HG MAP]: Resetting {0} blocks", mapBlocks.Count);
-                    sp.ControllingClient.SendMapBlock(mapBlocks, 0);
-                    m_SeenMapBlocks.Remove(clientID);
-                }
-            }
-        }
+        #endregion INonSharedRegionModule Members
 
         protected override List<MapBlockData> GetAndSendBlocks(IClientAPI remoteClient, int minX, int minY, int maxX, int maxY, uint flag)
         {
-            List<MapBlockData>  mapBlocks = base.GetAndSendBlocks(remoteClient, minX, minY, maxX, maxY, flag);
+            List<MapBlockData> mapBlocks = base.GetAndSendBlocks(remoteClient, minX, minY, maxX, maxY, flag);
             lock (m_SeenMapBlocks)
             {
                 if (!m_SeenMapBlocks.ContainsKey(remoteClient.AgentId))
@@ -160,6 +131,27 @@ namespace OpenSim.Region.CoreModules.Hypergrid
             return mapBlocks;
         }
 
+        private void EventManager_OnClientClosed(UUID clientID, Scene scene)
+        {
+            ScenePresence sp = scene.GetScenePresence(clientID);
+            if (sp != null)
+            {
+                if (m_SeenMapBlocks.ContainsKey(clientID))
+                {
+                    List<MapBlockData> mapBlocks = m_SeenMapBlocks[clientID];
+                    foreach (MapBlockData b in mapBlocks)
+                    {
+                        b.Name = string.Empty;
+                        // Set 'simulator is offline'. We need this because the viewer ignores SimAccess.Unknown (255)
+                        b.Access = (byte)SimAccess.Down;
+                    }
+
+                    m_log.DebugFormat("[HG MAP]: Resetting {0} blocks", mapBlocks.Count);
+                    sp.ControllingClient.SendMapBlock(mapBlocks, 0);
+                    m_SeenMapBlocks.Remove(clientID);
+                }
+            }
+        }
         private void OnSimulatorFeaturesRequest(UUID agentID, ref OSDMap features)
         {
             if (m_UserManagement != null && !string.IsNullOrEmpty(m_MapImageServerURL) && !m_UserManagement.IsLocalGridUser(agentID))
@@ -171,18 +163,16 @@ namespace OpenSim.Region.CoreModules.Hypergrid
                     features["OpenSimExtras"] = extras;
 
                 ((OSDMap)extras)["map-server-url"] = m_MapImageServerURL;
-
             }
         }
     }
 
-    class MapArea
+    internal class MapArea
     {
-        public int minX;
-        public int minY;
         public int maxX;
         public int maxY;
-
+        public int minX;
+        public int minY;
         public MapArea(int mix, int miy, int max, int may)
         {
             minX = mix;

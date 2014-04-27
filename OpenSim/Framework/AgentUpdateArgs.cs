@@ -25,8 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
+using System;
 
 namespace OpenSim.Framework
 {
@@ -54,8 +54,11 @@ namespace OpenSim.Framework
         /// Position of the camera in the Scene
         /// </summary>
         public Vector3 CameraCenter;
+
         public Vector3 CameraLeftAxis;
         public Vector3 CameraUpAxis;
+
+        public Vector3 ClientAgentPosition;
 
         /// <summary>
         /// Bitflag field for agent movement.  Fly, forward, backward, turn left, turn right, go up, go down, Straffe, etc.
@@ -66,6 +69,7 @@ namespace OpenSim.Framework
         /// Agent's client Draw distance setting
         /// </summary>
         public float Far;
+
         public byte Flags;
 
         /// <summary>
@@ -77,9 +81,8 @@ namespace OpenSim.Framework
         /// Session Id
         /// </summary>
         public UUID SessionID;
-        public byte State;
 
-        public Vector3 ClientAgentPosition;
+        public byte State;
         public bool UseClientAgentPosition;
 
         public AgentUpdateArgs()

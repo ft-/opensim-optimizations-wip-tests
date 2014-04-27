@@ -26,8 +26,6 @@
  */
 
 using OpenMetaverse;
-using System;
-using System.Collections;
 
 namespace OpenSim.Framework.Capabilities
 {
@@ -35,20 +33,19 @@ namespace OpenSim.Framework.Capabilities
     public class LLSDTaskScriptUploadComplete
     {
         /// <summary>
-        /// The task inventory item that was updated
-        /// </summary>
-        public UUID new_asset;
-
-        /// <summary>
         /// Was it compiled?
         /// </summary>
         public bool compiled;
 
+        public OSDArray errors;
+
+        /// <summary>
+        /// The task inventory item that was updated
+        /// </summary>
+        public UUID new_asset;
         /// <summary>
         /// State of the upload.  So far have only even seen this set to "complete"
         /// </summary>
         public string state;
-
-        public OSDArray errors;
     }
 }

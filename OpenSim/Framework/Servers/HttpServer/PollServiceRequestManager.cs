@@ -25,18 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using Amib.Threading;
+using log4net;
+using OpenSim.Framework.Monitoring;
 using System;
 using System.Collections;
-using System.Threading;
-using System.Reflection;
-using log4net;
-using HttpServer;
-using OpenSim.Framework;
-using OpenSim.Framework.Monitoring;
-using Amib.Threading;
-using System.IO;
-using System.Text;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Threading;
 
 namespace OpenSim.Framework.Servers.HttpServer
 {
@@ -44,39 +40,20 @@ namespace OpenSim.Framework.Servers.HttpServer
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        /// <summary>
-        /// Is the poll service request manager running?
-        /// </summary>
-        /// <remarks>
-        /// Can be running either synchronously or asynchronously
-        /// </remarks>
-        public bool IsRunning { get; private set; }
-
-        /// <summary>
-        /// Is the poll service performing responses asynchronously (with its own threads) or synchronously (via
-        /// external calls)?
-        /// </summary>
-        public bool PerformResponsesAsync { get; private set; }
-
-        /// <summary>
-        /// Number of responses actually processed and sent to viewer (or aborted due to error).
-        /// </summary>
-        public int ResponsesProcessed { get; private set; }
+        private static List<PollServiceHttpRequest> m_longPollRequests = new List<PollServiceHttpRequest>();
 
         private readonly BaseHttpServer m_server;
 
         private BlockingQueue<PollServiceHttpRequest> m_requests = new BlockingQueue<PollServiceHttpRequest>();
-        private static List<PollServiceHttpRequest> m_longPollRequests = new List<PollServiceHttpRequest>();
-
-        private uint m_WorkerThreadCount = 0;
-        private Thread[] m_workerThreads;
 
         private SmartThreadPool m_threadPool = new SmartThreadPool(20000, 12, 2);
 
-//        private int m_timeout = 1000;   //  increase timeout 250; now use the event one
+        private uint m_WorkerThreadCount = 0;
+
+        private Thread[] m_workerThreads;
 
         public PollServiceRequestManager(
-            BaseHttpServer pSrv, bool performResponsesAsync, uint pWorkerThreadCount, int pTimeout)
+                    BaseHttpServer pSrv, bool performResponsesAsync, uint pWorkerThreadCount, int pTimeout)
         {
             m_server = pSrv;
             PerformResponsesAsync = performResponsesAsync;
@@ -110,6 +87,39 @@ namespace OpenSim.Framework.Servers.HttpServer
                     StatVerbosity.Debug));
         }
 
+        /// <summary>
+        /// Is the poll service request manager running?
+        /// </summary>
+        /// <remarks>
+        /// Can be running either synchronously or asynchronously
+        /// </remarks>
+        public bool IsRunning { get; private set; }
+
+        /// <summary>
+        /// Is the poll service performing responses asynchronously (with its own threads) or synchronously (via
+        /// external calls)?
+        /// </summary>
+        public bool PerformResponsesAsync { get; private set; }
+
+        /// <summary>
+        /// Number of responses actually processed and sent to viewer (or aborted due to error).
+        /// </summary>
+        public int ResponsesProcessed { get; private set; }
+        public void Enqueue(PollServiceHttpRequest req)
+        {
+            if (IsRunning)
+            {
+                if (req.PollServiceArgs.Type == PollServiceEventArgs.EventType.LongPoll)
+                {
+                    lock (m_longPollRequests)
+                        m_longPollRequests.Add(req);
+                }
+                else
+                    m_requests.Enqueue(req);
+            }
+        }
+
+        //        private int m_timeout = 1000;   //  increase timeout 250; now use the event one
         public void Start()
         {
             IsRunning = true;
@@ -141,75 +151,10 @@ namespace OpenSim.Framework.Servers.HttpServer
             }
         }
 
-        private void ReQueueEvent(PollServiceHttpRequest req)
-        {
-            if (IsRunning)
-            {
-                // delay the enqueueing for 100ms. There's no need to have the event
-                // actively on the queue
-                Timer t = new Timer(self => {
-                    ((Timer)self).Dispose();
-                    m_requests.Enqueue(req);
-                });
-
-                t.Change(100, Timeout.Infinite);
-
-            }
-        }
-
-        public void Enqueue(PollServiceHttpRequest req)
-        {
-            if (IsRunning)
-            {
-                if (req.PollServiceArgs.Type == PollServiceEventArgs.EventType.LongPoll)
-                {
-                    lock (m_longPollRequests)
-                        m_longPollRequests.Add(req);
-                }
-                else
-                    m_requests.Enqueue(req);
-            }
-        }
-
-        private void CheckLongPollThreads()
-        {
-            // The only purpose of this thread is to check the EQs for events.
-            // If there are events, that thread will be placed in the "ready-to-serve" queue, m_requests.
-            // If there are no events, that thread will be back to its "waiting" queue, m_longPollRequests.
-            // All other types of tasks (Inventory handlers, http-in, etc) don't have the long-poll nature,
-            // so if they aren't ready to be served by a worker thread (no events), they are placed 
-            // directly back in the "ready-to-serve" queue by the worker thread.
-            while (IsRunning)
-            {
-                Thread.Sleep(500); 
-                Watchdog.UpdateThread();
-
-//                List<PollServiceHttpRequest> not_ready = new List<PollServiceHttpRequest>();
-                lock (m_longPollRequests)
-                {
-                    if (m_longPollRequests.Count > 0 && IsRunning)
-                    {
-                        List<PollServiceHttpRequest> ready = m_longPollRequests.FindAll(req =>
-                            (req.PollServiceArgs.HasEvents(req.RequestID, req.PollServiceArgs.Id) || // there are events in this EQ
-                            (Environment.TickCount - req.RequestTime) > req.PollServiceArgs.TimeOutms) // no events, but timeout
-                            );
-
-                        ready.ForEach(req =>
-                            {
-                                m_requests.Enqueue(req);
-                                m_longPollRequests.Remove(req);
-                            });
-
-                    }
-
-                }
-            }
-        }
-
         public void Stop()
         {
             IsRunning = false;
-//            m_timeout = -10000; // cause all to expire
+            //            m_timeout = -10000; // cause all to expire
             Thread.Sleep(1000); // let the world move
 
             foreach (Thread t in m_workerThreads)
@@ -241,21 +186,10 @@ namespace OpenSim.Framework.Servers.HttpServer
             m_requests.Clear();
         }
 
-        // work threads
-
-        private void PoolWorkerJob()
-        {
-            while (IsRunning)
-            {
-                Watchdog.UpdateThread();
-                WaitPerformResponse();
-            }
-        }
-
         public void WaitPerformResponse()
         {
             PollServiceHttpRequest req = m_requests.Dequeue(5000);
-//            m_log.DebugFormat("[YYY]: Dequeued {0}", (req == null ? "null" : req.PollServiceArgs.Type.ToString()));
+            //            m_log.DebugFormat("[YYY]: Dequeued {0}", (req == null ? "null" : req.PollServiceArgs.Type.ToString()));
 
             if (req != null)
             {
@@ -270,8 +204,8 @@ namespace OpenSim.Framework.Servers.HttpServer
 
                         // This is the event queue.
                         // Even if we're not running we can still perform responses by explicit request.
-                        if (req.PollServiceArgs.Type == PollServiceEventArgs.EventType.LongPoll 
-                            || !PerformResponsesAsync) 
+                        if (req.PollServiceArgs.Type == PollServiceEventArgs.EventType.LongPoll
+                            || !PerformResponsesAsync)
                         {
                             try
                             {
@@ -327,5 +261,64 @@ namespace OpenSim.Framework.Servers.HttpServer
                 }
             }
         }
+
+        private void CheckLongPollThreads()
+        {
+            // The only purpose of this thread is to check the EQs for events.
+            // If there are events, that thread will be placed in the "ready-to-serve" queue, m_requests.
+            // If there are no events, that thread will be back to its "waiting" queue, m_longPollRequests.
+            // All other types of tasks (Inventory handlers, http-in, etc) don't have the long-poll nature,
+            // so if they aren't ready to be served by a worker thread (no events), they are placed
+            // directly back in the "ready-to-serve" queue by the worker thread.
+            while (IsRunning)
+            {
+                Thread.Sleep(500);
+                Watchdog.UpdateThread();
+
+                //                List<PollServiceHttpRequest> not_ready = new List<PollServiceHttpRequest>();
+                lock (m_longPollRequests)
+                {
+                    if (m_longPollRequests.Count > 0 && IsRunning)
+                    {
+                        List<PollServiceHttpRequest> ready = m_longPollRequests.FindAll(req =>
+                            (req.PollServiceArgs.HasEvents(req.RequestID, req.PollServiceArgs.Id) || // there are events in this EQ
+                            (Environment.TickCount - req.RequestTime) > req.PollServiceArgs.TimeOutms) // no events, but timeout
+                            );
+
+                        ready.ForEach(req =>
+                            {
+                                m_requests.Enqueue(req);
+                                m_longPollRequests.Remove(req);
+                            });
+                    }
+                }
+            }
+        }
+
+        private void PoolWorkerJob()
+        {
+            while (IsRunning)
+            {
+                Watchdog.UpdateThread();
+                WaitPerformResponse();
+            }
+        }
+
+        private void ReQueueEvent(PollServiceHttpRequest req)
+        {
+            if (IsRunning)
+            {
+                // delay the enqueueing for 100ms. There's no need to have the event
+                // actively on the queue
+                Timer t = new Timer(self =>
+                {
+                    ((Timer)self).Dispose();
+                    m_requests.Enqueue(req);
+                });
+
+                t.Change(100, Timeout.Infinite);
+            }
+        }
+        // work threads
     }
 }

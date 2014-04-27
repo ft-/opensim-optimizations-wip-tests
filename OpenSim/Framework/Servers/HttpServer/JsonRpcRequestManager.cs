@@ -25,15 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Net;
-using System.Net.Sockets;
-using System.Reflection;
-using System.Text;
-using System.IO;
-using OpenMetaverse.StructuredData;
-using OpenMetaverse;
 using log4net;
+using OpenMetaverse;
+using OpenMetaverse.StructuredData;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Framework.Servers.HttpServer
 {
@@ -42,8 +38,8 @@ namespace OpenSim.Framework.Servers.HttpServer
     /// </summary>
     public class JsonRpcRequestManager
     {
-        static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public JsonRpcRequestManager()
         {
         }
@@ -185,6 +181,5 @@ namespace OpenSim.Framework.Servers.HttpServer
 
             return true;
         }
-    
     }
 }

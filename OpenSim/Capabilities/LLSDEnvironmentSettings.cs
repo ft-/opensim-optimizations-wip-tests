@@ -25,28 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using OpenMetaverse;
+using System;
 
 namespace OpenSim.Framework.Capabilities
 {
-    [OSDMap]
-    public class LLSDEnvironmentRequest
-    {
-        public UUID messageID;
-        public UUID regionID;
-    }
-
-    [OSDMap]
-    public class LLSDEnvironmentSetResponse
-    {
-        public UUID regionID;
-        public UUID messageID;
-        public Boolean success;
-        public String fail_reason;
-    }
-
     public class EnvironmentSettings
     {
         /// <summary>
@@ -65,4 +48,19 @@ namespace OpenSim.Framework.Capabilities
         }
     }
 
+    [OSDMap]
+    public class LLSDEnvironmentRequest
+    {
+        public UUID messageID;
+        public UUID regionID;
+    }
+
+    [OSDMap]
+    public class LLSDEnvironmentSetResponse
+    {
+        public String fail_reason;
+        public UUID messageID;
+        public UUID regionID;
+        public Boolean success;
+    }
 }

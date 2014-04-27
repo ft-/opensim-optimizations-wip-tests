@@ -25,21 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenSim.Region.Framework.Interfaces;
 using System;
 using System.Drawing;
-using OpenSim.Region.Framework.Interfaces;
 
 namespace OpenSim.Region.CoreModules.Scripting.DynamicTexture
 {
     public class DynamicTexture : IDynamicTexture
     {
-        public string InputCommands { get; private set; }
-        public Uri InputUri { get; private set; }
-        public string InputParams { get; private set; }
-        public byte[] Data { get; private set; }
-        public Size Size { get; private set; }
-        public bool IsReuseable { get; private set; }
-
         public DynamicTexture(string inputCommands, string inputParams, byte[] data, Size size, bool isReuseable)
         {
             InputCommands = inputCommands;
@@ -57,5 +50,16 @@ namespace OpenSim.Region.CoreModules.Scripting.DynamicTexture
             Size = size;
             IsReuseable = isReuseable;
         }
+
+        public byte[] Data { get; private set; }
+
+        public string InputCommands { get; private set; }
+
+        public string InputParams { get; private set; }
+
+        public Uri InputUri { get; private set; }
+        public bool IsReuseable { get; private set; }
+
+        public Size Size { get; private set; }
     }
 }

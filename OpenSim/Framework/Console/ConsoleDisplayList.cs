@@ -25,9 +25,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace OpenSim.Framework.Console
@@ -45,6 +43,17 @@ namespace OpenSim.Framework.Console
         /// </summary>
         public const string DefaultKeyValueDivider = " : ";
 
+        public ConsoleDisplayList()
+        {
+            Rows = new List<KeyValuePair<string, string>>();
+            KeyValueDivider = DefaultKeyValueDivider;
+        }
+
+        /// <summary>
+        /// Number of spaces to indent the list.
+        /// </summary>
+        public int Indent { get; set; }
+
         /// <summary>
         /// The divider used between key and value for a list item.
         /// </summary>
@@ -54,16 +63,19 @@ namespace OpenSim.Framework.Console
         /// Table rows
         /// </summary>
         public List<KeyValuePair<string, string>> Rows { get; private set; }
-
-        /// <summary>
-        /// Number of spaces to indent the list.
-        /// </summary>
-        public int Indent { get; set; }
-
-        public ConsoleDisplayList()
+        public void AddRow(object key, object value)
         {
-            Rows = new List<KeyValuePair<string, string>>();
-            KeyValueDivider = DefaultKeyValueDivider;
+            Rows.Add(new KeyValuePair<string, string>(key.ToString(), value.ToString()));
+        }
+
+        public void AddToStringBuilder(StringBuilder sb)
+        {
+            string formatString = GetFormatString();
+            //            System.Console.WriteLine("FORMAT STRING [{0}]", formatString);
+
+            // rows
+            foreach (KeyValuePair<string, string> row in Rows)
+                sb.AppendFormat(formatString, row.Key, row.Value);
         }
 
         public override string ToString()
@@ -72,17 +84,6 @@ namespace OpenSim.Framework.Console
             AddToStringBuilder(sb);
             return sb.ToString();
         }
-
-        public void AddToStringBuilder(StringBuilder sb)
-        {
-            string formatString = GetFormatString();
-//            System.Console.WriteLine("FORMAT STRING [{0}]", formatString);
-
-            // rows
-            foreach (KeyValuePair<string, string> row in Rows)
-                sb.AppendFormat(formatString, row.Key, row.Value);
-        }
-
         /// <summary>
         /// Gets the format string for the table.
         /// </summary>
@@ -102,11 +103,6 @@ namespace OpenSim.Framework.Console
             formatSb.AppendFormat("{{0,-{0}}}{1}{{1}}\n", longestKey, KeyValueDivider);
 
             return formatSb.ToString();
-        }
-
-        public void AddRow(object key, object value)
-        {
-            Rows.Add(new KeyValuePair<string, string>(key.ToString(), value.ToString()));
         }
     }
 }

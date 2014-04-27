@@ -25,17 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using log4net;
-using Nini.Config;
 using OpenMetaverse;
 using OpenSim.Framework.Servers;
 using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Services.Interfaces;
+using System.Collections;
+using System.Collections.Generic;
 
 // using OpenSim.Region.Framework.Interfaces;
 
@@ -50,72 +44,21 @@ namespace OpenSim.Framework.Capabilities
 
     public class Caps
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        private string m_httpListenerHostName;
-        private uint m_httpListenPort;
-
+        private UUID m_agentID;
+        private CapsHandlers m_capsHandlers;
         /// <summary>
         /// This is the uuid portion of every CAPS path.  It is used to make capability urls private to the requester.
         /// </summary>
         private string m_capsObjectPath;
-        public string CapsObjectPath { get { return m_capsObjectPath; } }
-
-        private CapsHandlers m_capsHandlers;
-
-        private Dictionary<string, PollServiceEventArgs> m_pollServiceHandlers 
-            = new Dictionary<string, PollServiceEventArgs>();
 
         private Dictionary<string, string> m_externalCapsHandlers = new Dictionary<string, string>();
-
         private IHttpServer m_httpListener;
-        private UUID m_agentID;
+        private string m_httpListenerHostName;
+        private uint m_httpListenPort;
+        private Dictionary<string, PollServiceEventArgs> m_pollServiceHandlers
+            = new Dictionary<string, PollServiceEventArgs>();
+
         private string m_regionName;
-
-        public UUID AgentID
-        {
-            get { return m_agentID; }
-        }
-
-        public string RegionName
-        {
-            get { return m_regionName; }
-        }
-
-        public string HostName
-        {
-            get { return m_httpListenerHostName; }
-        }
-
-        public uint Port
-        {
-            get { return m_httpListenPort; }
-        }
-
-        public IHttpServer HttpListener
-        {
-            get { return m_httpListener; }
-        }
-
-        public bool SSLCaps
-        {
-            get { return m_httpListener.UseSSL; }
-        }
-
-        public string SSLCommonName
-        {
-            get { return m_httpListener.SSLCommonName; }
-        }
-
-        public CapsHandlers CapsHandlers
-        {
-            get { return m_capsHandlers; }
-        }
-
-        public Dictionary<string, string> ExternalCapsHandlers
-        {
-            get { return m_externalCapsHandlers; }
-        }
 
         public Caps(IHttpServer httpServer, string httpListen, uint httpPort, string capsPath,
                     UUID agent, string regionName)
@@ -138,53 +81,50 @@ namespace OpenSim.Framework.Capabilities
             m_regionName = regionName;
         }
 
-        /// <summary>
-        /// Register a handler.  This allows modules to register handlers.
-        /// </summary>
-        /// <param name="capName"></param>
-        /// <param name="handler"></param>
-        public void RegisterHandler(string capName, IRequestHandler handler)
+        public UUID AgentID
         {
-            //m_log.DebugFormat("[CAPS]: Registering handler for \"{0}\": path {1}", capName, handler.Path);
-            m_capsHandlers[capName] = handler;
+            get { return m_agentID; }
         }
 
-        public void RegisterPollHandler(string capName, PollServiceEventArgs pollServiceHandler)
+        public CapsHandlers CapsHandlers
         {
-//            m_log.DebugFormat(
-//                "[CAPS]: Registering handler with name {0}, url {1} for {2}", 
-//                capName, pollServiceHandler.Url, m_agentID, m_regionName);
-
-            m_pollServiceHandlers.Add(capName, pollServiceHandler);
-
-            m_httpListener.AddPollServiceHTTPHandler(pollServiceHandler.Url, pollServiceHandler);
-
-//            uint port = (MainServer.Instance == null) ? 0 : MainServer.Instance.Port;
-//            string protocol = "http";
-//            string hostName = m_httpListenerHostName;
-//            
-//            if (MainServer.Instance.UseSSL)
-//            {
-//                hostName = MainServer.Instance.SSLCommonName;
-//                port = MainServer.Instance.SSLPort;
-//                protocol = "https";
-//            }
-
-//            RegisterHandler(
-//                capName, String.Format("{0}://{1}:{2}{3}", protocol, hostName, port, pollServiceHandler.Url));
+            get { return m_capsHandlers; }
         }
 
-        /// <summary>
-        /// Register an external handler. The service for this capability is somewhere else
-        /// given by the URL.
-        /// </summary>
-        /// <param name="capsName"></param>
-        /// <param name="url"></param>
-        public void RegisterHandler(string capsName, string url)
+        public string CapsObjectPath { get { return m_capsObjectPath; } }
+        public Dictionary<string, string> ExternalCapsHandlers
         {
-            m_externalCapsHandlers.Add(capsName, url);
+            get { return m_externalCapsHandlers; }
         }
 
+        public string HostName
+        {
+            get { return m_httpListenerHostName; }
+        }
+
+        public IHttpServer HttpListener
+        {
+            get { return m_httpListener; }
+        }
+
+        public uint Port
+        {
+            get { return m_httpListenPort; }
+        }
+
+        public string RegionName
+        {
+            get { return m_regionName; }
+        }
+        public bool SSLCaps
+        {
+            get { return m_httpListener.UseSSL; }
+        }
+
+        public string SSLCommonName
+        {
+            get { return m_httpListener.SSLCommonName; }
+        }
         /// <summary>
         /// Remove all CAPS service handlers.
         /// </summary>
@@ -201,16 +141,6 @@ namespace OpenSim.Framework.Capabilities
             }
         }
 
-        public bool TryGetPollHandler(string name, out PollServiceEventArgs pollHandler)
-        {
-            return m_pollServiceHandlers.TryGetValue(name, out pollHandler);
-        }
-
-        public Dictionary<string, PollServiceEventArgs> GetPollHandlers()
-        {
-            return new Dictionary<string, PollServiceEventArgs>(m_pollServiceHandlers);
-        }
-
         /// <summary>
         /// Return an LLSD-serializable Hashtable describing the
         /// capabilities and their handler details.
@@ -222,25 +152,25 @@ namespace OpenSim.Framework.Capabilities
 
             lock (m_pollServiceHandlers)
             {
-                foreach (KeyValuePair <string, PollServiceEventArgs> kvp in m_pollServiceHandlers)
+                foreach (KeyValuePair<string, PollServiceEventArgs> kvp in m_pollServiceHandlers)
                 {
                     if (!requestedCaps.Contains(kvp.Key))
                         continue;
 
-                        string hostName = m_httpListenerHostName;
-                        uint port = (MainServer.Instance == null) ? 0 : MainServer.Instance.Port;
-                        string protocol = "http";
-                        
-                        if (MainServer.Instance.UseSSL)
-                        {
-                            hostName = MainServer.Instance.SSLCommonName;
-                            port = MainServer.Instance.SSLPort;
-                            protocol = "https";
-                        }
-    //
-    //            caps.RegisterHandler("FetchInventoryDescendents2", String.Format("{0}://{1}:{2}{3}", protocol, hostName, port, capUrl));
+                    string hostName = m_httpListenerHostName;
+                    uint port = (MainServer.Instance == null) ? 0 : MainServer.Instance.Port;
+                    string protocol = "http";
 
-                        caps[kvp.Key] = string.Format("{0}://{1}:{2}{3}", protocol, hostName, port, kvp.Value.Url);
+                    if (MainServer.Instance.UseSSL)
+                    {
+                        hostName = MainServer.Instance.SSLCommonName;
+                        port = MainServer.Instance.SSLPort;
+                        protocol = "https";
+                    }
+                    //
+                    //            caps.RegisterHandler("FetchInventoryDescendents2", String.Format("{0}://{1}:{2}{3}", protocol, hostName, port, capUrl));
+
+                    caps[kvp.Key] = string.Format("{0}://{1}:{2}{3}", protocol, hostName, port, kvp.Value.Url);
                 }
             }
 
@@ -254,6 +184,62 @@ namespace OpenSim.Framework.Capabilities
             }
 
             return caps;
+        }
+
+        public Dictionary<string, PollServiceEventArgs> GetPollHandlers()
+        {
+            return new Dictionary<string, PollServiceEventArgs>(m_pollServiceHandlers);
+        }
+
+        /// <summary>
+        /// Register a handler.  This allows modules to register handlers.
+        /// </summary>
+        /// <param name="capName"></param>
+        /// <param name="handler"></param>
+        public void RegisterHandler(string capName, IRequestHandler handler)
+        {
+            //m_log.DebugFormat("[CAPS]: Registering handler for \"{0}\": path {1}", capName, handler.Path);
+            m_capsHandlers[capName] = handler;
+        }
+
+        /// <summary>
+        /// Register an external handler. The service for this capability is somewhere else
+        /// given by the URL.
+        /// </summary>
+        /// <param name="capsName"></param>
+        /// <param name="url"></param>
+        public void RegisterHandler(string capsName, string url)
+        {
+            m_externalCapsHandlers.Add(capsName, url);
+        }
+
+        public void RegisterPollHandler(string capName, PollServiceEventArgs pollServiceHandler)
+        {
+            //            m_log.DebugFormat(
+            //                "[CAPS]: Registering handler with name {0}, url {1} for {2}",
+            //                capName, pollServiceHandler.Url, m_agentID, m_regionName);
+
+            m_pollServiceHandlers.Add(capName, pollServiceHandler);
+
+            m_httpListener.AddPollServiceHTTPHandler(pollServiceHandler.Url, pollServiceHandler);
+
+            //            uint port = (MainServer.Instance == null) ? 0 : MainServer.Instance.Port;
+            //            string protocol = "http";
+            //            string hostName = m_httpListenerHostName;
+            //
+            //            if (MainServer.Instance.UseSSL)
+            //            {
+            //                hostName = MainServer.Instance.SSLCommonName;
+            //                port = MainServer.Instance.SSLPort;
+            //                protocol = "https";
+            //            }
+
+            //            RegisterHandler(
+            //                capName, String.Format("{0}://{1}:{2}{3}", protocol, hostName, port, pollServiceHandler.Url));
+        }
+        public bool TryGetPollHandler(string name, out PollServiceEventArgs pollHandler)
+        {
+            return m_pollServiceHandlers.TryGetValue(name, out pollHandler);
         }
     }
 }

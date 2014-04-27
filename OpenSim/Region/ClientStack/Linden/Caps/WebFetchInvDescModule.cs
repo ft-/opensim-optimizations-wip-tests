@@ -25,26 +25,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Mono.Addins;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Capabilities.Handlers;
+using OpenSim.Framework;
+using OpenSim.Framework.Capabilities;
+using OpenSim.Framework.Monitoring;
+using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
-using log4net;
-using Nini.Config;
-using Mono.Addins;
-using OpenMetaverse;
-using OpenMetaverse.StructuredData;
-using OpenSim.Framework;
-using OpenSim.Framework.Monitoring;
-using OpenSim.Framework.Servers;
-using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Framework.Capabilities;
-using OpenSim.Services.Interfaces;
 using Caps = OpenSim.Framework.Capabilities.Caps;
-using OpenSim.Capabilities.Handlers;
 
 namespace OpenSim.Region.ClientStack.Linden
 {
@@ -54,25 +52,26 @@ namespace OpenSim.Region.ClientStack.Linden
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "WebFetchInvDescModule")]
     public class WebFetchInvDescModule : INonSharedRegionModule
     {
-        class aPollRequest
-        {
-            public PollServiceInventoryEventArgs thepoll;
-            public UUID reqID;
-            public Hashtable request;
-            public ScenePresence presence;
-            public List<UUID> folders;
-        }
+        private static DoubleQueue<aPollRequest> m_queue =
+                new DoubleQueue<aPollRequest>();
 
-        // private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private static WebFetchInvDescHandler m_webFetchHandler;
 
+        private static Thread[] m_workerThreads = null;
 
-        /// <summary>
-        /// Control whether requests will be processed asynchronously.
-        /// </summary>
-        /// <remarks>
-        /// Defaults to true.  Can currently not be changed once a region has been added to the module.
-        /// </remarks>
-        public bool ProcessQueuedRequestsAsync { get; private set; }
+        private static Stat s_processedRequestsStat;
+
+        private static Stat s_queuedRequestsStat;
+
+        private bool m_Enabled;
+
+        private string m_fetchInventoryDescendents2Url;
+
+        private IInventoryService m_InventoryService;
+
+        private ILibraryService m_LibraryService;
+
+        private string m_webFetchInventoryDescendentsUrl;
 
         /// <summary>
         /// Number of inventory requests processed by this module.
@@ -82,33 +81,113 @@ namespace OpenSim.Region.ClientStack.Linden
         /// </remarks>
         public static int ProcessedRequestsCount { get; set; }
 
-        private static Stat s_queuedRequestsStat;
-        private static Stat s_processedRequestsStat;
+        /// <summary>
+        /// Control whether requests will be processed asynchronously.
+        /// </summary>
+        /// <remarks>
+        /// Defaults to true.  Can currently not be changed once a region has been added to the module.
+        /// </remarks>
+        public bool ProcessQueuedRequestsAsync { get; private set; }
 
+        // private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         public Scene Scene { get; private set; }
 
-        private IInventoryService m_InventoryService;
-        private ILibraryService m_LibraryService;
+        public void WaitProcessQueuedInventoryRequest()
+        {
+            aPollRequest poolreq = m_queue.Dequeue();
 
-        private bool m_Enabled;
+            if (poolreq != null && poolreq.thepoll != null)
+                poolreq.thepoll.Process(poolreq);
+        }
 
-        private string m_fetchInventoryDescendents2Url;
-        private string m_webFetchInventoryDescendentsUrl;
+        private void DoInventoryRequests()
+        {
+            while (true)
+            {
+                Watchdog.UpdateThread();
 
-        private static WebFetchInvDescHandler m_webFetchHandler;
+                WaitProcessQueuedInventoryRequest();
+            }
+        }
 
-        private static Thread[] m_workerThreads = null;
+        private void RegisterCaps(UUID agentID, Caps caps)
+        {
+            RegisterFetchDescendentsCap(agentID, caps, "FetchInventoryDescendents2", m_fetchInventoryDescendents2Url);
+        }
 
-        private static DoubleQueue<aPollRequest> m_queue =
-                new DoubleQueue<aPollRequest>();
+        private void RegisterFetchDescendentsCap(UUID agentID, Caps caps, string capName, string url)
+        {
+            string capUrl;
 
+            // disable the cap clause
+            if (url == "")
+            {
+                return;
+            }
+            // handled by the simulator
+            else if (url == "localhost")
+            {
+                capUrl = "/CAPS/" + UUID.Random() + "/";
+
+                // Register this as a poll service
+                PollServiceInventoryEventArgs args = new PollServiceInventoryEventArgs(this, capUrl, agentID);
+                args.Type = PollServiceEventArgs.EventType.Inventory;
+
+                caps.RegisterPollHandler(capName, args);
+            }
+            // external handler
+            else
+            {
+                capUrl = url;
+                IExternalCapsModule handler = Scene.RequestModuleInterface<IExternalCapsModule>();
+                if (handler != null)
+                    handler.RegisterExternalUserCapsHandler(agentID, caps, capName, capUrl);
+                else
+                    caps.RegisterHandler(capName, capUrl);
+            }
+
+            // m_log.DebugFormat(
+            //     "[FETCH INVENTORY DESCENDENTS2 MODULE]: Registered capability {0} at {1} in region {2} for {3}",
+            //     capName, capUrl, m_scene.RegionInfo.RegionName, agentID);
+        }
+
+        private class aPollRequest
+        {
+            public List<UUID> folders;
+            public ScenePresence presence;
+            public UUID reqID;
+            public Hashtable request;
+            public PollServiceInventoryEventArgs thepoll;
+        }
         #region ISharedRegionModule Members
 
-        public WebFetchInvDescModule() : this(true) {}
+        public WebFetchInvDescModule()
+            : this(true)
+        {
+        }
 
         public WebFetchInvDescModule(bool processQueuedResultsAsync)
         {
             ProcessQueuedRequestsAsync = processQueuedResultsAsync;
+        }
+
+        public string Name { get { return "WebFetchInvDescModule"; } }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
+        public void AddRegion(Scene s)
+        {
+            if (!m_Enabled)
+                return;
+
+            Scene = s;
+        }
+
+        public void Close()
+        {
         }
 
         public void Initialise(IConfigSource source)
@@ -125,37 +204,8 @@ namespace OpenSim.Region.ClientStack.Linden
                 m_Enabled = true;
             }
         }
-
-        public void AddRegion(Scene s)
+        public void PostInitialise()
         {
-            if (!m_Enabled)
-                return;
-
-            Scene = s;
-        }
-
-        public void RemoveRegion(Scene s)
-        {
-            if (!m_Enabled)
-                return;
-
-            Scene.EventManager.OnRegisterCaps -= RegisterCaps;
-
-            StatsManager.DeregisterStat(s_processedRequestsStat);
-            StatsManager.DeregisterStat(s_queuedRequestsStat);
-
-            if (ProcessQueuedRequestsAsync)
-            {
-                if (m_workerThreads != null)
-                {
-                    foreach (Thread t in m_workerThreads)
-                        Watchdog.AbortThread(t.ManagedThreadId);
-
-                    m_workerThreads = null;
-                }
-            }
-
-            Scene = null;
         }
 
         public void RegionLoaded(Scene s)
@@ -219,30 +269,39 @@ namespace OpenSim.Region.ClientStack.Linden
             }
         }
 
-        public void PostInitialise()
+        public void RemoveRegion(Scene s)
         {
+            if (!m_Enabled)
+                return;
+
+            Scene.EventManager.OnRegisterCaps -= RegisterCaps;
+
+            StatsManager.DeregisterStat(s_processedRequestsStat);
+            StatsManager.DeregisterStat(s_queuedRequestsStat);
+
+            if (ProcessQueuedRequestsAsync)
+            {
+                if (m_workerThreads != null)
+                {
+                    foreach (Thread t in m_workerThreads)
+                        Watchdog.AbortThread(t.ManagedThreadId);
+
+                    m_workerThreads = null;
+                }
+            }
+
+            Scene = null;
         }
-
-        public void Close() { }
-
-        public string Name { get { return "WebFetchInvDescModule"; } }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
-        #endregion
+        #endregion ISharedRegionModule Members
 
         private class PollServiceInventoryEventArgs : PollServiceEventArgs
         {
             private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-            private Dictionary<UUID, Hashtable> responses =
-                    new Dictionary<UUID, Hashtable>();
-
             private WebFetchInvDescModule m_module;
 
+            private Dictionary<UUID, Hashtable> responses =
+                    new Dictionary<UUID, Hashtable>();
             public PollServiceInventoryEventArgs(WebFetchInvDescModule module, string url, UUID pId) :
                 base(null, url, null, null, null, pId, int.MaxValue)
             {
@@ -331,13 +390,13 @@ namespace OpenSim.Region.ClientStack.Linden
 
                 NoEvents = (x, y) =>
                 {
-/*
-                    lock (requests)
-                    {
-                        Hashtable request = requests.Find(id => id["RequestID"].ToString() == x.ToString());
-                        requests.Remove(request);
-                    }
-*/
+                    /*
+                                        lock (requests)
+                                        {
+                                            Hashtable request = requests.Find(id => id["RequestID"].ToString() == x.ToString());
+                                            requests.Remove(request);
+                                        }
+                    */
                     Hashtable response = new Hashtable();
 
                     response["int_response_code"] = 500;
@@ -370,75 +429,15 @@ namespace OpenSim.Region.ClientStack.Linden
                 WebFetchInvDescModule.ProcessedRequestsCount++;
             }
         }
-
-        private void RegisterCaps(UUID agentID, Caps caps)
-        {
-            RegisterFetchDescendentsCap(agentID, caps, "FetchInventoryDescendents2", m_fetchInventoryDescendents2Url);
-        }
-
-        private void RegisterFetchDescendentsCap(UUID agentID, Caps caps, string capName, string url)
-        {
-            string capUrl;
-
-            // disable the cap clause
-            if (url == "")
-            {
-                return;
-            }
-            // handled by the simulator
-            else if (url == "localhost")
-            {
-                capUrl = "/CAPS/" + UUID.Random() + "/";
-
-                // Register this as a poll service
-                PollServiceInventoryEventArgs args = new PollServiceInventoryEventArgs(this, capUrl, agentID);
-                args.Type = PollServiceEventArgs.EventType.Inventory;
-
-                caps.RegisterPollHandler(capName, args);
-            }
-            // external handler
-            else
-            {
-                capUrl = url;
-                IExternalCapsModule handler = Scene.RequestModuleInterface<IExternalCapsModule>();
-                if (handler != null)
-                    handler.RegisterExternalUserCapsHandler(agentID,caps,capName,capUrl);
-                else
-                    caps.RegisterHandler(capName, capUrl);
-            }
-
-            // m_log.DebugFormat(
-            //     "[FETCH INVENTORY DESCENDENTS2 MODULE]: Registered capability {0} at {1} in region {2} for {3}",
-            //     capName, capUrl, m_scene.RegionInfo.RegionName, agentID);
-        }
-
-//        private void DeregisterCaps(UUID agentID, Caps caps)
-//        {
-//            string capUrl;
-//
-//            if (m_capsDict.TryGetValue(agentID, out capUrl))
-//            {
-//                MainServer.Instance.RemoveHTTPHandler("", capUrl);
-//                m_capsDict.Remove(agentID);
-//            }
-//        }
-
-        private void DoInventoryRequests()
-        {
-            while (true)
-            {
-                Watchdog.UpdateThread();
-
-                WaitProcessQueuedInventoryRequest();
-            }
-        }
-
-        public void WaitProcessQueuedInventoryRequest()
-        {
-            aPollRequest poolreq = m_queue.Dequeue();
-
-            if (poolreq != null && poolreq.thepoll != null)
-                poolreq.thepoll.Process(poolreq);
-        }
+        //        private void DeregisterCaps(UUID agentID, Caps caps)
+        //        {
+        //            string capUrl;
+        //
+        //            if (m_capsDict.TryGetValue(agentID, out capUrl))
+        //            {
+        //                MainServer.Instance.RemoveHTTPHandler("", capUrl);
+        //                m_capsDict.Remove(agentID);
+        //            }
+        //        }
     }
 }

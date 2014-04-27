@@ -25,25 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Specialized;
-using System.Reflection;
-using System.IO;
-using System.Web;
 using Mono.Addins;
-using log4net;
 using Nini.Config;
 using OpenMetaverse;
-using OpenMetaverse.StructuredData;
 using OpenSim.Framework;
+using OpenSim.Framework.Capabilities;
 using OpenSim.Framework.Servers;
 using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
+using System;
 using Caps = OpenSim.Framework.Capabilities.Caps;
-using OpenSim.Framework.Capabilities;
 using PermissionMask = OpenSim.Framework.PermissionMask;
 
 namespace OpenSim.Region.ClientStack.Linden
@@ -51,20 +43,24 @@ namespace OpenSim.Region.ClientStack.Linden
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "NewFileAgentInventoryVariablePriceModule")]
     public class NewFileAgentInventoryVariablePriceModule : INonSharedRegionModule
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        
-        private Scene m_scene;
-//        private IAssetService m_assetService;
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        //        private IAssetService m_assetService;
         private bool m_dumpAssetsToFile = false;
+
         private bool m_enabled = true;
-        private int  m_levelUpload = 0;
-
+        private int m_levelUpload = 0;
+        private Scene m_scene;
         #region Region Module interfaceBase Members
-
 
         public Type ReplaceableInterface
         {
             get { return null; }
+        }
+
+        public void AddRegion(Scene pScene)
+        {
+            m_scene = pScene;
         }
 
         public void Initialise(IConfigSource source)
@@ -76,46 +72,34 @@ namespace OpenSim.Region.ClientStack.Linden
             m_enabled = meshConfig.GetBoolean("AllowMeshUpload", true);
             m_levelUpload = meshConfig.GetInt("LevelUpload", 0);
         }
-
-        public void AddRegion(Scene pScene)
+        public void RegionLoaded(Scene scene)
         {
-            m_scene = pScene;
+            //            m_assetService = m_scene.RequestModuleInterface<IAssetService>();
+            m_scene.EventManager.OnRegisterCaps += RegisterCaps;
         }
 
         public void RemoveRegion(Scene scene)
         {
-            
             m_scene.EventManager.OnRegisterCaps -= RegisterCaps;
             m_scene = null;
         }
-
-        public void RegionLoaded(Scene scene)
-        {
-            
-//            m_assetService = m_scene.RequestModuleInterface<IAssetService>();
-            m_scene.EventManager.OnRegisterCaps += RegisterCaps;
-        }
-
-        #endregion
-
+        #endregion Region Module interfaceBase Members
 
         #region Region Module interface
 
-       
-
-        public void Close() { }
-
         public string Name { get { return "NewFileAgentInventoryVariablePriceModule"; } }
 
-
+        public void Close()
+        {
+        }
         public void RegisterCaps(UUID agentID, Caps caps)
         {
-            if(!m_enabled)
+            if (!m_enabled)
                 return;
 
             UUID capID = UUID.Random();
 
-//            m_log.Debug("[NEW FILE AGENT INVENTORY VARIABLE PRICE]: /CAPS/" + capID);
+            //            m_log.Debug("[NEW FILE AGENT INVENTORY VARIABLE PRICE]: /CAPS/" + capID);
             caps.RegisterHandler(
                 "NewFileAgentInventoryVariablePrice",
                 new LLSDStreamhandler<LLSDAssetUploadRequest, LLSDNewFileAngentInventoryVariablePriceReplyResponse>(
@@ -123,10 +107,10 @@ namespace OpenSim.Region.ClientStack.Linden
                     "/CAPS/" + capID.ToString(),
                     req => NewAgentInventoryRequest(req, agentID),
                     "NewFileAgentInventoryVariablePrice",
-                    agentID.ToString()));         
+                    agentID.ToString()));
         }
 
-        #endregion
+        #endregion Region Module interface
 
         public LLSDNewFileAngentInventoryVariablePriceReplyResponse NewAgentInventoryRequest(LLSDAssetUploadRequest llsdRequest, UUID agentID)
         {
@@ -134,10 +118,10 @@ namespace OpenSim.Region.ClientStack.Linden
             // you need to be aware of this
 
             //if (llsdRequest.asset_type == "texture" ||
-           //     llsdRequest.asset_type == "animation" ||
-           //     llsdRequest.asset_type == "sound")
-           // {
-                // check user level
+            //     llsdRequest.asset_type == "animation" ||
+            //     llsdRequest.asset_type == "sound")
+            // {
+            // check user level
 
             ScenePresence avatar = null;
             IClientAPI client = null;
@@ -176,7 +160,7 @@ namespace OpenSim.Region.ClientStack.Linden
                 }
             }
 
-           // }
+            // }
 
             string assetName = llsdRequest.name;
             string assetDes = llsdRequest.description;
@@ -206,35 +190,34 @@ namespace OpenSim.Region.ClientStack.Linden
             string uploaderURL = protocol + m_scene.RegionInfo.ExternalHostName + ":" + MainServer.Instance.Port.ToString() + capsBase +
                                  uploaderPath;
 
-
             LLSDNewFileAngentInventoryVariablePriceReplyResponse uploadResponse = new LLSDNewFileAngentInventoryVariablePriceReplyResponse();
-            
+
             uploadResponse.rsvp = uploaderURL;
             uploadResponse.state = "upload";
             uploadResponse.resource_cost = 0;
             uploadResponse.upload_price = 0;
 
             uploader.OnUpLoad += //UploadCompleteHandler;
-                
+
                 delegate(
                 string passetName, string passetDescription, UUID passetID,
                 UUID pinventoryItem, UUID pparentFolder, byte[] pdata, string pinventoryType,
                 string passetType)
-               {
-                   UploadCompleteHandler(passetName, passetDescription,  passetID,
-                                          pinventoryItem, pparentFolder, pdata,  pinventoryType,
-                                          passetType,agentID);
-               };
+                {
+                    UploadCompleteHandler(passetName, passetDescription, passetID,
+                                           pinventoryItem, pparentFolder, pdata, pinventoryType,
+                                           passetType, agentID);
+                };
 
             return uploadResponse;
         }
 
         public void UploadCompleteHandler(string assetName, string assetDescription, UUID assetID,
                                           UUID inventoryItem, UUID parentFolder, byte[] data, string inventoryType,
-                                          string assetType,UUID AgentID)
+                                          string assetType, UUID AgentID)
         {
-//            m_log.DebugFormat(
-//                "[NEW FILE AGENT INVENTORY VARIABLE PRICE MODULE]: Upload complete for {0}", inventoryItem);
+            //            m_log.DebugFormat(
+            //                "[NEW FILE AGENT INVENTORY VARIABLE PRICE MODULE]: Upload complete for {0}", inventoryItem);
 
             sbyte assType = 0;
             sbyte inType = 0;
@@ -257,6 +240,7 @@ namespace OpenSim.Region.ClientStack.Linden
                     case "bodypart":
                         assType = 13;
                         break;
+
                     case "clothing":
                         assType = 5;
                         break;
@@ -264,14 +248,14 @@ namespace OpenSim.Region.ClientStack.Linden
             }
             else if (inventoryType == "mesh")
             {
-                inType = (sbyte)InventoryType.Mesh; 
+                inType = (sbyte)InventoryType.Mesh;
                 assType = (sbyte)AssetType.Mesh;
             }
 
             AssetBase asset;
             asset = new AssetBase(assetID, assetName, assType, AgentID.ToString());
             asset.Data = data;
-    
+
             if (m_scene.AssetService != null)
                 m_scene.AssetService.Store(asset);
 

@@ -34,6 +34,21 @@ namespace OpenSim.Framework
     /// </summary>
     public class InventoryNodeBase
     {
+        private UUID m_id;
+
+        private string m_name = string.Empty;
+
+        private UUID m_owner;
+
+        /// <summary>
+        /// A UUID containing the ID for the inventory node itself
+        /// </summary>
+        public UUID ID
+        {
+            get { return m_id; }
+            set { m_id = value; }
+        }
+
         /// <summary>
         /// The name of the node (64 characters or less)
         /// </summary>
@@ -41,19 +56,7 @@ namespace OpenSim.Framework
         {
             get { return m_name; }
             set { m_name = value; }
-        } 
-        private string m_name = string.Empty;
-        
-        /// <summary>
-        /// A UUID containing the ID for the inventory node itself
-        /// </summary>
-        public UUID ID 
-        {
-            get { return m_id; }
-            set { m_id = value; }
         }
-        private UUID m_id;
-        
         /// <summary>
         /// The agent who's inventory this is contained by
         /// </summary>
@@ -62,6 +65,5 @@ namespace OpenSim.Framework
             get { return m_owner; }
             set { m_owner = value; }
         }
-        private UUID m_owner;
     }
 }

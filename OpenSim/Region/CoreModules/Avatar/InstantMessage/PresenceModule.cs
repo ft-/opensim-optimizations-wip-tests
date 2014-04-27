@@ -1,3 +1,12 @@
+using log4net;
+using Mono.Addins;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
+using OpenSim.Services.Interfaces;
+
 /*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
@@ -24,21 +33,10 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Net;
 using System.Reflection;
-using log4net;
-using Nini.Config;
-using Nwc.XmlRpc;
-using OpenMetaverse;
-using Mono.Addins;
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 using PresenceInfo = OpenSim.Services.Interfaces.PresenceInfo;
 
 namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
@@ -46,17 +44,28 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "PresenceModule")]
     public class PresenceModule : ISharedRegionModule, IPresenceModule
     {
+        protected IPresenceService m_PresenceService = null;
+
+        protected List<Scene> m_Scenes = new List<Scene>();
+
         private static readonly ILog m_log = LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
 #pragma warning disable 0067
-        public event PresenceChange OnPresenceChange;
+
         public event BulkPresenceData OnBulkPresenceData;
+
+        public event PresenceChange OnPresenceChange;
 #pragma warning restore 0067
+        public string Name
+        {
+            get { return "PresenceModule"; }
+        }
 
-        protected List<Scene> m_Scenes = new List<Scene>();
-
-        protected IPresenceService m_PresenceService = null;
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
 
         protected IPresenceService PresenceService
         {
@@ -72,10 +81,6 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
             }
         }
 
-        public void Initialise(IConfigSource config)
-        {
-        }
-
         public void AddRegion(Scene scene)
         {
             m_Scenes.Add(scene);
@@ -85,37 +90,13 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
             scene.RegisterModuleInterface<IPresenceModule>(this);
         }
 
-        public void RegionLoaded(Scene scene)
-        {
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-            m_Scenes.Remove(scene);
-        }
-
-        public void PostInitialise()
-        {
-        }
-
         public void Close()
         {
         }
 
-        public string Name
-        {
-            get { return "PresenceModule"; }
-        }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
-        public void RequestBulkPresenceData(UUID[] users)
+        public void Initialise(IConfigSource config)
         {
         }
-
         public void OnNewClient(IClientAPI client)
         {
             client.AddGenericPacketHandler("requestonlinenotification", OnRequestOnlineNotification);
@@ -151,6 +132,22 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
                 client.SendAgentOnline(online.ToArray());
             if (offline.Count > 0)
                 client.SendAgentOffline(offline.ToArray());
+        }
+
+        public void PostInitialise()
+        {
+        }
+
+        public void RegionLoaded(Scene scene)
+        {
+        }
+
+        public void RemoveRegion(Scene scene)
+        {
+            m_Scenes.Remove(scene);
+        }
+        public void RequestBulkPresenceData(UUID[] users)
+        {
         }
     }
 }

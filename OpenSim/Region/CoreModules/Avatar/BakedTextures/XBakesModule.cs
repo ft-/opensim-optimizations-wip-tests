@@ -25,23 +25,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using OpenMetaverse;
-using Nini.Config;
-using System;
-using System.IO;
-using System.Text;
-using System.Xml;
-using System.Xml.Serialization;
-using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
 using log4net;
+using Mono.Addins;
+using Nini.Config;
+using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Framework.Communications;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
-using Mono.Addins;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Text;
+using System.Xml;
+using System.Xml.Serialization;
 
 namespace OpenSim.Region.CoreModules.Avatar.BakedTextures
 {
@@ -50,19 +49,17 @@ namespace OpenSim.Region.CoreModules.Avatar.BakedTextures
     {
         protected Scene m_Scene;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private static XmlSerializer m_serializer = new XmlSerializer(typeof(AssetBase));
         private UTF8Encoding enc = new UTF8Encoding();
         private string m_URL = String.Empty;
-        private static XmlSerializer m_serializer = new XmlSerializer(typeof(AssetBase));
-
-
-
-        public void Initialise(IConfigSource configSource)
+        public string Name
         {
-            IConfig config = configSource.Configs["XBakes"];
-            if (config == null)
-                return;
+            get { return "XBakes.Module"; }
+        }
 
-            m_URL = config.GetString("URL", String.Empty);
+        public Type ReplaceableInterface
+        {
+            get { return null; }
         }
 
         public void AddRegion(Scene scene)
@@ -73,26 +70,8 @@ namespace OpenSim.Region.CoreModules.Avatar.BakedTextures
             scene.RegisterModuleInterface<IBakedTextureModule>(this);
         }
 
-        public void RegionLoaded(Scene scene)
-        {
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-        }
-
         public void Close()
         {
-        }
-
-        public string Name
-        {
-            get { return "XBakes.Module"; }
-        }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
         }
 
         public WearableCacheItem[] Get(UUID id)
@@ -137,7 +116,6 @@ namespace OpenSim.Region.CoreModules.Avatar.BakedTextures
                 sr.Close();
                 s.Close();
 
-
                 return ret.ToArray();
             }
             catch (XmlException)
@@ -146,6 +124,21 @@ namespace OpenSim.Region.CoreModules.Avatar.BakedTextures
             }
         }
 
+        public void Initialise(IConfigSource configSource)
+        {
+            IConfig config = configSource.Configs["XBakes"];
+            if (config == null)
+                return;
+
+            m_URL = config.GetString("URL", String.Empty);
+        }
+        public void RegionLoaded(Scene scene)
+        {
+        }
+
+        public void RemoveRegion(Scene scene)
+        {
+        }
         public void Store(UUID agentId, WearableCacheItem[] data)
         {
             if (m_URL == String.Empty)

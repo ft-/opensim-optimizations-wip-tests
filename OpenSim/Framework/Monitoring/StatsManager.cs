@@ -25,17 +25,49 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse.StructuredData;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-
-using OpenSim.Framework;
-using OpenMetaverse.StructuredData;
 
 namespace OpenSim.Framework.Monitoring
 {
+    /// <summary>
+    /// Measures of interest for this stat.
+    /// </summary>
+    [Flags]
+    public enum MeasuresOfInterest
+    {
+        None,
+        AverageChangeOverTime
+    }
+
+    /// <summary>
+    /// Stat type.
+    /// </summary>
+    /// <remarks>
+    /// A push stat is one which is continually updated and so it's value can simply by read.
+    /// A pull stat is one where reading the value triggers a collection method - the stat is not continually updated.
+    /// </remarks>
+    public enum StatType
+    {
+        Push,
+        Pull
+    }
+
+    /// <summary>
+    /// Verbosity of stat.
+    /// </summary>
+    /// <remarks>
+    /// Info will always be displayed.
+    /// </remarks>
+    public enum StatVerbosity
+    {
+        Debug,
+        Info
+    }
+
     /// <summary>
     /// Static class used to register/deregister/fetch statistics
     /// </summary>
@@ -47,9 +79,6 @@ namespace OpenSim.Framework.Monitoring
         // Subcommand used to list other stats.
         public const string ListSubCommand = "list";
 
-        // All subcommands
-        public static HashSet<string> SubCommands = new HashSet<string> { AllSubCommand, ListSubCommand };
-
         /// <summary>
         /// Registered stats categorized by category/container/shortname
         /// </summary>
@@ -59,40 +88,150 @@ namespace OpenSim.Framework.Monitoring
         public static SortedDictionary<string, SortedDictionary<string, SortedDictionary<string, Stat>>> RegisteredStats
             = new SortedDictionary<string, SortedDictionary<string, SortedDictionary<string, Stat>>>();
 
-//        private static AssetStatsCollector assetStats;
-//        private static UserStatsCollector userStats;
-//        private static SimExtraStatsCollector simExtraStats = new SimExtraStatsCollector();
+        // All subcommands
+        public static HashSet<string> SubCommands = new HashSet<string> { AllSubCommand, ListSubCommand };
+        //        private static AssetStatsCollector assetStats;
+        //        private static UserStatsCollector userStats;
+        //        private static SimExtraStatsCollector simExtraStats = new SimExtraStatsCollector();
 
-//        public static AssetStatsCollector AssetStats { get { return assetStats; } }
-//        public static UserStatsCollector UserStats { get { return userStats; } }
+        //        public static AssetStatsCollector AssetStats { get { return assetStats; } }
+        //        public static UserStatsCollector UserStats { get { return userStats; } }
         public static SimExtraStatsCollector SimExtraStats { get; set; }
 
-        public static void RegisterConsoleCommands(ICommandConsole console)
+        /// <summary>
+        /// Deregister a statistic
+        /// </summary>>
+        /// <param name='stat'></param>
+        /// <returns></returns>
+        public static bool DeregisterStat(Stat stat)
         {
-            console.Commands.AddCommand(
-                "General",
-                false,
-                "stats show",
-                "stats show [list|all|(<category>[.<container>])+",
-                "Show statistical information for this server",
-                "If no final argument is specified then legacy statistics information is currently shown.\n"
-                    + "'list' argument will show statistic categories.\n"
-                    + "'all' will show all statistics.\n"
-                    + "A <category> name will show statistics from that category.\n"
-                    + "A <category>.<container> name will show statistics from that category in that container.\n"
-                    + "More than one name can be given separated by spaces.\n"
-                    + "THIS STATS FACILITY IS EXPERIMENTAL AND DOES NOT YET CONTAIN ALL STATS",
-                HandleShowStatsCommand);
+            SortedDictionary<string, SortedDictionary<string, Stat>> category = null, newCategory;
+            SortedDictionary<string, Stat> container = null, newContainer;
 
-            console.Commands.AddCommand(
-                "General",
-                false,
-                "show stats",
-                "show stats [list|all|(<category>[.<container>])+",
-                "Alias for 'stats show' command",
-                HandleShowStatsCommand);
+            lock (RegisteredStats)
+            {
+                if (!TryGetStatParents(stat, out category, out container))
+                    return false;
 
-            StatsLogger.RegisterConsoleCommands(console);
+                newContainer = new SortedDictionary<string, Stat>(container);
+                newContainer.Remove(stat.ShortName);
+
+                newCategory = new SortedDictionary<string, SortedDictionary<string, Stat>>(category);
+                newCategory.Remove(stat.Container);
+
+                newCategory[stat.Container] = newContainer;
+                RegisteredStats[stat.Category] = newCategory;
+
+                return true;
+            }
+        }
+
+        public static List<string> GetAllStatsReports()
+        {
+            List<string> reports = new List<string>();
+
+            foreach (var category in RegisteredStats.Values)
+                reports.AddRange(GetCategoryStatsReports(category));
+
+            return reports;
+        }
+
+        // Creates an OSDMap of the format:
+        // { categoryName: {
+        //         containerName: {
+        //               statName: {
+        //                     "Name": name,
+        //                     "ShortName": shortName,
+        //                     ...
+        //               },
+        //               statName: {
+        //                     "Name": name,
+        //                     "ShortName": shortName,
+        //                     ...
+        //               },
+        //               ...
+        //         },
+        //         containerName: {
+        //         ...
+        //         },
+        //         ...
+        //   },
+        //   categoryName: {
+        //   ...
+        //   },
+        //   ...
+        // }
+        // The passed in parameters will filter the categories, containers and stats returned. If any of the
+        //    parameters are either EmptyOrNull or the AllSubCommand value, all of that type will be returned.
+        // Case matters.
+        public static OSDMap GetStatsAsOSDMap(string pCategoryName, string pContainerName, string pStatName)
+        {
+            OSDMap map = new OSDMap();
+
+            foreach (string catName in RegisteredStats.Keys)
+            {
+                // Do this category if null spec, "all" subcommand or category name matches passed parameter.
+                // Skip category if none of the above.
+                if (!(String.IsNullOrEmpty(pCategoryName) || pCategoryName == AllSubCommand || pCategoryName == catName))
+                    continue;
+
+                OSDMap contMap = new OSDMap();
+                foreach (string contName in RegisteredStats[catName].Keys)
+                {
+                    if (!(string.IsNullOrEmpty(pContainerName) || pContainerName == AllSubCommand || pContainerName == contName))
+                        continue;
+
+                    OSDMap statMap = new OSDMap();
+
+                    SortedDictionary<string, Stat> theStats = RegisteredStats[catName][contName];
+                    foreach (string statName in theStats.Keys)
+                    {
+                        if (!(String.IsNullOrEmpty(pStatName) || pStatName == AllSubCommand || pStatName == statName))
+                            continue;
+
+                        statMap.Add(statName, theStats[statName].ToOSDMap());
+                    }
+
+                    contMap.Add(contName, statMap);
+                }
+                map.Add(catName, contMap);
+            }
+
+            return map;
+        }
+
+        /// <summary>
+        /// Get the same stat for each container in a given category.
+        /// </summary>
+        /// <returns>
+        /// The stats if there were any to fetch.  Otherwise null.
+        /// </returns>
+        /// <param name='category'></param>
+        /// <param name='statShortName'></param>
+        public static List<Stat> GetStatsFromEachContainer(string category, string statShortName)
+        {
+            SortedDictionary<string, SortedDictionary<string, Stat>> categoryStats;
+
+            lock (RegisteredStats)
+            {
+                if (!RegisteredStats.TryGetValue(category, out categoryStats))
+                    return null;
+
+                List<Stat> stats = null;
+
+                foreach (SortedDictionary<string, Stat> containerStats in categoryStats.Values)
+                {
+                    if (containerStats.ContainsKey(statShortName))
+                    {
+                        if (stats == null)
+                            stats = new List<Stat>();
+
+                        stats.Add(containerStats[statShortName]);
+                    }
+                }
+
+                return stats;
+            }
         }
 
         public static void HandleShowStatsCommand(string module, string[] cmd)
@@ -174,130 +313,10 @@ namespace OpenSim.Framework.Monitoring
             }
         }
 
-        public static List<string> GetAllStatsReports()
-        {
-            List<string> reports = new List<string>();
-
-            foreach (var category in RegisteredStats.Values)
-                reports.AddRange(GetCategoryStatsReports(category));
-
-            return reports;
-        }
-
-        private static void OutputAllStatsToConsole(ICommandConsole con)
-        {
-            foreach (string report in GetAllStatsReports())
-                con.Output(report);
-        }
-
-        private static List<string> GetCategoryStatsReports(
-            SortedDictionary<string, SortedDictionary<string, Stat>> category)
-        {
-            List<string> reports = new List<string>();
-
-            foreach (var container in category.Values)
-                reports.AddRange(GetContainerStatsReports(container));
-
-            return reports;
-        }
-
-        private static void OutputCategoryStatsToConsole(
-            ICommandConsole con, SortedDictionary<string, SortedDictionary<string, Stat>> category)
-        {
-            foreach (string report in GetCategoryStatsReports(category))
-                con.Output(report);
-        }
-
-        private static List<string> GetContainerStatsReports(SortedDictionary<string, Stat> container)
-        {
-            List<string> reports = new List<string>();
-
-            foreach (Stat stat in container.Values)
-                reports.Add(stat.ToConsoleString());
-
-            return reports;
-        }
-
-        private static void OutputContainerStatsToConsole(
-            ICommandConsole con, SortedDictionary<string, Stat> container)
-        {
-            foreach (string report in GetContainerStatsReports(container))
-                con.Output(report);
-        }
-
-        private static void OutputStatToConsole(ICommandConsole con, Stat stat)
-        {
-            con.Output(stat.ToConsoleString());
-        }
-
-        // Creates an OSDMap of the format:
-        // { categoryName: {
-        //         containerName: {
-        //               statName: {
-        //                     "Name": name,
-        //                     "ShortName": shortName,
-        //                     ...
-        //               },
-        //               statName: {
-        //                     "Name": name,
-        //                     "ShortName": shortName,
-        //                     ...
-        //               },
-        //               ...
-        //         },
-        //         containerName: {
-        //         ...
-        //         },
-        //         ...
-        //   },
-        //   categoryName: {
-        //   ...
-        //   },
-        //   ...
-        // }
-        // The passed in parameters will filter the categories, containers and stats returned. If any of the
-        //    parameters are either EmptyOrNull or the AllSubCommand value, all of that type will be returned.
-        // Case matters.
-        public static OSDMap GetStatsAsOSDMap(string pCategoryName, string pContainerName, string pStatName)
-        {
-            OSDMap map = new OSDMap();
-
-            foreach (string catName in RegisteredStats.Keys)
-            {
-                // Do this category if null spec, "all" subcommand or category name matches passed parameter.
-                // Skip category if none of the above.
-                if (!(String.IsNullOrEmpty(pCategoryName) || pCategoryName == AllSubCommand || pCategoryName == catName))
-                    continue;
-
-                OSDMap contMap = new OSDMap();
-                foreach (string contName in RegisteredStats[catName].Keys)
-                {
-                    if (!(string.IsNullOrEmpty(pContainerName) || pContainerName == AllSubCommand || pContainerName == contName))
-                        continue;
-                    
-                    OSDMap statMap = new OSDMap();
-
-                    SortedDictionary<string, Stat> theStats = RegisteredStats[catName][contName];
-                    foreach (string statName in theStats.Keys)
-                    {
-                        if (!(String.IsNullOrEmpty(pStatName) || pStatName == AllSubCommand || pStatName == statName))
-                            continue;
-
-                        statMap.Add(statName, theStats[statName].ToOSDMap());
-                    }
-
-                    contMap.Add(contName, statMap);
-                }
-                map.Add(catName, contMap);
-            }
-
-            return map;
-        }
-
         public static Hashtable HandleStatsRequest(Hashtable request)
         {
             Hashtable responsedata = new Hashtable();
-//            string regpath = request["uri"].ToString();
+            //            string regpath = request["uri"].ToString();
             int response_code = 200;
             string contenttype = "text/json";
 
@@ -329,28 +348,51 @@ namespace OpenSim.Framework.Monitoring
             return responsedata;
         }
 
-//        /// <summary>
-//        /// Start collecting statistics related to assets.
-//        /// Should only be called once.
-//        /// </summary>
-//        public static AssetStatsCollector StartCollectingAssetStats()
-//        {
-//            assetStats = new AssetStatsCollector();
-//
-//            return assetStats;
-//        }
-//
-//        /// <summary>
-//        /// Start collecting statistics related to users.
-//        /// Should only be called once.
-//        /// </summary>
-//        public static UserStatsCollector StartCollectingUserStats()
-//        {
-//            userStats = new UserStatsCollector();
-//
-//            return userStats;
-//        }
+        public static void RecordStats()
+        {
+            lock (RegisteredStats)
+            {
+                foreach (SortedDictionary<string, SortedDictionary<string, Stat>> category in RegisteredStats.Values)
+                {
+                    foreach (SortedDictionary<string, Stat> container in category.Values)
+                    {
+                        foreach (Stat stat in container.Values)
+                        {
+                            if (stat.MeasuresOfInterest != MeasuresOfInterest.None)
+                                stat.RecordValue();
+                        }
+                    }
+                }
+            }
+        }
 
+        public static void RegisterConsoleCommands(ICommandConsole console)
+        {
+            console.Commands.AddCommand(
+                "General",
+                false,
+                "stats show",
+                "stats show [list|all|(<category>[.<container>])+",
+                "Show statistical information for this server",
+                "If no final argument is specified then legacy statistics information is currently shown.\n"
+                    + "'list' argument will show statistic categories.\n"
+                    + "'all' will show all statistics.\n"
+                    + "A <category> name will show statistics from that category.\n"
+                    + "A <category>.<container> name will show statistics from that category in that container.\n"
+                    + "More than one name can be given separated by spaces.\n"
+                    + "THIS STATS FACILITY IS EXPERIMENTAL AND DOES NOT YET CONTAIN ALL STATS",
+                HandleShowStatsCommand);
+
+            console.Commands.AddCommand(
+                "General",
+                false,
+                "show stats",
+                "show stats [list|all|(<category>[.<container>])+",
+                "Alias for 'stats show' command",
+                HandleShowStatsCommand);
+
+            StatsLogger.RegisterConsoleCommands(console);
+        }
         /// <summary>
         /// Register a statistic.
         /// </summary>
@@ -390,34 +432,27 @@ namespace OpenSim.Framework.Monitoring
             return true;
         }
 
-        /// <summary>
-        /// Deregister a statistic
-        /// </summary>>
-        /// <param name='stat'></param>
-        /// <returns></returns>
-        public static bool DeregisterStat(Stat stat)
-        {
-            SortedDictionary<string, SortedDictionary<string, Stat>> category = null, newCategory;
-            SortedDictionary<string, Stat> container = null, newContainer;
-
-            lock (RegisteredStats)
-            {
-                if (!TryGetStatParents(stat, out category, out container))
-                    return false;
-
-                newContainer = new SortedDictionary<string, Stat>(container);
-                newContainer.Remove(stat.ShortName);
-
-                newCategory = new SortedDictionary<string, SortedDictionary<string, Stat>>(category);
-                newCategory.Remove(stat.Container);
-
-                newCategory[stat.Container] = newContainer;
-                RegisteredStats[stat.Category] = newCategory;
-
-                return true;
-            }
-        }
-
+        //        /// <summary>
+        //        /// Start collecting statistics related to assets.
+        //        /// Should only be called once.
+        //        /// </summary>
+        //        public static AssetStatsCollector StartCollectingAssetStats()
+        //        {
+        //            assetStats = new AssetStatsCollector();
+        //
+        //            return assetStats;
+        //        }
+        //
+        //        /// <summary>
+        //        /// Start collecting statistics related to users.
+        //        /// Should only be called once.
+        //        /// </summary>
+        //        public static UserStatsCollector StartCollectingUserStats()
+        //        {
+        //            userStats = new UserStatsCollector();
+        //
+        //            return userStats;
+        //        }
         public static bool TryGetStat(string category, string container, string statShortName, out Stat stat)
         {
             stat = null;
@@ -434,47 +469,6 @@ namespace OpenSim.Framework.Monitoring
                     return false;
 
                 return containerStats.TryGetValue(statShortName, out stat);
-            }
-        }
-
-        public static bool TryGetStatsForCategory(
-            string category, out SortedDictionary<string, SortedDictionary<string, Stat>> stats)
-        {
-            lock (RegisteredStats)
-                return RegisteredStats.TryGetValue(category, out stats);
-        }
-
-        /// <summary>
-        /// Get the same stat for each container in a given category.
-        /// </summary>
-        /// <returns>
-        /// The stats if there were any to fetch.  Otherwise null.
-        /// </returns>
-        /// <param name='category'></param>
-        /// <param name='statShortName'></param>
-        public static List<Stat> GetStatsFromEachContainer(string category, string statShortName)
-        {
-            SortedDictionary<string, SortedDictionary<string, Stat>> categoryStats;
-
-            lock (RegisteredStats)
-            {
-                if (!RegisteredStats.TryGetValue(category, out categoryStats))
-                    return null;
-
-                List<Stat> stats = null;
-
-                foreach (SortedDictionary<string, Stat> containerStats in categoryStats.Values)
-                {
-                    if (containerStats.ContainsKey(statShortName))
-                    {
-                        if (stats == null)
-                            stats = new List<Stat>();
-
-                        stats.Add(containerStats[statShortName]);
-                    }
-                }
-
-                return stats;
             }
         }
 
@@ -501,57 +495,55 @@ namespace OpenSim.Framework.Monitoring
             return false;
         }
 
-        public static void RecordStats()
+        public static bool TryGetStatsForCategory(
+            string category, out SortedDictionary<string, SortedDictionary<string, Stat>> stats)
         {
             lock (RegisteredStats)
-            {
-                foreach (SortedDictionary<string, SortedDictionary<string, Stat>> category in RegisteredStats.Values)
-                {
-                    foreach (SortedDictionary<string, Stat> container in category.Values)
-                    {
-                        foreach (Stat stat in container.Values)
-                        {
-                            if (stat.MeasuresOfInterest != MeasuresOfInterest.None)
-                                stat.RecordValue();
-                        }
-                    }
-                }
-            }
+                return RegisteredStats.TryGetValue(category, out stats);
         }
-    }
 
-    /// <summary>
-    /// Stat type.
-    /// </summary>
-    /// <remarks>
-    /// A push stat is one which is continually updated and so it's value can simply by read.
-    /// A pull stat is one where reading the value triggers a collection method - the stat is not continually updated.
-    /// </remarks>
-    public enum StatType
-    {
-        Push,
-        Pull
-    }
+        private static List<string> GetCategoryStatsReports(
+            SortedDictionary<string, SortedDictionary<string, Stat>> category)
+        {
+            List<string> reports = new List<string>();
 
-    /// <summary>
-    /// Measures of interest for this stat.
-    /// </summary>
-    [Flags]
-    public enum MeasuresOfInterest
-    {
-        None,
-        AverageChangeOverTime
-    }
+            foreach (var container in category.Values)
+                reports.AddRange(GetContainerStatsReports(container));
 
-    /// <summary>
-    /// Verbosity of stat.
-    /// </summary>
-    /// <remarks>
-    /// Info will always be displayed.
-    /// </remarks>
-    public enum StatVerbosity
-    {
-        Debug,
-        Info
+            return reports;
+        }
+
+        private static List<string> GetContainerStatsReports(SortedDictionary<string, Stat> container)
+        {
+            List<string> reports = new List<string>();
+
+            foreach (Stat stat in container.Values)
+                reports.Add(stat.ToConsoleString());
+
+            return reports;
+        }
+
+        private static void OutputAllStatsToConsole(ICommandConsole con)
+        {
+            foreach (string report in GetAllStatsReports())
+                con.Output(report);
+        }
+        private static void OutputCategoryStatsToConsole(
+            ICommandConsole con, SortedDictionary<string, SortedDictionary<string, Stat>> category)
+        {
+            foreach (string report in GetCategoryStatsReports(category))
+                con.Output(report);
+        }
+        private static void OutputContainerStatsToConsole(
+            ICommandConsole con, SortedDictionary<string, Stat> container)
+        {
+            foreach (string report in GetContainerStatsReports(container))
+                con.Output(report);
+        }
+
+        private static void OutputStatToConsole(ICommandConsole con, Stat stat)
+        {
+            con.Output(stat.ToConsoleString());
+        }
     }
 }

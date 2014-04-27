@@ -25,26 +25,30 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Xml;
 using OpenMetaverse;
 
 namespace OpenSim.Framework
 {
     public interface ISceneObject
     {
-        UUID UUID { get; }
+        bool HasGroupChanged { get; set; }
 
         /// <summary>
         /// The owner of this object.
         /// </summary>
         UUID OwnerID { get; set; }
 
+        UUID UUID { get; }
         ISceneObject CloneForNewScene();
-        string ToXml2();
-        string ExtraToXmlString();
+
         void ExtraFromXmlString(string xmlstr);
+
+        string ExtraToXmlString();
+
         string GetStateSnapshot();
+
         void SetState(string xmlstr, IScene s);
-        bool HasGroupChanged { get; set; }
+
+        string ToXml2();
     }
 }

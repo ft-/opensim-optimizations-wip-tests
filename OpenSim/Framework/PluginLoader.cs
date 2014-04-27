@@ -25,25 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Mono.Addins;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using log4net;
-using Mono.Addins;
 
 namespace OpenSim.Framework
 {
-    /// <summary>
-    /// Exception thrown if an incorrect number of plugins are loaded
-    /// </summary>
-    public class PluginConstraintViolatedException : Exception
-    {
-        public PluginConstraintViolatedException () : base() {}
-        public PluginConstraintViolatedException (string msg) : base(msg) {}
-        public PluginConstraintViolatedException (string msg, Exception e) : base(msg, e) {}
-    }
-
     /// <summary>
     /// Classes wishing to impose constraints on plugin loading must implement
     /// this class and pass it to PluginLoader AddConstraint()
@@ -51,6 +41,7 @@ namespace OpenSim.Framework
     public interface IPluginConstraint
     {
         string Message { get; }
+
         bool Apply(string extpoint);
     }
 
@@ -64,41 +55,165 @@ namespace OpenSim.Framework
     }
 
     /// <summary>
+    /// Exception thrown if an incorrect number of plugins are loaded
+    /// </summary>
+    public class PluginConstraintViolatedException : Exception
+    {
+        public PluginConstraintViolatedException()
+            : base()
+        {
+        }
+
+        public PluginConstraintViolatedException(string msg)
+            : base(msg)
+        {
+        }
+
+        public PluginConstraintViolatedException(string msg, Exception e)
+            : base(msg, e)
+        {
+        }
+    }
+    /// <summary>
+    /// Constraint that bounds the number of plugins to be loaded.
+    /// </summary>
+    public class PluginCountConstraint : IPluginConstraint
+    {
+        private int max;
+        private int min;
+        public PluginCountConstraint(int exact)
+        {
+            min = exact;
+            max = exact;
+        }
+
+        public PluginCountConstraint(int minimum, int maximum)
+        {
+            min = minimum;
+            max = maximum;
+        }
+
+        public string Message
+        {
+            get
+            {
+                return "The number of plugins is constrained to the interval ["
+                    + min + ", " + max + "]";
+            }
+        }
+
+        public bool Apply(string extpoint)
+        {
+            int count = AddinManager.GetExtensionNodes(extpoint).Count;
+
+            if ((count < min) || (count > max))
+                throw new PluginConstraintViolatedException(Message);
+
+            return true;
+        }
+    }
+
+    public class PluginExtensionNode : ExtensionNode
+    {
+        [NodeAttribute]
+        private string id = "";
+
+        [NodeAttribute]
+        private string provider = "";
+
+        [NodeAttribute]
+        private string type = "";
+
+        private Type typeobj;
+
+        public string ID { get { return id; } }
+
+        public string Provider { get { return provider; } }
+
+        public string TypeName { get { return type; } }
+
+        public Type TypeObject
+        {
+            get
+            {
+                if (typeobj != null)
+                    return typeobj;
+
+                if (type.Length == 0)
+                    throw new InvalidOperationException("Type name not specified.");
+
+                return typeobj = Addin.GetType(type, true);
+            }
+        }
+
+        public object CreateInstance()
+        {
+            return Activator.CreateInstance(TypeObject);
+        }
+    }
+
+    /// <summary>
+    /// Filters plugins according to their ID. Plugin IDs are contained in their addin.xml
+    /// </summary>
+    public class PluginIdFilter : IPluginFilter
+    {
+        private string[] m_filters;
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="p">
+        /// Plugin ID or IDs on which to filter. Multiple names should be separated by commas.
+        /// </param>
+        public PluginIdFilter(string p)
+        {
+            m_filters = p.Split(',');
+
+            for (int i = 0; i < m_filters.Length; i++)
+            {
+                m_filters[i] = m_filters[i].Trim();
+            }
+        }
+
+        /// <summary>
+        /// Apply this filter to <paramref name="plugin" />.
+        /// </summary>
+        /// <param name="plugin">PluginExtensionNode instance to check whether it passes the filter.</param>
+        /// <returns>true if the plugin's ID matches one of the filters, false otherwise.</returns>
+        public bool Apply(PluginExtensionNode plugin)
+        {
+            for (int i = 0; i < m_filters.Length; i++)
+            {
+                if (m_filters[i] == plugin.ID)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Generic Plugin Loader
     /// </summary>
-    public class PluginLoader <T> : IDisposable where T : IPlugin
+    public class PluginLoader<T> : IDisposable where T : IPlugin
     {
         private const int max_loadable_plugins = 10000;
-
-        private List<T> loaded = new List<T>();
-        private List<string> extpoints = new List<string>();
-        private PluginInitialiserBase initialiser;
-
-        private Dictionary<string,IPluginConstraint> constraints
-            = new Dictionary<string,IPluginConstraint>();
-
-        private Dictionary<string,IPluginFilter> filters
-            = new Dictionary<string,IPluginFilter>();
 
         private static readonly ILog log
             = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        public PluginInitialiserBase Initialiser
-        {
-            set { initialiser = value; }
-            get { return initialiser; }
-        }
+        private static TextWriter prev_console_;
+        private Dictionary<string, IPluginConstraint> constraints
+            = new Dictionary<string, IPluginConstraint>();
 
-        public List<T> Plugins
-        {
-            get { return loaded; }
-        }
+        private List<string> extpoints = new List<string>();
+        private Dictionary<string, IPluginFilter> filters
+            = new Dictionary<string, IPluginFilter>();
 
-        public T Plugin
-        {
-            get { return (loaded.Count == 1)? loaded [0] : default (T); }
-        }
-
+        private PluginInitialiserBase initialiser;
+        private List<T> loaded = new List<T>();
         public PluginLoader()
         {
             Initialiser = new PluginInitialiserBase();
@@ -117,6 +232,21 @@ namespace OpenSim.Framework
             initialise_plugin_dir_(dir);
         }
 
+        public PluginInitialiserBase Initialiser
+        {
+            set { initialiser = value; }
+            get { return initialiser; }
+        }
+
+        public T Plugin
+        {
+            get { return (loaded.Count == 1) ? loaded[0] : default(T); }
+        }
+
+        public List<T> Plugins
+        {
+            get { return loaded; }
+        }
         public void Add(string extpoint)
         {
             if (extpoints.Contains(extpoint))
@@ -145,6 +275,17 @@ namespace OpenSim.Framework
         public void AddFilter(string extpoint, IPluginFilter filter)
         {
             filters.Add(extpoint, filter);
+        }
+
+        /// <summary>
+        /// Unregisters Mono.Addins event handlers, allowing temporary Mono.Addins
+        /// data to be garbage collected. Since the plugins created by this loader
+        /// are meant to outlive the loader itself, they must be disposed separately
+        /// </summary>
+        public void Dispose()
+        {
+            AddinManager.AddinLoadError -= on_addinloaderror_;
+            AddinManager.AddinLoaded -= on_addinloaded_;
         }
 
         public void Load(string extpoint)
@@ -193,50 +334,18 @@ namespace OpenSim.Framework
                 }
             }
         }
-
-        /// <summary>
-        /// Unregisters Mono.Addins event handlers, allowing temporary Mono.Addins
-        /// data to be garbage collected. Since the plugins created by this loader
-        /// are meant to outlive the loader itself, they must be disposed separately
-        /// </summary>
-        public void Dispose()
+        public void suppress_console_output_(bool save)
         {
-            AddinManager.AddinLoadError -= on_addinloaderror_;
-            AddinManager.AddinLoaded -= on_addinloaded_;
-        }
-
-        private void initialise_plugin_dir_(string dir)
-        {
-            if (AddinManager.IsInitialized == true)
-                return;
-
-            log.Info("[PLUGINS]: Initializing addin manager");
-
-            AddinManager.AddinLoadError += on_addinloaderror_;
-            AddinManager.AddinLoaded += on_addinloaded_;
-
-            clear_registry_(dir);
-
-            suppress_console_output_(true);
-            AddinManager.Initialize(dir);
-            AddinManager.Registry.Update(null);
-            suppress_console_output_(false);
-        }
-
-        private void on_addinloaded_(object sender, AddinEventArgs args)
-        {
-            log.Info ("[PLUGINS]: Plugin Loaded: " + args.AddinId);
-        }
-
-        private void on_addinloaderror_(object sender, AddinErrorEventArgs args)
-        {
-            if (args.Exception == null)
-                log.Error ("[PLUGINS]: Plugin Error: "
-                        + args.Message);
+            if (save)
+            {
+                prev_console_ = System.Console.Out;
+                System.Console.SetOut(new StreamWriter(Stream.Null));
+            }
             else
-                log.Error ("[PLUGINS]: Plugin Error: "
-                        + args.Exception.Message + "\n"
-                        + args.Exception.StackTrace);
+            {
+                if (prev_console_ != null)
+                    System.Console.SetOut(prev_console_);
+            }
         }
 
         private void clear_registry_(string dir)
@@ -265,99 +374,40 @@ namespace OpenSim.Framework
             }
         }
 
-        private static TextWriter prev_console_;
-        public void suppress_console_output_(bool save)
+        private void initialise_plugin_dir_(string dir)
         {
-            if (save)
-            {
-                prev_console_ = System.Console.Out;
-                System.Console.SetOut(new StreamWriter(Stream.Null));
-            }
+            if (AddinManager.IsInitialized == true)
+                return;
+
+            log.Info("[PLUGINS]: Initializing addin manager");
+
+            AddinManager.AddinLoadError += on_addinloaderror_;
+            AddinManager.AddinLoaded += on_addinloaded_;
+
+            clear_registry_(dir);
+
+            suppress_console_output_(true);
+            AddinManager.Initialize(dir);
+            AddinManager.Registry.Update(null);
+            suppress_console_output_(false);
+        }
+
+        private void on_addinloaded_(object sender, AddinEventArgs args)
+        {
+            log.Info("[PLUGINS]: Plugin Loaded: " + args.AddinId);
+        }
+
+        private void on_addinloaderror_(object sender, AddinErrorEventArgs args)
+        {
+            if (args.Exception == null)
+                log.Error("[PLUGINS]: Plugin Error: "
+                        + args.Message);
             else
-            {
-                if (prev_console_ != null)
-                    System.Console.SetOut(prev_console_);
-            }
+                log.Error("[PLUGINS]: Plugin Error: "
+                        + args.Exception.Message + "\n"
+                        + args.Exception.StackTrace);
         }
     }
-
-    public class PluginExtensionNode : ExtensionNode
-    {
-        [NodeAttribute]
-        string id = "";
-
-        [NodeAttribute]
-        string provider = "";
-
-        [NodeAttribute]
-        string type = "";
-
-        Type typeobj;
-
-        public string ID { get { return id; } }
-        public string Provider { get { return provider; } }
-        public string TypeName { get { return type; } }
-
-        public Type TypeObject
-        {
-            get
-            {
-                if (typeobj != null)
-                    return typeobj;
-
-                if (type.Length == 0)
-                    throw new InvalidOperationException("Type name not specified.");
-
-                return typeobj = Addin.GetType(type, true);
-            }
-        }
-
-        public object CreateInstance()
-        {
-            return Activator.CreateInstance(TypeObject);
-        }
-    }
-
-    /// <summary>
-    /// Constraint that bounds the number of plugins to be loaded.
-    /// </summary>
-    public class PluginCountConstraint : IPluginConstraint
-    {
-        private int min;
-        private int max;
-
-        public PluginCountConstraint(int exact)
-        {
-            min = exact;
-            max = exact;
-        }
-
-        public PluginCountConstraint(int minimum, int maximum)
-        {
-            min = minimum;
-            max = maximum;
-        }
-
-        public string Message
-        {
-            get
-            {
-                return "The number of plugins is constrained to the interval ["
-                    + min + ", " + max + "]";
-            }
-        }
-
-        public bool Apply (string extpoint)
-        {
-            int count = AddinManager.GetExtensionNodes(extpoint).Count;
-
-            if ((count < min) || (count > max))
-                throw new PluginConstraintViolatedException(Message);
-
-            return true;
-        }
-    }
-
     /// <summary>
     /// Filters out which plugin to load based on the plugin name or names given.  Plugin names are contained in
     /// their addin.xml
@@ -387,53 +437,11 @@ namespace OpenSim.Framework
         /// </summary>
         /// <param name="plugin"></param>
         /// <returns>true if the plugin's name matched one of the filters, false otherwise.</returns>
-        public bool Apply (PluginExtensionNode plugin)
+        public bool Apply(PluginExtensionNode plugin)
         {
             for (int i = 0; i < m_filters.Length; i++)
             {
                 if (m_filters[i] == plugin.Provider)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// Filters plugins according to their ID. Plugin IDs are contained in their addin.xml
-    /// </summary>
-    public class PluginIdFilter : IPluginFilter
-    {
-        private string[] m_filters;
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="p">
-        /// Plugin ID or IDs on which to filter. Multiple names should be separated by commas.
-        /// </param>
-        public PluginIdFilter(string p)
-        {
-            m_filters = p.Split(',');
-
-            for (int i = 0; i < m_filters.Length; i++)
-            {
-                m_filters[i] = m_filters[i].Trim();
-            }
-        }
-
-        /// <summary>
-        /// Apply this filter to <paramref name="plugin" />.
-        /// </summary>
-        /// <param name="plugin">PluginExtensionNode instance to check whether it passes the filter.</param>
-        /// <returns>true if the plugin's ID matches one of the filters, false otherwise.</returns>
-        public bool Apply (PluginExtensionNode plugin)
-        {
-            for (int i = 0; i < m_filters.Length; i++)
-            {
-                if (m_filters[i] == plugin.ID)
                 {
                     return true;
                 }

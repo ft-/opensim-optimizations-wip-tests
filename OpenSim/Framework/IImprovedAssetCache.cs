@@ -25,8 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using OpenSim.Framework;
-
 namespace OpenSim.Framework
 {
     public interface IImprovedAssetCache
@@ -38,17 +36,15 @@ namespace OpenSim.Framework
         void Cache(AssetBase asset);
 
         /// <summary>
-        /// Get an asset by its id.
-        /// </summary>
-        /// <param name='id'></param>
-        /// <returns>null if the asset does not exist.</returns>
-        AssetBase Get(string id);
-
-        /// <summary>
         /// Check whether an asset with the specified id exists in the cache.
         /// </summary>
         /// <param name='id'></param>
         bool Check(string id);
+
+        /// <summary>
+        /// Clear the cache.
+        /// </summary>
+        void Clear();
 
         /// <summary>
         /// Expire an asset from the cache.
@@ -57,8 +53,10 @@ namespace OpenSim.Framework
         void Expire(string id);
 
         /// <summary>
-        /// Clear the cache.
+        /// Get an asset by its id.
         /// </summary>
-        void Clear();
+        /// <param name='id'></param>
+        /// <returns>null if the asset does not exist.</returns>
+        AssetBase Get(string id);
     }
 }

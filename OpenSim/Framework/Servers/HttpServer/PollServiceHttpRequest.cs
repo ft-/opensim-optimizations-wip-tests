@@ -25,26 +25,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using HttpServer;
+using log4net;
+using OpenMetaverse;
 using System;
 using System.Collections;
 using System.Reflection;
 using System.Text;
-using HttpServer;
-using log4net;
-using OpenMetaverse;
 
 namespace OpenSim.Framework.Servers.HttpServer
 {
     public class PollServiceHttpRequest
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        public readonly PollServiceEventArgs PollServiceArgs;
         public readonly IHttpClientContext HttpContext;
+        public readonly PollServiceEventArgs PollServiceArgs;
         public readonly IHttpRequest Request;
-        public readonly int RequestTime;
         public readonly UUID RequestID;
-
+        public readonly int RequestTime;
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         public PollServiceHttpRequest(
             PollServiceEventArgs pPollServiceArgs, IHttpClientContext pHttpContext, IHttpRequest pRequest)
         {

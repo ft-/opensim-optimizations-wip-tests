@@ -25,7 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using System.Collections.Generic;
 
 namespace OpenSim.Framework
@@ -39,17 +38,9 @@ namespace OpenSim.Framework
     /// <typeparam name="TValue">Value type to store</typeparam>
     public sealed class MapAndArray<TKey, TValue>
     {
-        private Dictionary<TKey, TValue> m_dict;
         private TValue[] m_array;
+        private Dictionary<TKey, TValue> m_dict;
         private object m_syncRoot = new object();
-
-        /// <summary>Number of values currently stored in the collection</summary>
-        public int Count { get { return m_array.Length; } }
-        /// <summary>NOTE: This collection is thread safe. You do not need to 
-        /// acquire a lock to add, remove, or enumerate entries. This 
-        /// synchronization object should only be locked for larger 
-        /// transactions</summary>
-        public object SyncRoot { get { return m_syncRoot; } }
 
         /// <summary>
         /// Constructor
@@ -68,6 +59,31 @@ namespace OpenSim.Framework
         {
             m_dict = new Dictionary<TKey, TValue>(capacity);
             m_array = new TValue[0];
+        }
+
+        /// <summary>Number of values currently stored in the collection</summary>
+        public int Count { get { return m_array.Length; } }
+
+        /// <summary>NOTE: This collection is thread safe. You do not need to
+        /// acquire a lock to add, remove, or enumerate entries. This
+        /// synchronization object should only be locked for larger
+        /// transactions</summary>
+        public object SyncRoot { get { return m_syncRoot; } }
+        /// <summary>
+        /// Adds a key/value pair to the collection. This will throw an
+        /// exception if the key is already present in the collection
+        /// </summary>
+        /// <param name="key">Key to add or update</param>
+        /// <param name="value">Value to add</param>
+        /// <returns>Index of the inserted item</returns>
+        public int Add(TKey key, TValue value)
+        {
+            lock (m_syncRoot)
+            {
+                m_dict.Add(key, value);
+                CreateArray();
+                return m_array.Length;
+            }
         }
 
         /// <summary>
@@ -90,22 +106,38 @@ namespace OpenSim.Framework
                 return !containedKey;
             }
         }
-
         /// <summary>
-        /// Adds a key/value pair to the collection. This will throw an 
-        /// exception if the key is already present in the collection
+        /// Clears all key/value pairs from the collection
         /// </summary>
-        /// <param name="key">Key to add or update</param>
-        /// <param name="value">Value to add</param>
-        /// <returns>Index of the inserted item</returns>
-        public int Add(TKey key, TValue value)
+        public void Clear()
         {
             lock (m_syncRoot)
             {
-                m_dict.Add(key, value);
-                CreateArray();
-                return m_array.Length;
+                m_dict = new Dictionary<TKey, TValue>();
+                m_array = new TValue[0];
             }
+        }
+
+        /// <summary>
+        /// Determines whether the collections contains a specified key
+        /// </summary>
+        /// <param name="key">Key to search for</param>
+        /// <returns>True if the key was found, otherwise false</returns>
+        public bool ContainsKey(TKey key)
+        {
+            lock (m_syncRoot)
+                return m_dict.ContainsKey(key);
+        }
+
+        /// <summary>
+        /// Gets a reference to the immutable array of values stored in this
+        /// collection. This array is thread safe for iteration
+        /// </summary>
+        /// <returns>A thread safe reference ton an array of all of the stored
+        /// values</returns>
+        public TValue[] GetArray()
+        {
+            return m_array;
         }
 
         /// <summary>
@@ -123,18 +155,6 @@ namespace OpenSim.Framework
                 return removed;
             }
         }
-
-        /// <summary>
-        /// Determines whether the collections contains a specified key
-        /// </summary>
-        /// <param name="key">Key to search for</param>
-        /// <returns>True if the key was found, otherwise false</returns>
-        public bool ContainsKey(TKey key)
-        {
-            lock (m_syncRoot)
-                return m_dict.ContainsKey(key);
-        }
-
         /// <summary>
         /// Gets the value associated with the specified key
         /// </summary>
@@ -149,33 +169,9 @@ namespace OpenSim.Framework
             lock (m_syncRoot)
                 return m_dict.TryGetValue(key, out value);
         }
-
-        /// <summary>
-        /// Clears all key/value pairs from the collection
-        /// </summary>
-        public void Clear()
-        {
-            lock (m_syncRoot)
-            {
-                m_dict = new Dictionary<TKey, TValue>();
-                m_array = new TValue[0];
-            }
-        }
-
-        /// <summary>
-        /// Gets a reference to the immutable array of values stored in this
-        /// collection. This array is thread safe for iteration
-        /// </summary>
-        /// <returns>A thread safe reference ton an array of all of the stored 
-        /// values</returns>
-        public TValue[] GetArray()
-        {
-            return m_array;
-        }
-
         private void CreateArray()
         {
-            // Rebuild the array from the dictionary. This method must be 
+            // Rebuild the array from the dictionary. This method must be
             // called from inside a lock
             TValue[] array = new TValue[m_dict.Count];
             int i = 0;

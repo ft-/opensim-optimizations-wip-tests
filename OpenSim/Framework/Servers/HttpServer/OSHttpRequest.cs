@@ -25,6 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using HttpServer;
+using log4net;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -34,17 +36,107 @@ using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Web;
-using HttpServer;
-using log4net;
 
 namespace OpenSim.Framework.Servers.HttpServer
 {
     public class OSHttpRequest : IOSHttpRequest
     {
-        private static readonly ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        protected IHttpRequest _request = null;
         protected IHttpClientContext _context = null;
+        protected IHttpRequest _request = null;
+        private static readonly ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private Encoding _contentEncoding;
+
+        private string _contentType;
+
+        private Hashtable _query;
+
+        private NameValueCollection _queryString;
+
+        private IPEndPoint _remoteIPEndPoint;
+
+        private string _userAgent;
+
+        private Dictionary<string, object> _whiteboard = new Dictionary<string, object>();
+
+        public OSHttpRequest()
+        {
+        }
+
+        public OSHttpRequest(IHttpClientContext context, IHttpRequest req)
+        {
+            _request = req;
+            _context = context;
+
+            if (null != req.Headers["content-encoding"])
+            {
+                try
+                {
+                    _contentEncoding = Encoding.GetEncoding(_request.Headers["content-encoding"]);
+                }
+                catch (Exception)
+                {
+                    // ignore
+                }
+            }
+
+            if (null != req.Headers["content-type"])
+                _contentType = _request.Headers["content-type"];
+            if (null != req.Headers["user-agent"])
+                _userAgent = req.Headers["user-agent"];
+
+            if (null != req.Headers["remote_addr"])
+            {
+                try
+                {
+                    IPAddress addr = IPAddress.Parse(req.Headers["remote_addr"]);
+                    // sometimes req.Headers["remote_port"] returns a comma separated list, so use
+                    // the first one in the list and log it
+                    string[] strPorts = req.Headers["remote_port"].Split(new char[] { ',' });
+                    if (strPorts.Length > 1)
+                    {
+                        _log.ErrorFormat("[OSHttpRequest]: format exception on addr/port {0}:{1}, ignoring",
+                                     req.Headers["remote_addr"], req.Headers["remote_port"]);
+                    }
+                    int port = Int32.Parse(strPorts[0]);
+                    _remoteIPEndPoint = new IPEndPoint(addr, port);
+                }
+                catch (FormatException)
+                {
+                    _log.ErrorFormat("[OSHttpRequest]: format exception on addr/port {0}:{1}, ignoring",
+                                     req.Headers["remote_addr"], req.Headers["remote_port"]);
+                }
+            }
+
+            _queryString = new NameValueCollection();
+            _query = new Hashtable();
+            try
+            {
+                foreach (HttpInputItem item in req.QueryString)
+                {
+                    try
+                    {
+                        _queryString.Add(item.Name, item.Value);
+                        _query[item.Name] = item.Value;
+                    }
+                    catch (InvalidCastException)
+                    {
+                        _log.DebugFormat("[OSHttpRequest]: error parsing {0} query item, skipping it", item.Name);
+                        continue;
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                _log.ErrorFormat("[OSHttpRequest]: Error parsing querystring");
+            }
+
+            //            Form = new Hashtable();
+            //            foreach (HttpInputItem item in req.Form)
+            //            {
+            //                _log.DebugFormat("[OSHttpRequest]: Got form item {0}={1}", item.Name, item.Value);
+            //                Form.Add(item.Name, item.Value);
+            //            }
+        }
 
         public string[] AcceptTypes
         {
@@ -55,8 +147,6 @@ namespace OpenSim.Framework.Servers.HttpServer
         {
             get { return _contentEncoding; }
         }
-        private Encoding _contentEncoding;
-
         public long ContentLength
         {
             get { return _request.ContentLength; }
@@ -71,8 +161,6 @@ namespace OpenSim.Framework.Servers.HttpServer
         {
             get { return _contentType; }
         }
-        private string _contentType;
-
         public HttpCookieCollection Cookies
         {
             get
@@ -115,22 +203,19 @@ namespace OpenSim.Framework.Servers.HttpServer
             get { return ConnectionType.KeepAlive == _request.Connection; }
         }
 
-        public NameValueCollection QueryString
-        {
-            get { return _queryString; }
-        }
-        private NameValueCollection _queryString;
-
         public Hashtable Query
         {
             get { return _query; }
         }
-        private Hashtable _query;
 
+        public NameValueCollection QueryString
+        {
+            get { return _queryString; }
+        }
         /// <value>
         /// POST request values, if applicable
         /// </value>
-//        public Hashtable Form { get; private set; }
+        //        public Hashtable Form { get; private set; }
 
         public string RawUrl
         {
@@ -141,8 +226,6 @@ namespace OpenSim.Framework.Servers.HttpServer
         {
             get { return _remoteIPEndPoint; }
         }
-        private IPEndPoint _remoteIPEndPoint;
-
         public Uri Url
         {
             get { return _request.Uri; }
@@ -152,18 +235,15 @@ namespace OpenSim.Framework.Servers.HttpServer
         {
             get { return _userAgent; }
         }
-        private string _userAgent;
-
-        internal IHttpRequest IHttpRequest
-        { 
-            get { return _request; }
-        }
-
-        internal IHttpClientContext IHttpClientContext 
+        internal IHttpClientContext IHttpClientContext
         {
             get { return _context; }
         }
 
+        internal IHttpRequest IHttpRequest
+        {
+            get { return _request; }
+        }
         /// <summary>
         /// Internal whiteboard for handlers to store temporary stuff
         /// into.
@@ -172,86 +252,6 @@ namespace OpenSim.Framework.Servers.HttpServer
         {
             get { return _whiteboard; }
         }
-        private Dictionary<string, object> _whiteboard = new Dictionary<string, object>();
-
-        public OSHttpRequest() {}
-
-        public OSHttpRequest(IHttpClientContext context, IHttpRequest req)
-        {
-            _request = req;
-            _context = context;
-
-            if (null != req.Headers["content-encoding"])
-            {
-                try
-                {
-                    _contentEncoding = Encoding.GetEncoding(_request.Headers["content-encoding"]);
-                }
-                catch (Exception)
-                {
-                    // ignore
-                }
-            }
-            
-            if (null != req.Headers["content-type"])
-                _contentType = _request.Headers["content-type"];
-            if (null != req.Headers["user-agent"])
-                _userAgent = req.Headers["user-agent"];
-            
-            if (null != req.Headers["remote_addr"])
-            {
-                try
-                {
-                    IPAddress addr = IPAddress.Parse(req.Headers["remote_addr"]);
-                    // sometimes req.Headers["remote_port"] returns a comma separated list, so use
-                    // the first one in the list and log it 
-                    string[] strPorts = req.Headers["remote_port"].Split(new char[] { ',' });
-                    if (strPorts.Length > 1)
-                    {
-                        _log.ErrorFormat("[OSHttpRequest]: format exception on addr/port {0}:{1}, ignoring",
-                                     req.Headers["remote_addr"], req.Headers["remote_port"]);
-                    }
-                    int port = Int32.Parse(strPorts[0]);
-                    _remoteIPEndPoint = new IPEndPoint(addr, port);
-                }
-                catch (FormatException)
-                {
-                    _log.ErrorFormat("[OSHttpRequest]: format exception on addr/port {0}:{1}, ignoring", 
-                                     req.Headers["remote_addr"], req.Headers["remote_port"]);
-                }
-            }
-
-            _queryString = new NameValueCollection();
-            _query = new Hashtable();
-            try
-            {
-                foreach (HttpInputItem item in req.QueryString)
-                {
-                    try
-                    {
-                        _queryString.Add(item.Name, item.Value);
-                        _query[item.Name] = item.Value;
-                    }
-                    catch (InvalidCastException)
-                    {
-                        _log.DebugFormat("[OSHttpRequest]: error parsing {0} query item, skipping it", item.Name);
-                        continue;
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                _log.ErrorFormat("[OSHttpRequest]: Error parsing querystring");
-            }
-
-//            Form = new Hashtable();
-//            foreach (HttpInputItem item in req.Form)
-//            {
-//                _log.DebugFormat("[OSHttpRequest]: Got form item {0}={1}", item.Name, item.Value);
-//                Form.Add(item.Name, item.Value);
-//            }
-        }
-
         public override string ToString()
         {
             StringBuilder me = new StringBuilder();

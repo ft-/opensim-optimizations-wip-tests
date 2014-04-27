@@ -25,17 +25,27 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-
 using OpenMetaverse.StructuredData;
+using System;
+using System.Text;
 
 namespace OpenSim.Framework.Monitoring
 {
     public class PercentageStat : Stat
     {
+        public PercentageStat(
+            string shortName,
+            string name,
+            string description,
+            string category,
+            string container,
+            StatType type,
+            Action<Stat> pullAction,
+            StatVerbosity verbosity)
+            : base(shortName, name, description, "%", category, container, type, pullAction, verbosity) { }
+
         public long Antecedent { get; set; }
+
         public long Consequent { get; set; }
 
         public override double Value
@@ -62,18 +72,6 @@ namespace OpenSim.Framework.Monitoring
                 throw new InvalidOperationException("Cannot set value on a PercentageStat");
             }
         }
-
-        public PercentageStat(
-            string shortName,
-            string name,
-            string description,
-            string category,
-            string container,
-            StatType type,
-            Action<Stat> pullAction,
-            StatVerbosity verbosity)
-            : base(shortName, name, description, "%", category, container, type, pullAction, verbosity) {}
-
         public override string ToConsoleString()
         {
             StringBuilder sb = new StringBuilder();

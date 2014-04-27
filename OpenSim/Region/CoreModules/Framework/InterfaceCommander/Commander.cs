@@ -25,13 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using OpenSim.Framework;
+using OpenSim.Region.Framework.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
-using log4net;
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Interfaces;
 
 namespace OpenSim.Region.CoreModules.Framework.InterfaceCommander
 {
@@ -41,34 +41,15 @@ namespace OpenSim.Region.CoreModules.Framework.InterfaceCommander
     public class Commander : ICommander
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-                
+
+        private Dictionary<string, ICommand> m_commands = new Dictionary<string, ICommand>();
+
         /// <value>
         /// Used in runtime class generation
         /// </summary>
         private string m_generatedApiClassName;
-        
-        public string Name
-        {
-            get { return m_name; }
-        }
+
         private string m_name;
-        
-        public string Help
-        {
-            get
-            {
-                StringBuilder sb = new StringBuilder();
-                
-                sb.AppendLine("=== " + m_name + " ===");
-                
-                foreach (ICommand com in m_commands.Values)
-                {
-                    sb.AppendLine("* " + Name + " " + com.Name + " - " + com.Help);
-                }
-                
-                return sb.ToString();
-            }
-        }        
 
         /// <summary>
         /// Constructor
@@ -78,7 +59,7 @@ namespace OpenSim.Region.CoreModules.Framework.InterfaceCommander
         {
             m_name = name;
             m_generatedApiClassName = m_name[0].ToString().ToUpper();
-            
+
             if (m_name.Length > 1)
                 m_generatedApiClassName += m_name.Substring(1);
         }
@@ -87,14 +68,29 @@ namespace OpenSim.Region.CoreModules.Framework.InterfaceCommander
         {
             get { return m_commands; }
         }
-        private Dictionary<string, ICommand> m_commands = new Dictionary<string, ICommand>();        
 
-        #region ICommander Members
-
-        public void RegisterCommand(string commandName, ICommand command)
+        public string Help
         {
-            m_commands[commandName] = command;
+            get
+            {
+                StringBuilder sb = new StringBuilder();
+
+                sb.AppendLine("=== " + m_name + " ===");
+
+                foreach (ICommand com in m_commands.Values)
+                {
+                    sb.AppendLine("* " + Name + " " + com.Name + " - " + com.Help);
+                }
+
+                return sb.ToString();
+            }
         }
+
+        public string Name
+        {
+            get { return m_name; }
+        }
+        #region ICommander Members
 
         /// <summary>
         /// Generates a runtime C# class which can be compiled and inserted via reflection to enable modules to register new script commands
@@ -127,18 +123,6 @@ namespace OpenSim.Region.CoreModules.Framework.InterfaceCommander
             return classSrc;
         }
 
-        /// <summary>
-        /// Runs a specified function with attached arguments
-        /// *** <b>DO NOT CALL DIRECTLY.</b> ***
-        /// Call ProcessConsoleCommand instead if handling human input.
-        /// </summary>
-        /// <param name="function">The function name to call</param>
-        /// <param name="args">The function parameters</param>
-        public void Run(string function, object[] args)
-        {
-            m_commands[function].Run(args);
-        }
-
         public void ProcessConsoleCommand(string function, string[] args)
         {
             if (m_commands.ContainsKey(function))
@@ -162,13 +146,28 @@ namespace OpenSim.Region.CoreModules.Framework.InterfaceCommander
                 {
                     if (function != "help")
                         Console.WriteLine("ERROR: Invalid command - No such command exists");
-                    
+
                     Console.Write(Help);
                 }
             }
         }
 
-        #endregion
+        public void RegisterCommand(string commandName, ICommand command)
+        {
+            m_commands[commandName] = command;
+        }
+        /// <summary>
+        /// Runs a specified function with attached arguments
+        /// *** <b>DO NOT CALL DIRECTLY.</b> ***
+        /// Call ProcessConsoleCommand instead if handling human input.
+        /// </summary>
+        /// <param name="function">The function name to call</param>
+        /// <param name="args">The function parameters</param>
+        public void Run(string function, object[] args)
+        {
+            m_commands[function].Run(args);
+        }
+        #endregion ICommander Members
 
         private string EscapeRuntimeAPICommand(string command)
         {

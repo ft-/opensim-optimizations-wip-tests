@@ -25,9 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using OpenSim.Framework;
 using Nini.Config;
+using OpenSim.Framework;
+using System;
 
 namespace OpenSim.Region.ClientStack.LindenUDP
 {
@@ -38,30 +38,34 @@ namespace OpenSim.Region.ClientStack.LindenUDP
     /// </summary>
     public sealed class ThrottleRates
     {
-        /// <summary>Drip rate for resent packets</summary>
-        public int Resend;
-        /// <summary>Drip rate for terrain packets</summary>
-        public int Land;
-        /// <summary>Drip rate for wind packets</summary>
-        public int Wind;
-        /// <summary>Drip rate for cloud packets</summary>
-        public int Cloud;
-        /// <summary>Drip rate for task packets</summary>
-        public int Task;
-        /// <summary>Drip rate for texture packets</summary>
-        public int Texture;
+        /// <summary>Flag used to enable adaptive throttles</summary>
+        public bool AdaptiveThrottlesEnabled;
+
         /// <summary>Drip rate for asset packets</summary>
         public int Asset;
+
+        /// <summary>Amount of the texture throttle to steal for the task throttle</summary>
+        public double CannibalizeTextureRate;
+
+        /// <summary>Drip rate for cloud packets</summary>
+        public int Cloud;
+
+        /// <summary>Drip rate for terrain packets</summary>
+        public int Land;
+
+        /// <summary>Drip rate for resent packets</summary>
+        public int Resend;
+        /// <summary>Drip rate for task packets</summary>
+        public int Task;
+
+        /// <summary>Drip rate for texture packets</summary>
+        public int Texture;
 
         /// <summary>Drip rate for the parent token bucket</summary>
         public int Total;
 
-        /// <summary>Flag used to enable adaptive throttles</summary>
-        public bool AdaptiveThrottlesEnabled;
-        
-        /// <summary>Amount of the texture throttle to steal for the task throttle</summary>
-        public double CannibalizeTextureRate;
-
+        /// <summary>Drip rate for wind packets</summary>
+        public int Wind;
         /// <summary>
         /// Default constructor
         /// </summary>
@@ -83,9 +87,9 @@ namespace OpenSim.Region.ClientStack.LindenUDP
                 Total = throttleConfig.GetInt("client_throttle_max_bps", 0);
 
                 AdaptiveThrottlesEnabled = throttleConfig.GetBoolean("enable_adaptive_throttles", false);
-                
+
                 CannibalizeTextureRate = (double)throttleConfig.GetFloat("CannibalizeTextureRate", 0.0f);
-                CannibalizeTextureRate = Util.Clamp<double>(CannibalizeTextureRate,0.0, 0.9);
+                CannibalizeTextureRate = Util.Clamp<double>(CannibalizeTextureRate, 0.0, 0.9);
             }
             catch (Exception) { }
         }
@@ -96,18 +100,25 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             {
                 case ThrottleOutPacketType.Resend:
                     return Resend;
+
                 case ThrottleOutPacketType.Land:
                     return Land;
+
                 case ThrottleOutPacketType.Wind:
                     return Wind;
+
                 case ThrottleOutPacketType.Cloud:
                     return Cloud;
+
                 case ThrottleOutPacketType.Task:
                     return Task;
+
                 case ThrottleOutPacketType.Texture:
                     return Texture;
+
                 case ThrottleOutPacketType.Asset:
                     return Asset;
+
                 case ThrottleOutPacketType.Unknown:
                 default:
                     return 0;

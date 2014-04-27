@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
@@ -29,20 +28,17 @@
 using log4net;
 using Mono.Addins;
 using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework.Servers;
+using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
+using OpenSim.Server.Base;
+using OpenSim.Server.Handlers;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using OpenSim.Framework;
-using OpenSim.Framework.Console;
-using OpenSim.Server.Base;
-using OpenSim.Server.Handlers;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Framework.Servers;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
-using OpenMetaverse;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Profile
 {
@@ -55,14 +51,27 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Profile
 
         private Dictionary<UUID, Scene> regions = new Dictionary<UUID, Scene>();
 
-        public IUserProfilesService ServiceModule
+        public LocalUserProfilesServicesConnector()
         {
-            get; private set;
+            m_log.Debug("[LOCAL USERPROFILES SERVICE CONNECTOR]: LocalUserProfileServicesConnector no params");
         }
 
-         public bool Enabled
+        public LocalUserProfilesServicesConnector(IConfigSource source)
         {
-            get; private set;
+            m_log.Debug("[LOCAL USERPROFILES SERVICE CONNECTOR]: LocalUserProfileServicesConnector instantiated directly.");
+            InitialiseService(source);
+        }
+
+        public string ConfigName
+        {
+            get;
+            private set;
+        }
+
+        public bool Enabled
+        {
+            get;
+            private set;
         }
 
         public string Name
@@ -73,31 +82,20 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Profile
             }
         }
 
-        public string ConfigName
-        {
-            get; private set;
-        }
-        
-        public Type ReplaceableInterface 
+        public Type ReplaceableInterface
         {
             get { return null; }
         }
 
-        public LocalUserProfilesServicesConnector()
+        public IUserProfilesService ServiceModule
         {
-            m_log.Debug("[LOCAL USERPROFILES SERVICE CONNECTOR]: LocalUserProfileServicesConnector no params");
+            get;
+            private set;
         }
-        
-        public LocalUserProfilesServicesConnector(IConfigSource source)
-        {
-            m_log.Debug("[LOCAL USERPROFILES SERVICE CONNECTOR]: LocalUserProfileServicesConnector instantiated directly.");
-            InitialiseService(source);
-        }
-
         public void InitialiseService(IConfigSource source)
         {
             ConfigName = "UserProfilesService";
-            
+
             // Instantiate the request handler
             IHttpServer Server = MainServer.Instance;
 
@@ -107,35 +105,35 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Profile
                 m_log.Error("[LOCAL USERPROFILES SERVICE CONNECTOR]: UserProfilesService missing from OpenSim.ini");
                 return;
             }
-            
-            if(!config.GetBoolean("Enabled",false))
+
+            if (!config.GetBoolean("Enabled", false))
             {
                 Enabled = false;
                 return;
             }
-            
+
             Enabled = true;
-            
+
             string serviceDll = config.GetString("LocalServiceModule",
                                                       String.Empty);
-            
+
             if (serviceDll == String.Empty)
             {
                 m_log.Error("[LOCAL USERPROFILES SERVICE CONNECTOR]: No LocalServiceModule named in section UserProfilesService");
                 return;
             }
-            
+
             Object[] args = new Object[] { source, ConfigName };
             ServiceModule =
                 ServerUtils.LoadPlugin<IUserProfilesService>(serviceDll,
                                                      args);
-            
+
             if (ServiceModule == null)
             {
                 m_log.Error("[LOCAL USERPROFILES SERVICE CONNECTOR]: Can't load user profiles service");
                 return;
             }
-            
+
             Enabled = true;
 
             JsonRpcProfileHandlers handler = new JsonRpcProfileHandlers(ServiceModule);
@@ -158,20 +156,38 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Profile
             Server.AddJsonRPCHandler("image_assets_request", handler.AvatarImageAssetsRequest);
             Server.AddJsonRPCHandler("user_data_request", handler.RequestUserAppData);
             Server.AddJsonRPCHandler("user_data_update", handler.UpdateUserAppData);
-
         }
 
         #region ISharedRegionModule implementation
 
         void ISharedRegionModule.PostInitialise()
         {
-            if(!Enabled)
+            if (!Enabled)
                 return;
         }
 
-        #endregion
+        #endregion ISharedRegionModule implementation
 
         #region IRegionModuleBase implementation
+
+        void IRegionModuleBase.AddRegion(Scene scene)
+        {
+            if (!Enabled)
+                return;
+
+            lock (regions)
+            {
+                if (regions.ContainsKey(scene.RegionInfo.RegionID))
+                    m_log.ErrorFormat("[LOCAL USERPROFILES SERVICE CONNECTOR]: simulator seems to have more than one region with the same UUID. Please correct this!");
+                else
+                    regions.Add(scene.RegionInfo.RegionID, scene);
+            }
+        }
+
+        void IRegionModuleBase.Close()
+        {
+            return;
+        }
 
         void IRegionModuleBase.Initialise(IConfigSource source)
         {
@@ -186,30 +202,16 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Profile
                 }
             }
         }
-
-        void IRegionModuleBase.Close()
-        {
-            return;
-        }
-
-        void IRegionModuleBase.AddRegion(Scene scene)
+        void IRegionModuleBase.RegionLoaded(Scene scene)
         {
             if (!Enabled)
                 return;
-            
-            lock (regions)
-            {
-                if (regions.ContainsKey(scene.RegionInfo.RegionID))
-                    m_log.ErrorFormat("[LOCAL USERPROFILES SERVICE CONNECTOR]: simulator seems to have more than one region with the same UUID. Please correct this!");
-                else
-                    regions.Add(scene.RegionInfo.RegionID, scene);
-            }
         }
 
         void IRegionModuleBase.RemoveRegion(Scene scene)
         {
             if (!Enabled)
-                return; 
+                return;
 
             lock (regions)
             {
@@ -217,12 +219,6 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Profile
                     regions.Remove(scene.RegionInfo.RegionID);
             }
         }
-
-        void IRegionModuleBase.RegionLoaded(Scene scene)
-        {
-            if (!Enabled)
-                return; 
-        }
-        #endregion
+        #endregion IRegionModuleBase implementation
     }
 }

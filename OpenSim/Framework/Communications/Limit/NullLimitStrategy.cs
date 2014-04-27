@@ -32,9 +32,24 @@ namespace OpenSim.Framework.Communications.Limit
     /// </summary>
     public class NullLimitStrategy<TId> : IRequestLimitStrategy<TId>
     {
-        public bool AllowRequest(TId id) { return true; }
-        public bool IsFirstRefusal(TId id) { return false; }
-        public void MonitorRequests(TId id) { /* intentionally blank */ }
-        public bool IsMonitoringRequests(TId id) { return false; }
+        public bool AllowRequest(TId id)
+        {
+            return true;
+        }
+
+        public bool IsFirstRefusal(TId id)
+        {
+            return false;
+        }
+
+        public bool IsMonitoringRequests(TId id)
+        {
+            return false;
+        }
+
+        public void MonitorRequests(TId id)
+        {
+            /* intentionally blank */
+        }
     }
 }

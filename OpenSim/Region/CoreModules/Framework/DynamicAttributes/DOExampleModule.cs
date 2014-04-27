@@ -25,20 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
 using OpenMetaverse;
-using OpenMetaverse.Packets;
 using OpenMetaverse.StructuredData;
-using OpenSim.Framework;
-using OpenSim.Region.Framework;
 using OpenSim.Region.CoreModules.Framework.DynamicAttributes.DAExampleModule;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Region.Framework.DynamicAttributes.DOExampleModule
 {
@@ -48,28 +44,19 @@ namespace OpenSim.Region.Framework.DynamicAttributes.DOExampleModule
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "DOExampleModule")]
     public class DOExampleModule : INonSharedRegionModule
     {
-        public class MyObject
-        {
-            public int Moves { get; set; }
-
-            public MyObject(int moves)
-            {
-                Moves = moves;
-            }
-        }
+        private static readonly bool ENABLED = false;
 
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private static readonly bool ENABLED = false;   // enable for testing
-
-        private Scene m_scene;
         private IDialogModule m_dialogMod;
 
-        public string Name { get { return "DO"; } }        
-        public Type ReplaceableInterface { get { return null; } }        
+        private Scene m_scene;
 
-        public void Initialise(IConfigSource source) {}
-        
+        // enable for testing
+        public string Name { get { return "DO"; } }
+
+        public Type ReplaceableInterface { get { return null; } }
+
         public void AddRegion(Scene scene)
         {
             if (ENABLED)
@@ -80,20 +67,26 @@ namespace OpenSim.Region.Framework.DynamicAttributes.DOExampleModule
                 m_dialogMod = m_scene.RequestModuleInterface<IDialogModule>();
             }
         }
-        
-        public void RemoveRegion(Scene scene) 
+
+        public void Close()
+        {
+            RemoveRegion(m_scene);
+        }
+
+        public void Initialise(IConfigSource source)
+        {
+        }
+
+        public void RegionLoaded(Scene scene)
+        {
+        }
+
+        public void RemoveRegion(Scene scene)
         {
             if (ENABLED)
             {
                 m_scene.EventManager.OnSceneGroupMove -= OnSceneGroupMove;
             }
-        }
-        
-        public void RegionLoaded(Scene scene) {}
-        
-        public void Close() 
-        {
-            RemoveRegion(m_scene);
         }
 
         private void OnObjectAddedToScene(SceneObjectGroup so)
@@ -104,7 +97,7 @@ namespace OpenSim.Region.Framework.DynamicAttributes.DOExampleModule
 
             int movesSoFar = 0;
 
-//            Console.WriteLine("Here for {0}", so.Name);
+            //            Console.WriteLine("Here for {0}", so.Name);
 
             if (rootPart.DynAttrs.TryGetStore(DAExampleModule.Namespace, DAExampleModule.StoreName, out attrs))
             {
@@ -116,7 +109,7 @@ namespace OpenSim.Region.Framework.DynamicAttributes.DOExampleModule
 
             rootPart.DynObjs.Add(DAExampleModule.Namespace, Name, new MyObject(movesSoFar));
         }
-        
+
         private bool OnSceneGroupMove(UUID groupId, Vector3 delta)
         {
             SceneObjectGroup so = m_scene.GetSceneObjectGroup(groupId);
@@ -129,11 +122,21 @@ namespace OpenSim.Region.Framework.DynamicAttributes.DOExampleModule
             if (rawObj != null)
             {
                 MyObject myObj = (MyObject)rawObj;
-               
+
                 m_dialogMod.SendGeneralAlert(string.Format("{0} {1} moved {2} times", so.Name, so.UUID, ++myObj.Moves));
             }
-            
+
             return true;
-        }        
+        }
+
+        public class MyObject
+        {
+            public MyObject(int moves)
+            {
+                Moves = moves;
+            }
+
+            public int Moves { get; set; }
+        }
     }
 }

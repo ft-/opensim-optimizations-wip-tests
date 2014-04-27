@@ -32,13 +32,12 @@ namespace OpenSim.Framework
 {
     public struct mapItemReply
     {
-        public uint x;
-        public uint y;
-        public UUID id;
         public int Extra;
         public int Extra2;
+        public UUID id;
         public string name;
-
+        public uint x;
+        public uint y;
         public mapItemReply(uint pX, uint pY, UUID pId, string pName, int pExt1, int pExt2)
         {
             x = pX;
@@ -47,6 +46,16 @@ namespace OpenSim.Framework
             name = pName;
             Extra = pExt1;
             Extra2 = pExt2;
+        }
+
+        public void FromOSD(OSDMap map)
+        {
+            x = (uint)map["X"].AsInteger();
+            y = (uint)map["Y"].AsInteger();
+            id = map["ID"].AsUUID();
+            Extra = map["Extra"].AsInteger();
+            Extra2 = map["Extra2"].AsInteger();
+            name = map["Name"].AsString();
         }
 
         public OSDMap ToOSD()
@@ -59,16 +68,6 @@ namespace OpenSim.Framework
             map["Extra"] = OSD.FromInteger(Extra);
             map["Extra2"] = OSD.FromInteger(Extra2);
             return map;
-        }
-        
-        public void FromOSD(OSDMap map)
-        {
-            x = (uint) map["X"].AsInteger();
-            y = (uint) map["Y"].AsInteger();
-            id = map["ID"].AsUUID();
-            Extra = map["Extra"].AsInteger();
-            Extra2 = map["Extra2"].AsInteger();
-            name = map["Name"].AsString();
         }
     }
 }

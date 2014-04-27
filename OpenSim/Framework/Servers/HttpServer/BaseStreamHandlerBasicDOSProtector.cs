@@ -24,7 +24,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-using OpenSim.Framework;
+
 using System.IO;
 
 namespace OpenSim.Framework.Servers.HttpServer
@@ -37,11 +37,12 @@ namespace OpenSim.Framework.Servers.HttpServer
     /// </remarks>
     public abstract class BaseStreamHandlerBasicDOSProtector : BaseRequestHandler, IStreamedRequestHandler
     {
-       
-        private readonly BasicDosProtectorOptions _options;
         private readonly BasicDOSProtector _dosProtector;
-
-        protected BaseStreamHandlerBasicDOSProtector(string httpMethod, string path, BasicDosProtectorOptions options) : this(httpMethod, path, null, null, options) {}
+        private readonly BasicDosProtectorOptions _options;
+        protected BaseStreamHandlerBasicDOSProtector(string httpMethod, string path, BasicDosProtectorOptions options)
+            : this(httpMethod, path, null, null, options)
+        {
+        }
 
         protected BaseStreamHandlerBasicDOSProtector(string httpMethod, string path, string name, string description, BasicDosProtectorOptions options)
             : base(httpMethod, path, name, description)
@@ -63,7 +64,7 @@ namespace OpenSim.Framework.Servers.HttpServer
                 result = ThrottledRequest(path, request, httpRequest, httpResponse);
             if (_options.MaxConcurrentSessions > 0)
                 _dosProtector.ProcessEnd(clientstring, endpoint);
-            
+
             RequestsHandled++;
 
             return result;
@@ -81,16 +82,6 @@ namespace OpenSim.Framework.Servers.HttpServer
             return new byte[0];
         }
 
-        
-        private string GetRemoteAddr(IOSHttpRequest httpRequest)
-        {
-            string remoteaddr = string.Empty;
-            if (httpRequest.Headers["remote_addr"] != null)
-                remoteaddr = httpRequest.Headers["remote_addr"];
-
-            return remoteaddr;
-        }
-
         private string GetClientString(IOSHttpRequest httpRequest)
         {
             string clientstring = string.Empty;
@@ -101,7 +92,15 @@ namespace OpenSim.Framework.Servers.HttpServer
                 clientstring = GetRemoteAddr(httpRequest);
 
             return clientstring;
-           
+        }
+
+        private string GetRemoteAddr(IOSHttpRequest httpRequest)
+        {
+            string remoteaddr = string.Empty;
+            if (httpRequest.Headers["remote_addr"] != null)
+                remoteaddr = httpRequest.Headers["remote_addr"];
+
+            return remoteaddr;
         }
     }
 }

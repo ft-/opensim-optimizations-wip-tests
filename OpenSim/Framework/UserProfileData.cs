@@ -25,8 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
+using System;
 
 namespace OpenSim.Framework
 {
@@ -45,10 +45,19 @@ namespace OpenSim.Framework
         /// </summary>
         private UserAgentData m_currentAgent;
 
+        private string m_customType;
+
+        /// <summary>
+        /// A valid email address for the account.  Useful for password reset requests.
+        /// </summary>
+        private string m_email = String.Empty;
+
         /// <summary>
         /// The first component of a users account name
         /// </summary>
         private string m_firstname;
+
+        private int m_godLevel;
 
         /// <summary>
         /// The coordinates inside the region of the home location
@@ -60,6 +69,7 @@ namespace OpenSim.Framework
         /// </summary>
         private Vector3 m_homeLookAt;
 
+        private UUID m_homeRegionId;
         private uint m_homeRegionX;
         private uint m_homeRegionY;
 
@@ -72,6 +82,8 @@ namespace OpenSim.Framework
         /// A UNIX Timestamp for the users last login date / time
         /// </summary>
         private int m_lastLogin;
+
+        private UUID m_partner;
 
         /// <summary>
         /// A salted hash containing the users password, in the format md5(md5(password) + ":" + salt)
@@ -110,29 +122,27 @@ namespace OpenSim.Framework
         private UUID m_profileImage;
 
         /// <summary>
-        /// A uint mask containing the "I want to do" part of the users profile
-        /// </summary>
-        private uint m_profileWantDoMask; // Profile window "I want to" mask
-
-        /// <summary>
         /// The profile url for an avatar
         /// </summary>
         private string m_profileUrl;
 
         /// <summary>
+        /// A uint mask containing the "I want to do" part of the users profile
+        /// </summary>
+        private uint m_profileWantDoMask; // Profile window "I want to" mask
+        /// <summary>
         /// The second component of a users account name
         /// </summary>
         private string m_surname;
-
-        /// <summary>
-        /// A valid email address for the account.  Useful for password reset requests.
-        /// </summary>
-        private string m_email = String.Empty;
-
         /// <summary>
         /// A URI to the users asset server, used for foreigners and large grids.
         /// </summary>
         private string m_userAssetUri = String.Empty;
+
+        // Data for estates and other goodies
+        // to get away from per-machine configs a little
+        //
+        private int m_userFlags;
 
         /// <summary>
         /// A URI to the users inventory server, used for foreigners and large grids
@@ -143,82 +153,34 @@ namespace OpenSim.Framework
         /// The last used Web_login_key
         /// </summary>
         private UUID m_webLoginKey;
-
-        // Data for estates and other goodies
-        // to get away from per-machine configs a little
-        //
-        private int m_userFlags;
-        private int m_godLevel;
-        private string m_customType;
-        private UUID m_partner;
-
-        /// <summary>
-        /// The regionhandle of the users preferred home region. If
-        /// multiple sims occupy the same spot, the grid may decide
-        /// which region the user logs into
-        /// </summary>
-        public virtual ulong HomeRegion
+        public string AboutText
         {
-            get 
-            {
-                return Util.RegionWorldLocToHandle(Util.RegionToWorldLoc(m_homeRegionX), Util.RegionToWorldLoc(m_homeRegionY));
-                // return Utils.UIntsToLong( m_homeRegionX * (uint)Constants.RegionSize, m_homeRegionY * (uint)Constants.RegionSize); 
-            }
-            
-            set
-            {
-                uint regionWorldLocX, regionWorldLocY;
-                Util.RegionHandleToWorldLoc(value, out regionWorldLocX, out regionWorldLocY);
-                m_homeRegionX = Util.WorldToRegionLoc(regionWorldLocX);
-                m_homeRegionY = Util.WorldToRegionLoc(regionWorldLocY);
-                // m_homeRegionX = (uint) (value >> 40);
-                // m_homeRegionY = (((uint) (value)) >> 8);
-            }
+            get { return m_profileAboutText; }
+            set { m_profileAboutText = value; }
         }
 
-        private UUID m_homeRegionId;
-        /// <summary>
-        /// The regionID of the users home region. This is unique;
-        /// even if the position of the region changes within the
-        /// grid, this will refer to the same region.
-        /// </summary>
-        public UUID HomeRegionID
+        public uint CanDoMask
         {
-            get { return m_homeRegionId; }
-            set { m_homeRegionId = value; }
+            get { return m_profileCanDoMask; }
+            set { m_profileCanDoMask = value; }
         }
 
-        // Property wrappers
-        public UUID ID
+        public int Created
         {
-            get { return m_id; }
-            set { m_id = value; }
+            get { return m_created; }
+            set { m_created = value; }
         }
 
-        public UUID WebLoginKey
+        public UserAgentData CurrentAgent
         {
-            get { return m_webLoginKey; }
-            set { m_webLoginKey = value; }
+            get { return m_currentAgent; }
+            set { m_currentAgent = value; }
         }
 
-        public string FirstName
+        public string CustomType
         {
-            get { return m_firstname; }
-            set { m_firstname = value; }
-        }
-
-        public string SurName
-        {
-            get { return m_surname; }
-            set { m_surname = value; }
-        }
-        
-        /// <value>
-        /// The concatentation of the various name components.
-        /// </value>
-        public string Name
-        {
-            get { return String.Format("{0} {1}", m_firstname, m_surname); }
+            get { return m_customType; }
+            set { m_customType = value; }
         }
 
         public string Email
@@ -227,28 +189,28 @@ namespace OpenSim.Framework
             set { m_email = value; }
         }
 
-        public string PasswordHash
+        public string FirstLifeAboutText
         {
-            get { return m_passwordHash; }
-            set { m_passwordHash = value; }
+            get { return m_profileFirstText; }
+            set { m_profileFirstText = value; }
         }
 
-        public string PasswordSalt
+        public UUID FirstLifeImage
         {
-            get { return m_passwordSalt; }
-            set { m_passwordSalt = value; }
+            get { return m_profileFirstImage; }
+            set { m_profileFirstImage = value; }
         }
 
-        public uint HomeRegionX
+        public string FirstName
         {
-            get { return m_homeRegionX; }
-            set { m_homeRegionX = value; }
+            get { return m_firstname; }
+            set { m_firstname = value; }
         }
 
-        public uint HomeRegionY
+        public int GodLevel
         {
-            get { return m_homeRegionY; }
-            set { m_homeRegionY = value; }
+            get { return m_godLevel; }
+            set { m_godLevel = value; }
         }
 
         public Vector3 HomeLocation
@@ -276,7 +238,6 @@ namespace OpenSim.Framework
             set { m_homeLocation.Z = value; }
         }
 
-
         public Vector3 HomeLookAt
         {
             get { return m_homeLookAt; }
@@ -302,58 +263,57 @@ namespace OpenSim.Framework
             set { m_homeLookAt.Z = value; }
         }
 
-        public int Created
+        /// <summary>
+        /// The regionhandle of the users preferred home region. If
+        /// multiple sims occupy the same spot, the grid may decide
+        /// which region the user logs into
+        /// </summary>
+        public virtual ulong HomeRegion
         {
-            get { return m_created; }
-            set { m_created = value; }
+            get
+            {
+                return Util.RegionWorldLocToHandle(Util.RegionToWorldLoc(m_homeRegionX), Util.RegionToWorldLoc(m_homeRegionY));
+                // return Utils.UIntsToLong( m_homeRegionX * (uint)Constants.RegionSize, m_homeRegionY * (uint)Constants.RegionSize);
+            }
+
+            set
+            {
+                uint regionWorldLocX, regionWorldLocY;
+                Util.RegionHandleToWorldLoc(value, out regionWorldLocX, out regionWorldLocY);
+                m_homeRegionX = Util.WorldToRegionLoc(regionWorldLocX);
+                m_homeRegionY = Util.WorldToRegionLoc(regionWorldLocY);
+                // m_homeRegionX = (uint) (value >> 40);
+                // m_homeRegionY = (((uint) (value)) >> 8);
+            }
+        }
+        /// <summary>
+        /// The regionID of the users home region. This is unique;
+        /// even if the position of the region changes within the
+        /// grid, this will refer to the same region.
+        /// </summary>
+        public UUID HomeRegionID
+        {
+            get { return m_homeRegionId; }
+            set { m_homeRegionId = value; }
         }
 
-        public int LastLogin
+        public uint HomeRegionX
         {
-            get { return m_lastLogin; }
-            set { m_lastLogin = value; }
+            get { return m_homeRegionX; }
+            set { m_homeRegionX = value; }
         }
 
-        public string UserInventoryURI
+        public uint HomeRegionY
         {
-            get { return m_userInventoryUri; }
-            set { m_userInventoryUri = value; }
+            get { return m_homeRegionY; }
+            set { m_homeRegionY = value; }
         }
 
-        public string UserAssetURI
+        // Property wrappers
+        public UUID ID
         {
-            get { return m_userAssetUri; }
-            set { m_userAssetUri = value; }
-        }
-
-        public uint CanDoMask
-        {
-            get { return m_profileCanDoMask; }
-            set { m_profileCanDoMask = value; }
-        }
-
-        public uint WantDoMask
-        {
-            get { return m_profileWantDoMask; }
-            set { m_profileWantDoMask = value; }
-        }
-
-        public string AboutText
-        {
-            get { return m_profileAboutText; }
-            set { m_profileAboutText = value; }
-        }
-
-        public string FirstLifeAboutText
-        {
-            get { return m_profileFirstText; }
-            set { m_profileFirstText = value; }
-        }
-
-        public string ProfileUrl
-        {
-            get { return m_profileUrl; }
-            set { m_profileUrl = value; }
+            get { return m_id; }
+            set { m_id = value; }
         }
 
         public UUID Image
@@ -362,16 +322,54 @@ namespace OpenSim.Framework
             set { m_profileImage = value; }
         }
 
-        public UUID FirstLifeImage
+        public int LastLogin
         {
-            get { return m_profileFirstImage; }
-            set { m_profileFirstImage = value; }
+            get { return m_lastLogin; }
+            set { m_lastLogin = value; }
         }
 
-        public UserAgentData CurrentAgent
+        /// <value>
+        /// The concatentation of the various name components.
+        /// </value>
+        public string Name
         {
-            get { return m_currentAgent; }
-            set { m_currentAgent = value; }
+            get { return String.Format("{0} {1}", m_firstname, m_surname); }
+        }
+
+        public UUID Partner
+        {
+            get { return m_partner; }
+            set { m_partner = value; }
+        }
+
+        public string PasswordHash
+        {
+            get { return m_passwordHash; }
+            set { m_passwordHash = value; }
+        }
+
+        public string PasswordSalt
+        {
+            get { return m_passwordSalt; }
+            set { m_passwordSalt = value; }
+        }
+
+        public string ProfileUrl
+        {
+            get { return m_profileUrl; }
+            set { m_profileUrl = value; }
+        }
+
+        public string SurName
+        {
+            get { return m_surname; }
+            set { m_surname = value; }
+        }
+
+        public string UserAssetURI
+        {
+            get { return m_userAssetUri; }
+            set { m_userAssetUri = value; }
         }
 
         public int UserFlags
@@ -380,22 +378,22 @@ namespace OpenSim.Framework
             set { m_userFlags = value; }
         }
 
-        public int GodLevel
+        public string UserInventoryURI
         {
-            get { return m_godLevel; }
-            set { m_godLevel = value; }
+            get { return m_userInventoryUri; }
+            set { m_userInventoryUri = value; }
         }
 
-        public string CustomType
+        public uint WantDoMask
         {
-            get { return m_customType; }
-            set { m_customType = value; }
+            get { return m_profileWantDoMask; }
+            set { m_profileWantDoMask = value; }
         }
 
-        public UUID Partner
+        public UUID WebLoginKey
         {
-            get { return m_partner; }
-            set { m_partner = value; }
+            get { return m_webLoginKey; }
+            set { m_webLoginKey = value; }
         }
     }
 }

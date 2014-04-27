@@ -25,59 +25,29 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Reflection;
-using log4net;
+using Mono.Addins;
 using Nini.Config;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
-using Mono.Addins;
 using OpenSim.Framework;
-using OpenSim.Framework.Servers;
 using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using Caps=OpenSim.Framework.Capabilities.Caps;
+using System;
+using System.Collections;
+using Caps = OpenSim.Framework.Capabilities.Caps;
 
 namespace OpenSim.Region.ClientStack.Linden
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "ObjectAdd")]
     public class ObjectAdd : INonSharedRegionModule
     {
-//        private static readonly ILog m_log =
-//            LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        
+        //        private static readonly ILog m_log =
+        //            LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         private Scene m_scene;
 
         #region INonSharedRegionModule Members
-
-        public void Initialise(IConfigSource pSource)
-        {
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            m_scene = scene;
-            m_scene.EventManager.OnRegisterCaps += RegisterCaps;
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-            if (m_scene == scene)
-            {
-                m_scene.EventManager.OnRegisterCaps -= RegisterCaps;
-                m_scene = null;
-            }
-        }
-
-        public void RegionLoaded(Scene scene)
-        {
-        }
-
-        public void Close()
-        {            
-        }
 
         public string Name
         {
@@ -89,23 +59,32 @@ namespace OpenSim.Region.ClientStack.Linden
             get { return null; }
         }
 
-        #endregion
-
-        public void RegisterCaps(UUID agentID, Caps caps)
+        public void AddRegion(Scene scene)
         {
-            UUID capuuid = UUID.Random();
-
-            //            m_log.InfoFormat("[OBJECTADD]: {0}", "/CAPS/OA/" + capuuid + "/");
-
-            caps.RegisterHandler(
-                "ObjectAdd",
-                new RestHTTPHandler(
-                    "POST",
-                    "/CAPS/OA/" + capuuid + "/",
-                    httpMethod => ProcessAdd(httpMethod, agentID, caps),
-                    "ObjectAdd",
-                    agentID.ToString())); ;
+            m_scene = scene;
+            m_scene.EventManager.OnRegisterCaps += RegisterCaps;
         }
+
+        public void Close()
+        {
+        }
+
+        public void Initialise(IConfigSource pSource)
+        {
+        }
+        public void RegionLoaded(Scene scene)
+        {
+        }
+
+        public void RemoveRegion(Scene scene)
+        {
+            if (m_scene == scene)
+            {
+                m_scene.EventManager.OnRegisterCaps -= RegisterCaps;
+                m_scene = null;
+            }
+        }
+        #endregion INonSharedRegionModule Members
 
         public Hashtable ProcessAdd(Hashtable request, UUID AgentId, Caps cap)
         {
@@ -118,7 +97,6 @@ namespace OpenSim.Region.ClientStack.Linden
 
             if (!m_scene.TryGetScenePresence(AgentId, out avatar))
                 return responsedata;
-
 
             OSD r = OSDParser.DeserializeLLSDXml((string)request["requestbody"]);
             //UUID session_id = UUID.Zero;
@@ -203,7 +181,6 @@ namespace OpenSim.Region.ClientStack.Linden
                     path_taper_y = PathMap["TaperY"].AsInteger();
                     path_twist = PathMap["Twist"].AsInteger();
                     path_twist_begin = PathMap["TwistBegin"].AsInteger();
-
                 }
 
                 if (ObjMap.ContainsKey("Profile"))
@@ -252,7 +229,6 @@ namespace OpenSim.Region.ClientStack.Linden
                     //session_id = AgentDataMap["SessionId"].AsUUID();
                     group_id = AgentDataMap["GroupId"].AsUUID();
                 }
-
             }
             else
             { //v1
@@ -289,7 +265,6 @@ namespace OpenSim.Region.ClientStack.Linden
 
                 ray_target_id = rm["ray_target_id"].AsUUID();
 
-
                 //session_id = rm["session_id"].AsUUID();
                 state = rm["state"].AsInteger();
                 lastattach = rm["last_attach_point"].AsInteger();
@@ -306,8 +281,6 @@ namespace OpenSim.Region.ClientStack.Linden
                     return responsedata;
                 }
             }
-
-
 
             Vector3 pos = m_scene.GetNewRezLocation(ray_start, ray_end, ray_target_id, rotation, (bypass_raycast) ? (byte)1 : (byte)0, (ray_end_is_intersection) ? (byte)1 : (byte)0, true, scale, false);
 
@@ -346,7 +319,6 @@ namespace OpenSim.Region.ClientStack.Linden
                 obj = m_scene.AddNewPrim(avatar.UUID, group_id, pos, rotation, pbs);
             }
 
-
             if (obj == null)
                 return responsedata;
 
@@ -369,13 +341,20 @@ namespace OpenSim.Region.ClientStack.Linden
             return responsedata;
         }
 
-        private uint readuintval(OSD obj)
+        public void RegisterCaps(UUID agentID, Caps caps)
         {
-            byte[] tmp = obj.AsBinary();
-            if (BitConverter.IsLittleEndian)
-                Array.Reverse(tmp);
-            return Utils.BytesToUInt(tmp);
+            UUID capuuid = UUID.Random();
 
+            //            m_log.InfoFormat("[OBJECTADD]: {0}", "/CAPS/OA/" + capuuid + "/");
+
+            caps.RegisterHandler(
+                "ObjectAdd",
+                new RestHTTPHandler(
+                    "POST",
+                    "/CAPS/OA/" + capuuid + "/",
+                    httpMethod => ProcessAdd(httpMethod, agentID, caps),
+                    "ObjectAdd",
+                    agentID.ToString())); ;
         }
         private string ConvertUintToBytes(uint val)
         {
@@ -385,5 +364,12 @@ namespace OpenSim.Region.ClientStack.Linden
             return String.Format("<binary encoding=\"base64\">{0}</binary>", Convert.ToBase64String(resultbytes));
         }
 
+        private uint readuintval(OSD obj)
+        {
+            byte[] tmp = obj.AsBinary();
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(tmp);
+            return Utils.BytesToUInt(tmp);
+        }
     }
 }

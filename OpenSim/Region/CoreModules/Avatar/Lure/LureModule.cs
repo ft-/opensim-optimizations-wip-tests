@@ -25,9 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
@@ -35,6 +32,9 @@ using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.Avatar.Lure
 {
@@ -46,21 +46,16 @@ namespace OpenSim.Region.CoreModules.Avatar.Lure
 
         private readonly List<Scene> m_scenes = new List<Scene>();
 
-        private IMessageTransferModule m_TransferModule = null;
         private bool m_Enabled = false;
-
-        public void Initialise(IConfigSource config)
+        private IMessageTransferModule m_TransferModule = null;
+        public string Name
         {
-            if (config.Configs["Messaging"] != null)
-            {
-                if (config.Configs["Messaging"].GetString(
-                        "LureModule", "LureModule") ==
-                        "LureModule")
-                {
-                    m_Enabled = true;
-                    m_log.DebugFormat("[LURE MODULE]: {0} enabled", Name);
-                }
-            }
+            get { return "LureModule"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
         }
 
         public void AddRegion(Scene scene)
@@ -77,70 +72,23 @@ namespace OpenSim.Region.CoreModules.Avatar.Lure
             }
         }
 
-        public void RegionLoaded(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-            if (m_TransferModule == null)
-            {
-                m_TransferModule =
-                    scene.RequestModuleInterface<IMessageTransferModule>();
-
-                if (m_TransferModule == null)
-                {
-                    m_log.Error("[INSTANT MESSAGE]: No message transfer module, "+
-                    "lures will not work!");
-
-                    m_Enabled = false;
-                    m_scenes.Clear();
-                    scene.EventManager.OnNewClient -= OnNewClient;
-                    scene.EventManager.OnIncomingInstantMessage -=
-                            OnGridInstantMessage;
-                }
-            }
-
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-            lock (m_scenes)
-            {
-                m_scenes.Remove(scene);
-                scene.EventManager.OnNewClient -= OnNewClient;
-                scene.EventManager.OnIncomingInstantMessage -=
-                        OnGridInstantMessage;
-            }
-        }
-
-        void OnNewClient(IClientAPI client)
-        {
-            client.OnInstantMessage += OnInstantMessage;
-            client.OnStartLure += OnStartLure;
-            client.OnTeleportLureRequest += OnTeleportLureRequest;
-        }
-
-        public void PostInitialise()
-        {
-        }
-
         public void Close()
         {
         }
 
-        public string Name
+        public void Initialise(IConfigSource config)
         {
-            get { return "LureModule"; }
+            if (config.Configs["Messaging"] != null)
+            {
+                if (config.Configs["Messaging"].GetString(
+                        "LureModule", "LureModule") ==
+                        "LureModule")
+                {
+                    m_Enabled = true;
+                    m_log.DebugFormat("[LURE MODULE]: {0} enabled", Name);
+                }
+            }
         }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
         public void OnInstantMessage(IClientAPI client, GridInstantMessage im)
         {
         }
@@ -168,11 +116,11 @@ namespace OpenSim.Region.CoreModules.Avatar.Lure
             m_log.DebugFormat("[LURE MODULE]: TP invite with message {0}, type {1}", message, lureType);
 
             GridInstantMessage m = new GridInstantMessage(scene, client.AgentId,
-                    client.FirstName+" "+client.LastName, targetid,
+                    client.FirstName + " " + client.LastName, targetid,
                     (byte)InstantMessageDialog.RequestTeleport, false,
                     message, dest, false, presence.AbsolutePosition,
                     new Byte[0], true);
-                    
+
             if (m_TransferModule != null)
             {
                 m_TransferModule.SendInstantMessage(m,
@@ -203,6 +151,48 @@ namespace OpenSim.Region.CoreModules.Avatar.Lure
                     Vector3.Zero, teleportFlags);
         }
 
+        public void PostInitialise()
+        {
+        }
+
+        public void RegionLoaded(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+
+            if (m_TransferModule == null)
+            {
+                m_TransferModule =
+                    scene.RequestModuleInterface<IMessageTransferModule>();
+
+                if (m_TransferModule == null)
+                {
+                    m_log.Error("[INSTANT MESSAGE]: No message transfer module, " +
+                    "lures will not work!");
+
+                    m_Enabled = false;
+                    m_scenes.Clear();
+                    scene.EventManager.OnNewClient -= OnNewClient;
+                    scene.EventManager.OnIncomingInstantMessage -=
+                            OnGridInstantMessage;
+                }
+            }
+        }
+
+        public void RemoveRegion(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+
+            lock (m_scenes)
+            {
+                m_scenes.Remove(scene);
+                scene.EventManager.OnNewClient -= OnNewClient;
+                scene.EventManager.OnIncomingInstantMessage -=
+                        OnGridInstantMessage;
+            }
+        }
+
         private void OnGridInstantMessage(GridInstantMessage msg)
         {
             // Forward remote teleport requests
@@ -215,6 +205,13 @@ namespace OpenSim.Region.CoreModules.Avatar.Lure
                 m_TransferModule.SendInstantMessage(msg,
                     delegate(bool success) { });
             }
+        }
+
+        private void OnNewClient(IClientAPI client)
+        {
+            client.OnInstantMessage += OnInstantMessage;
+            client.OnStartLure += OnStartLure;
+            client.OnTeleportLureRequest += OnTeleportLureRequest;
         }
     }
 }

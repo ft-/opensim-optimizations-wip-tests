@@ -25,38 +25,35 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Text;
 using System.Xml;
 
-using log4net;
-using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Services.Interfaces;
-    
 namespace OpenSim.Framework.Serialization.External
-{        
+{
     /// <summary>
     /// Serialize and deserialize user inventory items as an external format.
     /// </summary>
     public class UserInventoryItemSerializer
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private static Dictionary<string, Action<InventoryItemBase, XmlTextReader>> m_InventoryItemXmlProcessors
             = new Dictionary<string, Action<InventoryItemBase, XmlTextReader>>();
 
-        #region InventoryItemBase Processor initialization 
+        #region InventoryItemBase Processor initialization
+
         static UserInventoryItemSerializer()
         {
             m_InventoryItemXmlProcessors.Add("Name", ProcessName);
             m_InventoryItemXmlProcessors.Add("ID", ProcessID);
             m_InventoryItemXmlProcessors.Add("InvType", ProcessInvType);
             m_InventoryItemXmlProcessors.Add("CreatorUUID", ProcessCreatorUUID);
-            m_InventoryItemXmlProcessors.Add("CreatorID", ProcessCreatorID); 
+            m_InventoryItemXmlProcessors.Add("CreatorID", ProcessCreatorID);
             m_InventoryItemXmlProcessors.Add("CreatorData", ProcessCreatorData);
             m_InventoryItemXmlProcessors.Add("CreationDate", ProcessCreationDate);
             m_InventoryItemXmlProcessors.Add("Owner", ProcessOwner);
@@ -73,27 +70,34 @@ namespace OpenSim.Framework.Serialization.External
             m_InventoryItemXmlProcessors.Add("GroupID", ProcessGroupID);
             m_InventoryItemXmlProcessors.Add("GroupOwned", ProcessGroupOwned);
         }
-        #endregion 
+
+        #endregion InventoryItemBase Processor initialization
 
         #region InventoryItemBase Processors
-        private static void ProcessName(InventoryItemBase item, XmlTextReader reader)
+
+        private static void ProcessAssetID(InventoryItemBase item, XmlTextReader reader)
         {
-            item.Name = reader.ReadElementContentAsString("Name", String.Empty);
+            item.AssetID = Util.ReadUUID(reader, "AssetID");
         }
 
-        private static void ProcessID(InventoryItemBase item, XmlTextReader reader)
+        private static void ProcessAssetType(InventoryItemBase item, XmlTextReader reader)
         {
-            item.ID = Util.ReadUUID(reader, "ID");
+            item.AssetType = reader.ReadElementContentAsInt("AssetType", String.Empty);
         }
 
-        private static void ProcessInvType(InventoryItemBase item, XmlTextReader reader)
+        private static void ProcessBasePermissions(InventoryItemBase item, XmlTextReader reader)
         {
-            item.InvType = reader.ReadElementContentAsInt("InvType", String.Empty);
+            item.BasePermissions = (uint)reader.ReadElementContentAsInt("BasePermissions", String.Empty);
         }
 
-        private static void ProcessCreatorUUID(InventoryItemBase item, XmlTextReader reader)
+        private static void ProcessCreationDate(InventoryItemBase item, XmlTextReader reader)
         {
-            item.CreatorId = reader.ReadElementContentAsString("CreatorUUID", String.Empty);
+            item.CreationDate = reader.ReadElementContentAsInt("CreationDate", String.Empty);
+        }
+
+        private static void ProcessCreatorData(InventoryItemBase item, XmlTextReader reader)
+        {
+            item.CreatorData = reader.ReadElementContentAsString("CreatorData", String.Empty);
         }
 
         private static void ProcessCreatorID(InventoryItemBase item, XmlTextReader reader)
@@ -102,44 +106,9 @@ namespace OpenSim.Framework.Serialization.External
             item.CreatorId = reader.ReadElementContentAsString("CreatorID", String.Empty);
         }
 
-        private static void ProcessCreationDate(InventoryItemBase item, XmlTextReader reader)
+        private static void ProcessCreatorUUID(InventoryItemBase item, XmlTextReader reader)
         {
-            item.CreationDate = reader.ReadElementContentAsInt("CreationDate", String.Empty);
-        }
-
-        private static void ProcessOwner(InventoryItemBase item, XmlTextReader reader)
-        {
-            item.Owner = Util.ReadUUID(reader, "Owner");
-        }
-
-        private static void ProcessDescription(InventoryItemBase item, XmlTextReader reader)
-        {
-            item.Description = reader.ReadElementContentAsString("Description", String.Empty);
-        }
-
-        private static void ProcessAssetType(InventoryItemBase item, XmlTextReader reader)
-        {
-            item.AssetType = reader.ReadElementContentAsInt("AssetType", String.Empty);
-        }
-
-        private static void ProcessAssetID(InventoryItemBase item, XmlTextReader reader)
-        {
-            item.AssetID = Util.ReadUUID(reader, "AssetID");
-        }
-
-        private static void ProcessSaleType(InventoryItemBase item, XmlTextReader reader)
-        {
-            item.SaleType = (byte)reader.ReadElementContentAsInt("SaleType", String.Empty);
-        }
-
-        private static void ProcessSalePrice(InventoryItemBase item, XmlTextReader reader)
-        {
-            item.SalePrice = reader.ReadElementContentAsInt("SalePrice", String.Empty);
-        }
-
-        private static void ProcessBasePermissions(InventoryItemBase item, XmlTextReader reader)
-        {
-            item.BasePermissions = (uint)reader.ReadElementContentAsInt("BasePermissions", String.Empty);
+            item.CreatorId = reader.ReadElementContentAsString("CreatorUUID", String.Empty);
         }
 
         private static void ProcessCurrentPermissions(InventoryItemBase item, XmlTextReader reader)
@@ -147,14 +116,14 @@ namespace OpenSim.Framework.Serialization.External
             item.CurrentPermissions = (uint)reader.ReadElementContentAsInt("CurrentPermissions", String.Empty);
         }
 
+        private static void ProcessDescription(InventoryItemBase item, XmlTextReader reader)
+        {
+            item.Description = reader.ReadElementContentAsString("Description", String.Empty);
+        }
+
         private static void ProcessEveryOnePermissions(InventoryItemBase item, XmlTextReader reader)
         {
             item.EveryOnePermissions = (uint)reader.ReadElementContentAsInt("EveryOnePermissions", String.Empty);
-        }
-
-        private static void ProcessNextPermissions(InventoryItemBase item, XmlTextReader reader)
-        {
-            item.NextPermissions = (uint)reader.ReadElementContentAsInt("NextPermissions", String.Empty);
         }
 
         private static void ProcessFlags(InventoryItemBase item, XmlTextReader reader)
@@ -172,12 +141,39 @@ namespace OpenSim.Framework.Serialization.External
             item.GroupOwned = Util.ReadBoolean(reader);
         }
 
-        private static void ProcessCreatorData(InventoryItemBase item, XmlTextReader reader)
+        private static void ProcessID(InventoryItemBase item, XmlTextReader reader)
         {
-            item.CreatorData = reader.ReadElementContentAsString("CreatorData", String.Empty);
+            item.ID = Util.ReadUUID(reader, "ID");
         }
 
-        #endregion
+        private static void ProcessInvType(InventoryItemBase item, XmlTextReader reader)
+        {
+            item.InvType = reader.ReadElementContentAsInt("InvType", String.Empty);
+        }
+
+        private static void ProcessName(InventoryItemBase item, XmlTextReader reader)
+        {
+            item.Name = reader.ReadElementContentAsString("Name", String.Empty);
+        }
+        private static void ProcessNextPermissions(InventoryItemBase item, XmlTextReader reader)
+        {
+            item.NextPermissions = (uint)reader.ReadElementContentAsInt("NextPermissions", String.Empty);
+        }
+
+        private static void ProcessOwner(InventoryItemBase item, XmlTextReader reader)
+        {
+            item.Owner = Util.ReadUUID(reader, "Owner");
+        }
+        private static void ProcessSalePrice(InventoryItemBase item, XmlTextReader reader)
+        {
+            item.SalePrice = reader.ReadElementContentAsInt("SalePrice", String.Empty);
+        }
+
+        private static void ProcessSaleType(InventoryItemBase item, XmlTextReader reader)
+        {
+            item.SaleType = (byte)reader.ReadElementContentAsInt("SaleType", String.Empty);
+        }
+        #endregion InventoryItemBase Processors
 
         /// <summary>
         /// Deserialize item
@@ -189,7 +185,7 @@ namespace OpenSim.Framework.Serialization.External
         {
             return Deserialize(Encoding.ASCII.GetString(serialization, 0, serialization.Length));
         }
-        
+
         /// <summary>
         /// Deserialize settings
         /// </summary>
@@ -212,8 +208,8 @@ namespace OpenSim.Framework.Serialization.External
 
             //m_log.DebugFormat("[XXX]: parsed InventoryItemBase {0} - {1}", obj.Name, obj.UUID);
             return item;
-        }      
-        
+        }
+
         public static string Serialize(InventoryItemBase inventoryItem, Dictionary<string, object> options, IUserAccountService userAccountService)
         {
             StringWriter sw = new StringWriter();
@@ -294,11 +290,11 @@ namespace OpenSim.Framework.Serialization.External
             }
 
             writer.WriteEndElement();
-            
+
             writer.Close();
             sw.Close();
-            
+
             return sw.ToString();
-        }        
+        }
     }
 }

@@ -25,13 +25,30 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
 using System;
 using System.Reflection;
-using log4net;
 
 public class GcNotify
 {
     private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+    private static bool s_initialized = false;
+
+    private GcNotify()
+    {
+    }
+
+    ~GcNotify()
+    {
+        if (!Environment.HasShutdownStarted && !AppDomain.CurrentDomain.IsFinalizingForUnload())
+        {
+            m_log.DebugFormat("[GC NOTIFY]: Garbage collection triggered.");
+
+            if (Enabled)
+                new GcNotify();
+        }
+    }
 
     public static bool Enabled
     {
@@ -42,21 +59,6 @@ public class GcNotify
                 new GcNotify();
 
             s_initialized = value;
-        }
-    }
-
-    private static bool s_initialized = false;
-
-    private GcNotify() {}
-
-    ~GcNotify()
-    {
-        if (!Environment.HasShutdownStarted && !AppDomain.CurrentDomain.IsFinalizingForUnload())
-        {
-            m_log.DebugFormat("[GC NOTIFY]: Garbage collection triggered.");
-
-            if (Enabled)
-                new GcNotify();
         }
     }
 }

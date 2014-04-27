@@ -34,10 +34,17 @@ namespace OpenSim.Framework.Communications.XMPP
     /// </summary>
     public enum XmppIqType
     {
-        [XmlEnum("set")] set,
-        [XmlEnum("get")] get,
-        [XmlEnum("result")] result,
-        [XmlEnum("error")] error,
+        [XmlEnum("set")]
+        set,
+
+        [XmlEnum("get")]
+        get,
+
+        [XmlEnum("result")]
+        result,
+
+        [XmlEnum("error")]
+        error,
     }
 
     /// <summary>
@@ -45,7 +52,7 @@ namespace OpenSim.Framework.Communications.XMPP
     /// specific to the query type.
     /// </summary>
     [XmlRoot("iq")]
-    public abstract class XmppIqStanza: XmppStanza
+    public abstract class XmppIqStanza : XmppStanza
     {
         /// <summary>
         /// IQ type: one of set, get, result, error
@@ -53,7 +60,8 @@ namespace OpenSim.Framework.Communications.XMPP
         [XmlAttribute("type")]
         public XmppIqType Type;
 
-        public XmppIqStanza(): base()
+        public XmppIqStanza()
+            : base()
         {
         }
     }

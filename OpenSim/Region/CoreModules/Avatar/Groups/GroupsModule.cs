@@ -25,17 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using log4net;
+using Mono.Addins;
 using Nini.Config;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-
-using Mono.Addins;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.Avatar.Groups
 {
@@ -45,48 +44,30 @@ namespace OpenSim.Region.CoreModules.Avatar.Groups
         private static readonly ILog m_log =
             LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private Dictionary<UUID, GroupMembershipData> m_GroupMap =
-                new Dictionary<UUID, GroupMembershipData>();
+        private static GroupMembershipData osGroup =
+                new GroupMembershipData();
 
         private Dictionary<UUID, IClientAPI> m_ClientMap =
                 new Dictionary<UUID, IClientAPI>();
 
-        private UUID opensimulatorGroupID =
-                new UUID("00000000-68f9-1111-024e-222222111123");
-
-        private List<Scene> m_SceneList = new List<Scene>();
-
-        private static GroupMembershipData osGroup =
-                new GroupMembershipData();
-
         private bool m_Enabled = false;
 
+        private Dictionary<UUID, GroupMembershipData> m_GroupMap =
+                new Dictionary<UUID, GroupMembershipData>();
+        private List<Scene> m_SceneList = new List<Scene>();
+
+        private UUID opensimulatorGroupID =
+                new UUID("00000000-68f9-1111-024e-222222111123");
         #region ISharedRegionModule Members
 
-        public void Initialise(IConfigSource config)
+        public string Name
         {
-            IConfig groupsConfig = config.Configs["Groups"];
+            get { return "GroupsModule"; }
+        }
 
-            if (groupsConfig == null)
-            {
-                m_log.Info("[GROUPS]: No configuration found. Using defaults");
-            }
-            else
-            {
-                m_Enabled = groupsConfig.GetBoolean("Enabled", false);
-                if (!m_Enabled)
-                {
-                    m_log.Info("[GROUPS]: Groups disabled in configuration");
-                    return;
-                }
-
-                if (groupsConfig.GetString("Module", "Default") != "Default")
-                {
-                    m_Enabled = false;
-                    return;
-                }
-            }
-
+        public Type ReplaceableInterface
+        {
+            get { return null; }
         }
 
         public void AddRegion(Scene scene)
@@ -116,6 +97,56 @@ namespace OpenSim.Region.CoreModules.Avatar.Groups
             //            scene.EventManager.OnIncomingInstantMessage += OnGridInstantMessage;
         }
 
+        public void Close()
+        {
+            if (!m_Enabled)
+                return;
+
+            //            m_log.Debug("[GROUPS]: Shutting down group module.");
+
+            lock (m_ClientMap)
+            {
+                m_ClientMap.Clear();
+            }
+
+            lock (m_GroupMap)
+            {
+                m_GroupMap.Clear();
+            }
+        }
+
+        public void Initialise(IConfigSource config)
+        {
+            IConfig groupsConfig = config.Configs["Groups"];
+
+            if (groupsConfig == null)
+            {
+                m_log.Info("[GROUPS]: No configuration found. Using defaults");
+            }
+            else
+            {
+                m_Enabled = groupsConfig.GetBoolean("Enabled", false);
+                if (!m_Enabled)
+                {
+                    m_log.Info("[GROUPS]: Groups disabled in configuration");
+                    return;
+                }
+
+                if (groupsConfig.GetString("Module", "Default") != "Default")
+                {
+                    m_Enabled = false;
+                    return;
+                }
+            }
+        }
+        public void PostInitialise()
+        {
+        }
+
+        public void RegionLoaded(Scene scene)
+        {
+        }
+
         public void RemoveRegion(Scene scene)
         {
             if (!m_Enabled)
@@ -130,63 +161,23 @@ namespace OpenSim.Region.CoreModules.Avatar.Groups
             scene.EventManager.OnNewClient -= OnNewClient;
             scene.EventManager.OnClientClosed -= OnClientClosed;
         }
+        #endregion ISharedRegionModule Members
 
-        public void RegionLoaded(Scene scene)
+        private void HandleUUIDGroupNameRequest(UUID id, IClientAPI remote_client)
         {
-        }
-
-        public void PostInitialise()
-        {
-        }
-
-        public void Close()
-        {
-            if (!m_Enabled)
-                return;
-
-//            m_log.Debug("[GROUPS]: Shutting down group module.");
-            
-            lock (m_ClientMap)
-            {
-                m_ClientMap.Clear();
-            }
+            string groupnamereply = "Unknown";
+            UUID groupUUID = UUID.Zero;
 
             lock (m_GroupMap)
             {
-                m_GroupMap.Clear();
-            }
-        }
-
-        public string Name
-        {
-            get { return "GroupsModule"; }
-        }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
-        #endregion
-
-        private void OnNewClient(IClientAPI client)
-        {
-            // Subscribe to instant messages
-//            client.OnInstantMessage += OnInstantMessage;
-            client.OnAgentDataUpdateRequest += OnAgentDataUpdateRequest;
-            client.OnUUIDGroupNameRequest += HandleUUIDGroupNameRequest;
-            lock (m_ClientMap)
-            {
-                if (!m_ClientMap.ContainsKey(client.AgentId))
+                if (m_GroupMap.ContainsKey(id))
                 {
-                    m_ClientMap.Add(client.AgentId, client);
+                    GroupMembershipData grp = m_GroupMap[id];
+                    groupnamereply = grp.GroupName;
+                    groupUUID = grp.GroupID;
                 }
             }
-
-            GroupMembershipData[] updateGroups = new GroupMembershipData[1];
-            updateGroups[0] = osGroup;
-
-            client.SendGroupMembership(updateGroups);
+            remote_client.SendGroupNameReply(groupUUID, groupnamereply);
         }
 
         private void OnAgentDataUpdateRequest(IClientAPI remoteClient,
@@ -210,51 +201,52 @@ namespace OpenSim.Region.CoreModules.Avatar.Groups
                                              ActiveGroupTitle);
         }
 
-//        private void OnInstantMessage(IClientAPI client, GridInstantMessage im)
-//        {
-//        }
-
-//        private void OnGridInstantMessage(GridInstantMessage msg)
-//        {
-//            // Trigger the above event handler
-//            OnInstantMessage(null, msg);
-//        }
-
-        private void HandleUUIDGroupNameRequest(UUID id,IClientAPI remote_client)
-        {
-            string groupnamereply = "Unknown";
-            UUID groupUUID = UUID.Zero;
-
-            lock (m_GroupMap)
-            {
-                if (m_GroupMap.ContainsKey(id))
-                {
-                    GroupMembershipData grp = m_GroupMap[id];
-                    groupnamereply = grp.GroupName;
-                    groupUUID = grp.GroupID;
-                }
-            }
-            remote_client.SendGroupNameReply(groupUUID, groupnamereply);
-        }
-
+        //        private void OnGridInstantMessage(GridInstantMessage msg)
+        //        {
+        //            // Trigger the above event handler
+        //            OnInstantMessage(null, msg);
+        //        }
         private void OnClientClosed(UUID agentID, Scene scene)
         {
             lock (m_ClientMap)
             {
                 if (m_ClientMap.ContainsKey(agentID))
                 {
-//                    IClientAPI cli = m_ClientMap[agentID];
-//                    if (cli != null)
-//                    {
-//                        //m_log.Info("[GROUPS]: Removing all reference to groups for " + cli.Name);
-//                    }
-//                    else
-//                    {
-//                        //m_log.Info("[GROUPS]: Removing all reference to groups for " + agentID.ToString());
-//                    }
+                    //                    IClientAPI cli = m_ClientMap[agentID];
+                    //                    if (cli != null)
+                    //                    {
+                    //                        //m_log.Info("[GROUPS]: Removing all reference to groups for " + cli.Name);
+                    //                    }
+                    //                    else
+                    //                    {
+                    //                        //m_log.Info("[GROUPS]: Removing all reference to groups for " + agentID.ToString());
+                    //                    }
                     m_ClientMap.Remove(agentID);
                 }
             }
         }
+
+        private void OnNewClient(IClientAPI client)
+        {
+            // Subscribe to instant messages
+            //            client.OnInstantMessage += OnInstantMessage;
+            client.OnAgentDataUpdateRequest += OnAgentDataUpdateRequest;
+            client.OnUUIDGroupNameRequest += HandleUUIDGroupNameRequest;
+            lock (m_ClientMap)
+            {
+                if (!m_ClientMap.ContainsKey(client.AgentId))
+                {
+                    m_ClientMap.Add(client.AgentId, client);
+                }
+            }
+
+            GroupMembershipData[] updateGroups = new GroupMembershipData[1];
+            updateGroups[0] = osGroup;
+
+            client.SendGroupMembership(updateGroups);
+        }
+        //        private void OnInstantMessage(IClientAPI client, GridInstantMessage im)
+        //        {
+        //        }
     }
 }

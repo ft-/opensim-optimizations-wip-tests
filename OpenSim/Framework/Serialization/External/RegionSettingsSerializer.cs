@@ -25,13 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
 using System.IO;
 using System.Text;
 using System.Xml;
-using OpenMetaverse;
-using OpenSim.Framework;
-using log4net;
-using System.Reflection;
 
 namespace OpenSim.Framework.Serialization.External
 {
@@ -50,7 +47,7 @@ namespace OpenSim.Framework.Serialization.External
         {
             return Deserialize(Encoding.ASCII.GetString(serializedSettings, 0, serializedSettings.Length));
         }
-        
+
         /// <summary>
         /// Deserialize settings
         /// </summary>
@@ -60,14 +57,14 @@ namespace OpenSim.Framework.Serialization.External
         public static RegionSettings Deserialize(string serializedSettings)
         {
             RegionSettings settings = new RegionSettings();
-            
+
             StringReader sr = new StringReader(serializedSettings);
             XmlTextReader xtr = new XmlTextReader(sr);
-            
+
             xtr.ReadStartElement("RegionSettings");
-         
+
             xtr.ReadStartElement("General");
-           
+
             while (xtr.Read() && xtr.NodeType != XmlNodeType.EndElement)
             {
                 switch (xtr.Name)
@@ -75,48 +72,60 @@ namespace OpenSim.Framework.Serialization.External
                     case "AllowDamage":
                         settings.AllowDamage = bool.Parse(xtr.ReadElementContentAsString());
                         break;
+
                     case "AllowLandResell":
                         settings.AllowLandResell = bool.Parse(xtr.ReadElementContentAsString());
                         break;
+
                     case "AllowLandJoinDivide":
                         settings.AllowLandJoinDivide = bool.Parse(xtr.ReadElementContentAsString());
                         break;
+
                     case "BlockFly":
                         settings.BlockFly = bool.Parse(xtr.ReadElementContentAsString());
                         break;
+
                     case "BlockLandShowInSearch":
                         settings.BlockShowInSearch = bool.Parse(xtr.ReadElementContentAsString());
                         break;
+
                     case "BlockTerraform":
                         settings.BlockTerraform = bool.Parse(xtr.ReadElementContentAsString());
                         break;
+
                     case "DisableCollisions":
                         settings.DisableCollisions = bool.Parse(xtr.ReadElementContentAsString());
                         break;
+
                     case "DisablePhysics":
                         settings.DisablePhysics = bool.Parse(xtr.ReadElementContentAsString());
                         break;
+
                     case "DisableScripts":
                         settings.DisableScripts = bool.Parse(xtr.ReadElementContentAsString());
                         break;
+
                     case "MaturityRating":
                         settings.Maturity = int.Parse(xtr.ReadElementContentAsString());
                         break;
+
                     case "RestrictPushing":
                         settings.RestrictPushing = bool.Parse(xtr.ReadElementContentAsString());
                         break;
+
                     case "AgentLimit":
                         settings.AgentLimit = int.Parse(xtr.ReadElementContentAsString());
                         break;
+
                     case "ObjectBonus":
                         settings.ObjectBonus = double.Parse(xtr.ReadElementContentAsString(), Culture.NumberFormatInfo);
                         break;
                 }
             }
-            
+
             xtr.ReadEndElement();
             xtr.ReadStartElement("GroundTextures");
-            
+
             while (xtr.Read() && xtr.NodeType != XmlNodeType.EndElement)
             {
                 switch (xtr.Name)
@@ -124,45 +133,56 @@ namespace OpenSim.Framework.Serialization.External
                     case "Texture1":
                         settings.TerrainTexture1 = UUID.Parse(xtr.ReadElementContentAsString());
                         break;
+
                     case "Texture2":
                         settings.TerrainTexture2 = UUID.Parse(xtr.ReadElementContentAsString());
                         break;
+
                     case "Texture3":
                         settings.TerrainTexture3 = UUID.Parse(xtr.ReadElementContentAsString());
                         break;
+
                     case "Texture4":
                         settings.TerrainTexture4 = UUID.Parse(xtr.ReadElementContentAsString());
                         break;
+
                     case "ElevationLowSW":
                         settings.Elevation1SW = double.Parse(xtr.ReadElementContentAsString(), Culture.NumberFormatInfo);
                         break;
+
                     case "ElevationLowNW":
                         settings.Elevation1NW = double.Parse(xtr.ReadElementContentAsString(), Culture.NumberFormatInfo);
                         break;
+
                     case "ElevationLowSE":
                         settings.Elevation1SE = double.Parse(xtr.ReadElementContentAsString(), Culture.NumberFormatInfo);
                         break;
+
                     case "ElevationLowNE":
                         settings.Elevation1NE = double.Parse(xtr.ReadElementContentAsString(), Culture.NumberFormatInfo);
                         break;
+
                     case "ElevationHighSW":
                         settings.Elevation2SW = double.Parse(xtr.ReadElementContentAsString(), Culture.NumberFormatInfo);
                         break;
+
                     case "ElevationHighNW":
                         settings.Elevation2NW = double.Parse(xtr.ReadElementContentAsString(), Culture.NumberFormatInfo);
                         break;
+
                     case "ElevationHighSE":
                         settings.Elevation2SE = double.Parse(xtr.ReadElementContentAsString(), Culture.NumberFormatInfo);
                         break;
+
                     case "ElevationHighNE":
                         settings.Elevation2NE = double.Parse(xtr.ReadElementContentAsString(), Culture.NumberFormatInfo);
                         break;
                 }
             }
-           
+
             xtr.ReadEndElement();
             xtr.ReadStartElement("Terrain");
-            
+
             while (xtr.Read() && xtr.NodeType != XmlNodeType.EndElement)
             {
                 switch (xtr.Name)
@@ -170,18 +190,23 @@ namespace OpenSim.Framework.Serialization.External
                     case "WaterHeight":
                         settings.WaterHeight = double.Parse(xtr.ReadElementContentAsString(), Culture.NumberFormatInfo);
                         break;
+
                     case "TerrainRaiseLimit":
                         settings.TerrainRaiseLimit = double.Parse(xtr.ReadElementContentAsString(), Culture.NumberFormatInfo);
                         break;
+
                     case "TerrainLowerLimit":
                         settings.TerrainLowerLimit = double.Parse(xtr.ReadElementContentAsString(), Culture.NumberFormatInfo);
                         break;
+
                     case "UseEstateSun":
                         settings.UseEstateSun = bool.Parse(xtr.ReadElementContentAsString());
                         break;
+
                     case "FixedSun":
                         settings.FixedSun = bool.Parse(xtr.ReadElementContentAsString());
                         break;
+
                     case "SunPosition":
                         settings.SunPosition = double.Parse(xtr.ReadElementContentAsString());
                         break;
@@ -201,6 +226,7 @@ namespace OpenSim.Framework.Serialization.External
                         case "TelehubObject":
                             settings.TelehubObject = UUID.Parse(xtr.ReadElementContentAsString());
                             break;
+
                         case "SpawnPoint":
                             string str = xtr.ReadElementContentAsString();
                             SpawnPoint sp = SpawnPoint.Parse(str);
@@ -212,19 +238,19 @@ namespace OpenSim.Framework.Serialization.External
 
             xtr.Close();
             sr.Close();
-            
+
             return settings;
         }
-        
+
         public static string Serialize(RegionSettings settings)
         {
             StringWriter sw = new StringWriter();
             XmlTextWriter xtw = new XmlTextWriter(sw);
             xtw.Formatting = Formatting.Indented;
             xtw.WriteStartDocument();
-            
+
             xtw.WriteStartElement("RegionSettings");
-            
+
             xtw.WriteStartElement("General");
             xtw.WriteElementString("AllowDamage", settings.AllowDamage.ToString());
             xtw.WriteElementString("AllowLandResell", settings.AllowLandResell.ToString());
@@ -255,7 +281,7 @@ namespace OpenSim.Framework.Serialization.External
             xtw.WriteElementString("ElevationHighSE", settings.Elevation2SE.ToString());
             xtw.WriteElementString("ElevationHighNE", settings.Elevation2NE.ToString());
             xtw.WriteEndElement();
-            
+
             xtw.WriteStartElement("Terrain");
             xtw.WriteElementString("WaterHeight", settings.WaterHeight.ToString());
             xtw.WriteElementString("TerrainRaiseLimit", settings.TerrainRaiseLimit.ToString());
@@ -275,12 +301,12 @@ namespace OpenSim.Framework.Serialization.External
                     xtw.WriteElementString("SpawnPoint", sp.ToString());
             }
             xtw.WriteEndElement();
-            
+
             xtw.WriteEndElement();
-            
+
             xtw.Close();
             sw.Close();
-            
+
             return sw.ToString();
         }
     }

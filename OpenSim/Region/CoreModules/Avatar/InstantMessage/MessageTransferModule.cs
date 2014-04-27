@@ -1,3 +1,14 @@
+using log4net;
+using Mono.Addins;
+using Nini.Config;
+using Nwc.XmlRpc;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Framework.Servers;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
+using OpenSim.Services.Interfaces;
+
 /*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
@@ -24,38 +35,43 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using System.Reflection;
-using log4net;
-using Mono.Addins;
-using Nini.Config;
-using Nwc.XmlRpc;
-using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Framework.Servers;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
 using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 using PresenceInfo = OpenSim.Services.Interfaces.PresenceInfo;
-using OpenSim.Services.Interfaces;
 
 namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "MessageTransferModule")]
     public class MessageTransferModule : ISharedRegionModule, IMessageTransferModule
     {
+        protected List<Scene> m_Scenes = new List<Scene>();
+        protected Dictionary<UUID, UUID> m_UserRegionMap = new Dictionary<UUID, UUID>();
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private bool m_Enabled = false;
-        protected List<Scene> m_Scenes = new List<Scene>();
-        protected Dictionary<UUID, UUID> m_UserRegionMap = new Dictionary<UUID, UUID>();
+        private IPresenceService m_PresenceService;
+
+        /// <summary>
+        /// delegate for sending a grid instant message asynchronously
+        /// </summary>
+        public delegate void GridInstantMessageDelegate(GridInstantMessage im, MessageResultNotification result, UUID prevRegionID);
 
         public event UndeliveredMessage OnUndeliveredMessage;
+        public virtual string Name
+        {
+            get { return "MessageTransferModule"; }
+        }
 
-        private IPresenceService m_PresenceService;
+        public virtual Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
         protected IPresenceService PresenceService
         {
             get
@@ -64,20 +80,6 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
                     m_PresenceService = m_Scenes[0].RequestModuleInterface<IPresenceService>();
                 return m_PresenceService;
             }
-        }
-
-        public virtual void Initialise(IConfigSource config)
-        {
-            IConfig cnf = config.Configs["Messaging"];
-            if (cnf != null && cnf.GetString(
-                    "MessageTransferModule", "MessageTransferModule") !=
-                    "MessageTransferModule")
-            {
-                m_log.Debug("[MESSAGE TRANSFER]: Disabled by configuration");
-                return;
-            }
-
-            m_Enabled = true;
         }
 
         public virtual void AddRegion(Scene scene)
@@ -93,6 +95,23 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
             }
         }
 
+        public virtual void Close()
+        {
+        }
+
+        public virtual void Initialise(IConfigSource config)
+        {
+            IConfig cnf = config.Configs["Messaging"];
+            if (cnf != null && cnf.GetString(
+                    "MessageTransferModule", "MessageTransferModule") !=
+                    "MessageTransferModule")
+            {
+                m_log.Debug("[MESSAGE TRANSFER]: Disabled by configuration");
+                return;
+            }
+
+            m_Enabled = true;
+        }
         public virtual void PostInitialise()
         {
             if (!m_Enabled)
@@ -116,21 +135,6 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
                 m_Scenes.Remove(scene);
             }
         }
-
-        public virtual void Close()
-        {
-        }
-
-        public virtual string Name
-        {
-            get { return "MessageTransferModule"; }
-        }
-
-        public virtual Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
         public virtual void SendInstantMessage(GridInstantMessage im, MessageResultNotification result)
         {
             UUID toAgentID = new UUID(im.toAgentID);
@@ -138,15 +142,15 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
             // Try root avatar only first
             foreach (Scene scene in m_Scenes)
             {
-//                m_log.DebugFormat(
-//                    "[INSTANT MESSAGE]: Looking for root agent {0} in {1}",
-//                    toAgentID.ToString(), scene.RegionInfo.RegionName);
+                //                m_log.DebugFormat(
+                //                    "[INSTANT MESSAGE]: Looking for root agent {0} in {1}",
+                //                    toAgentID.ToString(), scene.RegionInfo.RegionName);
 
                 ScenePresence sp = scene.GetScenePresence(toAgentID);
                 if (sp != null && !sp.IsChildAgent)
                 {
                     // Local message
-//                    m_log.DebugFormat("[INSTANT MESSAGE]: Delivering IM to root agent {0} {1}", sp.Name, toAgentID);
+                    //                    m_log.DebugFormat("[INSTANT MESSAGE]: Delivering IM to root agent {0} {1}", sp.Name, toAgentID);
 
                     sp.ControllingClient.SendInstantMessage(im);
 
@@ -159,14 +163,14 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
             // try child avatar second
             foreach (Scene scene in m_Scenes)
             {
-//                m_log.DebugFormat(
-//                    "[INSTANT MESSAGE]: Looking for child of {0} in {1}", toAgentID, scene.RegionInfo.RegionName);
+                //                m_log.DebugFormat(
+                //                    "[INSTANT MESSAGE]: Looking for child of {0} in {1}", toAgentID, scene.RegionInfo.RegionName);
 
                 ScenePresence sp = scene.GetScenePresence(toAgentID);
                 if (sp != null)
                 {
                     // Local message
-//                    m_log.DebugFormat("[INSTANT MESSAGE]: Delivering IM to child agent {0} {1}", sp.Name, toAgentID);
+                    //                    m_log.DebugFormat("[INSTANT MESSAGE]: Delivering IM to child agent {0} {1}", sp.Name, toAgentID);
 
                     sp.ControllingClient.SendInstantMessage(im);
 
@@ -176,30 +180,91 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
                 }
             }
 
-//            m_log.DebugFormat("[INSTANT MESSAGE]: Delivering IM to {0} via XMLRPC", im.toAgentID);
+            //            m_log.DebugFormat("[INSTANT MESSAGE]: Delivering IM to {0} via XMLRPC", im.toAgentID);
 
             SendGridInstantMessageViaXMLRPC(im, result);
         }
 
-        private void HandleUndeliveredMessage(GridInstantMessage im, MessageResultNotification result)
+        /// <summary>
+        /// Takes a GridInstantMessage and converts it into a Hashtable for XMLRPC
+        /// </summary>
+        /// <param name="msg">The GridInstantMessage object</param>
+        /// <returns>Hashtable containing the XMLRPC request</returns>
+        protected virtual Hashtable ConvertGridInstantMessageToXMLRPC(GridInstantMessage msg)
         {
-            UndeliveredMessage handlerUndeliveredMessage = OnUndeliveredMessage;
+            Hashtable gim = new Hashtable();
+            gim["from_agent_id"] = msg.fromAgentID.ToString();
+            // Kept for compatibility
+            gim["from_agent_session"] = UUID.Zero.ToString();
+            gim["to_agent_id"] = msg.toAgentID.ToString();
+            gim["im_session_id"] = msg.imSessionID.ToString();
+            gim["timestamp"] = msg.timestamp.ToString();
+            gim["from_agent_name"] = msg.fromAgentName;
+            gim["message"] = msg.message;
+            byte[] dialogdata = new byte[1]; dialogdata[0] = msg.dialog;
+            gim["dialog"] = Convert.ToBase64String(dialogdata, Base64FormattingOptions.None);
 
-            // If this event has handlers, then an IM from an agent will be
-            // considered delivered. This will suppress the error message.
-            //
-            if (handlerUndeliveredMessage != null)
+            if (msg.fromGroup)
+                gim["from_group"] = "TRUE";
+            else
+                gim["from_group"] = "FALSE";
+            byte[] offlinedata = new byte[1]; offlinedata[0] = msg.offline;
+            gim["offline"] = Convert.ToBase64String(offlinedata, Base64FormattingOptions.None);
+            gim["parent_estate_id"] = msg.ParentEstateID.ToString();
+            gim["position_x"] = msg.Position.X.ToString();
+            gim["position_y"] = msg.Position.Y.ToString();
+            gim["position_z"] = msg.Position.Z.ToString();
+            gim["region_id"] = new UUID(msg.RegionID).ToString();
+            gim["binary_bucket"] = Convert.ToBase64String(msg.binaryBucket, Base64FormattingOptions.None);
+            return gim;
+        }
+
+        /// <summary>
+        /// This actually does the XMLRPC Request
+        /// </summary>
+        /// <param name="reginfo">RegionInfo we pull the data out of to send the request to</param>
+        /// <param name="xmlrpcdata">The Instant Message data Hashtable</param>
+        /// <returns>Bool if the message was successfully delivered at the other side.</returns>
+        protected virtual bool doIMSending(GridRegion reginfo, Hashtable xmlrpcdata)
+        {
+            ArrayList SendParams = new ArrayList();
+            SendParams.Add(xmlrpcdata);
+            XmlRpcRequest GridReq = new XmlRpcRequest("grid_instant_message", SendParams);
+            try
             {
-                handlerUndeliveredMessage(im);
-                if (im.dialog == (byte)InstantMessageDialog.MessageFromAgent)
-                    result(true);
+                XmlRpcResponse GridResp = GridReq.Send(reginfo.ServerURI, 3000);
+
+                Hashtable responseData = (Hashtable)GridResp.Value;
+
+                if (responseData.ContainsKey("success"))
+                {
+                    if ((string)responseData["success"] == "TRUE")
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
                 else
-                    result(false);
-                return;
+                {
+                    return false;
+                }
+            }
+            catch (WebException e)
+            {
+                m_log.ErrorFormat("[GRID INSTANT MESSAGE]: Error sending message to {0} the host didn't respond " + e.ToString(), reginfo.ServerURI.ToString());
             }
 
-            //m_log.DebugFormat("[INSTANT MESSAGE]: Undeliverable");
-            result(false);
+            return false;
+        }
+
+        protected virtual void GridInstantMessageCompleted(IAsyncResult iar)
+        {
+            GridInstantMessageDelegate icon =
+                    (GridInstantMessageDelegate)iar.AsyncState;
+            icon.EndInvoke(iar);
         }
 
         /// <summary>
@@ -211,10 +276,10 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
         protected virtual XmlRpcResponse processXMLRPCGridInstantMessage(XmlRpcRequest request, IPEndPoint remoteClient)
         {
             bool successful = false;
-            
+
             // TODO: For now, as IMs seem to be a bit unreliable on OSGrid, catch all exception that
             // happen here and aren't caught and log them.
-            try 
+            try
             {
                 // various rational defaults
                 UUID fromAgentID = UUID.Zero;
@@ -226,16 +291,15 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
                 byte dialog = (byte)0;
                 bool fromGroup = false;
                 byte offline = (byte)0;
-                uint ParentEstateID=0;
+                uint ParentEstateID = 0;
                 Vector3 Position = Vector3.Zero;
-                UUID RegionID = UUID.Zero ;
+                UUID RegionID = UUID.Zero;
                 byte[] binaryBucket = new byte[0];
 
                 float pos_x = 0;
                 float pos_y = 0;
                 float pos_z = 0;
                 //m_log.Info("Processing IM");
-
 
                 Hashtable requestData = (Hashtable)request.Params[0];
                 // Check if it's got all the data
@@ -382,7 +446,6 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
                     gim.Position = Position;
                     gim.binaryBucket = binaryBucket;
 
-
                     // Trigger the Instant message in the scene.
                     foreach (Scene scene in m_Scenes)
                     {
@@ -425,19 +488,6 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
             return resp;
         }
 
-        /// <summary>
-        /// delegate for sending a grid instant message asynchronously
-        /// </summary>
-        public delegate void GridInstantMessageDelegate(GridInstantMessage im, MessageResultNotification result, UUID prevRegionID);
-
-        protected virtual void GridInstantMessageCompleted(IAsyncResult iar)
-        {
-            GridInstantMessageDelegate icon =
-                    (GridInstantMessageDelegate)iar.AsyncState;
-            icon.EndInvoke(iar);
-        }
-
-
         protected virtual void SendGridInstantMessageViaXMLRPC(GridInstantMessage im, MessageResultNotification result)
         {
             GridInstantMessageDelegate d = SendGridInstantMessageViaXMLRPCAsync;
@@ -448,13 +498,13 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
         /// <summary>
         /// Recursive SendGridInstantMessage over XMLRPC method.
         /// This is called from within a dedicated thread.
-        /// The first time this is called, prevRegionHandle will be 0 Subsequent times this is called from 
+        /// The first time this is called, prevRegionHandle will be 0 Subsequent times this is called from
         /// itself, prevRegionHandle will be the last region handle that we tried to send.
         /// If the handles are the same, we look up the user's location using the grid.
         /// If the handles are still the same, we end.  The send failed.
         /// </summary>
         /// <param name="prevRegionHandle">
-        /// Pass in 0 the first time this method is called.  It will be called recursively with the last 
+        /// Pass in 0 the first time this method is called.  It will be called recursively with the last
         /// regionhandle tried
         /// </param>
         protected virtual void SendGridInstantMessageViaXMLRPCAsync(GridInstantMessage im, MessageResultNotification result, UUID prevRegionID)
@@ -484,13 +534,12 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
                     lookupAgent = true;
                 }
             }
-            
 
             // Are we needing to look-up an agent?
             if (lookupAgent)
             {
                 // Non-cached user agent lookup.
-                PresenceInfo[] presences = PresenceService.GetAgents(new string[] { toAgentID.ToString() }); 
+                PresenceInfo[] presences = PresenceService.GetAgents(new string[] { toAgentID.ToString() });
                 if (presences != null && presences.Length > 0)
                 {
                     foreach (PresenceInfo p in presences)
@@ -576,106 +625,48 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
             }
         }
 
-        /// <summary>
-        /// This actually does the XMLRPC Request
-        /// </summary>
-        /// <param name="reginfo">RegionInfo we pull the data out of to send the request to</param>
-        /// <param name="xmlrpcdata">The Instant Message data Hashtable</param>
-        /// <returns>Bool if the message was successfully delivered at the other side.</returns>
-        protected virtual bool doIMSending(GridRegion reginfo, Hashtable xmlrpcdata)
+        private void HandleUndeliveredMessage(GridInstantMessage im, MessageResultNotification result)
         {
+            UndeliveredMessage handlerUndeliveredMessage = OnUndeliveredMessage;
 
-            ArrayList SendParams = new ArrayList();
-            SendParams.Add(xmlrpcdata);
-            XmlRpcRequest GridReq = new XmlRpcRequest("grid_instant_message", SendParams);
-            try
+            // If this event has handlers, then an IM from an agent will be
+            // considered delivered. This will suppress the error message.
+            //
+            if (handlerUndeliveredMessage != null)
             {
-
-                XmlRpcResponse GridResp = GridReq.Send(reginfo.ServerURI, 3000);
-
-                Hashtable responseData = (Hashtable)GridResp.Value;
-
-                if (responseData.ContainsKey("success"))
-                {
-                    if ((string)responseData["success"] == "TRUE")
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
+                handlerUndeliveredMessage(im);
+                if (im.dialog == (byte)InstantMessageDialog.MessageFromAgent)
+                    result(true);
                 else
-                {
-                    return false;
-                }
-            }
-            catch (WebException e)
-            {
-                m_log.ErrorFormat("[GRID INSTANT MESSAGE]: Error sending message to {0} the host didn't respond " + e.ToString(), reginfo.ServerURI.ToString());
+                    result(false);
+                return;
             }
 
-            return false;
+            //m_log.DebugFormat("[INSTANT MESSAGE]: Undeliverable");
+            result(false);
         }
-
         /// <summary>
         /// Get ulong region handle for region by it's Region UUID.
         /// We use region handles over grid comms because there's all sorts of free and cool caching.
         /// </summary>
         /// <param name="regionID">UUID of region to get the region handle for</param>
         /// <returns></returns>
-//        private virtual ulong getLocalRegionHandleFromUUID(UUID regionID)
-//        {
-//            ulong returnhandle = 0;
-//
-//            lock (m_Scenes)
-//            {
-//                foreach (Scene sn in m_Scenes)
-//                {
-//                    if (sn.RegionInfo.RegionID == regionID)
-//                    {
-//                        returnhandle = sn.RegionInfo.RegionHandle;
-//                        break;
-//                    }
-//                }
-//            }
-//            return returnhandle;
-//        }
-
-        /// <summary>
-        /// Takes a GridInstantMessage and converts it into a Hashtable for XMLRPC
-        /// </summary>
-        /// <param name="msg">The GridInstantMessage object</param>
-        /// <returns>Hashtable containing the XMLRPC request</returns>
-        protected virtual Hashtable ConvertGridInstantMessageToXMLRPC(GridInstantMessage msg)
-        {
-            Hashtable gim = new Hashtable();
-            gim["from_agent_id"] = msg.fromAgentID.ToString();
-            // Kept for compatibility
-            gim["from_agent_session"] = UUID.Zero.ToString();
-            gim["to_agent_id"] = msg.toAgentID.ToString();
-            gim["im_session_id"] = msg.imSessionID.ToString();
-            gim["timestamp"] = msg.timestamp.ToString();
-            gim["from_agent_name"] = msg.fromAgentName;
-            gim["message"] = msg.message;
-            byte[] dialogdata = new byte[1];dialogdata[0] = msg.dialog;
-            gim["dialog"] = Convert.ToBase64String(dialogdata,Base64FormattingOptions.None);
-
-            if (msg.fromGroup)
-                gim["from_group"] = "TRUE";
-            else
-                gim["from_group"] = "FALSE";
-            byte[] offlinedata = new byte[1]; offlinedata[0] = msg.offline;
-            gim["offline"] = Convert.ToBase64String(offlinedata, Base64FormattingOptions.None);
-            gim["parent_estate_id"] = msg.ParentEstateID.ToString();
-            gim["position_x"] = msg.Position.X.ToString();
-            gim["position_y"] = msg.Position.Y.ToString();
-            gim["position_z"] = msg.Position.Z.ToString();
-            gim["region_id"] = new UUID(msg.RegionID).ToString();
-            gim["binary_bucket"] = Convert.ToBase64String(msg.binaryBucket,Base64FormattingOptions.None);
-            return gim;
-        }
-
+        //        private virtual ulong getLocalRegionHandleFromUUID(UUID regionID)
+        //        {
+        //            ulong returnhandle = 0;
+        //
+        //            lock (m_Scenes)
+        //            {
+        //                foreach (Scene sn in m_Scenes)
+        //                {
+        //                    if (sn.RegionInfo.RegionID == regionID)
+        //                    {
+        //                        returnhandle = sn.RegionInfo.RegionHandle;
+        //                        break;
+        //                    }
+        //                }
+        //            }
+        //            return returnhandle;
+        //        }
     }
 }

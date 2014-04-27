@@ -50,17 +50,17 @@ namespace OpenSim.Framework.Communications.Limit
         bool IsFirstRefusal(TId id);
 
         /// <summary>
-        /// Start monitoring for future AllowRequest calls.  If the id is already monitored, then monitoring
-        /// continues.
-        /// </summary>
-        /// <param name="id"></param>
-        void MonitorRequests(TId id);
-
-        /// <summary>
         /// Is the id being monitored?
         /// </summary>
         /// <param name="uuid"> </param>
         /// <returns></returns>
         bool IsMonitoringRequests(TId id);
+
+        /// <summary>
+        /// Start monitoring for future AllowRequest calls.  If the id is already monitored, then monitoring
+        /// continues.
+        /// </summary>
+        /// <param name="id"></param>
+        void MonitorRequests(TId id);
     }
 }

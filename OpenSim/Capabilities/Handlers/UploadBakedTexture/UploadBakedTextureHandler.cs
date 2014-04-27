@@ -25,25 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Specialized;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Reflection;
-using System.IO;
-using System.Web;
 using log4net;
-using Nini.Config;
 using OpenMetaverse;
-using OpenMetaverse.StructuredData;
-using OpenMetaverse.Imaging;
 using OpenSim.Framework;
 using OpenSim.Framework.Capabilities;
-using OpenSim.Framework.Servers;
 using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Services.Interfaces;
+using System;
+using System.Reflection;
 using Caps = OpenSim.Framework.Capabilities.Caps;
 
 namespace OpenSim.Capabilities.Handlers
@@ -52,8 +41,8 @@ namespace OpenSim.Capabilities.Handlers
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private Caps m_HostCapsObj;
         private IAssetService m_assetService;
+        private Caps m_HostCapsObj;
         private bool m_persistBakedTextures;
 
         public UploadBakedTextureHandler(Caps caps, IAssetService assetService, bool persistBakedTextures)
@@ -117,8 +106,6 @@ namespace OpenSim.Capabilities.Handlers
         /// <param name="data"></param>
         private void BakedTextureUploaded(UUID assetID, byte[] data)
         {
-//            m_log.DebugFormat("[UPLOAD BAKED TEXTURE HANDLER]: Received baked texture {0}", assetID.ToString());
-
             AssetBase asset;
             asset = new AssetBase(assetID, "Baked Texture", (sbyte)AssetType.Texture, m_HostCapsObj.AgentID.ToString());
             asset.Data = data;
@@ -128,24 +115,22 @@ namespace OpenSim.Capabilities.Handlers
         }
     }
 
-    class BakedTextureUploader
+    internal class BakedTextureUploader
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private IHttpServer httpListener;
 
-        public event Action<UUID, byte[]> OnUpLoad;
+        private UUID newAssetID;
 
         private string uploaderPath = String.Empty;
-        private UUID newAssetID;
-        private IHttpServer httpListener;
 
         public BakedTextureUploader(string path, IHttpServer httpServer)
         {
             newAssetID = UUID.Random();
             uploaderPath = path;
             httpListener = httpServer;
-            //                m_log.InfoFormat("[CAPS] baked texture upload starting for {0}",newAssetID);
         }
 
+        public event Action<UUID, byte[]> OnUpLoad;
         /// <summary>
         /// Handle raw uploaded baked texture data.
         /// </summary>
@@ -172,8 +157,6 @@ namespace OpenSim.Capabilities.Handlers
             res = LLSDHelpers.SerialiseLLSDReply(uploadComplete);
 
             httpListener.RemoveStreamHandler("POST", uploaderPath);
-
-//            m_log.DebugFormat("[BAKED TEXTURE UPLOADER]: baked texture upload completed for {0}", newAssetID);
 
             return res;
         }

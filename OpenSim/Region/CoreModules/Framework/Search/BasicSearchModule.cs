@@ -1,3 +1,12 @@
+using log4net;
+using Mono.Addins;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
+using OpenSim.Services.Interfaces;
+
 /*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
@@ -24,28 +33,10 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
-using System.Threading;
-
-using OpenSim.Framework;
-using OpenSim.Framework.Console;
-using OpenSim.Framework.Monitoring;
-using OpenSim.Region.ClientStack.LindenUDP;
-using OpenSim.Region.Framework;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
-using OpenSim.Services.Connectors.Hypergrid;
-
-using OpenMetaverse;
-using OpenMetaverse.Packets;
-using log4net;
-using Nini.Config;
-using Mono.Addins;
-
 using DirFindFlags = OpenMetaverse.DirectoryManager.DirFindFlags;
 
 namespace OpenSim.Region.CoreModules.Framework.Search
@@ -53,24 +44,12 @@ namespace OpenSim.Region.CoreModules.Framework.Search
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "BasicSearchModule")]
     public class BasicSearchModule : ISharedRegionModule
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
         protected bool m_Enabled;
         protected List<Scene> m_Scenes = new List<Scene>();
-
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private IGroupsModule m_GroupsService = null;
 
         #region ISharedRegionModule
-
-        public void Initialise(IConfigSource config)
-        {
-            string umanmod = config.Configs["Modules"].GetString("SearchModule", Name);
-            if (umanmod == Name)
-            {
-                m_Enabled = true;
-                m_log.DebugFormat("[BASIC SEARCH MODULE]: {0} is enabled", Name);
-            }
-        }
 
         public bool IsSharedModule
         {
@@ -98,15 +77,22 @@ namespace OpenSim.Region.CoreModules.Framework.Search
             }
         }
 
-        public void RemoveRegion(Scene scene)
+        public void Close()
         {
-            if (m_Enabled)
-            {
-                m_Scenes.Remove(scene);
+            m_Scenes.Clear();
+        }
 
-                scene.EventManager.OnMakeRootAgent -= new Action<ScenePresence>(EventManager_OnMakeRootAgent);
-                scene.EventManager.OnMakeChildAgent -= new EventManager.OnMakeChildAgentDelegate(EventManager_OnMakeChildAgent);
+        public void Initialise(IConfigSource config)
+        {
+            string umanmod = config.Configs["Modules"].GetString("SearchModule", Name);
+            if (umanmod == Name)
+            {
+                m_Enabled = true;
+                m_log.DebugFormat("[BASIC SEARCH MODULE]: {0} is enabled", Name);
             }
+        }
+        public void PostInitialise()
+        {
         }
 
         public void RegionLoaded(Scene s)
@@ -124,31 +110,30 @@ namespace OpenSim.Region.CoreModules.Framework.Search
             }
         }
 
-        public void PostInitialise()
+        public void RemoveRegion(Scene scene)
         {
-        }
+            if (m_Enabled)
+            {
+                m_Scenes.Remove(scene);
 
-        public void Close()
-        {
-            m_Scenes.Clear();
+                scene.EventManager.OnMakeRootAgent -= new Action<ScenePresence>(EventManager_OnMakeRootAgent);
+                scene.EventManager.OnMakeChildAgent -= new EventManager.OnMakeChildAgentDelegate(EventManager_OnMakeChildAgent);
+            }
         }
-
         #endregion ISharedRegionModule
 
- 
         #region Event Handlers
 
-        void EventManager_OnMakeRootAgent(ScenePresence sp)
-        {
-            sp.ControllingClient.OnDirFindQuery += OnDirFindQuery;
-        }
-
-        void EventManager_OnMakeChildAgent(ScenePresence sp)
+        private void EventManager_OnMakeChildAgent(ScenePresence sp)
         {
             sp.ControllingClient.OnDirFindQuery -= OnDirFindQuery;
         }
 
-        void OnDirFindQuery(IClientAPI remoteClient, UUID queryID, string queryText, uint queryFlags, int queryStart)
+        private void EventManager_OnMakeRootAgent(ScenePresence sp)
+        {
+            sp.ControllingClient.OnDirFindQuery += OnDirFindQuery;
+        }
+        private void OnDirFindQuery(IClientAPI remoteClient, UUID queryID, string queryText, uint queryFlags, int queryStart)
         {
             queryText = queryText.Trim();
 
@@ -189,11 +174,8 @@ namespace OpenSim.Region.CoreModules.Framework.Search
                 // TODO: This currently ignores pretty much all the query flags including Mature and sort order
                 remoteClient.SendDirGroupsReply(queryID, m_GroupsService.FindGroups(remoteClient, queryText).ToArray());
             }
-
         }
 
         #endregion Event Handlers
-
     }
-
 }

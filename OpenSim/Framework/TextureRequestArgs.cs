@@ -25,41 +25,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
+using System;
 
 namespace OpenSim.Framework
 {
     public class TextureRequestArgs : EventArgs
     {
+        protected UUID m_requestedAssetID;
         private sbyte m_discardLevel;
         private uint m_packetNumber;
         private float m_priority;
-        private int m_requestType;
         private uint m_requestsequence;
-        protected UUID m_requestedAssetID;
-
-        public float Priority
-        {
-            get { return m_priority; }
-            set { m_priority = value; }
-        }
-
-        /// <summary>
-        ///
-        /// </summary>
-        public uint PacketNumber
-        {
-            get { return m_packetNumber; }
-            set { m_packetNumber = value; }
-        }
-
-        public uint requestSequence
-        {
-            get { return m_requestsequence; }
-            set { m_requestsequence = value; }
-        }
-
+        private int m_requestType;
         /// <summary>
         ///
         /// </summary>
@@ -72,12 +50,31 @@ namespace OpenSim.Framework
         /// <summary>
         ///
         /// </summary>
+        public uint PacketNumber
+        {
+            get { return m_packetNumber; }
+            set { m_packetNumber = value; }
+        }
+
+        public float Priority
+        {
+            get { return m_priority; }
+            set { m_priority = value; }
+        }
+        /// <summary>
+        ///
+        /// </summary>
         public UUID RequestedAssetID
         {
             get { return m_requestedAssetID; }
             set { m_requestedAssetID = value; }
         }
 
+        public uint requestSequence
+        {
+            get { return m_requestsequence; }
+            set { m_requestsequence = value; }
+        }
         public int RequestType
         {
             get { return m_requestType; }

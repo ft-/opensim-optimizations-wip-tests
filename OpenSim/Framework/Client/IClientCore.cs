@@ -31,14 +31,15 @@ namespace OpenSim.Framework.Client
 {
     public interface IClientCore
     {
-        bool TryGet<T>(out T iface);
-        T Get<T>();
-
         // Basic Interfaces
         UUID AgentId { get; }
 
         void Disconnect(string reason);
+
         void Disconnect();
 
+        T Get<T>();
+
+        bool TryGet<T>(out T iface);
     }
 }

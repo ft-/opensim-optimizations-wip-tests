@@ -14,10 +14,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -28,11 +28,10 @@
 //
 
 using System;
-using System.Runtime.Serialization;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Permissions;
 using System.Threading;
-using System.Diagnostics;
 
 namespace OpenSim.Framework
 {
@@ -48,13 +47,12 @@ namespace OpenSim.Framework
     [HostProtectionAttribute(SecurityAction.LinkDemand, Synchronization = true, ExternalThreading = true)]
     public class Lazy<T>
     {
-        T value;
-        bool inited;
-        LazyThreadSafetyMode mode;
-        Func<T> factory;
-        object monitor;
-        Exception exception;
-
+        private Exception exception;
+        private Func<T> factory;
+        private bool inited;
+        private LazyThreadSafetyMode mode;
+        private object monitor;
+        private T value;
         public Lazy()
             : this(LazyThreadSafetyMode.ExecutionAndPublication)
         {
@@ -90,6 +88,14 @@ namespace OpenSim.Framework
             this.mode = mode;
         }
 
+        public bool IsValueCreated
+        {
+            get
+            {
+                return inited;
+            }
+        }
+
         // Don't trigger expensive initialization
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         public T Value
@@ -105,7 +111,15 @@ namespace OpenSim.Framework
             }
         }
 
-        T InitValue()
+        public override string ToString()
+        {
+            if (inited)
+                return value.ToString();
+            else
+                return "Value is not created";
+        }
+
+        private T InitValue()
         {
             switch (mode)
             {
@@ -215,22 +229,6 @@ namespace OpenSim.Framework
             }
 
             return value;
-        }
-
-        public bool IsValueCreated
-        {
-            get
-            {
-                return inited;
-            }
-        }
-
-        public override string ToString()
-        {
-            if (inited)
-                return value.ToString();
-            else
-                return "Value is not created";
         }
     }
 }

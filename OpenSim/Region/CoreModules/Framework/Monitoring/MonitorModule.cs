@@ -25,13 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
 using log4net;
+using Mono.Addins;
 using Nini.Config;
-using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Framework.Monitoring;
 using OpenSim.Framework.Servers;
@@ -39,19 +35,19 @@ using OpenSim.Region.CoreModules.Framework.Monitoring.Alerts;
 using OpenSim.Region.CoreModules.Framework.Monitoring.Monitors;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using Mono.Addins;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.Framework.Monitoring
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "MonitorModule")]
-    public class MonitorModule : INonSharedRegionModule 
+    public class MonitorModule : INonSharedRegionModule
     {
-        /// <summary>
-        /// Is this module enabled?
-        /// </summary>
-        public bool Enabled { get; private set; }
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private Scene m_scene;
+        private readonly List<IAlert> m_alerts = new List<IAlert>();
 
         /// <summary>
         /// These are monitors where we know the static details in advance.
@@ -62,26 +58,29 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring
         /// </remarks>
         private readonly List<IMonitor> m_staticMonitors = new List<IMonitor>();
 
-        private readonly List<IAlert> m_alerts = new List<IAlert>();
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private Scene m_scene;
+
+        private List<Stat> registeredStats = new List<Stat>();
 
         public MonitorModule()
         {
             Enabled = true;
         }
 
+        /// <summary>
+        /// Is this module enabled?
+        /// </summary>
+        public bool Enabled { get; private set; }
         #region Implementation of INonSharedRegionModule
 
-        public void Initialise(IConfigSource source)
+        public string Name
         {
-            IConfig cnfg = source.Configs["Monitoring"];
+            get { return "Region Health Monitoring Module"; }
+        }
 
-            if (cnfg != null)
-                Enabled = cnfg.GetBoolean("Enabled", true);
-            
-            if (!Enabled)
-                return;
-
+        public Type ReplaceableInterface
+        {
+            get { return null; }
         }
 
         public void AddRegion(Scene scene)
@@ -104,6 +103,24 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring
             RegisterStatsManagerRegionStatistics();
         }
 
+        public void Close()
+        {
+        }
+
+        public void Initialise(IConfigSource source)
+        {
+            IConfig cnfg = source.Configs["Monitoring"];
+
+            if (cnfg != null)
+                Enabled = cnfg.GetBoolean("Enabled", true);
+
+            if (!Enabled)
+                return;
+        }
+        public void RegionLoaded(Scene scene)
+        {
+        }
+
         public void RemoveRegion(Scene scene)
         {
             if (!Enabled)
@@ -116,26 +133,7 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring
 
             m_scene = null;
         }
-
-        public void Close()
-        {
-        }
-
-        public string Name
-        {
-            get { return "Region Health Monitoring Module"; }
-        }
-
-        public void RegionLoaded(Scene scene)
-        {
-        }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
-        #endregion
+        #endregion Implementation of INonSharedRegionModule
 
         public void AddMonitors()
         {
@@ -329,21 +327,13 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring
             }
         }
 
-        public void TestAlerts()
-        {
-            foreach (IAlert alert in m_alerts)
-            {
-                alert.Test();
-            }
-        }
-
         public Hashtable StatsPage(Hashtable request)
         {
             // If request was for a specific monitor
             // eg url/?monitor=Monitor.Name
             if (request.ContainsKey("monitor"))
             {
-                string monID = (string) request["monitor"];
+                string monID = (string)request["monitor"];
 
                 foreach (IMonitor monitor in m_staticMonitors)
                 {
@@ -381,7 +371,7 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring
             {
                 string elemName = monitor.GetName();
                 xml += "<" + elemName + ">" + monitor.GetValue().ToString() + "</" + elemName + ">";
-//                m_log.DebugFormat("[MONITOR MODULE]: {0} = {1}", elemName, monitor.GetValue());
+                //                m_log.DebugFormat("[MONITOR MODULE]: {0} = {1}", elemName, monitor.GetValue());
             }
 
             foreach (KeyValuePair<string, float> tuple in m_scene.StatsReporter.GetExtraSimStats())
@@ -400,17 +390,23 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring
             return ereply;
         }
 
-        void OnTriggerAlert(System.Type reporter, string reason, bool fatal)
+        public void TestAlerts()
         {
-            m_log.Error("[Monitor] " + reporter.Name + " for " + m_scene.RegionInfo.RegionName + " reports " + reason + " (Fatal: " + fatal + ")");
+            foreach (IAlert alert in m_alerts)
+            {
+                alert.Test();
+            }
         }
-
-        private List<Stat> registeredStats = new List<Stat>();
         private void MakeStat(string pName, string pUnitName, Action<Stat> act)
         {
             Stat tempStat = new Stat(pName, pName, pName, pUnitName, "scene", m_scene.RegionInfo.RegionName, StatType.Pull, act, StatVerbosity.Info);
             StatsManager.RegisterStat(tempStat);
             registeredStats.Add(tempStat);
+        }
+
+        private void OnTriggerAlert(System.Type reporter, string reason, bool fatal)
+        {
+            m_log.Error("[Monitor] " + reporter.Name + " for " + m_scene.RegionInfo.RegionName + " reports " + reason + " (Fatal: " + fatal + ")");
         }
         private void RegisterStatsManagerRegionStatistics()
         {
@@ -433,7 +429,7 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring
             MakeStat("ScriptLines", "lines/sec", (s) => { s.Value = m_scene.StatsReporter.LastReportedSimStats[20]; });
             MakeStat("SimSpareMS", "ms/sec", (s) => { s.Value = m_scene.StatsReporter.LastReportedSimStats[21]; });
         }
-        
+
         private void UnRegisterStatsManagerRegionStatistics()
         {
             foreach (Stat stat in registeredStats)
@@ -443,6 +439,5 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring
             }
             registeredStats.Clear();
         }
-        
     }
 }

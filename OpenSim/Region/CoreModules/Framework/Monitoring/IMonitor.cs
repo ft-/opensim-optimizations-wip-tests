@@ -27,8 +27,20 @@
 
 namespace OpenSim.Region.CoreModules.Framework.Monitoring
 {
-    interface IMonitor
+    internal interface IMonitor
     {
+        /// <summary>
+        /// Human-readable name of the monitor
+        /// </summary>
+        /// <returns></returns>
+        string GetFriendlyName();
+
+        /// <summary>
+        /// Human readable value.
+        /// </summary>
+        /// <returns></returns>
+        string GetFriendlyValue();
+
         /// <summary>
         /// Name of the monitor.
         /// </summary>
@@ -43,17 +55,5 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring
         /// </summary>
         /// <returns></returns>
         double GetValue();
-
-        /// <summary>
-        /// Human-readable name of the monitor
-        /// </summary>
-        /// <returns></returns>
-        string GetFriendlyName();
-
-        /// <summary>
-        /// Human readable value.
-        /// </summary>
-        /// <returns></returns>
-        string GetFriendlyValue();
     }
 }

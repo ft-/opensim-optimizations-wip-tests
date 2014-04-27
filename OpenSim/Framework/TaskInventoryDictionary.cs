@@ -25,12 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
 using System;
 using System.Collections.Generic;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
-using OpenMetaverse;
 
 namespace OpenSim.Framework
 {
@@ -46,7 +46,7 @@ namespace OpenSim.Framework
     {
         // private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private static XmlSerializer tiiSerializer = new XmlSerializer(typeof (TaskInventoryItem));
+        private static XmlSerializer tiiSerializer = new XmlSerializer(typeof(TaskInventoryItem));
 
         #region ICloneable Members
 
@@ -58,14 +58,14 @@ namespace OpenSim.Framework
             {
                 foreach (UUID uuid in Keys)
                 {
-                    clone.Add(uuid, (TaskInventoryItem) this[uuid].Clone());
+                    clone.Add(uuid, (TaskInventoryItem)this[uuid].Clone());
                 }
             }
-            
+
             return clone;
         }
 
-        #endregion
+        #endregion ICloneable Members
 
         // The alternative of simply serializing the list doesn't appear to work on mono, since
         // we get a
@@ -75,8 +75,8 @@ namespace OpenSim.Framework
         //   at System.String.Substring (Int32 startIndex, Int32 length) [0x00088] in /build/buildd/mono-1.2.4/mcs/class/corlib/System/String.cs:381
         //   at System.Xml.Serialization.TypeTranslator.GetTypeData (System.Type runtimeType, System.String xmlDataType) [0x001f6] in /build/buildd/mono-1.2.4/mcs/class/System.XML/System.Xml.Serialization/TypeTranslator.cs:217
         // ...
-//        private static XmlSerializer tiiSerializer
-//            = new XmlSerializer(typeof(Dictionary<UUID, TaskInventoryItem>.ValueCollection));
+        //        private static XmlSerializer tiiSerializer
+        //            = new XmlSerializer(typeof(Dictionary<UUID, TaskInventoryItem>.ValueCollection));
 
         // see IXmlSerializable
 
@@ -97,13 +97,13 @@ namespace OpenSim.Framework
                 reader.Read();
                 while (tiiSerializer.CanDeserialize(reader))
                 {
-                    TaskInventoryItem item = (TaskInventoryItem) tiiSerializer.Deserialize(reader);
+                    TaskInventoryItem item = (TaskInventoryItem)tiiSerializer.Deserialize(reader);
                     Add(item.ItemID, item);
 
                     //m_log.DebugFormat("[TASK INVENTORY]: Instanted prim item {0}, {1} from xml", item.Name, item.ItemID);
                 }
 
-               // m_log.DebugFormat("[TASK INVENTORY]: Instantiated {0} prim items in total from xml", Count);
+                // m_log.DebugFormat("[TASK INVENTORY]: Instantiated {0} prim items in total from xml", Count);
             }
             // else
             // {
@@ -131,7 +131,7 @@ namespace OpenSim.Framework
             //tiiSerializer.Serialize(writer, Values);
         }
 
-        #endregion
+        #endregion IXmlSerializable Members
 
         // see ICloneable
     }

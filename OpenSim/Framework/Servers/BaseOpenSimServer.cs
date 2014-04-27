@@ -25,26 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using OpenMetaverse;
+using OpenSim.Framework.Monitoring;
+using OpenSim.Framework.Servers.HttpServer;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
 using System.Timers;
-using log4net;
-using log4net.Appender;
-using log4net.Core;
-using log4net.Repository;
-using OpenMetaverse;
-using OpenMetaverse.StructuredData;
-using OpenSim.Framework;
-using OpenSim.Framework.Console;
-using OpenSim.Framework.Monitoring;
-using OpenSim.Framework.Servers;
-using OpenSim.Framework.Servers.HttpServer;
-using Timer=System.Timers.Timer;
+using Timer = System.Timers.Timer;
 
 namespace OpenSim.Framework.Servers
 {
@@ -53,6 +43,12 @@ namespace OpenSim.Framework.Servers
     /// </summary>
     public abstract class BaseOpenSimServer : ServerBase
     {
+        protected BaseHttpServer m_httpServer;
+        /// <summary>
+        /// Random uuid for private data
+        /// </summary>
+        protected string m_osSecret = String.Empty;
+
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         /// <summary>
@@ -60,19 +56,8 @@ namespace OpenSim.Framework.Servers
         /// server.
         /// </summary>
         private Timer m_periodicDiagnosticsTimer = new Timer(60 * 60 * 1000);
-        
-        /// <summary>
-        /// Random uuid for private data 
-        /// </summary>
-        protected string m_osSecret = String.Empty;
-
-        protected BaseHttpServer m_httpServer;
-        public BaseHttpServer HttpServer
-        {
-            get { return m_httpServer; }
-        }
-
-        public BaseOpenSimServer() : base()
+        public BaseOpenSimServer()
+            : base()
         {
             // Random uuid for private data
             m_osSecret = UUID.Random().ToString();
@@ -80,37 +65,56 @@ namespace OpenSim.Framework.Servers
             m_periodicDiagnosticsTimer.Elapsed += new ElapsedEventHandler(LogDiagnostics);
             m_periodicDiagnosticsTimer.Enabled = true;
         }
-        
-        /// <summary>
-        /// Must be overriden by child classes for their own server specific startup behaviour.
-        /// </summary>
-        protected virtual void StartupSpecific()
+
+        public BaseHttpServer HttpServer
         {
-            StatsManager.SimExtraStats = new SimExtraStatsCollector();
-            RegisterCommonCommands();
-            RegisterCommonComponents(Config);
-        }       
-
-        protected override void ShutdownSpecific()
-        {            
-            m_log.Info("[SHUTDOWN]: Shutdown processing on main thread complete.  Exiting...");
-
-            RemovePIDFile();
-
-            base.ShutdownSpecific();
-
-            Environment.Exit(0);
+            get { return m_httpServer; }
         }
-        
+        public string osSecret
+        {
+            // Secret uuid for the simulator
+            get { return m_osSecret; }
+        }
+
+        /// <summary>
+        /// Performs initialisation of the scene, such as loading configuration from disk.
+        /// </summary>
+        public virtual void Startup()
+        {
+            StartupSpecific();
+
+            TimeSpan timeTaken = DateTime.Now - m_startuptime;
+
+            MainConsole.Instance.OutputFormat(
+                "PLEASE WAIT FOR LOGINS TO BE ENABLED ON REGIONS ONCE SCRIPTS HAVE STARTED.  Non-script portion of startup took {0}m {1}s.",
+                timeTaken.Minutes, timeTaken.Seconds);
+        }
+
+        public string StatReport(IOSHttpRequest httpRequest)
+        {
+            // If we catch a request for "callback", wrap the response in the value for jsonp
+            if (httpRequest.Query.ContainsKey("callback"))
+            {
+                return httpRequest.Query["callback"].ToString() + "(" + StatsManager.SimExtraStats.XReport((DateTime.Now - m_startuptime).ToString(), m_version) + ");";
+            }
+            else
+            {
+                return StatsManager.SimExtraStats.XReport((DateTime.Now - m_startuptime).ToString(), m_version);
+            }
+        }
+
         /// <summary>
         /// Provides a list of help topics that are available.  Overriding classes should append their topics to the
         /// information returned when the base method is called.
         /// </summary>
-        /// 
+        ///
         /// <returns>
         /// A list of strings that represent different help topics on which more information is available
         /// </returns>
-        protected virtual List<string> GetHelpTopics() { return new List<string>(); }
+        protected virtual List<string> GetHelpTopics()
+        {
+            return new List<string>();
+        }
 
         /// <summary>
         /// Print statistics to the logfile, if they are active
@@ -126,37 +130,25 @@ namespace OpenSim.Framework.Servers
             m_log.Debug(sb);
         }
 
+        protected override void ShutdownSpecific()
+        {
+            m_log.Info("[SHUTDOWN]: Shutdown processing on main thread complete.  Exiting...");
+
+            RemovePIDFile();
+
+            base.ShutdownSpecific();
+
+            Environment.Exit(0);
+        }
+
         /// <summary>
-        /// Performs initialisation of the scene, such as loading configuration from disk.
+        /// Must be overriden by child classes for their own server specific startup behaviour.
         /// </summary>
-        public virtual void Startup()
-        {            
-            StartupSpecific();
-            
-            TimeSpan timeTaken = DateTime.Now - m_startuptime;
-            
-            MainConsole.Instance.OutputFormat(
-                "PLEASE WAIT FOR LOGINS TO BE ENABLED ON REGIONS ONCE SCRIPTS HAVE STARTED.  Non-script portion of startup took {0}m {1}s.",
-                timeTaken.Minutes, timeTaken.Seconds);
-        }
-
-        public string osSecret 
+        protected virtual void StartupSpecific()
         {
-            // Secret uuid for the simulator
-            get { return m_osSecret; }            
-        }
-
-        public string StatReport(IOSHttpRequest httpRequest)
-        {
-            // If we catch a request for "callback", wrap the response in the value for jsonp
-            if (httpRequest.Query.ContainsKey("callback"))
-            {
-                return httpRequest.Query["callback"].ToString() + "(" + StatsManager.SimExtraStats.XReport((DateTime.Now - m_startuptime).ToString() , m_version) + ");";
-            } 
-            else 
-            {
-                return StatsManager.SimExtraStats.XReport((DateTime.Now - m_startuptime).ToString() , m_version);
-            }
+            StatsManager.SimExtraStats = new SimExtraStatsCollector();
+            RegisterCommonCommands();
+            RegisterCommonComponents(Config);
         }
     }
 }

@@ -25,11 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Xml.Serialization;
-using System.Reflection;
 using log4net;
 using OpenMetaverse;
+using System;
+using System.Reflection;
+using System.Xml.Serialization;
 
 namespace OpenSim.Framework
 {
@@ -48,11 +48,9 @@ namespace OpenSim.Framework
     [Serializable]
     public class AssetBase
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        public static readonly int MAX_ASSET_NAME = 64;
         public static readonly int MAX_ASSET_DESC = 64;
-
+        public static readonly int MAX_ASSET_NAME = 64;
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         /// <summary>
         /// Data of the Asset
         /// </summary>
@@ -110,7 +108,7 @@ namespace OpenSim.Framework
         {
             get
             {
-                return 
+                return
                     IsTextualAsset && (
                     Type != (sbyte)AssetType.Notecard
                     && Type != (sbyte)AssetType.CallingCard
@@ -119,47 +117,28 @@ namespace OpenSim.Framework
             }
         }
 
-        public bool IsTextualAsset
+        public string CreatorID
         {
-            get
-            {
-                return !IsBinaryAsset;
-            }
-
-        }
-
-        /// <summary>
-        /// Checks if this asset is a binary or text asset
-        /// </summary>
-        public bool IsBinaryAsset
-        {
-            get
-            {
-                return 
-                    (Type == (sbyte) AssetType.Animation ||
-                     Type == (sbyte)AssetType.Gesture ||
-                     Type == (sbyte)AssetType.Simstate ||
-                     Type == (sbyte)AssetType.Unknown ||
-                     Type == (sbyte)AssetType.Object ||
-                     Type == (sbyte)AssetType.Sound ||
-                     Type == (sbyte)AssetType.SoundWAV ||
-                     Type == (sbyte)AssetType.Texture ||
-                     Type == (sbyte)AssetType.TextureTGA ||
-                     Type == (sbyte)AssetType.Folder ||
-                     Type == (sbyte)AssetType.RootFolder ||
-                     Type == (sbyte)AssetType.LostAndFoundFolder ||
-                     Type == (sbyte)AssetType.SnapshotFolder ||
-                     Type == (sbyte)AssetType.TrashFolder ||
-                     Type == (sbyte)AssetType.ImageJPEG ||
-                     Type == (sbyte) AssetType.ImageTGA ||
-                     Type == (sbyte) AssetType.LSLBytecode);
-            }
+            get { return m_metadata.CreatorID; }
+            set { m_metadata.CreatorID = value; }
         }
 
         public virtual byte[] Data
         {
             get { return m_data; }
             set { m_data = value; }
+        }
+
+        public string Description
+        {
+            get { return m_metadata.Description; }
+            set { m_metadata.Description = value; }
+        }
+
+        public AssetFlags Flags
+        {
+            get { return m_metadata.Flags; }
+            set { m_metadata.Flags = value; }
         }
 
         /// <summary>
@@ -180,16 +159,69 @@ namespace OpenSim.Framework
             set { m_metadata.ID = value; }
         }
 
+        /// <summary>
+        /// Checks if this asset is a binary or text asset
+        /// </summary>
+        public bool IsBinaryAsset
+        {
+            get
+            {
+                return
+                    (Type == (sbyte)AssetType.Animation ||
+                     Type == (sbyte)AssetType.Gesture ||
+                     Type == (sbyte)AssetType.Simstate ||
+                     Type == (sbyte)AssetType.Unknown ||
+                     Type == (sbyte)AssetType.Object ||
+                     Type == (sbyte)AssetType.Sound ||
+                     Type == (sbyte)AssetType.SoundWAV ||
+                     Type == (sbyte)AssetType.Texture ||
+                     Type == (sbyte)AssetType.TextureTGA ||
+                     Type == (sbyte)AssetType.Folder ||
+                     Type == (sbyte)AssetType.RootFolder ||
+                     Type == (sbyte)AssetType.LostAndFoundFolder ||
+                     Type == (sbyte)AssetType.SnapshotFolder ||
+                     Type == (sbyte)AssetType.TrashFolder ||
+                     Type == (sbyte)AssetType.ImageJPEG ||
+                     Type == (sbyte)AssetType.ImageTGA ||
+                     Type == (sbyte)AssetType.LSLBytecode);
+            }
+        }
+
+        public bool IsTextualAsset
+        {
+            get
+            {
+                return !IsBinaryAsset;
+            }
+        }
+        /// <summary>
+        /// Is this a region only asset, or does this exist on the asset server also
+        /// </summary>
+        public bool Local
+        {
+            get { return m_metadata.Local; }
+            set { m_metadata.Local = value; }
+        }
+
+        [XmlIgnore]
+        public AssetMetadata Metadata
+        {
+            get { return m_metadata; }
+            set { m_metadata = value; }
+        }
+
         public string Name
         {
             get { return m_metadata.Name; }
             set { m_metadata.Name = value; }
         }
-
-        public string Description
+        /// <summary>
+        /// Is this asset going to be saved to the asset database?
+        /// </summary>
+        public bool Temporary
         {
-            get { return m_metadata.Description; }
-            set { m_metadata.Description = value; }
+            get { return m_metadata.Temporary; }
+            set { m_metadata.Temporary = value; }
         }
 
         /// <summary>
@@ -200,44 +232,6 @@ namespace OpenSim.Framework
             get { return m_metadata.Type; }
             set { m_metadata.Type = value; }
         }
-
-        /// <summary>
-        /// Is this a region only asset, or does this exist on the asset server also
-        /// </summary>
-        public bool Local
-        {
-            get { return m_metadata.Local; }
-            set { m_metadata.Local = value; }
-        }
-
-        /// <summary>
-        /// Is this asset going to be saved to the asset database?
-        /// </summary>
-        public bool Temporary
-        {
-            get { return m_metadata.Temporary; }
-            set { m_metadata.Temporary = value; }
-        }
-
-        public string CreatorID
-        {
-            get { return m_metadata.CreatorID; }
-            set { m_metadata.CreatorID = value; }
-        }
-
-        public AssetFlags Flags
-        {
-            get { return m_metadata.Flags; }
-            set { m_metadata.Flags = value; }
-        }
-
-        [XmlIgnore]
-        public AssetMetadata Metadata
-        {
-            get { return m_metadata; }
-            set { m_metadata = value; }
-        }
-
         public override string ToString()
         {
             return FullID.ToString();
@@ -247,74 +241,18 @@ namespace OpenSim.Framework
     [Serializable]
     public class AssetMetadata
     {
+        private string m_content_type;
+        private DateTime m_creation_date;
+        private string m_creatorid;
+        private string m_description = String.Empty;
+        private AssetFlags m_flags;
         private UUID m_fullid;
         private string m_id;
-        private string m_name = String.Empty;
-        private string m_description = String.Empty;
-        private DateTime m_creation_date;
-        private sbyte m_type = (sbyte)AssetType.Unknown;
-        private string m_content_type;
-        private byte[] m_sha1;
         private bool m_local;
+        private string m_name = String.Empty;
+        private byte[] m_sha1;
         private bool m_temporary;
-        private string m_creatorid;
-        private AssetFlags m_flags;
-
-        public UUID FullID
-        {
-            get { return m_fullid; }
-            set { m_fullid = value; m_id = m_fullid.ToString(); }
-        }
-
-        public string ID
-        {
-            //get { return m_fullid.ToString(); }
-            //set { m_fullid = new UUID(value); }
-            get
-            {
-                if (String.IsNullOrEmpty(m_id))
-                    m_id = m_fullid.ToString();
-
-                return m_id;
-            }
-            
-            set
-            {
-                UUID uuid = UUID.Zero;
-                if (UUID.TryParse(value, out uuid))
-                {
-                    m_fullid = uuid;
-                    m_id = m_fullid.ToString();
-                }
-                else
-                    m_id = value;
-            }
-        }
-
-        public string Name
-        {
-            get { return m_name; }
-            set { m_name = value; }
-        }
-
-        public string Description
-        {
-            get { return m_description; }
-            set { m_description = value; }
-        }
-
-        public DateTime CreationDate
-        {
-            get { return m_creation_date; }
-            set { m_creation_date = value; }
-        }
-
-        public sbyte Type
-        {
-            get { return m_type; }
-            set { m_type = value; }
-        }
-
+        private sbyte m_type = (sbyte)AssetType.Unknown;
         public string ContentType
         {
             get
@@ -334,22 +272,10 @@ namespace OpenSim.Framework
             }
         }
 
-        public byte[] SHA1
+        public DateTime CreationDate
         {
-            get { return m_sha1; }
-            set { m_sha1 = value; }
-        }
-
-        public bool Local
-        {
-            get { return m_local; }
-            set { m_local = value; }
-        }
-
-        public bool Temporary
-        {
-            get { return m_temporary; }
-            set { m_temporary = value; }
+            get { return m_creation_date; }
+            set { m_creation_date = value; }
         }
 
         public string CreatorID
@@ -358,10 +284,76 @@ namespace OpenSim.Framework
             set { m_creatorid = value; }
         }
 
+        public string Description
+        {
+            get { return m_description; }
+            set { m_description = value; }
+        }
+
         public AssetFlags Flags
         {
             get { return m_flags; }
             set { m_flags = value; }
+        }
+
+        public UUID FullID
+        {
+            get { return m_fullid; }
+            set { m_fullid = value; m_id = m_fullid.ToString(); }
+        }
+
+        public string ID
+        {
+            //get { return m_fullid.ToString(); }
+            //set { m_fullid = new UUID(value); }
+            get
+            {
+                if (String.IsNullOrEmpty(m_id))
+                    m_id = m_fullid.ToString();
+
+                return m_id;
+            }
+
+            set
+            {
+                UUID uuid = UUID.Zero;
+                if (UUID.TryParse(value, out uuid))
+                {
+                    m_fullid = uuid;
+                    m_id = m_fullid.ToString();
+                }
+                else
+                    m_id = value;
+            }
+        }
+
+        public bool Local
+        {
+            get { return m_local; }
+            set { m_local = value; }
+        }
+
+        public string Name
+        {
+            get { return m_name; }
+            set { m_name = value; }
+        }
+        public byte[] SHA1
+        {
+            get { return m_sha1; }
+            set { m_sha1 = value; }
+        }
+
+        public bool Temporary
+        {
+            get { return m_temporary; }
+            set { m_temporary = value; }
+        }
+
+        public sbyte Type
+        {
+            get { return m_type; }
+            set { m_type = value; }
         }
     }
 }

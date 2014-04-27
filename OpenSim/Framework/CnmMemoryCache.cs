@@ -36,14 +36,14 @@ namespace OpenSim.Framework
     /// Cenome memory based cache to store key/value pairs (elements) limited time and/or limited size.
     /// </summary>
     /// <typeparam name="TKey">
-    /// The type of keys in the cache. 
+    /// The type of keys in the cache.
     /// </typeparam>
     /// <typeparam name="TValue">
-    /// The type of values in the dictionary. 
+    /// The type of values in the dictionary.
     /// </typeparam>
     /// <remarks>
     /// <para>
-    /// Cenome memory cache stores elements to hash table generations. When new element is being added to cache, and new size would exceed 
+    /// Cenome memory cache stores elements to hash table generations. When new element is being added to cache, and new size would exceed
     /// maximal allowed size or maximal amount of allowed element count, then elements in oldest generation are deleted. Last access time
     /// is also tracked in generation level - thus it is possible that some elements are staying in cache far beyond their expiration time.
     /// If elements in older generations are accessed through <see cref="TryGetValue"/> method, they are moved to newest generation.
@@ -67,11 +67,6 @@ namespace OpenSim.Framework
         /// </remarks>
         /// <seealso cref="MaxSize"/>
         public const long DefaultMaxSize = 134217728;
-
-        /// <summary>
-        /// How many operations between time checks.
-        /// </summary>
-        private const int DefaultOperationsBetweenTimeChecks = 40;
 
         /// <summary>
         /// Default expiration time.
@@ -101,6 +96,15 @@ namespace OpenSim.Framework
         /// </remarks>
         /// <seealso cref="CnmMemoryCache{TKey,TValue}"/>
         public readonly IEqualityComparer<TKey> Comparer;
+
+        /// <summary>
+        /// How many operations between time checks.
+        /// </summary>
+        private const int DefaultOperationsBetweenTimeChecks = 40;
+        /// <summary>
+        /// Synchronization root object, should always be private and exists always
+        /// </summary>
+        private readonly object m_syncRoot = new object();
 
         /// <summary>
         /// Expiration time.
@@ -151,12 +155,6 @@ namespace OpenSim.Framework
         /// Operations between time check.
         /// </summary>
         private int m_operationsBetweenTimeChecks = DefaultOperationsBetweenTimeChecks;
-
-        /// <summary>
-        /// Synchronization root object, should always be private and exists always
-        /// </summary>
-        private readonly object m_syncRoot = new object();
-
         /// <summary>
         /// Version of cache.
         /// </summary>
@@ -176,7 +174,7 @@ namespace OpenSim.Framework
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CnmMemoryCache{TKey,TValue}"/> class. 
+        /// Initializes a new instance of the <see cref="CnmMemoryCache{TKey,TValue}"/> class.
         /// </summary>
         /// <param name="maximalSize">
         /// Maximal cache size.
@@ -201,7 +199,7 @@ namespace OpenSim.Framework
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CnmMemoryCache{TKey,TValue}"/> class. 
+        /// Initializes a new instance of the <see cref="CnmMemoryCache{TKey,TValue}"/> class.
         /// </summary>
         /// <param name="maximalSize">
         /// Maximal cache size.
@@ -218,7 +216,7 @@ namespace OpenSim.Framework
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CnmMemoryCache{TKey,TValue}"/> class. 
+        /// Initializes a new instance of the <see cref="CnmMemoryCache{TKey,TValue}"/> class.
         /// </summary>
         /// <param name="maximalSize">
         /// Maximal cache size.
@@ -250,7 +248,7 @@ namespace OpenSim.Framework
             if (maximalSize < 8)
                 maximalSize = 8;
             if (maximalCount > maximalSize)
-                maximalCount = (int) maximalSize;
+                maximalCount = (int)maximalSize;
 
             Comparer = comparer;
             m_expirationTime = expirationTime;
@@ -336,7 +334,7 @@ namespace OpenSim.Framework
         /// </summary>
         private void CheckExpired()
         {
-            // Do this only one in every m_operationsBetweenTimeChecks 
+            // Do this only one in every m_operationsBetweenTimeChecks
             // Fetching time is using several millisecons - it is better not to do all time.
             m_operationsBetweenTimeChecks--;
             if (m_operationsBetweenTimeChecks <= 0)
@@ -383,26 +381,25 @@ namespace OpenSim.Framework
         private class Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>
         {
             /// <summary>
-            /// Current enumerator.
-            /// </summary>
-            private int m_currentEnumerator = -1;
-
-            /// <summary>
             /// Enumerators to different generations.
             /// </summary>
             private readonly IEnumerator<KeyValuePair<TKey, TValue>>[] m_generationEnumerators =
                 new IEnumerator<KeyValuePair<TKey, TValue>>[2];
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="Enumerator"/> class. 
+            /// Current enumerator.
+            /// </summary>
+            private int m_currentEnumerator = -1;
+            /// <summary>
+            /// Initializes a new instance of the <see cref="Enumerator"/> class.
             /// </summary>
             /// <param name="cache">
             /// The cache.
             /// </param>
             public Enumerator(CnmMemoryCache<TKey, TValue> cache)
             {
-                m_generationEnumerators[ 0 ] = cache.m_newGeneration.GetEnumerator();
-                m_generationEnumerators[ 1 ] = cache.m_oldGeneration.GetEnumerator();
+                m_generationEnumerators[0] = cache.m_newGeneration.GetEnumerator();
+                m_generationEnumerators[1] = cache.m_oldGeneration.GetEnumerator();
             }
 
             #region IEnumerator<KeyValuePair<TKey,TValue>> Members
@@ -423,7 +420,7 @@ namespace OpenSim.Framework
                     if (m_currentEnumerator == -1 || m_currentEnumerator >= m_generationEnumerators.Length)
                         throw new InvalidOperationException();
 
-                    return m_generationEnumerators[ m_currentEnumerator ].Current;
+                    return m_generationEnumerators[m_currentEnumerator].Current;
                 }
             }
 
@@ -456,7 +453,7 @@ namespace OpenSim.Framework
             /// <see langword="true"/>if the enumerator was successfully advanced to the next element; <see langword="false"/> if the enumerator has passed the end of the collection.
             /// </returns>
             /// <exception cref="T:System.InvalidOperationException">
-            /// The collection was modified after the enumerator was created. 
+            /// The collection was modified after the enumerator was created.
             /// </exception>
             /// <filterpriority>2</filterpriority>
             public bool MoveNext()
@@ -466,7 +463,7 @@ namespace OpenSim.Framework
 
                 while (m_currentEnumerator < m_generationEnumerators.Length)
                 {
-                    if (m_generationEnumerators[ m_currentEnumerator ].MoveNext())
+                    if (m_generationEnumerators[m_currentEnumerator].MoveNext())
                         return true;
 
                     m_currentEnumerator++;
@@ -479,7 +476,7 @@ namespace OpenSim.Framework
             /// Sets the enumerator to its initial position, which is before the first element in the collection.
             /// </summary>
             /// <exception cref="T:System.InvalidOperationException">
-            /// The collection was modified after the enumerator was created. 
+            /// The collection was modified after the enumerator was created.
             /// </exception>
             /// <filterpriority>2</filterpriority>
             public void Reset()
@@ -492,10 +489,10 @@ namespace OpenSim.Framework
                 m_currentEnumerator = -1;
             }
 
-            #endregion
+            #endregion IEnumerator<KeyValuePair<TKey,TValue>> Members
         }
 
-        #endregion
+        #endregion Nested type: Enumerator
 
         #region Nested type: HashGeneration
 
@@ -514,11 +511,6 @@ namespace OpenSim.Framework
         /// <seealso href="http://en.wikipedia.org/wiki/Hash_table"/>
         private class HashGeneration : IGeneration
         {
-            /// <summary>
-            /// Value indicating whether generation was accessed since last time check.
-            /// </summary>
-            private bool m_accessedSinceLastTimeCheck;
-
             /// <summary>
             /// Index of first element's in element chain.
             /// </summary>
@@ -543,12 +535,16 @@ namespace OpenSim.Framework
             private readonly Element[] m_elements;
 
             /// <summary>
+            /// Value indicating whether generation was accessed since last time check.
+            /// </summary>
+            private bool m_accessedSinceLastTimeCheck;
+            /// <summary>
             /// Generation's expiration time.
             /// </summary>
             private DateTime m_expirationTime1;
 
             /// <summary>
-            /// Index to first free element. 
+            /// Index to first free element.
             /// </summary>
             private int m_firstFreeElement;
 
@@ -611,18 +607,18 @@ namespace OpenSim.Framework
             private int FindElementIndex(int bucketIndex, TKey key, bool moveToFront, out int previousIndex)
             {
                 previousIndex = -1;
-                int elementIndex = m_buckets[ bucketIndex ];
+                int elementIndex = m_buckets[bucketIndex];
                 while (elementIndex >= 0)
                 {
-                    if (m_cache.Comparer.Equals(key, m_elements[ elementIndex ].Key))
+                    if (m_cache.Comparer.Equals(key, m_elements[elementIndex].Key))
                     {
                         // Found match
                         if (moveToFront && previousIndex >= 0)
                         {
                             // Move entry to front
-                            m_elements[ previousIndex ].Next = m_elements[ elementIndex ].Next;
-                            m_elements[ elementIndex ].Next = m_buckets[ bucketIndex ];
-                            m_buckets[ bucketIndex ] = elementIndex;
+                            m_elements[previousIndex].Next = m_elements[elementIndex].Next;
+                            m_elements[elementIndex].Next = m_buckets[bucketIndex];
+                            m_buckets[bucketIndex] = elementIndex;
                             previousIndex = 0;
                         }
 
@@ -630,7 +626,7 @@ namespace OpenSim.Framework
                     }
 
                     previousIndex = elementIndex;
-                    elementIndex = m_elements[ elementIndex ].Next;
+                    elementIndex = m_elements[elementIndex].Next;
                 }
 
                 return -1;
@@ -651,16 +647,16 @@ namespace OpenSim.Framework
             private void RemoveElement(int bucketIndex, int entryIndex, int previousIndex)
             {
                 if (previousIndex >= 0)
-                    m_elements[ previousIndex ].Next = m_elements[ entryIndex ].Next;
+                    m_elements[previousIndex].Next = m_elements[entryIndex].Next;
                 else
-                    m_buckets[ bucketIndex ] = m_elements[ entryIndex ].Next;
+                    m_buckets[bucketIndex] = m_elements[entryIndex].Next;
 
-                Size -= m_elements[ entryIndex ].Size;
-                m_elements[ entryIndex ].Value = default(TValue);
-                m_elements[ entryIndex ].Key = default(TKey);
+                Size -= m_elements[entryIndex].Size;
+                m_elements[entryIndex].Value = default(TValue);
+                m_elements[entryIndex].Key = default(TKey);
 
                 // Add element to free elements list
-                m_elements[ entryIndex ].Next = m_firstFreeElement;
+                m_elements[entryIndex].Next = m_firstFreeElement;
                 m_firstFreeElement = entryIndex;
                 m_freeCount++;
             }
@@ -681,8 +677,8 @@ namespace OpenSim.Framework
                 /// Next element in chain.
                 /// </summary>
                 /// <remarks>
-                /// When element have value (something is stored to it), this is index of 
-                /// next element with same bucket index. When element is free, this 
+                /// When element have value (something is stored to it), this is index of
+                /// next element with same bucket index. When element is free, this
                 /// is index of next element in free element's list.
                 /// </remarks>
                 public int Next;
@@ -696,7 +692,7 @@ namespace OpenSim.Framework
                 public long Size;
 
                 /// <summary>
-                /// Element's value. 
+                /// Element's value.
                 /// </summary>
                 /// <remarks>
                 /// It is possible that this value is <see langword="null"/> even when element
@@ -716,7 +712,7 @@ namespace OpenSim.Framework
                 }
             }
 
-            #endregion
+            #endregion Nested type: Element
 
             #region Nested type: Enumerator
 
@@ -725,16 +721,6 @@ namespace OpenSim.Framework
             /// </summary>
             private class Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>
             {
-                /// <summary>
-                /// Current element.
-                /// </summary>
-                private KeyValuePair<TKey, TValue> m_current;
-
-                /// <summary>
-                /// Current index.
-                /// </summary>
-                private int m_currentIndex;
-
                 /// <summary>
                 /// Generation that is being enumerated.
                 /// </summary>
@@ -749,6 +735,15 @@ namespace OpenSim.Framework
                 /// <seealso cref="CnmMemoryCache{TKey,TValue}.m_version"/>
                 private readonly int m_version;
 
+                /// <summary>
+                /// Current element.
+                /// </summary>
+                private KeyValuePair<TKey, TValue> m_current;
+
+                /// <summary>
+                /// Current index.
+                /// </summary>
+                private int m_currentIndex;
                 /// <summary>
                 /// Initializes a new instance of the <see cref="Enumerator"/> class.
                 /// </summary>
@@ -812,7 +807,7 @@ namespace OpenSim.Framework
                 /// true if the enumerator was successfully advanced to the next element; false if the enumerator has passed the end of the collection.
                 /// </returns>
                 /// <exception cref="InvalidOperationException">
-                /// The collection was modified after the enumerator was created. 
+                /// The collection was modified after the enumerator was created.
                 /// </exception>
                 public bool MoveNext()
                 {
@@ -821,14 +816,14 @@ namespace OpenSim.Framework
 
                     while (m_currentIndex < m_generation.Count)
                     {
-                        if (m_generation.m_elements[ m_currentIndex ].IsFree)
+                        if (m_generation.m_elements[m_currentIndex].IsFree)
                         {
                             m_currentIndex++;
                             continue;
                         }
 
-                        m_current = new KeyValuePair<TKey, TValue>(m_generation.m_elements[ m_currentIndex ].Key,
-                            m_generation.m_elements[ m_currentIndex ].Value);
+                        m_current = new KeyValuePair<TKey, TValue>(m_generation.m_elements[m_currentIndex].Key,
+                            m_generation.m_elements[m_currentIndex].Value);
                         m_currentIndex++;
                         return true;
                     }
@@ -841,7 +836,7 @@ namespace OpenSim.Framework
                 /// Sets the enumerator to its initial position, which is before the first element in the collection.
                 /// </summary>
                 /// <exception cref="InvalidOperationException">
-                /// The collection was modified after the enumerator was created. 
+                /// The collection was modified after the enumerator was created.
                 /// </exception>
                 /// <filterpriority>2</filterpriority>
                 public void Reset()
@@ -852,10 +847,10 @@ namespace OpenSim.Framework
                     m_currentIndex = 0;
                 }
 
-                #endregion
+                #endregion IEnumerator<KeyValuePair<TKey,TValue>> Members
             }
 
-            #endregion
+            #endregion Nested type: Enumerator
 
             #region IGeneration Members
 
@@ -907,9 +902,9 @@ namespace OpenSim.Framework
             /// <seealso cref="IGeneration.MakeOld"/>
             public void Clear()
             {
-                for (int i = m_buckets.Length - 1 ; i >= 0 ; i--)
+                for (int i = m_buckets.Length - 1; i >= 0; i--)
                 {
-                    m_buckets[ i ] = -1;
+                    m_buckets[i] = -1;
                 }
 
                 Array.Clear(m_elements, 0, m_elements.Length);
@@ -931,7 +926,7 @@ namespace OpenSim.Framework
             /// The key to locate in the <see cref="IGeneration"/>.
             /// </param>
             /// <returns>
-            /// <see langword="true"/>if the <see cref="IGeneration"/> contains an element with the <see cref="key"/>; 
+            /// <see langword="true"/>if the <see cref="IGeneration"/> contains an element with the <see cref="key"/>;
             /// otherwise <see langword="false"/>.
             /// </returns>
             public bool Contains(int bucketIndex, TKey key)
@@ -954,6 +949,18 @@ namespace OpenSim.Framework
             public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
             {
                 return new Enumerator(this);
+            }
+
+            /// <summary>
+            /// Returns an enumerator that iterates through a collection.
+            /// </summary>
+            /// <returns>
+            /// An <see cref="T:System.Collections.IEnumerator"/> object that can be used to iterate through the collection.
+            /// </returns>
+            /// <filterpriority>2</filterpriority>
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
             }
 
             /// <summary>
@@ -1014,7 +1021,7 @@ namespace OpenSim.Framework
             /// </returns>
             /// <remarks>
             /// <para>
-            /// If element was already existing in generation and new element size fits to collection limits, 
+            /// If element was already existing in generation and new element size fits to collection limits,
             /// then it's value is replaced with new one and size information is updated. If element didn't
             /// exists in generation before, then generation must have empty space for a new element and
             /// size must fit generation's limits, before element is added to generation.
@@ -1045,7 +1052,7 @@ namespace OpenSim.Framework
                     {
                         // There was entry that was removed
                         elementIndex = m_firstFreeElement;
-                        m_firstFreeElement = m_elements[ elementIndex ].Next;
+                        m_firstFreeElement = m_elements[elementIndex].Next;
                         m_freeCount--;
                     }
                     else
@@ -1055,34 +1062,34 @@ namespace OpenSim.Framework
                         m_nextUnusedElement++;
                     }
 
-                    Debug.Assert(m_elements[ elementIndex ].IsFree, "Allocated element is not free.");
+                    Debug.Assert(m_elements[elementIndex].IsFree, "Allocated element is not free.");
 
                     // Move new entry to front
-                    m_elements[ elementIndex ].Next = m_buckets[ bucketIndex ];
-                    m_buckets[ bucketIndex ] = elementIndex;
+                    m_elements[elementIndex].Next = m_buckets[bucketIndex];
+                    m_buckets[bucketIndex] = elementIndex;
 
                     // Set key and update count
-                    m_elements[ elementIndex ].Key = key;
+                    m_elements[elementIndex].Key = key;
                 }
                 else
                 {
                     // Existing key
-                    if (Size - m_elements[ elementIndex ].Size + size > m_cache.m_generationMaxSize)
+                    if (Size - m_elements[elementIndex].Size + size > m_cache.m_generationMaxSize)
                     {
                         // Generation is full
-                        // Remove existing element, because generation is going to be recycled to 
+                        // Remove existing element, because generation is going to be recycled to
                         // old generation and element is stored to new generation
                         RemoveElement(bucketIndex, elementIndex, previousIndex);
                         return false;
                     }
 
                     // Update generation's size
-                    Size = Size - m_elements[ elementIndex ].Size + size;
+                    Size = Size - m_elements[elementIndex].Size + size;
                 }
 
                 // Finally set value and size
-                m_elements[ elementIndex ].Value = value;
-                m_elements[ elementIndex ].Size = size;
+                m_elements[elementIndex].Value = value;
+                m_elements[elementIndex].Size = size;
 
                 // Success - key was inserterted to generation
                 AccessedSinceLastTimeCheck = true;
@@ -1110,12 +1117,12 @@ namespace OpenSim.Framework
             /// <remarks>
             /// <para>
             /// If element is not found from generation then <paramref name="value"/> and <paramref name="size"/>
-            /// are set to default value (default(TValue) and 0). 
+            /// are set to default value (default(TValue) and 0).
             /// </para>
             /// </remarks>
             public bool TryGetValue(int bucketIndex, TKey key, out TValue value, out long size)
             {
-                // Find entry index, 
+                // Find entry index,
                 int previousIndex;
                 int elementIndex = FindElementIndex(bucketIndex, key, m_newGeneration, out previousIndex);
                 if (elementIndex == -1)
@@ -1125,8 +1132,8 @@ namespace OpenSim.Framework
                     return false;
                 }
 
-                value = m_elements[ elementIndex ].Value;
-                size = m_elements[ elementIndex ].Size;
+                value = m_elements[elementIndex].Value;
+                size = m_elements[elementIndex].Size;
 
                 if (!m_newGeneration)
                 {
@@ -1137,23 +1144,10 @@ namespace OpenSim.Framework
                 AccessedSinceLastTimeCheck = true;
                 return true;
             }
-
-            /// <summary>
-            /// Returns an enumerator that iterates through a collection.
-            /// </summary>
-            /// <returns>
-            /// An <see cref="T:System.Collections.IEnumerator"/> object that can be used to iterate through the collection.
-            /// </returns>
-            /// <filterpriority>2</filterpriority>
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
-
-            #endregion
+            #endregion IGeneration Members
         }
 
-        #endregion
+        #endregion Nested type: HashGeneration
 
         #region Nested type: IGeneration
 
@@ -1166,7 +1160,7 @@ namespace OpenSim.Framework
         /// </para>
         /// <para>
         /// There are two kind generations: "new generation" and "old generation(s)". All new elements
-        /// are added to "new generation". 
+        /// are added to "new generation".
         /// </para>
         /// </remarks>
         protected interface IGeneration : IEnumerable<KeyValuePair<TKey, TValue>>
@@ -1211,7 +1205,7 @@ namespace OpenSim.Framework
             /// The key to locate in the <see cref="IGeneration"/>.
             /// </param>
             /// <returns>
-            /// <see langword="true"/>if the <see cref="IGeneration"/> contains an element with the <see cref="key"/>; 
+            /// <see langword="true"/>if the <see cref="IGeneration"/> contains an element with the <see cref="key"/>;
             /// otherwise <see langword="false"/>.
             /// </returns>
             bool Contains(int bucketIndex, TKey key);
@@ -1259,7 +1253,7 @@ namespace OpenSim.Framework
             /// </returns>
             /// <remarks>
             /// <para>
-            /// If element was already existing in generation and new element size fits to collection limits, 
+            /// If element was already existing in generation and new element size fits to collection limits,
             /// then it's value is replaced with new one and size information is updated. If element didn't
             /// exists in generation before, then generation must have empty space for a new element and
             /// size must fit generation's limits, before element is added to generation.
@@ -1288,13 +1282,13 @@ namespace OpenSim.Framework
             /// <remarks>
             /// <para>
             /// If element is not found from generation then <paramref name="value"/> and <paramref name="size"/>
-            /// are set to default value (default(TValue) and 0). 
+            /// are set to default value (default(TValue) and 0).
             /// </para>
             /// </remarks>
             bool TryGetValue(int bucketIndex, TKey key, out TValue value, out long size);
         }
 
-        #endregion
+        #endregion Nested type: IGeneration
 
         #region ICnmCache<TKey,TValue> Members
 
@@ -1303,8 +1297,8 @@ namespace OpenSim.Framework
         /// </summary>
         /// <remarks>
         /// <para>
-        /// When adding an new element to <see cref="ICnmCache{TKey,TValue}"/> that is limiting element count, 
-        /// <see cref="ICnmCache{TKey,TValue}"/> will remove less recently used elements until it can fit an new element. 
+        /// When adding an new element to <see cref="ICnmCache{TKey,TValue}"/> that is limiting element count,
+        /// <see cref="ICnmCache{TKey,TValue}"/> will remove less recently used elements until it can fit an new element.
         /// </para>
         /// </remarks>
         /// <seealso cref="ICnmCache{TKey,TValue}.MaxCount"/>
@@ -1324,13 +1318,13 @@ namespace OpenSim.Framework
         /// </value>
         /// <remarks>
         /// <para>
-        /// When element has been stored in <see cref="ICnmCache{TKey,TValue}"/> longer than <see cref="ICnmCache{TKey,TValue}.ExpirationTime"/> 
-        /// and it is not accessed through <see cref="ICnmCache{TKey,TValue}.TryGetValue"/> method or element's value is 
-        /// not replaced by <see cref="ICnmCache{TKey,TValue}.Set"/> method, then it is automatically removed from the 
+        /// When element has been stored in <see cref="ICnmCache{TKey,TValue}"/> longer than <see cref="ICnmCache{TKey,TValue}.ExpirationTime"/>
+        /// and it is not accessed through <see cref="ICnmCache{TKey,TValue}.TryGetValue"/> method or element's value is
+        /// not replaced by <see cref="ICnmCache{TKey,TValue}.Set"/> method, then it is automatically removed from the
         /// <see cref="ICnmCache{TKey,TValue}"/>.
         /// </para>
         /// <para>
-        /// It is possible that <see cref="ICnmCache{TKey,TValue}"/> implementation removes element before it's expiration time, 
+        /// It is possible that <see cref="ICnmCache{TKey,TValue}"/> implementation removes element before it's expiration time,
         /// because total size or count of elements stored to cache is larger than <see cref="ICnmCache{TKey,TValue}.MaxSize"/> or <see cref="ICnmCache{TKey,TValue}.MaxCount"/>.
         /// </para>
         /// <para>
@@ -1375,17 +1369,17 @@ namespace OpenSim.Framework
         /// Gets a value indicating whether <see cref="ICnmCache{TKey,TValue}"/> is limiting count of elements.
         /// </summary>
         /// <value>
-        /// <see langword="true"/> if the <see cref="ICnmCache{TKey,TValue}"/> count of elements is limited; 
-        /// otherwise, <see langword="false"/>. 
+        /// <see langword="true"/> if the <see cref="ICnmCache{TKey,TValue}"/> count of elements is limited;
+        /// otherwise, <see langword="false"/>.
         /// </value>
         /// <remarks>
         /// <para>
-        /// When adding an new element to <see cref="ICnmCache{TKey,TValue}"/> that is limiting element count, 
-        /// <see cref="ICnmCache{TKey,TValue}"/> will remove less recently used elements until it can fit an new element. 
+        /// When adding an new element to <see cref="ICnmCache{TKey,TValue}"/> that is limiting element count,
+        /// <see cref="ICnmCache{TKey,TValue}"/> will remove less recently used elements until it can fit an new element.
         /// </para>
         /// </remarks>
         /// <seealso cref="ICnmCache{TKey,TValue}.Count"/>
-        /// <seealso cref="ICnmCache{TKey,TValue}.MaxCount"/> 
+        /// <seealso cref="ICnmCache{TKey,TValue}.MaxCount"/>
         /// <seealso cref="ICnmCache{TKey,TValue}.IsSizeLimited"/>
         /// <seealso cref="ICnmCache{TKey,TValue}.IsTimeLimited"/>
         public bool IsCountLimited
@@ -1397,13 +1391,13 @@ namespace OpenSim.Framework
         /// Gets a value indicating whether <see cref="ICnmCache{TKey,TValue}"/> is limiting size of elements.
         /// </summary>
         /// <value>
-        /// <see langword="true"/> if the <see cref="ICnmCache{TKey,TValue}"/> total size of elements is limited; 
-        /// otherwise, <see langword="false"/>. 
+        /// <see langword="true"/> if the <see cref="ICnmCache{TKey,TValue}"/> total size of elements is limited;
+        /// otherwise, <see langword="false"/>.
         /// </value>
         /// <remarks>
         /// <para>
-        /// When adding an new element to <see cref="ICnmCache{TKey,TValue}"/> that is limiting total size of elements, 
-        /// <see cref="ICnmCache{TKey,TValue}"/> will remove less recently used elements until it can fit an new element. 
+        /// When adding an new element to <see cref="ICnmCache{TKey,TValue}"/> that is limiting total size of elements,
+        /// <see cref="ICnmCache{TKey,TValue}"/> will remove less recently used elements until it can fit an new element.
         /// </para>
         /// </remarks>
         /// <seealso cref="ICnmCache{TKey,TValue}.MaxElementSize"/>
@@ -1420,12 +1414,12 @@ namespace OpenSim.Framework
         /// Gets a value indicating whether or not access to the <see cref="ICnmCache{TKey,TValue}"/> is synchronized (thread safe).
         /// </summary>
         /// <value>
-        /// <see langword="true"/> if access to the <see cref="ICnmCache{TKey,TValue}"/> is synchronized (thread safe); 
-        /// otherwise, <see langword="false"/>. 
+        /// <see langword="true"/> if access to the <see cref="ICnmCache{TKey,TValue}"/> is synchronized (thread safe);
+        /// otherwise, <see langword="false"/>.
         /// </value>
         /// <remarks>
         /// <para>
-        /// To get synchronized (thread safe) access to <see cref="ICnmCache{TKey,TValue}"/> object, use 
+        /// To get synchronized (thread safe) access to <see cref="ICnmCache{TKey,TValue}"/> object, use
         /// <see cref="CnmSynchronizedCache{TKey,TValue}.Synchronized"/> in <see cref="CnmSynchronizedCache{TKey,TValue}"/> class
         /// to retrieve synchronized wrapper for <see cref="ICnmCache{TKey,TValue}"/> object.
         /// </para>
@@ -1441,13 +1435,13 @@ namespace OpenSim.Framework
         /// Gets a value indicating whether elements stored to <see cref="ICnmCache{TKey,TValue}"/> have limited inactivity time.
         /// </summary>
         /// <value>
-        /// <see langword="true"/> if the <see cref="ICnmCache{TKey,TValue}"/> has a fixed total size of elements; 
-        /// otherwise, <see langword="false"/>. 
+        /// <see langword="true"/> if the <see cref="ICnmCache{TKey,TValue}"/> has a fixed total size of elements;
+        /// otherwise, <see langword="false"/>.
         /// </value>
         /// <remarks>
         /// If <see cref="ICnmCache{TKey,TValue}"/> have limited inactivity time and element is not accessed through <see cref="ICnmCache{TKey,TValue}.Set"/>
-        /// or <see cref="ICnmCache{TKey,TValue}.TryGetValue"/> methods in <see cref="ICnmCache{TKey,TValue}.ExpirationTime"/> , then element is automatically removed from 
-        /// the cache. Depending on implementation of the <see cref="ICnmCache{TKey,TValue}"/>, some of the elements may 
+        /// or <see cref="ICnmCache{TKey,TValue}.TryGetValue"/> methods in <see cref="ICnmCache{TKey,TValue}.ExpirationTime"/> , then element is automatically removed from
+        /// the cache. Depending on implementation of the <see cref="ICnmCache{TKey,TValue}"/>, some of the elements may
         /// stay longer in cache.
         /// </remarks>
         /// <seealso cref="ICnmCache{TKey,TValue}.ExpirationTime"/>
@@ -1463,13 +1457,13 @@ namespace OpenSim.Framework
         /// Gets or sets maximal allowed count of elements that can be stored to <see cref="ICnmCache{TKey,TValue}"/>.
         /// </summary>
         /// <value>
-        /// <see cref="int.MaxValue"/>, if <see cref="ICnmCache{TKey,TValue}"/> is not limited by count of elements; 
+        /// <see cref="int.MaxValue"/>, if <see cref="ICnmCache{TKey,TValue}"/> is not limited by count of elements;
         /// otherwise maximal allowed count of elements.
         /// </value>
         /// <remarks>
         /// <para>
-        /// When adding an new element to <see cref="ICnmCache{TKey,TValue}"/> that is limiting element count, 
-        /// <see cref="ICnmCache{TKey,TValue}"/> will remove less recently used elements until it can fit an new element. 
+        /// When adding an new element to <see cref="ICnmCache{TKey,TValue}"/> that is limiting element count,
+        /// <see cref="ICnmCache{TKey,TValue}"/> will remove less recently used elements until it can fit an new element.
         /// </para>
         /// </remarks>
         public int MaxCount
@@ -1496,7 +1490,7 @@ namespace OpenSim.Framework
         /// </value>
         /// <remarks>
         /// <para>
-        /// If element's size is larger than <see cref="ICnmCache{TKey,TValue}.MaxElementSize"/>, then element is 
+        /// If element's size is larger than <see cref="ICnmCache{TKey,TValue}.MaxElementSize"/>, then element is
         /// not added to the <see cref="ICnmCache{TKey,TValue}"/>.
         /// </para>
         /// </remarks>
@@ -1522,8 +1516,8 @@ namespace OpenSim.Framework
         /// Normally size is total bytes used by elements in the cache. But it can be any other suitable unit of measure.
         /// </para>
         /// <para>
-        /// When adding an new element to <see cref="ICnmCache{TKey,TValue}"/> that is limiting total size of elements, 
-        /// <see cref="ICnmCache{TKey,TValue}"/> will remove less recently used elements until it can fit an new element. 
+        /// When adding an new element to <see cref="ICnmCache{TKey,TValue}"/> that is limiting total size of elements,
+        /// <see cref="ICnmCache{TKey,TValue}"/> will remove less recently used elements until it can fit an new element.
         /// </para>
         /// </remarks>
         /// <seealso cref="ICnmCache{TKey,TValue}.MaxElementSize"/>
@@ -1556,11 +1550,11 @@ namespace OpenSim.Framework
         /// Normally bytes, but can be any suitable unit of measure.
         /// </para>
         /// <para>
-        /// Element's size is given when element is added or replaced by <see cref="ICnmCache{TKey,TValue}.Set"/> method. 
+        /// Element's size is given when element is added or replaced by <see cref="ICnmCache{TKey,TValue}.Set"/> method.
         /// </para>
         /// <para>
-        /// When adding an new element to <see cref="ICnmCache{TKey,TValue}"/> that is limiting total size of elements, 
-        /// <see cref="ICnmCache{TKey,TValue}"/> will remove less recently used elements until it can fit an new element. 
+        /// When adding an new element to <see cref="ICnmCache{TKey,TValue}"/> that is limiting total size of elements,
+        /// <see cref="ICnmCache{TKey,TValue}"/> will remove less recently used elements until it can fit an new element.
         /// </para>
         /// </remarks>
         /// <seealso cref="ICnmCache{TKey,TValue}.MaxElementSize"/>
@@ -1581,8 +1575,8 @@ namespace OpenSim.Framework
         /// </value>
         /// <remarks>
         /// <para>
-        /// To get synchronized (thread safe) access to <see cref="ICnmCache{TKey,TValue}"/>, use <see cref="CnmSynchronizedCache{TKey,TValue}"/> 
-        /// method <see cref="CnmSynchronizedCache{TKey,TValue}.Synchronized"/> to retrieve synchronized wrapper interface to 
+        /// To get synchronized (thread safe) access to <see cref="ICnmCache{TKey,TValue}"/>, use <see cref="CnmSynchronizedCache{TKey,TValue}"/>
+        /// method <see cref="CnmSynchronizedCache{TKey,TValue}.Synchronized"/> to retrieve synchronized wrapper interface to
         /// <see cref="ICnmCache{TKey,TValue}"/>.
         /// </para>
         /// </remarks>
@@ -1619,6 +1613,18 @@ namespace OpenSim.Framework
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
             return new Enumerator(this);
+        }
+
+        /// <summary>
+        /// Returns an enumerator that iterates through a collection.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="T:System.Collections.IEnumerator"/> object that can be used to iterate through the collection.
+        /// </returns>
+        /// <filterpriority>2</filterpriority>
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
 
         /// <summary>
@@ -1735,7 +1741,7 @@ namespace OpenSim.Framework
         }
 
         /// <summary>
-        /// Add or replace an element with the provided <paramref name="key"/>, <paramref name="value"/> and <paramref name="size"/> to 
+        /// Add or replace an element with the provided <paramref name="key"/>, <paramref name="value"/> and <paramref name="size"/> to
         /// <see cref="ICnmCache{TKey,TValue}"/>.
         /// </summary>
         /// <param name="key">
@@ -1748,7 +1754,7 @@ namespace OpenSim.Framework
         /// The element's size. Normally bytes, but can be any suitable unit of measure.
         /// </param>
         /// <returns>
-        /// <see langword="true"/>if element has been added successfully to the <see cref="ICnmCache{TKey,TValue}"/>; 
+        /// <see langword="true"/>if element has been added successfully to the <see cref="ICnmCache{TKey,TValue}"/>;
         /// otherwise <see langword="false"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException">
@@ -1759,17 +1765,17 @@ namespace OpenSim.Framework
         /// </exception>
         /// <remarks>
         /// <para>
-        /// If element's <paramref name="size"/> is larger than <see cref="ICnmCache{TKey,TValue}.MaxElementSize"/>, then element is 
-        /// not added to the <see cref="ICnmCache{TKey,TValue}"/>, however - possible older element is 
-        /// removed from the <see cref="ICnmCache{TKey,TValue}"/>. 
+        /// If element's <paramref name="size"/> is larger than <see cref="ICnmCache{TKey,TValue}.MaxElementSize"/>, then element is
+        /// not added to the <see cref="ICnmCache{TKey,TValue}"/>, however - possible older element is
+        /// removed from the <see cref="ICnmCache{TKey,TValue}"/>.
         /// </para>
         /// <para>
-        /// When adding an new element to <see cref="ICnmCache{TKey,TValue}"/> that is limiting total size of elements, 
-        /// <see cref="ICnmCache{TKey,TValue}"/>will remove less recently used elements until it can fit an new element. 
+        /// When adding an new element to <see cref="ICnmCache{TKey,TValue}"/> that is limiting total size of elements,
+        /// <see cref="ICnmCache{TKey,TValue}"/>will remove less recently used elements until it can fit an new element.
         /// </para>
         /// <para>
-        /// When adding an new element to <see cref="ICnmCache{TKey,TValue}"/> that is limiting element count, 
-        /// <see cref="ICnmCache{TKey,TValue}"/>will remove less recently used elements until it can fit an new element. 
+        /// When adding an new element to <see cref="ICnmCache{TKey,TValue}"/> that is limiting element count,
+        /// <see cref="ICnmCache{TKey,TValue}"/>will remove less recently used elements until it can fit an new element.
         /// </para>
         /// </remarks>
         /// <seealso cref="ICnmCache{TKey,TValue}.IsSizeLimited"/>
@@ -1809,15 +1815,15 @@ namespace OpenSim.Framework
         /// Gets the <paramref name="value"/> associated with the specified <paramref name="key"/>.
         /// </summary>
         /// <returns>
-        /// <see langword="true"/>if the <see cref="ICnmCache{TKey,TValue}"/> contains an element with 
+        /// <see langword="true"/>if the <see cref="ICnmCache{TKey,TValue}"/> contains an element with
         /// the specified key; otherwise, <see langword="false"/>.
         /// </returns>
         /// <param name="key">
         /// The key whose <paramref name="value"/> to get.
         /// </param>
         /// <param name="value">
-        /// When this method returns, the value associated with the specified <paramref name="key"/>, 
-        /// if the <paramref name="key"/> is found; otherwise, the 
+        /// When this method returns, the value associated with the specified <paramref name="key"/>,
+        /// if the <paramref name="key"/> is found; otherwise, the
         /// default value for the type of the <paramref name="value"/> parameter. This parameter is passed uninitialized.
         /// </param>
         /// <exception cref="ArgumentNullException">
@@ -1852,19 +1858,6 @@ namespace OpenSim.Framework
             CheckExpired();
             return false;
         }
-
-        /// <summary>
-        /// Returns an enumerator that iterates through a collection.
-        /// </summary>
-        /// <returns>
-        /// An <see cref="T:System.Collections.IEnumerator"/> object that can be used to iterate through the collection.
-        /// </returns>
-        /// <filterpriority>2</filterpriority>
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
-        #endregion
+        #endregion ICnmCache<TKey,TValue> Members
     }
 }

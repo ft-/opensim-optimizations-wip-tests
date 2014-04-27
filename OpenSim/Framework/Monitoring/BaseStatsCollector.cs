@@ -25,11 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse.StructuredData;
 using System;
 using System.Diagnostics;
 using System.Text;
-using OpenMetaverse;
-using OpenMetaverse.StructuredData;
 
 namespace OpenSim.Framework.Monitoring
 {
@@ -38,6 +37,13 @@ namespace OpenSim.Framework.Monitoring
     /// </summary>
     public class BaseStatsCollector : IStatsCollector
     {
+        public virtual OSDMap OReport(string uptime, string version)
+        {
+            OSDMap ret = new OSDMap();
+            ret.Add("TotalMemory", new OSDReal(Math.Round(GC.GetTotalMemory(false) / 1024.0 / 1024.0)));
+            return ret;
+        }
+
         public virtual string Report()
         {
             StringBuilder sb = new StringBuilder(Environment.NewLine);
@@ -62,17 +68,10 @@ namespace OpenSim.Framework.Monitoring
 
             return sb.ToString();
         }
-        
+
         public virtual string XReport(string uptime, string version)
         {
-            return (string) Math.Round(GC.GetTotalMemory(false) / 1024.0 / 1024.0).ToString() ;
-        }
-
-        public virtual OSDMap OReport(string uptime, string version)
-        {
-            OSDMap ret = new OSDMap();
-            ret.Add("TotalMemory", new OSDReal(Math.Round(GC.GetTotalMemory(false) / 1024.0 / 1024.0)));
-            return ret;
+            return (string)Math.Round(GC.GetTotalMemory(false) / 1024.0 / 1024.0).ToString();
         }
     }
 }

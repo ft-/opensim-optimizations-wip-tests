@@ -27,15 +27,14 @@
 
 using log4net;
 using Mono.Addins;
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using Nini.Config;
 using OpenSim.Framework;
-using OpenSim.Services.Connectors;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using OpenSim.Services.Connectors;
 using OpenSim.Services.Interfaces;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Asset
 {
@@ -47,17 +46,27 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Asset
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
-        private bool m_Enabled = false;
         private IImprovedAssetCache m_Cache;
-
-        public Type ReplaceableInterface 
-        {
-            get { return null; }
-        }
-
+        private bool m_Enabled = false;
         public string Name
         {
             get { return "RemoteAssetServicesConnector"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+        public void AddRegion(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+
+            scene.RegisterModuleInterface<IAssetService>(this);
+        }
+
+        public void Close()
+        {
         }
 
         public override void Initialise(IConfigSource source)
@@ -87,23 +96,6 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Asset
         public void PostInitialise()
         {
         }
-
-        public void Close()
-        {
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-            scene.RegisterModuleInterface<IAssetService>(this);
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-        }
-
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -120,7 +112,6 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Asset
                     m_Cache = null;
                 else
                     SetCache(m_Cache);
-
             }
 
             m_log.InfoFormat("[ASSET CONNECTOR]: Enabled remote assets for region {0}", scene.RegionInfo.RegionName);
@@ -129,6 +120,10 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Asset
             {
                 m_log.InfoFormat("[ASSET CONNECTOR]: Enabled asset caching for region {0}", scene.RegionInfo.RegionName);
             }
+        }
+
+        public void RemoveRegion(Scene scene)
+        {
         }
     }
 }

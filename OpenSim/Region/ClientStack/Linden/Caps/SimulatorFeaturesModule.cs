@@ -25,19 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Reflection;
-using log4net;
-using Nini.Config;
 using Mono.Addins;
+using Nini.Config;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
-using OpenSim.Framework;
 using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
+using System;
+using System.Collections;
 using Caps = OpenSim.Framework.Capabilities.Caps;
 
 namespace OpenSim.Region.ClientStack.Linden
@@ -49,41 +45,35 @@ namespace OpenSim.Region.ClientStack.Linden
     /// This is required for uploading Mesh.
     /// Since is accepts an open-ended response, we also send more information
     /// for viewers that care to interpret it.
-    /// 
+    ///
     /// NOTE: Part of this code was adapted from the Aurora project, specifically
     /// the normal part of the response in the capability handler.
     /// </remarks>
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "SimulatorFeaturesModule")]
     public class SimulatorFeaturesModule : ISharedRegionModule, ISimulatorFeaturesModule
     {
-//        private static readonly ILog m_log =
-//            LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log =
+        //            LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        public event SimulatorFeaturesRequestDelegate OnSimulatorFeaturesRequest;
-
-        private Scene m_scene;
+        private bool m_ExportSupported = false;
 
         /// <summary>
         /// Simulator features
         /// </summary>
         private OSDMap m_features = new OSDMap();
 
-        private string m_SearchURL = string.Empty;
-        private bool m_ExportSupported = false;
+        private Scene m_scene;
 
+        private string m_SearchURL = string.Empty;
+
+        public event SimulatorFeaturesRequestDelegate OnSimulatorFeaturesRequest;
         #region ISharedRegionModule Members
 
-        public void Initialise(IConfigSource source)
+        public string Name { get { return "SimulatorFeaturesModule"; } }
+
+        public Type ReplaceableInterface
         {
-            IConfig config = source.Configs["SimulatorFeatures"];
-            if (config != null)
-            {    
-                m_SearchURL = config.GetString("SearchServerURI", string.Empty);
-
-                m_ExportSupported = config.GetBoolean("ExportSupported", m_ExportSupported);
-            }
-
-            AddDefaultFeatures();
+            get { return null; }
         }
 
         public void AddRegion(Scene s)
@@ -94,29 +84,69 @@ namespace OpenSim.Region.ClientStack.Linden
             m_scene.RegisterModuleInterface<ISimulatorFeaturesModule>(this);
         }
 
-        public void RemoveRegion(Scene s)
+        public void Close()
         {
-            m_scene.EventManager.OnRegisterCaps -= RegisterCaps;
+        }
+
+        public void Initialise(IConfigSource source)
+        {
+            IConfig config = source.Configs["SimulatorFeatures"];
+            if (config != null)
+            {
+                m_SearchURL = config.GetString("SearchServerURI", string.Empty);
+
+                m_ExportSupported = config.GetBoolean("ExportSupported", m_ExportSupported);
+            }
+
+            AddDefaultFeatures();
+        }
+        public void PostInitialise()
+        {
         }
 
         public void RegionLoaded(Scene s)
         {
         }
 
-        public void PostInitialise()
+        public void RemoveRegion(Scene s)
         {
+            m_scene.EventManager.OnRegisterCaps -= RegisterCaps;
+        }
+        #endregion ISharedRegionModule Members
+
+        public void AddFeature(string name, OSD value)
+        {
+            lock (m_features)
+                m_features[name] = value;
         }
 
-        public void Close() { }
-
-        public string Name { get { return "SimulatorFeaturesModule"; } }
-
-        public Type ReplaceableInterface
+        public OSDMap GetFeatures()
         {
-            get { return null; }
+            lock (m_features)
+                return new OSDMap(m_features);
         }
 
-        #endregion
+        public void RegisterCaps(UUID agentID, Caps caps)
+        {
+            IRequestHandler reqHandler
+                = new RestHTTPHandler(
+                    "GET", "/CAPS/" + UUID.Random(),
+                    x => { return HandleSimulatorFeaturesRequest(x, agentID); }, "SimulatorFeatures", agentID.ToString());
+
+            caps.RegisterHandler("SimulatorFeatures", reqHandler);
+        }
+
+        public bool RemoveFeature(string name)
+        {
+            lock (m_features)
+                return m_features.Remove(name);
+        }
+
+        public bool TryGetFeature(string name, out OSD value)
+        {
+            lock (m_features)
+                return m_features.TryGetValue(name, out value);
+        }
 
         /// <summary>
         /// Add default features
@@ -132,13 +162,13 @@ namespace OpenSim.Region.ClientStack.Linden
                 m_features["MeshUploadEnabled"] = true;
                 m_features["MeshXferEnabled"] = true;
                 m_features["PhysicsMaterialsEnabled"] = true;
-    
+
                 OSDMap typesMap = new OSDMap();
                 typesMap["convex"] = true;
                 typesMap["none"] = true;
                 typesMap["prim"] = true;
                 m_features["PhysicsShapeTypes"] = typesMap;
-    
+
                 // Extra information for viewers that want to use it
                 // TODO: Take these out of here into their respective modules, like map-server-url
                 OSDMap extrasMap = new OSDMap();
@@ -149,44 +179,8 @@ namespace OpenSim.Region.ClientStack.Linden
 
                 if (extrasMap.Count > 0)
                     m_features["OpenSimExtras"] = extrasMap;
-
             }
         }
-
-        public void RegisterCaps(UUID agentID, Caps caps)
-        {
-            IRequestHandler reqHandler
-                = new RestHTTPHandler(
-                    "GET", "/CAPS/" + UUID.Random(),
-                    x => { return HandleSimulatorFeaturesRequest(x, agentID); }, "SimulatorFeatures", agentID.ToString());
-
-            caps.RegisterHandler("SimulatorFeatures", reqHandler);
-        }
-
-        public void AddFeature(string name, OSD value)
-        {
-            lock (m_features)
-                m_features[name] = value;
-        }
-
-        public bool RemoveFeature(string name)
-        {
-            lock (m_features)
-                return m_features.Remove(name);
-        }
-
-        public bool TryGetFeature(string name, out OSD value)
-        {
-            lock (m_features)
-                return m_features.TryGetValue(name, out value);
-        }
-
-        public OSDMap GetFeatures()
-        {
-            lock (m_features)
-                return new OSDMap(m_features);
-        }
-
         private OSDMap DeepCopy()
         {
             // This isn't the cheapest way of doing this but the rate
@@ -199,7 +193,7 @@ namespace OpenSim.Region.ClientStack.Linden
 
         private Hashtable HandleSimulatorFeaturesRequest(Hashtable mDhttpMethod, UUID agentID)
         {
-//            m_log.DebugFormat("[SIMULATOR FEATURES MODULE]: SimulatorFeatures request");
+            //            m_log.DebugFormat("[SIMULATOR FEATURES MODULE]: SimulatorFeatures request");
 
             OSDMap copy = DeepCopy();
 
@@ -209,7 +203,7 @@ namespace OpenSim.Region.ClientStack.Linden
 
             //Send back data
             Hashtable responsedata = new Hashtable();
-            responsedata["int_response_code"] = 200; 
+            responsedata["int_response_code"] = 200;
             responsedata["content_type"] = "text/plain";
             responsedata["keepalive"] = false;
 

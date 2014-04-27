@@ -25,8 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
+using System;
 
 namespace OpenSim.Framework
 {
@@ -35,64 +35,155 @@ namespace OpenSim.Framework
     /// </summary>
     public class InventoryItemBase : InventoryNodeBase, ICloneable
     {
-        /// <value>
-        /// The inventory type of the item.  This is slightly different from the asset type in some situations.
-        /// </value>
-        public int InvType 
-        { 
-            get
-            {
-                return m_invType;
-            }
-            
-            set
-            {
-                m_invType = value;
-            }
-        }
+        protected UUID m_assetID;
+
+        protected int m_assetType;
+
+        protected uint m_basePermissions;
+
+        protected int m_creationDate = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+
+        protected string m_creatorData = string.Empty;
+
+        protected string m_creatorId;
+
+        protected UUID m_creatorIdAsUuid = UUID.Zero;
+
+        protected uint m_currentPermissions;
+
+        protected string m_description = String.Empty;
+
+        protected uint m_everyonePermissions;
+
+        protected uint m_flags;
+
+        protected UUID m_folder;
+
+        protected UUID m_groupID;
+
+        protected bool m_groupOwned;
+
+        protected uint m_groupPermissions;
+
         protected int m_invType;
 
+        protected uint m_nextPermissions;
+
+        protected int m_salePrice;
+
+        protected byte m_saleType;
+
+        public InventoryItemBase()
+        {
+        }
+
+        public InventoryItemBase(UUID id)
+        {
+            ID = id;
+        }
+
+        public InventoryItemBase(UUID id, UUID owner)
+        {
+            ID = id;
+            Owner = owner;
+        }
+
         /// <value>
-        /// The folder this item is contained in
+        /// The UUID of the associated asset on the asset server
         /// </value>
-        public UUID Folder 
-        { 
+        public UUID AssetID
+        {
             get
             {
-                return m_folder;
+                return m_assetID;
             }
-            
+
             set
             {
-                m_folder = value;
+                m_assetID = value;
             }
         }
-        protected UUID m_folder;
+
+        /// <value>
+        /// This is an enumerated value determining the type of asset (eg Notecard, Sound, Object, etc)
+        /// </value>
+        public int AssetType
+        {
+            get
+            {
+                return m_assetType;
+            }
+
+            set
+            {
+                m_assetType = value;
+            }
+        }
+
+        /// <value>
+        ///
+        /// </value>
+        public uint BasePermissions
+        {
+            get
+            {
+                return m_basePermissions;
+            }
+
+            set
+            {
+                m_basePermissions = value;
+            }
+        }
+
+        /// <value>
+        ///
+        /// </value>
+        public int CreationDate
+        {
+            get
+            {
+                return m_creationDate;
+            }
+
+            set
+            {
+                m_creationDate = value;
+            }
+        }
+
+        /// <summary>
+        /// Extended creator information of the form <profile url>;<name>
+        /// </summary>
+        public string CreatorData // = <profile url>;<name>
+        {
+            get { return m_creatorData; }
+            set { m_creatorData = value; }
+        }
 
         /// <value>
         /// The creator of this item
         /// </value>
-        public string CreatorId 
-        { 
+        public string CreatorId
+        {
             get
             {
-                return m_creatorId; 
+                return m_creatorId;
             }
-            
+
             set
             {
                 m_creatorId = value;
-                
+
                 if ((m_creatorId == null) || !UUID.TryParse(m_creatorId, out m_creatorIdAsUuid))
                     m_creatorIdAsUuid = UUID.Zero;
             }
         }
-        protected string m_creatorId;
 
         /// <value>
         /// The CreatorId expressed as a UUID.
         /// </value>
-        public UUID CreatorIdAsUuid 
+        public UUID CreatorIdAsUuid
         {
             get
             {
@@ -104,17 +195,6 @@ namespace OpenSim.Framework
                 return m_creatorIdAsUuid;
             }
         }
-        protected UUID m_creatorIdAsUuid = UUID.Zero;
-
-        /// <summary>
-        /// Extended creator information of the form <profile url>;<name>
-        /// </summary>
-        public string CreatorData // = <profile url>;<name>
-        {
-            get { return m_creatorData; }
-            set { m_creatorData = value; }
-        }
-        protected string m_creatorData = string.Empty;
 
         /// <summary>
         /// Used by the DB layer to retrieve / store the entire user identification.
@@ -159,258 +239,193 @@ namespace OpenSim.Framework
         }
 
         /// <value>
-        /// The description of the inventory item (must be less than 64 characters)
-        /// </value>
-        public string Description 
-        { 
-            get
-            {
-                return m_description;
-            }
-            
-            set
-            {
-                m_description = value;
-            }
-        }
-        protected string m_description = String.Empty;
-
-        /// <value>
-        ///
-        /// </value>
-        public uint NextPermissions 
-        { 
-            get
-            {
-                return m_nextPermissions;
-            }
-            
-            set
-            {
-                m_nextPermissions = value;
-            }
-        }
-        protected uint m_nextPermissions;
-
-        /// <value>
         /// A mask containing permissions for the current owner (cannot be enforced)
         /// </value>
-        public uint CurrentPermissions 
-        { 
+        public uint CurrentPermissions
+        {
             get
             {
                 return m_currentPermissions;
             }
-            
+
             set
             {
                 m_currentPermissions = value;
             }
         }
-        protected uint m_currentPermissions;
 
         /// <value>
-        ///
+        /// The description of the inventory item (must be less than 64 characters)
         /// </value>
-        public uint BasePermissions 
-        { 
+        public string Description
+        {
             get
             {
-                return m_basePermissions;
+                return m_description;
             }
-            
+
             set
             {
-                m_basePermissions = value;
+                m_description = value;
             }
         }
-        protected uint m_basePermissions;
 
         /// <value>
         ///
         /// </value>
-        public uint EveryOnePermissions 
-        { 
+        public uint EveryOnePermissions
+        {
             get
             {
                 return m_everyonePermissions;
             }
-            
+
             set
             {
                 m_everyonePermissions = value;
             }
         }
-        protected uint m_everyonePermissions;
 
         /// <value>
         ///
         /// </value>
-        public uint GroupPermissions 
-        { 
-            get
-            {
-                return m_groupPermissions;
-            }
-            
-            set
-            {
-                m_groupPermissions = value;
-            }
-        }
-        protected uint m_groupPermissions;
-
-        /// <value>
-        /// This is an enumerated value determining the type of asset (eg Notecard, Sound, Object, etc)
-        /// </value>
-        public int AssetType 
-        { 
-            get
-            {
-                return m_assetType;
-            }
-            
-            set
-            {
-                m_assetType = value;
-            }
-        }
-        protected int m_assetType;
-
-        /// <value>
-        /// The UUID of the associated asset on the asset server
-        /// </value>
-        public UUID AssetID 
-        { 
-            get
-            {
-                return m_assetID;
-            }
-            
-            set
-            {
-                m_assetID = value;
-            }
-        }
-        protected UUID m_assetID;
-
-        /// <value>
-        ///
-        /// </value>
-        public UUID GroupID 
-        { 
-            get
-            {
-                return m_groupID;
-            }
-            
-            set
-            {
-                m_groupID = value;
-            }
-        }
-        protected UUID m_groupID;
-
-        /// <value>
-        ///
-        /// </value>
-        public bool GroupOwned 
-        { 
-            get
-            {
-                return m_groupOwned;
-            }
-                
-            set
-            {
-                m_groupOwned = value;
-            }
-        }
-        protected bool m_groupOwned;
-
-        /// <value>
-        ///
-        /// </value>
-        public int SalePrice 
-        { 
-            get
-            {
-                return m_salePrice;
-            }
-            
-            set
-            {
-                m_salePrice = value;
-            }
-        }
-        protected int m_salePrice;
-
-        /// <value>
-        ///
-        /// </value>
-        public byte SaleType 
-        { 
-            get
-            {
-                return m_saleType;
-            }
-            
-            set
-            {
-                m_saleType = value;
-            }
-        }
-        protected byte m_saleType;
-
-        /// <value>
-        ///
-        /// </value>
-        public uint Flags 
-        { 
+        public uint Flags
+        {
             get
             {
                 return m_flags;
             }
-            
+
             set
             {
                 m_flags = value;
             }
         }
-        protected uint m_flags;
+
+        /// <value>
+        /// The folder this item is contained in
+        /// </value>
+        public UUID Folder
+        {
+            get
+            {
+                return m_folder;
+            }
+
+            set
+            {
+                m_folder = value;
+            }
+        }
 
         /// <value>
         ///
         /// </value>
-        public int CreationDate 
-        { 
+        public UUID GroupID
+        {
             get
             {
-                return m_creationDate;
+                return m_groupID;
             }
-            
+
             set
             {
-                m_creationDate = value;
+                m_groupID = value;
             }
         }
-        protected int m_creationDate = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
 
-        public InventoryItemBase()
+        /// <value>
+        ///
+        /// </value>
+        public bool GroupOwned
         {
+            get
+            {
+                return m_groupOwned;
+            }
+
+            set
+            {
+                m_groupOwned = value;
+            }
         }
 
-        public InventoryItemBase(UUID id)
+        /// <value>
+        ///
+        /// </value>
+        public uint GroupPermissions
         {
-            ID = id;
+            get
+            {
+                return m_groupPermissions;
+            }
+
+            set
+            {
+                m_groupPermissions = value;
+            }
         }
 
-        public InventoryItemBase(UUID id, UUID owner)
+        /// <value>
+        /// The inventory type of the item.  This is slightly different from the asset type in some situations.
+        /// </value>
+        public int InvType
         {
-            ID = id;
-            Owner = owner;
-        }
+            get
+            {
+                return m_invType;
+            }
 
+            set
+            {
+                m_invType = value;
+            }
+        }
+        /// <value>
+        ///
+        /// </value>
+        public uint NextPermissions
+        {
+            get
+            {
+                return m_nextPermissions;
+            }
+
+            set
+            {
+                m_nextPermissions = value;
+            }
+        }
+        /// <value>
+        ///
+        /// </value>
+        public int SalePrice
+        {
+            get
+            {
+                return m_salePrice;
+            }
+
+            set
+            {
+                m_salePrice = value;
+            }
+        }
+        /// <value>
+        ///
+        /// </value>
+        public byte SaleType
+        {
+            get
+            {
+                return m_saleType;
+            }
+
+            set
+            {
+                m_saleType = value;
+            }
+        }
         public object Clone()
         {
             return MemberwiseClone();

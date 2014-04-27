@@ -25,8 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using OpenMetaverse;
-
 namespace OpenSim.Framework
 {
     public enum PhysShapeType : byte
@@ -40,11 +38,10 @@ namespace OpenSim.Framework
 
     public struct ExtraPhysicsData
     {
-        public float Density;
-        public float GravitationModifier;
-        public float Friction;
         public float Bounce;
+        public float Density;
+        public float Friction;
+        public float GravitationModifier;
         public PhysShapeType PhysShapeType;
-
     }
 }

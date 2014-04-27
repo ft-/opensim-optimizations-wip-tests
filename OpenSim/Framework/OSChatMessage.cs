@@ -25,14 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
+using System;
 
 namespace OpenSim.Framework
 {
     public interface IEventArgs
     {
         IScene Scene { get; set; }
+
         IClientAPI Sender { get; set; }
     }
 
@@ -43,38 +44,19 @@ namespace OpenSim.Framework
     {
         protected int m_channel;
         protected string m_from;
+        protected UUID m_fromID;
         protected string m_message;
         protected Vector3 m_position;
 
         protected IScene m_scene;
         protected IClientAPI m_sender;
         protected object m_senderObject;
-        protected ChatTypeEnum m_type;
-        protected UUID m_fromID;
         protected UUID m_toID;
-
+        protected ChatTypeEnum m_type;
         public OSChatMessage()
         {
             m_position = new Vector3();
             m_toID = UUID.Zero;
-        }
-
-        /// <summary>
-        /// The message sent by the user
-        /// </summary>
-        public string Message
-        {
-            get { return m_message; }
-            set { m_message = value; }
-        }
-
-        /// <summary>
-        /// The type of message, eg say, shout, broadcast.
-        /// </summary>
-        public ChatTypeEnum Type
-        {
-            get { return m_type; }
-            set { m_type = value; }
         }
 
         /// <summary>
@@ -84,6 +66,24 @@ namespace OpenSim.Framework
         {
             get { return m_channel; }
             set { m_channel = value; }
+        }
+
+        /// <summary>
+        /// The name of the sender (needed for scripts)
+        /// </summary>
+        public string From
+        {
+            get { return m_from; }
+            set { m_from = value; }
+        }
+
+        /// <summary>
+        /// The message sent by the user
+        /// </summary>
+        public string Message
+        {
+            get { return m_message; }
+            set { m_message = value; }
         }
 
         /// <summary>
@@ -98,25 +98,33 @@ namespace OpenSim.Framework
         /// <summary>
         /// The name of the sender (needed for scripts)
         /// </summary>
-        public string From
-        {
-            get { return m_from; }
-            set { m_from = value; }
-        }
-
-        /// <summary>
-        /// The name of the sender (needed for scripts)
-        /// </summary>
         public string To
         {
             get { return m_from; }
             set { m_from = value; }
         }
 
+        /// <summary>
+        /// The type of message, eg say, shout, broadcast.
+        /// </summary>
+        public ChatTypeEnum Type
+        {
+            get { return m_type; }
+            set { m_type = value; }
+        }
         #region IEventArgs Members
 
         /// TODO: Sender and SenderObject should just be Sender and of
         /// type IChatSender
+
+        /// <summary>
+        ///
+        /// </summary>
+        public IScene Scene
+        {
+            get { return m_scene; }
+            set { m_scene = value; }
+        }
 
         /// <summary>
         /// The client responsible for sending the message, or null.
@@ -150,21 +158,11 @@ namespace OpenSim.Framework
             get { return m_toID; }
             set { m_toID = value; }
         }
-
-        /// <summary>
-        ///
-        /// </summary>
-        public IScene Scene
-        {
-            get { return m_scene; }
-            set { m_scene = value; }
-        }
-
         public override string ToString()
         {
             return m_message;
         }
 
-        #endregion
+        #endregion IEventArgs Members
     }
 }

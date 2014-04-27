@@ -34,28 +34,22 @@ namespace OpenSim.Framework
         /// <summary>
         /// The address of the users home sim, used for foreigners.
         /// </summary>
-        private string _userUserServerURI = String.Empty;
-
-        /// <summary>
-        /// The address of the users home sim, used for foreigners.
-        /// </summary>
         private string _userHomeAddress = String.Empty;
 
         /// <summary>
         /// The port of the users home sim, used for foreigners.
         /// </summary>
         private string _userHomePort = String.Empty;
+
         /// <summary>
         /// The remoting port of the users home sim, used for foreigners.
         /// </summary>
         private string _userHomeRemotingPort = String.Empty;
 
-        public string UserServerURI
-        {
-            get { return _userUserServerURI; }
-            set { _userUserServerURI = value; }
-        }
-
+        /// <summary>
+        /// The address of the users home sim, used for foreigners.
+        /// </summary>
+        private string _userUserServerURI = String.Empty;
         public string UserHomeAddress
         {
             get { return _userHomeAddress; }
@@ -72,6 +66,12 @@ namespace OpenSim.Framework
         {
             get { return _userHomeRemotingPort; }
             set { _userHomeRemotingPort = value; }
+        }
+
+        public string UserServerURI
+        {
+            get { return _userUserServerURI; }
+            set { _userUserServerURI = value; }
         }
     }
 }

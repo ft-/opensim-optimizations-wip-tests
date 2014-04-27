@@ -25,34 +25,47 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
-using OpenMetaverse;
 using OpenMetaverse.Packets;
 using OpenSim.Framework;
-using OpenSim.Region.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.IO;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.Framework.Statistics.Logging
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "BinaryLoggingModule")]
     public class BinaryLoggingModule : INonSharedRegionModule
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        
         protected bool m_collectStats;
         protected Scene m_scene = null;
-        
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private static Object m_statLockObject = new Object();
+
+        private static StatLogger m_statLog = null;
+
+        private static TimeSpan m_statLogPeriod = TimeSpan.FromSeconds(300);
+
+        private static string m_statsDir = String.Empty;
+
         public string Name { get { return "Binary Statistics Logging Module"; } }
+
         public Type ReplaceableInterface { get { return null; } }
 
-        public void Initialise(IConfigSource source) 
+        public void AddRegion(Scene scene)
+        {
+            m_scene = scene;
+        }
+
+        public void Close()
+        {
+        }
+
+        public void Initialise(IConfigSource source)
         {
             try
             {
@@ -81,38 +94,15 @@ namespace OpenSim.Region.CoreModules.Framework.Statistics.Logging
                 // if it doesn't work, we don't collect anything
             }
         }
-        
-        public void AddRegion(Scene scene)
-        {
-            m_scene = scene;
-        }
-        
-        public void RemoveRegion(Scene scene) 
-        {
-        }
-        
-        public void RegionLoaded(Scene scene) 
+        public void RegionLoaded(Scene scene)
         {
             if (m_collectStats)
                 m_scene.StatsReporter.OnSendStatsResult += LogSimStats;
         }
-        
-        public void Close() 
-        {
-        }
 
-        public class StatLogger
+        public void RemoveRegion(Scene scene)
         {
-            public DateTime StartTime;
-            public string Path;
-            public System.IO.BinaryWriter Log;
         }
-        
-        static StatLogger m_statLog = null;
-        static TimeSpan m_statLogPeriod = TimeSpan.FromSeconds(300);
-        static string m_statsDir = String.Empty;
-        static Object m_statLockObject = new Object();
-        
         private void LogSimStats(SimStats stats)
         {
             SimStatsPacket pack = new SimStatsPacket();
@@ -164,6 +154,13 @@ namespace OpenSim.Region.CoreModules.Framework.Statistics.Logging
                 }
             }
             return;
+        }
+
+        public class StatLogger
+        {
+            public System.IO.BinaryWriter Log;
+            public string Path;
+            public DateTime StartTime;
         }
     }
 }

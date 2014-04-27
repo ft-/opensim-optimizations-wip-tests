@@ -29,7 +29,7 @@ using OpenSim.Region.Framework.Scenes;
 
 namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
 {
-    class TotalFrameMonitor : IMonitor
+    internal class TotalFrameMonitor : IMonitor
     {
         private readonly Scene m_scene;
 
@@ -39,16 +39,6 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
         }
 
         #region Implementation of IMonitor
-
-        public string GetName()
-        {
-            return "TotalFrameMonitor";
-        }
-
-        public double GetValue()
-        {
-            return m_scene.MonitorFrameTime;
-        }
 
         public string GetFriendlyName()
         {
@@ -60,6 +50,15 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
             return (int)GetValue() + "ms";
         }
 
-        #endregion
+        public string GetName()
+        {
+            return "TotalFrameMonitor";
+        }
+
+        public double GetValue()
+        {
+            return m_scene.MonitorFrameTime;
+        }
+        #endregion Implementation of IMonitor
     }
 }

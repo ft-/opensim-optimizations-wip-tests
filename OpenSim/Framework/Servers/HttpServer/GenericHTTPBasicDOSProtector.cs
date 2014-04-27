@@ -31,54 +31,33 @@ namespace OpenSim.Framework.Servers.HttpServer
 {
     public class GenericHTTPDOSProtector
     {
-        private readonly GenericHTTPMethod _normalMethod;
-        private readonly GenericHTTPMethod _throttledMethod;
-      
-        private readonly BasicDosProtectorOptions _options;
         private readonly BasicDOSProtector _dosProtector;
-
+        private readonly GenericHTTPMethod _normalMethod;
+        private readonly BasicDosProtectorOptions _options;
+        private readonly GenericHTTPMethod _throttledMethod;
         public GenericHTTPDOSProtector(GenericHTTPMethod normalMethod, GenericHTTPMethod throttledMethod, BasicDosProtectorOptions options)
         {
             _normalMethod = normalMethod;
             _throttledMethod = throttledMethod;
-            
+
             _options = options;
             _dosProtector = new BasicDOSProtector(_options);
         }
+
         public Hashtable Process(Hashtable request)
         {
             Hashtable process = null;
-            string clientstring= GetClientString(request);
+            string clientstring = GetClientString(request);
             string endpoint = GetRemoteAddr(request);
             if (_dosProtector.Process(clientstring, endpoint))
-                process =  _normalMethod(request);
+                process = _normalMethod(request);
             else
                 process = _throttledMethod(request);
 
-            if (_options.MaxConcurrentSessions>0)
+            if (_options.MaxConcurrentSessions > 0)
                 _dosProtector.ProcessEnd(clientstring, endpoint);
 
             return process;
-        }
-        
-        private string GetRemoteAddr(Hashtable request)
-        {
-            string remoteaddr = "";
-            if (!request.ContainsKey("headers"))
-                return remoteaddr;
-            Hashtable requestinfo = (Hashtable)request["headers"];
-            if (!requestinfo.ContainsKey("remote_addr"))
-                return remoteaddr;
-            object remote_addrobj = requestinfo["remote_addr"];
-            if (remote_addrobj != null)
-            {
-                if (!string.IsNullOrEmpty(remote_addrobj.ToString()))
-                {
-                    remoteaddr = remote_addrobj.ToString();
-                }
-
-            }
-            return remoteaddr;
         }
 
         private string GetClientString(Hashtable request)
@@ -112,8 +91,25 @@ namespace OpenSim.Framework.Servers.HttpServer
             }
 
             return clientstring;
-
         }
 
+        private string GetRemoteAddr(Hashtable request)
+        {
+            string remoteaddr = "";
+            if (!request.ContainsKey("headers"))
+                return remoteaddr;
+            Hashtable requestinfo = (Hashtable)request["headers"];
+            if (!requestinfo.ContainsKey("remote_addr"))
+                return remoteaddr;
+            object remote_addrobj = requestinfo["remote_addr"];
+            if (remote_addrobj != null)
+            {
+                if (!string.IsNullOrEmpty(remote_addrobj.ToString()))
+                {
+                    remoteaddr = remote_addrobj.ToString();
+                }
+            }
+            return remoteaddr;
+        }
     }
 }

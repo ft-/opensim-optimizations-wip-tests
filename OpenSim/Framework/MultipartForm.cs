@@ -27,8 +27,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.IO;
+using System.Net;
 using System.Text;
 
 namespace OpenSim.Framework
@@ -44,10 +44,9 @@ namespace OpenSim.Framework
 
         public class File : Element
         {
-            public string Filename;
             public string ContentType;
             public byte[] Data;
-
+            public string Filename;
             public File(string name, string filename, string contentType, byte[] data)
             {
                 Name = name;

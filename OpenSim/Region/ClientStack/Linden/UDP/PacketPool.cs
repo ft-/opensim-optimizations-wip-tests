@@ -25,48 +25,35 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using OpenMetaverse;
+using OpenMetaverse.Packets;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using OpenMetaverse;
-using OpenMetaverse.Packets;
-using log4net;
-using OpenSim.Framework.Monitoring;
 
 namespace OpenSim.Region.ClientStack.LindenUDP
 {
     public sealed class PacketPool
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
         private static readonly PacketPool instance = new PacketPool();
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private static Dictionary<Type, Stack<Object>> DataBlocks = new Dictionary<Type, Stack<Object>>();
 
         /// <summary>
         /// Pool of packets available for reuse.
         /// </summary>
         private readonly Dictionary<PacketType, Stack<Packet>> pool = new Dictionary<PacketType, Stack<Packet>>();
-
-        private static Dictionary<Type, Stack<Object>> DataBlocks = new Dictionary<Type, Stack<Object>>();
+        private PacketPool()
+        {
+            // defaults
+            RecyclePackets = true;
+            RecycleDataBlocks = true;
+        }
 
         public static PacketPool Instance
         {
             get { return instance; }
-        }
-
-        public bool RecyclePackets { get; set; }
-
-        public bool RecycleDataBlocks { get; set; }
-
-        /// <summary>
-        /// The number of packets pooled
-        /// </summary>
-        public int PacketsPooled
-        {
-            get 
-            {
-                lock (pool)
-                    return pool.Count;
-            }
         }
 
         /// <summary>
@@ -74,10 +61,32 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         /// </summary>
         public int BlocksPooled
         {
-            get 
+            get
             {
-                lock (DataBlocks) 
+                lock (DataBlocks)
                     return DataBlocks.Count;
+            }
+        }
+
+        /// <summary>
+        /// Number of packet blocks requested.
+        /// </summary>
+        public long BlocksRequested { get; private set; }
+
+        /// <summary>
+        /// Number of packet blocks reused.
+        /// </summary>
+        public long BlocksReused { get; private set; }
+
+        /// <summary>
+        /// The number of packets pooled
+        /// </summary>
+        public int PacketsPooled
+        {
+            get
+            {
+                lock (pool)
+                    return pool.Count;
             }
         }
 
@@ -91,21 +100,32 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         /// </summary>
         public long PacketsReused { get; private set; }
 
-        /// <summary>
-        /// Number of packet blocks requested.
-        /// </summary>
-        public long BlocksRequested { get; private set; }
+        public bool RecycleDataBlocks { get; set; }
 
-        /// <summary>
-        /// Number of packet blocks reused.
-        /// </summary>
-        public long BlocksReused { get; private set; }
-
-        private PacketPool()
+        public bool RecyclePackets { get; set; }
+        public T GetDataBlock<T>() where T : new()
         {
-            // defaults
-            RecyclePackets = true;
-            RecycleDataBlocks = true;
+            lock (DataBlocks)
+            {
+                BlocksRequested++;
+
+                Stack<Object> s;
+
+                if (DataBlocks.TryGetValue(typeof(T), out s))
+                {
+                    if (s.Count > 0)
+                    {
+                        BlocksReused++;
+                        return (T)s.Pop();
+                    }
+                }
+                else
+                {
+                    DataBlocks[typeof(T)] = new Stack<Object>();
+                }
+
+                return new T();
+            }
         }
 
         /// <summary>
@@ -126,14 +146,14 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             {
                 if (!pool.ContainsKey(type) || pool[type] == null || (pool[type]).Count == 0)
                 {
-//                    m_log.DebugFormat("[PACKETPOOL]: Building {0} packet", type);
+                    //                    m_log.DebugFormat("[PACKETPOOL]: Building {0} packet", type);
 
                     // Creating a new packet if we cannot reuse an old package
                     packet = Packet.BuildPacket(type);
                 }
                 else
                 {
-//                    m_log.DebugFormat("[PACKETPOOL]: Pulling {0} packet", type);
+                    //                    m_log.DebugFormat("[PACKETPOOL]: Pulling {0} packet", type);
 
                     // Recycle old packages
                     PacketsReused++;
@@ -145,42 +165,11 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             return packet;
         }
 
-        private static PacketType GetType(byte[] bytes)
-        {
-            ushort id;
-            PacketFrequency freq;
-            bool isZeroCoded = (bytes[0] & Helpers.MSG_ZEROCODED) != 0;
-
-            if (bytes[6] == 0xFF)
-            {
-                if (bytes[7] == 0xFF)
-                {
-                    freq = PacketFrequency.Low;
-                    if (isZeroCoded && bytes[8] == 0)
-                        id = bytes[10];
-                    else
-                        id = (ushort)((bytes[8] << 8) + bytes[9]);
-                }
-                else
-                {
-                    freq = PacketFrequency.Medium;
-                    id = bytes[7];
-                }
-            }
-            else
-            {
-                freq = PacketFrequency.High;
-                id = bytes[6];
-            }
-
-            return Packet.GetType(id, freq);
-        }
-
         public Packet GetPacket(byte[] bytes, ref int packetEnd, byte[] zeroBuffer)
         {
             PacketType type = GetType(bytes);
 
-//            Array.Clear(zeroBuffer, 0, zeroBuffer.Length);
+            //            Array.Clear(zeroBuffer, 0, zeroBuffer.Length);
 
             int i = 0;
             Packet packet = GetPacket(type);
@@ -190,6 +179,21 @@ namespace OpenSim.Region.ClientStack.LindenUDP
                 packet.FromBytes(bytes, ref i, ref packetEnd, zeroBuffer);
 
             return packet;
+        }
+
+        public void ReturnDataBlock<T>(T block) where T : new()
+        {
+            if (block == null)
+                return;
+
+            lock (DataBlocks)
+            {
+                if (!DataBlocks.ContainsKey(typeof(T)))
+                    DataBlocks[typeof(T)] = new Stack<Object>();
+
+                if (DataBlocks[typeof(T)].Count < 50)
+                    DataBlocks[typeof(T)].Push(block);
+            }
         }
 
         /// <summary>
@@ -242,13 +246,13 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
                             if ((pool[type]).Count < 50)
                             {
-//                                m_log.DebugFormat("[PACKETPOOL]: Pushing {0} packet", type);
+                                //                                m_log.DebugFormat("[PACKETPOOL]: Pushing {0} packet", type);
 
                                 pool[type].Push(packet);
                             }
                         }
                         break;
-                    
+
                     // Other packets wont pool
                     default:
                         return;
@@ -256,44 +260,35 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             }
         }
 
-        public T GetDataBlock<T>() where T: new()
+        private static PacketType GetType(byte[] bytes)
         {
-            lock (DataBlocks)
+            ushort id;
+            PacketFrequency freq;
+            bool isZeroCoded = (bytes[0] & Helpers.MSG_ZEROCODED) != 0;
+
+            if (bytes[6] == 0xFF)
             {
-                BlocksRequested++;
-
-                Stack<Object> s;
-
-                if (DataBlocks.TryGetValue(typeof(T), out s))
+                if (bytes[7] == 0xFF)
                 {
-                    if (s.Count > 0)
-                    {
-                        BlocksReused++;
-                        return (T)s.Pop();
-                    }
+                    freq = PacketFrequency.Low;
+                    if (isZeroCoded && bytes[8] == 0)
+                        id = bytes[10];
+                    else
+                        id = (ushort)((bytes[8] << 8) + bytes[9]);
                 }
                 else
                 {
-                    DataBlocks[typeof(T)] = new Stack<Object>();
+                    freq = PacketFrequency.Medium;
+                    id = bytes[7];
                 }
-                
-                return new T();
             }
-        }
-
-        public void ReturnDataBlock<T>(T block) where T: new()
-        {
-            if (block == null)
-                return;
-
-            lock (DataBlocks)
+            else
             {
-                if (!DataBlocks.ContainsKey(typeof(T)))
-                    DataBlocks[typeof(T)] = new Stack<Object>();
-
-                if (DataBlocks[typeof(T)].Count < 50)
-                    DataBlocks[typeof(T)].Push(block);
+                freq = PacketFrequency.High;
+                id = bytes[6];
             }
+
+            return Packet.GetType(id, freq);
         }
     }
 }

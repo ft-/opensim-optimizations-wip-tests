@@ -25,22 +25,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using log4net;
-using OpenMetaverse;
 
 namespace OpenSim.Framework.Console
 {
     public class ConsoleUtil
     {
-    //    private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //    private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        public const int LocalIdNotFound = 0;
-    
         /// <summary>
         /// Used by modules to display stock co-ordinate help, though possibly this should be under some general section
         /// rather than in each help summary.
@@ -57,10 +53,10 @@ namespace OpenSim.Framework.Console
     show object pos ,20,20 to ,40,40
     delete object pos ,,30 to ,,~
     show object pos ,,-~ to ,,30";
-    
-        public const string MinRawConsoleVectorValue = "-~";
+
+        public const int LocalIdNotFound = 0;
         public const string MaxRawConsoleVectorValue = "~";
-    
+        public const string MinRawConsoleVectorValue = "-~";
         public const string VectorSeparator = ",";
         public static char[] VectorSeparatorChars = VectorSeparator.ToCharArray();
 
@@ -81,44 +77,20 @@ namespace OpenSim.Framework.Console
 
             return true;
         }
-    
+
         /// <summary>
-        /// Try to parse a console UUID from the console.
+        /// Convert a console integer to an int, automatically complaining if a console is given.
         /// </summary>
-        /// <remarks>
-        /// Will complain to the console if parsing fails.
-        /// </remarks>
+        /// <param name='console'>Can be null if no console is available.</param>
+        /// <param name='rawConsoleVector'>/param>
+        /// <param name='vector'></param>
         /// <returns></returns>
-        /// <param name='console'>If null then no complaint is printed.</param>
-        /// <param name='rawUuid'></param>
-        /// <param name='uuid'></param>
-        public static bool TryParseConsoleUuid(ICommandConsole console, string rawUuid, out UUID uuid)
+        public static bool TryParseConsoleBool(ICommandConsole console, string rawConsoleString, out bool b)
         {
-            if (!UUID.TryParse(rawUuid, out uuid))
+            if (!bool.TryParse(rawConsoleString, out b))
             {
                 if (console != null)
-                    console.OutputFormat("ERROR: {0} is not a valid uuid", rawUuid);
-
-                return false;
-            }
-    
-            return true;
-        }
-
-        public static bool TryParseConsoleLocalId(ICommandConsole console, string rawLocalId, out uint localId)
-        {
-            if (!uint.TryParse(rawLocalId, out localId))
-            {
-                if (console != null)
-                    console.OutputFormat("ERROR: {0} is not a valid local id", localId);
-
-                return false;
-            }
-
-            if (localId == 0)
-            {
-                if (console != null)
-                    console.OutputFormat("ERROR: {0} is not a valid local id - it must be greater than 0", localId);
+                    console.OutputFormat("ERROR: {0} is not a true or false value", rawConsoleString);
 
                 return false;
             }
@@ -159,26 +131,6 @@ namespace OpenSim.Framework.Console
         /// Convert a console integer to an int, automatically complaining if a console is given.
         /// </summary>
         /// <param name='console'>Can be null if no console is available.</param>
-        /// <param name='rawConsoleVector'>/param>
-        /// <param name='vector'></param>
-        /// <returns></returns>
-        public static bool TryParseConsoleBool(ICommandConsole console, string rawConsoleString, out bool b)
-        {
-            if (!bool.TryParse(rawConsoleString, out b))
-            {
-                if (console != null)
-                    console.OutputFormat("ERROR: {0} is not a true or false value", rawConsoleString);
-
-                return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// Convert a console integer to an int, automatically complaining if a console is given.
-        /// </summary>
-        /// <param name='console'>Can be null if no console is available.</param>
         /// <param name='rawConsoleInt'>/param>
         /// <param name='i'></param>
         /// <returns></returns>
@@ -193,6 +145,49 @@ namespace OpenSim.Framework.Console
             }
 
             return true;
+        }
+
+        public static bool TryParseConsoleLocalId(ICommandConsole console, string rawLocalId, out uint localId)
+        {
+            if (!uint.TryParse(rawLocalId, out localId))
+            {
+                if (console != null)
+                    console.OutputFormat("ERROR: {0} is not a valid local id", localId);
+
+                return false;
+            }
+
+            if (localId == 0)
+            {
+                if (console != null)
+                    console.OutputFormat("ERROR: {0} is not a valid local id - it must be greater than 0", localId);
+
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Convert a maximum vector input from the console to an OpenMetaverse.Vector3
+        /// </summary>
+        /// <param name='rawConsoleVector'>/param>
+        /// <param name='vector'></param>
+        /// <returns></returns>
+        public static bool TryParseConsoleMaxVector(string rawConsoleVector, out Vector3 vector)
+        {
+            return TryParseConsoleVector(rawConsoleVector, c => float.MaxValue.ToString(), out vector);
+        }
+
+        /// <summary>
+        /// Convert a minimum vector input from the console to an OpenMetaverse.Vector3
+        /// </summary>
+        /// <param name='rawConsoleVector'>/param>
+        /// <param name='vector'></param>
+        /// <returns></returns>
+        public static bool TryParseConsoleMinVector(string rawConsoleVector, out Vector3 vector)
+        {
+            return TryParseConsoleVector(rawConsoleVector, c => float.MinValue.ToString(), out vector);
         }
 
         /// <summary>
@@ -219,29 +214,29 @@ namespace OpenSim.Framework.Console
 
             return false;
         }
-    
+
         /// <summary>
-        /// Convert a minimum vector input from the console to an OpenMetaverse.Vector3
+        /// Try to parse a console UUID from the console.
         /// </summary>
-        /// <param name='rawConsoleVector'>/param>
-        /// <param name='vector'></param>
+        /// <remarks>
+        /// Will complain to the console if parsing fails.
+        /// </remarks>
         /// <returns></returns>
-        public static bool TryParseConsoleMinVector(string rawConsoleVector, out Vector3 vector)
+        /// <param name='console'>If null then no complaint is printed.</param>
+        /// <param name='rawUuid'></param>
+        /// <param name='uuid'></param>
+        public static bool TryParseConsoleUuid(ICommandConsole console, string rawUuid, out UUID uuid)
         {
-            return TryParseConsoleVector(rawConsoleVector, c => float.MinValue.ToString(), out vector);
+            if (!UUID.TryParse(rawUuid, out uuid))
+            {
+                if (console != null)
+                    console.OutputFormat("ERROR: {0} is not a valid uuid", rawUuid);
+
+                return false;
+            }
+
+            return true;
         }
-    
-        /// <summary>
-        /// Convert a maximum vector input from the console to an OpenMetaverse.Vector3
-        /// </summary>
-        /// <param name='rawConsoleVector'>/param>
-        /// <param name='vector'></param>
-        /// <returns></returns>
-        public static bool TryParseConsoleMaxVector(string rawConsoleVector, out Vector3 vector)
-        {
-            return TryParseConsoleVector(rawConsoleVector, c => float.MaxValue.ToString(), out vector);
-        }
-    
         /// <summary>
         /// Convert a vector input from the console to an OpenMetaverse.Vector3
         /// </summary>
@@ -259,16 +254,16 @@ namespace OpenSim.Framework.Console
             string rawConsoleVector, Func<string, string> blankComponentFunc, out Vector3 vector)
         {
             List<string> components = rawConsoleVector.Split(VectorSeparatorChars).ToList();
-    
+
             if (components.Count < 1 || components.Count > 3)
             {
                 vector = Vector3.Zero;
                 return false;
             }
-    
+
             for (int i = components.Count; i < 3; i++)
                 components.Add("");
-    
+
             List<string> semiDigestedComponents
                 = components.ConvertAll<string>(
                     c =>
@@ -282,11 +277,11 @@ namespace OpenSim.Framework.Console
                         else
                             return c;
                     });
-    
+
             string semiDigestedConsoleVector = string.Join(VectorSeparator, semiDigestedComponents.ToArray());
-    
-    //        m_log.DebugFormat("[CONSOLE UTIL]: Parsing {0} into OpenMetaverse.Vector3", semiDigestedConsoleVector);
-    
+
+            //        m_log.DebugFormat("[CONSOLE UTIL]: Parsing {0} into OpenMetaverse.Vector3", semiDigestedConsoleVector);
+
             return Vector3.TryParse(semiDigestedConsoleVector, out vector);
         }
     }

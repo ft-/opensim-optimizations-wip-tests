@@ -38,22 +38,38 @@ namespace OpenSim.Framework.Servers.HttpServer
     public interface IOSHttpRequest
     {
         string[] AcceptTypes { get; }
+
         Encoding ContentEncoding { get; }
+
         long ContentLength { get; }
+
         long ContentLength64 { get; }
+
         string ContentType { get; }
+
         HttpCookieCollection Cookies { get; }
+
         bool HasEntityBody { get; }
+
         NameValueCollection Headers { get; }
+
         string HttpMethod { get; }
+
         Stream InputStream { get; }
+
         bool IsSecured { get; }
+
         bool KeepAlive { get; }
-        NameValueCollection QueryString { get; }
+
         Hashtable Query { get; }
+
+        NameValueCollection QueryString { get; }
         string RawUrl { get; }
+
         IPEndPoint RemoteIPEndPoint { get; }
+
         Uri Url { get; }
+
         string UserAgent { get; }
     }
 }

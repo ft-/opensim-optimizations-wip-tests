@@ -25,9 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
 using OpenMetaverse;
 using OpenSim.Framework;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
@@ -38,7 +38,15 @@ namespace OpenSim.Region.Framework.Interfaces
         /// </summary>
         /// <returns></returns>
         List<ILandObject> AllParcels();
-             
+
+        /// <summary>
+        /// Clear the land channel of all parcels.
+        /// </summary>
+        /// <param name="setupDefaultParcel">
+        /// If true, set up a default parcel covering the whole region owned by the estate owner.
+        /// </param>
+        void Clear(bool setupDefaultParcel);
+
         /// <summary>
         /// Get the parcel at the specified point
         /// </summary>
@@ -63,35 +71,32 @@ namespace OpenSim.Region.Framework.Interfaces
         ILandObject GetLandObject(Vector3 position);
 
         /// <summary>
-        /// Get the parcels near the specified point
-        /// </summary>
-        /// <param name="position"></param>
-        /// <returns></returns>
-        List<ILandObject> ParcelsNearPoint(Vector3 position);
-
-        /// <summary>
         /// Get the parcel given the land's local id.
         /// </summary>
         /// <param name="localID"></param>
         /// <returns></returns>
         ILandObject GetLandObject(int localID);
-        
-        /// <summary>
-        /// Clear the land channel of all parcels.
-        /// </summary>
-        /// <param name="setupDefaultParcel">
-        /// If true, set up a default parcel covering the whole region owned by the estate owner.
-        /// </param>
-        void Clear(bool setupDefaultParcel);
-        
+
         bool IsForcefulBansAllowed();
-        void UpdateLandObject(int localID, LandData data);
-        void ReturnObjectsInParcel(int localID, uint returnType, UUID[] agentIDs, UUID[] taskIDs, IClientAPI remoteClient);
-        void setParcelObjectMaxOverride(overrideParcelMaxPrimCountDelegate overrideDel);
-        void setSimulatorObjectMaxOverride(overrideSimulatorMaxPrimCountDelegate overrideDel);
-        void SetParcelOtherCleanTime(IClientAPI remoteClient, int localID, int otherCleanTime);
 
         void Join(int start_x, int start_y, int end_x, int end_y, UUID attempting_user_id);
+
+        /// <summary>
+        /// Get the parcels near the specified point
+        /// </summary>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        List<ILandObject> ParcelsNearPoint(Vector3 position);
+        void ReturnObjectsInParcel(int localID, uint returnType, UUID[] agentIDs, UUID[] taskIDs, IClientAPI remoteClient);
+
+        void setParcelObjectMaxOverride(overrideParcelMaxPrimCountDelegate overrideDel);
+
+        void SetParcelOtherCleanTime(IClientAPI remoteClient, int localID, int otherCleanTime);
+
+        void setSimulatorObjectMaxOverride(overrideSimulatorMaxPrimCountDelegate overrideDel);
+
         void Subdivide(int start_x, int start_y, int end_x, int end_y, UUID attempting_user_id);
+
+        void UpdateLandObject(int localID, LandData data);
     }
 }

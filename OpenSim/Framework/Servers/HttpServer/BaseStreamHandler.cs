@@ -37,10 +37,13 @@ namespace OpenSim.Framework.Servers.HttpServer
     /// </remarks>
     public abstract class BaseStreamHandler : BaseRequestHandler, IStreamedRequestHandler
     {
-        protected BaseStreamHandler(string httpMethod, string path) : this(httpMethod, path, null, null) {}
+        protected BaseStreamHandler(string httpMethod, string path)
+            : this(httpMethod, path, null, null)
+        {
+        }
 
         protected BaseStreamHandler(string httpMethod, string path, string name, string description)
-            : base(httpMethod, path, name, description) {}
+            : base(httpMethod, path, name, description) { }
 
         public virtual byte[] Handle(
             string path, Stream request, IOSHttpRequest httpRequest, IOSHttpResponse httpResponse)

@@ -30,21 +30,27 @@ using OpenMetaverse;
 namespace OpenSim.Framework
 {
     public delegate void ObjectPaid(UUID objectID, UUID agentID, int amount);
+
     public interface IMoneyModule
     {
-        bool ObjectGiveMoney(UUID objectID, UUID fromID, UUID toID,
-                int amount);
+        event ObjectPaid OnObjectPaid;
 
-        int GetBalance(UUID agentID);
-        bool UploadCovered(UUID agentID, int amount);
-        bool AmountCovered(UUID agentID, int amount);
-        void ApplyCharge(UUID agentID, int amount, MoneyTransactionType type);
-        void ApplyCharge(UUID agentID, int amount, MoneyTransactionType type, string extraData);
-        void ApplyUploadCharge(UUID agentID, int amount, string text);
-
-        int UploadCharge { get; }
         int GroupCreationCharge { get; }
 
-        event ObjectPaid OnObjectPaid;
+        int UploadCharge { get; }
+
+        bool AmountCovered(UUID agentID, int amount);
+
+        void ApplyCharge(UUID agentID, int amount, MoneyTransactionType type);
+
+        void ApplyCharge(UUID agentID, int amount, MoneyTransactionType type, string extraData);
+
+        void ApplyUploadCharge(UUID agentID, int amount, string text);
+
+        int GetBalance(UUID agentID);
+
+        bool ObjectGiveMoney(UUID objectID, UUID fromID, UUID toID,
+                int amount);
+        bool UploadCovered(UUID agentID, int amount);
     }
 }

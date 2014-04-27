@@ -29,9 +29,19 @@ using System;
 
 namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
 {
-    class GCMemoryMonitor : IMonitor
+    internal class GCMemoryMonitor : IMonitor
     {
         #region Implementation of IMonitor
+
+        public string GetFriendlyName()
+        {
+            return "GC Reported Memory";
+        }
+
+        public string GetFriendlyValue()
+        {
+            return (int)(GetValue() / (1024 * 1024)) + "MB (Global)";
+        }
 
         public string GetName()
         {
@@ -42,17 +52,6 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
         {
             return GC.GetTotalMemory(false);
         }
-
-        public string GetFriendlyName()
-        {
-            return "GC Reported Memory";
-        }
-
-        public string GetFriendlyValue()
-        {
-            return (int)(GetValue() / (1024*1024)) + "MB (Global)";
-        }
-
-        #endregion
+        #endregion Implementation of IMonitor
     }
 }

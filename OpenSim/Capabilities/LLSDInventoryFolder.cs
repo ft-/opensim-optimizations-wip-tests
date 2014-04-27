@@ -33,9 +33,9 @@ namespace OpenSim.Framework.Capabilities
     public class LLSDInventoryFolder
     {
         public UUID folder_id;
-        public UUID parent_id;
         public string name;
-        public int type;
+        public UUID parent_id;
         public int preferred_type;
+        public int type;
     }
 }

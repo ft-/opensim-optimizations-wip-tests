@@ -33,18 +33,25 @@ namespace OpenSim.Framework
     {
         /// <summary>Unthrottled packets</summary>
         Unknown = -1,
+
         /// <summary>Packets that are being resent</summary>
         Resend = 0,
+
         /// <summary>Terrain data</summary>
         Land = 1,
+
         /// <summary>Wind data</summary>
         Wind = 2,
+
         /// <summary>Cloud data</summary>
         Cloud = 3,
+
         /// <summary>Any packets that do not fit into the other throttles</summary>
         Task = 4,
+
         /// <summary>Texture assets</summary>
         Texture = 5,
+
         /// <summary>Non-texture assets</summary>
         Asset = 6,
     }

@@ -36,57 +36,13 @@ namespace OpenSim.Framework
         private readonly Queue<T> m_queue = new Queue<T>();
         private readonly object m_queueSync = new object();
 
-        public void PriorityEnqueue(T value)
+        public void Clear()
         {
             lock (m_queueSync)
             {
-                m_pqueue.Enqueue(value);
+                m_pqueue.Clear();
+                m_queue.Clear();
                 Monitor.Pulse(m_queueSync);
-            }
-        }
-
-        public void Enqueue(T value)
-        {
-            lock (m_queueSync)
-            {
-                m_queue.Enqueue(value);
-                Monitor.Pulse(m_queueSync);
-            }
-        }
-
-        public T Dequeue()
-        {
-            lock (m_queueSync)
-            {
-                while (m_queue.Count < 1 && m_pqueue.Count < 1)
-                {
-                    Monitor.Wait(m_queueSync);
-                }
-
-                if (m_pqueue.Count > 0)
-                    return m_pqueue.Dequeue();
-                
-                if (m_queue.Count > 0)
-                    return m_queue.Dequeue();
-                return default(T);
-            }
-        }
-
-        public T Dequeue(int msTimeout)
-        {
-            lock (m_queueSync)
-            {
-                bool success = true;
-                while (m_queue.Count < 1 && m_pqueue.Count < 1 && success)
-                {
-                    success = Monitor.Wait(m_queueSync, msTimeout);
-                }
-
-                if (m_pqueue.Count > 0)
-                    return m_pqueue.Dequeue();
-                if (m_queue.Count > 0)
-                    return m_queue.Dequeue();
-                return default(T);
             }
         }
 
@@ -118,6 +74,51 @@ namespace OpenSim.Framework
                 return m_queue.Count + m_pqueue.Count;
         }
 
+        public T Dequeue()
+        {
+            lock (m_queueSync)
+            {
+                while (m_queue.Count < 1 && m_pqueue.Count < 1)
+                {
+                    Monitor.Wait(m_queueSync);
+                }
+
+                if (m_pqueue.Count > 0)
+                    return m_pqueue.Dequeue();
+
+                if (m_queue.Count > 0)
+                    return m_queue.Dequeue();
+                return default(T);
+            }
+        }
+
+        public T Dequeue(int msTimeout)
+        {
+            lock (m_queueSync)
+            {
+                bool success = true;
+                while (m_queue.Count < 1 && m_pqueue.Count < 1 && success)
+                {
+                    success = Monitor.Wait(m_queueSync, msTimeout);
+                }
+
+                if (m_pqueue.Count > 0)
+                    return m_pqueue.Dequeue();
+                if (m_queue.Count > 0)
+                    return m_queue.Dequeue();
+                return default(T);
+            }
+        }
+
+        public void Enqueue(T value)
+        {
+            lock (m_queueSync)
+            {
+                m_queue.Enqueue(value);
+                Monitor.Pulse(m_queueSync);
+            }
+        }
+
         /// <summary>
         /// Return the array of items on this queue.
         /// </summary>
@@ -135,12 +136,11 @@ namespace OpenSim.Framework
             }
         }
 
-        public void Clear()
+        public void PriorityEnqueue(T value)
         {
             lock (m_queueSync)
             {
-                m_pqueue.Clear();
-                m_queue.Clear();
+                m_pqueue.Enqueue(value);
                 Monitor.Pulse(m_queueSync);
             }
         }

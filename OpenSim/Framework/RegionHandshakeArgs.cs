@@ -25,27 +25,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
+using System;
 
 namespace OpenSim.Framework
 {
     public class RegionHandshakeArgs : EventArgs
     {
-        public bool isEstateManager;
         public float billableFactor;
-        public float terrainHeightRange0;
-        public float terrainHeightRange1;
-        public float terrainHeightRange2;
-        public float terrainHeightRange3;
-        public float terrainStartHeight0;
-        public float terrainStartHeight1;
-        public float terrainStartHeight2;
-        public float terrainStartHeight3;
-        public byte simAccess;
-        public float waterHeight;
+        public bool isEstateManager;
         public uint regionFlags;
         public string regionName;
+        public byte simAccess;
         public UUID SimOwner;
         public UUID terrainBase0;
         public UUID terrainBase1;
@@ -55,5 +46,14 @@ namespace OpenSim.Framework
         public UUID terrainDetail1;
         public UUID terrainDetail2;
         public UUID terrainDetail3;
+        public float terrainHeightRange0;
+        public float terrainHeightRange1;
+        public float terrainHeightRange2;
+        public float terrainHeightRange3;
+        public float terrainStartHeight0;
+        public float terrainStartHeight1;
+        public float terrainStartHeight2;
+        public float terrainStartHeight3;
+        public float waterHeight;
     }
 }

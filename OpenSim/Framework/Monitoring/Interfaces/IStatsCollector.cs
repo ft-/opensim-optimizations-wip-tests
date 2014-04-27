@@ -35,11 +35,18 @@ namespace OpenSim.Framework.Monitoring
     public interface IStatsCollector
     {
         /// <summary>
+        /// Report back collected statistical information as an OSDMap of key/values
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        OSDMap OReport(string uptime, string version);
+
+        /// <summary>
         /// Report back collected statistical information.
         /// </summary>
         /// <returns></returns>
         string Report();
-         
+
         /// <summary>
         /// Report back collected statistical information in json
         /// </summary>
@@ -47,12 +54,5 @@ namespace OpenSim.Framework.Monitoring
         /// A <see cref="System.String"/>
         /// </returns>
         string XReport(string uptime, string version);
-
-        /// <summary>
-        /// Report back collected statistical information as an OSDMap of key/values
-        /// </summary>
-        /// <returns>
-        /// </returns>
-        OSDMap OReport(string uptime, string version);
     }
 }

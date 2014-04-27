@@ -24,13 +24,8 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-using System;
-using System.Reflection;
-using System.Collections.Generic;
-using OpenSim.Framework;
-using OpenSim.Services.Interfaces;
+
 using OpenMetaverse;
-using log4net;
 using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
@@ -39,46 +34,15 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
     {
         private const double CACHE_EXPIRATION_SECONDS = 300.0; // 5 minutes
 
-//        private static readonly ILog m_log =
-//                LogManager.GetLogger(
-//                MethodBase.GetCurrentMethod().DeclaringType);
-        
-        internal struct ScopedRegionUUID
-        {
-            public UUID m_scopeID;
-            public UUID m_regionID;
-            public ScopedRegionUUID(UUID scopeID, UUID regionID)
-            {
-                m_scopeID = scopeID;
-                m_regionID = regionID;
-            }
-        }
-            
-        internal struct ScopedRegionName
-        {
-            public UUID m_scopeID;
-            public string m_name;
-            public ScopedRegionName(UUID scopeID, string name)
-            {
-                m_scopeID = scopeID;
-                m_name = name;
-            }
-        }
+        //        private static readonly ILog m_log =
+        //                LogManager.GetLogger(
+        //                MethodBase.GetCurrentMethod().DeclaringType);
 
-        internal struct ScopedRegionPosition
-        {
-            public UUID m_scopeID;
-            public ulong m_regionHandle;
-            public ScopedRegionPosition(UUID scopeID, ulong handle)
-            {
-                m_scopeID = scopeID;
-                m_regionHandle = handle;
-            }
-        }
+        private ExpiringCache<ScopedRegionName, ScopedRegionUUID> m_NameCache;
+
+        private ExpiringCache<ScopedRegionPosition, GridRegion> m_PositionCache;
 
         private ExpiringCache<ScopedRegionUUID, GridRegion> m_UUIDCache;
-        private ExpiringCache<ScopedRegionName, ScopedRegionUUID> m_NameCache;
-        private ExpiringCache<ScopedRegionPosition, GridRegion> m_PositionCache;
 
         public RegionInfoCache()
         {
@@ -90,9 +54,9 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
         public void Cache(GridRegion rinfo)
         {
             if (rinfo != null)
-                this.Cache(rinfo.ScopeID,rinfo.RegionID,rinfo);
+                this.Cache(rinfo.ScopeID, rinfo.RegionID, rinfo);
         }
-        
+
         public void Cache(UUID scopeID, UUID regionID, GridRegion rinfo)
         {
             // for now, do not cache negative results; this is because
@@ -100,14 +64,14 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
             // in a timely way
             if (rinfo == null)
                 return;
-            
-            ScopedRegionUUID id = new ScopedRegionUUID(scopeID,regionID);
-            
+
+            ScopedRegionUUID id = new ScopedRegionUUID(scopeID, regionID);
+
             // Cache even null accounts
             m_UUIDCache.AddOrUpdate(id, rinfo, CACHE_EXPIRATION_SECONDS);
             if (rinfo != null)
             {
-                ScopedRegionName name = new ScopedRegionName(scopeID,rinfo.RegionName);
+                ScopedRegionName name = new ScopedRegionName(scopeID, rinfo.RegionName);
                 m_NameCache.AddOrUpdate(name, id, CACHE_EXPIRATION_SECONDS);
 
                 ScopedRegionPosition pos = new ScopedRegionPosition(scopeID, rinfo.RegionHandle);
@@ -120,7 +84,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
             inCache = false;
 
             GridRegion rinfo = null;
-            ScopedRegionUUID id = new ScopedRegionUUID(scopeID,regionID);
+            ScopedRegionUUID id = new ScopedRegionUUID(scopeID, regionID);
             if (m_UUIDCache.TryGetValue(id, out rinfo))
             {
                 inCache = true;
@@ -145,12 +109,11 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
             return null;
         }
 
-
         public GridRegion Get(UUID scopeID, string name, out bool inCache)
         {
             inCache = false;
 
-            ScopedRegionName sname = new ScopedRegionName(scopeID,name);
+            ScopedRegionName sname = new ScopedRegionName(scopeID, name);
 
             ScopedRegionUUID id;
             if (m_NameCache.TryGetValue(sname, out id))
@@ -162,8 +125,41 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
                     return rinfo;
                 }
             }
-            
+
             return null;
+        }
+
+        internal struct ScopedRegionName
+        {
+            public string m_name;
+            public UUID m_scopeID;
+            public ScopedRegionName(UUID scopeID, string name)
+            {
+                m_scopeID = scopeID;
+                m_name = name;
+            }
+        }
+
+        internal struct ScopedRegionPosition
+        {
+            public ulong m_regionHandle;
+            public UUID m_scopeID;
+            public ScopedRegionPosition(UUID scopeID, ulong handle)
+            {
+                m_scopeID = scopeID;
+                m_regionHandle = handle;
+            }
+        }
+
+        internal struct ScopedRegionUUID
+        {
+            public UUID m_regionID;
+            public UUID m_scopeID;
+            public ScopedRegionUUID(UUID scopeID, UUID regionID)
+            {
+                m_scopeID = scopeID;
+                m_regionID = regionID;
+            }
         }
     }
 }

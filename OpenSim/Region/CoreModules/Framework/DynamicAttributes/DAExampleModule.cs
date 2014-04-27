@@ -25,40 +25,32 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
 using OpenMetaverse;
-using OpenMetaverse.Packets;
 using OpenMetaverse.StructuredData;
-using OpenSim.Framework;
-using OpenSim.Region.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.Framework.DynamicAttributes.DAExampleModule
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "DAExampleModule")]
     public class DAExampleModule : INonSharedRegionModule
     {
+        public const string Namespace = "Example";
+        public const string StoreName = "DA";
+        protected IDialogModule m_dialogMod;
+        protected Scene m_scene;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private readonly bool ENABLED = false;   // enable for testing
+        public string Name { get { return "DAExample Module"; } }
 
-        public const string Namespace = "Example";
-        public const string StoreName = "DA";
+        public Type ReplaceableInterface { get { return null; } }
 
-        protected Scene m_scene;
-        protected IDialogModule m_dialogMod;
-        
-        public string Name { get { return "DAExample Module"; } }        
-        public Type ReplaceableInterface { get { return null; } }        
-
-        public void Initialise(IConfigSource source) {}
-        
         public void AddRegion(Scene scene)
         {
             if (ENABLED)
@@ -70,22 +62,26 @@ namespace OpenSim.Region.CoreModules.Framework.DynamicAttributes.DAExampleModule
                 m_log.DebugFormat("[DA EXAMPLE MODULE]: Added region {0}", m_scene.Name);
             }
         }
-        
-        public void RemoveRegion(Scene scene) 
+
+        public void Close()
+        {
+            RemoveRegion(m_scene);
+        }
+
+        public void Initialise(IConfigSource source)
+        {
+        }
+        public void RegionLoaded(Scene scene)
+        {
+        }
+
+        public void RemoveRegion(Scene scene)
         {
             if (ENABLED)
             {
                 m_scene.EventManager.OnSceneGroupMove -= OnSceneGroupMove;
             }
         }
-        
-        public void RegionLoaded(Scene scene) {}
-        
-        public void Close() 
-        {
-            RemoveRegion(m_scene);
-        }
-        
         protected bool OnSceneGroupMove(UUID groupId, Vector3 delta)
         {
             OSDMap attrs = null;
@@ -96,28 +92,28 @@ namespace OpenSim.Region.CoreModules.Framework.DynamicAttributes.DAExampleModule
 
             if (!sop.DynAttrs.TryGetStore(Namespace, StoreName, out attrs))
                 attrs = new OSDMap();
-            
+
             OSDInteger newValue;
 
             // We have to lock on the entire dynamic attributes map to avoid race conditions with serialization code.
-            lock (sop.DynAttrs)            
+            lock (sop.DynAttrs)
             {
                 if (!attrs.ContainsKey("moves"))
                     newValue = new OSDInteger(1);
                 else
                     newValue = new OSDInteger(attrs["moves"].AsInteger() + 1);
-                        
+
                 attrs["moves"] = newValue;
 
                 sop.DynAttrs.SetStore(Namespace, StoreName, attrs);
             }
 
             sop.ParentGroup.HasGroupChanged = true;
-    
+
             string msg = string.Format("{0} {1} moved {2} times", sop.Name, sop.UUID, newValue);
             m_log.DebugFormat("[DA EXAMPLE MODULE]: {0}", msg);
             m_dialogMod.SendGeneralAlert(msg);
-            
+
             return true;
         }
     }

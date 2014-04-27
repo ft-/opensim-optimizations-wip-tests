@@ -25,20 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
-using System.Collections.Generic;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
-using OpenSim.Framework;
 using OpenSim.Framework.Servers;
-using OpenSim.Region.Framework.Scenes;
 using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Server.Base;
-using OpenSim.Server.Handlers.Base;
+using OpenSim.Region.Framework.Scenes;
 using OpenSim.Server.Handlers.MapImage;
-using OpenSim.Services.Interfaces;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.MapImage
 {
@@ -47,10 +42,30 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.MapImage
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private static bool m_Enabled = false;
-        
+
         private IConfigSource m_Config;
 
         #region Region Module interface
+
+        public string Name
+        {
+            get { return "MapImageServiceIn"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
+        public void AddRegion(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+        }
+
+        public void Close()
+        {
+        }
 
         public void Initialise(IConfigSource config)
         {
@@ -70,22 +85,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.MapImage
         public void PostInitialise()
         {
         }
-
-        public void Close()
-        {
-        }
-
-        public Type ReplaceableInterface 
-        {
-            get { return null; }
-        }
-
-        public string Name
-        {
-            get { return "MapImageServiceIn"; }
-        }
-
-        public void AddRegion(Scene scene)
+        public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
                 return;
@@ -96,13 +96,6 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.MapImage
             if (!m_Enabled)
                 return;
         }
-
-        public void RegionLoaded(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-        }
-
-        #endregion
+        #endregion Region Module interface
     }
 }

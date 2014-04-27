@@ -25,10 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenSim.Framework.Servers.HttpServer;
 using System.Collections;
 using System.Collections.Generic;
-using OpenSim.Framework.Servers;
-using OpenSim.Framework.Servers.HttpServer;
 
 namespace OpenSim.Framework.Capabilities
 {
@@ -54,7 +53,7 @@ namespace OpenSim.Framework.Capabilities
         /// <param name="httpListenerHostname">host name of the HTTP server</param>
         /// <param name="httpListenerPort">HTTP port</param>
         public CapsHandlers(BaseHttpServer httpListener, string httpListenerHostname, uint httpListenerPort)
-            : this(httpListener,httpListenerHostname,httpListenerPort, false)
+            : this(httpListener, httpListenerHostname, httpListenerPort, false)
         {
         }
 
@@ -81,24 +80,20 @@ namespace OpenSim.Framework.Capabilities
         }
 
         /// <summary>
-        /// Remove the cap handler for a capability.
+        /// Return the list of cap names for which this CapsHandlers
+        /// object contains cap handlers.
         /// </summary>
-        /// <param name="capsName">name of the capability of the cap
-        /// handler to be removed</param>
-        public void Remove(string capsName)
+        public string[] Caps
         {
-            lock (m_capsHandlers)
+            get
             {
-                m_httpListener.RemoveStreamHandler("POST", m_capsHandlers[capsName].Path);
-                m_httpListener.RemoveStreamHandler("GET", m_capsHandlers[capsName].Path);
-                m_capsHandlers.Remove(capsName);
+                lock (m_capsHandlers)
+                {
+                    string[] __keys = new string[m_capsHandlers.Keys.Count];
+                    m_capsHandlers.Keys.CopyTo(__keys, 0);
+                    return __keys;
+                }
             }
-        }
-
-        public bool ContainsCap(string cap)
-        {
-            lock (m_capsHandlers)
-                return m_capsHandlers.ContainsKey(cap);
         }
 
         /// <summary>
@@ -127,30 +122,19 @@ namespace OpenSim.Framework.Capabilities
                         m_httpListener.RemoveStreamHandler("POST", m_capsHandlers[idx].Path);
                         m_capsHandlers.Remove(idx);
                     }
-    
+
                     if (null == value) return;
-    
+
                     m_capsHandlers[idx] = value;
                     m_httpListener.AddStreamHandler(value);
                 }
             }
         }
 
-        /// <summary>
-        /// Return the list of cap names for which this CapsHandlers
-        /// object contains cap handlers.
-        /// </summary>
-        public string[] Caps
+        public bool ContainsCap(string cap)
         {
-            get
-            {
-                lock (m_capsHandlers)
-                {
-                    string[] __keys = new string[m_capsHandlers.Keys.Count];
-                    m_capsHandlers.Keys.CopyTo(__keys, 0);
-                    return __keys;
-                }
-            }
+            lock (m_capsHandlers)
+                return m_capsHandlers.ContainsKey(cap);
         }
 
         /// <summary>
@@ -162,7 +146,7 @@ namespace OpenSim.Framework.Capabilities
         {
             Hashtable caps = new Hashtable();
             string protocol = "http://";
-            
+
             if (m_useSSL)
                 protocol = "https://";
 
@@ -195,6 +179,21 @@ namespace OpenSim.Framework.Capabilities
         {
             lock (m_capsHandlers)
                 return new Dictionary<string, IRequestHandler>(m_capsHandlers);
+        }
+
+        /// <summary>
+        /// Remove the cap handler for a capability.
+        /// </summary>
+        /// <param name="capsName">name of the capability of the cap
+        /// handler to be removed</param>
+        public void Remove(string capsName)
+        {
+            lock (m_capsHandlers)
+            {
+                m_httpListener.RemoveStreamHandler("POST", m_capsHandlers[capsName].Path);
+                m_httpListener.RemoveStreamHandler("GET", m_capsHandlers[capsName].Path);
+                m_capsHandlers.Remove(capsName);
+            }
         }
     }
 }

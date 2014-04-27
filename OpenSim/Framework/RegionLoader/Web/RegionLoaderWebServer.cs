@@ -25,13 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Nini.Config;
 using System;
 using System.IO;
 using System.Net;
 using System.Reflection;
 using System.Xml;
-using log4net;
-using Nini.Config;
 
 namespace OpenSim.Framework.RegionLoader.Web
 {
@@ -40,11 +40,6 @@ namespace OpenSim.Framework.RegionLoader.Web
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private IConfigSource m_configSource;
-
-        public void SetIniConfigSource(IConfigSource configSource)
-        {
-            m_configSource = configSource;
-        }
 
         public RegionInfo[] LoadRegions()
         {
@@ -55,7 +50,7 @@ namespace OpenSim.Framework.RegionLoader.Web
             }
             else
             {
-                IConfig startupConfig = (IConfig) m_configSource.Configs["Startup"];
+                IConfig startupConfig = (IConfig)m_configSource.Configs["Startup"];
                 string url = startupConfig.GetString("regionload_webserver_url", String.Empty).Trim();
                 bool allowRegionless = startupConfig.GetBoolean("allow_regionless", false);
 
@@ -66,9 +61,9 @@ namespace OpenSim.Framework.RegionLoader.Web
                 }
                 else
                 {
-                    RegionInfo[] regionInfos = new RegionInfo[] {};
+                    RegionInfo[] regionInfos = new RegionInfo[] { };
                     int regionCount = 0;
-                    HttpWebRequest webRequest = (HttpWebRequest) WebRequest.Create(url);
+                    HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url);
                     webRequest.Timeout = 30000; //30 Second Timeout
                     m_log.DebugFormat("[WEBLOADER]: Sending download request to {0}", url);
 
@@ -76,7 +71,7 @@ namespace OpenSim.Framework.RegionLoader.Web
                     {
                         string xmlSource = String.Empty;
 
-                        using (HttpWebResponse webResponse = (HttpWebResponse) webRequest.GetResponse())
+                        using (HttpWebResponse webResponse = (HttpWebResponse)webRequest.GetResponse())
                         {
                             m_log.Debug("[WEBLOADER]: Downloading region information...");
 
@@ -101,7 +96,7 @@ namespace OpenSim.Framework.RegionLoader.Web
                         if (xmlDoc.FirstChild.Name == "Nini")
                         {
                             regionCount = xmlDoc.FirstChild.ChildNodes.Count;
-    
+
                             if (regionCount > 0)
                             {
                                 regionInfos = new RegionInfo[regionCount];
@@ -110,7 +105,7 @@ namespace OpenSim.Framework.RegionLoader.Web
                                 {
                                     m_log.Debug(xmlDoc.FirstChild.ChildNodes[i].OuterXml);
                                     regionInfos[i] =
-                                        new RegionInfo("REGION CONFIG #" + (i + 1), xmlDoc.FirstChild.ChildNodes[i],false,m_configSource);
+                                        new RegionInfo("REGION CONFIG #" + (i + 1), xmlDoc.FirstChild.ChildNodes[i], false, m_configSource);
                                 }
                             }
                         }
@@ -142,6 +137,11 @@ namespace OpenSim.Framework.RegionLoader.Web
                     }
                 }
             }
+        }
+
+        public void SetIniConfigSource(IConfigSource configSource)
+        {
+            m_configSource = configSource;
         }
     }
 }

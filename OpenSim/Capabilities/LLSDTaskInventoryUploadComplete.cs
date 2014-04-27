@@ -38,13 +38,13 @@ namespace OpenSim.Framework.Capabilities
         public UUID item_id;
 
         /// <summary>
-        /// The task that was updated
-        /// </summary>
-        public UUID task_id;
-
-        /// <summary>
         /// State of the upload.  So far have only even seen this set to "complete"
         /// </summary>
         public string state;
+
+        /// <summary>
+        /// The task that was updated
+        /// </summary>
+        public UUID task_id;
     }
 }

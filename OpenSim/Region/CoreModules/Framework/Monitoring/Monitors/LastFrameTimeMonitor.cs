@@ -25,12 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenSim.Region.Framework.Scenes;
+using System;
 
 namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
 {
-    class LastFrameTimeMonitor : IMonitor
+    internal class LastFrameTimeMonitor : IMonitor
     {
         private readonly Scene m_scene;
 
@@ -40,16 +40,6 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
         }
 
         #region Implementation of IMonitor
-
-        public string GetName()
-        {
-            return "LastFrameTimeMonitor";
-        }
-
-        public double GetValue()
-        {
-            return Environment.TickCount - m_scene.MonitorLastFrameTick;
-        }
 
         public string GetFriendlyName()
         {
@@ -61,6 +51,15 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
             return (int)GetValue() + "ms ago";
         }
 
-        #endregion
+        public string GetName()
+        {
+            return "LastFrameTimeMonitor";
+        }
+
+        public double GetValue()
+        {
+            return Environment.TickCount - m_scene.MonitorLastFrameTick;
+        }
+        #endregion Implementation of IMonitor
     }
 }

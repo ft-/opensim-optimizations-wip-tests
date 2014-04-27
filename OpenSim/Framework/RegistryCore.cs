@@ -27,13 +27,17 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace OpenSim.Framework
 {
     public class RegistryCore : IRegistryCore
     {
         protected Dictionary<Type, object> m_moduleInterfaces = new Dictionary<Type, object>();
+
+        public T Get<T>()
+        {
+            return (T)m_moduleInterfaces[typeof(T)];
+        }
 
         /// <summary>
         /// Register an Module interface.
@@ -51,6 +55,15 @@ namespace OpenSim.Framework
             }
         }
 
+        public T[] RequestModuleInterfaces<T>()
+        {
+            return new T[] { default(T) };
+        }
+
+        public void StackModuleInterface<M>(M mod)
+        {
+        }
+
         public bool TryGet<T>(out T iface)
         {
             if (m_moduleInterfaces.ContainsKey(typeof(T)))
@@ -60,20 +73,6 @@ namespace OpenSim.Framework
             }
             iface = default(T);
             return false;
-        }
-
-        public T Get<T>()
-        {
-            return (T)m_moduleInterfaces[typeof(T)];
-        }
-
-        public void StackModuleInterface<M>(M mod)
-        {
-        }
-
-        public T[] RequestModuleInterfaces<T>()
-        {
-            return new T[] { default(T) };
         }
     }
 }

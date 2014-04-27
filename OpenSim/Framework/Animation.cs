@@ -25,9 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
+using System;
 
 namespace OpenSim.Framework
 {
@@ -39,32 +39,9 @@ namespace OpenSim.Framework
     {
         private UUID animID;
 
-        /// <summary>
-        /// ID of Animation
-        /// </summary>
-        public UUID AnimID
-        {
-            get { return animID; }
-            set { animID = value; }
-        }
-
-        private int sequenceNum;
-        public int SequenceNum
-        {
-            get { return sequenceNum; }
-            set { sequenceNum = value; }
-        }
-
         private UUID objectID;
 
-        /// <summary>
-        /// Unique ID of object that is being animated
-        /// </summary>
-        public UUID ObjectID
-        {
-            get { return objectID; }
-            set { objectID = value; }
-        }
+        private int sequenceNum;
 
         public Animation()
         {
@@ -92,6 +69,44 @@ namespace OpenSim.Framework
             UnpackUpdateMessage(args);
         }
 
+        /// <summary>
+        /// ID of Animation
+        /// </summary>
+        public UUID AnimID
+        {
+            get { return animID; }
+            set { animID = value; }
+        }
+        /// <summary>
+        /// Unique ID of object that is being animated
+        /// </summary>
+        public UUID ObjectID
+        {
+            get { return objectID; }
+            set { objectID = value; }
+        }
+
+        public int SequenceNum
+        {
+            get { return sequenceNum; }
+            set { sequenceNum = value; }
+        }
+        public override bool Equals(object obj)
+        {
+            Animation other = obj as Animation;
+            if (other != null)
+            {
+                return (other.AnimID.Equals(this.AnimID)
+                        && other.SequenceNum == this.SequenceNum
+                        && other.ObjectID.Equals(this.ObjectID));
+            }
+            return base.Equals(obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
 
         /// <summary>
         /// Pack this object up as an OSDMap for transferring via LLSD XML or LLSD json
@@ -104,6 +119,13 @@ namespace OpenSim.Framework
             anim["object_id"] = OSD.FromUUID(objectID);
             anim["seq_num"] = OSD.FromInteger(sequenceNum);
             return anim;
+        }
+
+        public override string ToString()
+        {
+            return "AnimID=" + AnimID.ToString()
+                + "/seq=" + SequenceNum.ToString()
+                + "/objID=" + ObjectID.ToString();
         }
 
         /// <summary>
@@ -119,30 +141,5 @@ namespace OpenSim.Framework
             if (args["seq_num"] != null)
                 sequenceNum = args["seq_num"].AsInteger();
         }
-
-        public override bool Equals(object obj)
-        {
-            Animation other = obj as Animation;
-            if (other != null)
-            {
-                return (other.AnimID.Equals(this.AnimID)
-                        && other.SequenceNum == this.SequenceNum
-                        && other.ObjectID.Equals(this.ObjectID) );
-            }
-            return base.Equals(obj);
-        }
-
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
-
-        public override string ToString()
-        {
-            return "AnimID=" + AnimID.ToString()
-                + "/seq=" + SequenceNum.ToString()
-                + "/objID=" + ObjectID.ToString();
-        }
-
     }
 }

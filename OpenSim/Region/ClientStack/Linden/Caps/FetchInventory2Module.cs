@@ -25,20 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Reflection;
-using log4net;
-using Nini.Config;
 using Mono.Addins;
+using Nini.Config;
 using OpenMetaverse;
-using OpenSim.Framework;
+using OpenSim.Capabilities.Handlers;
 using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
+using System;
 using Caps = OpenSim.Framework.Capabilities.Caps;
-using OpenSim.Capabilities.Handlers;
 
 namespace OpenSim.Region.ClientStack.Linden
 {
@@ -48,19 +44,37 @@ namespace OpenSim.Region.ClientStack.Linden
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "FetchInventory2Module")]
     public class FetchInventory2Module : INonSharedRegionModule
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        public bool Enabled { get; private set; }
-
-        private Scene m_scene;
-
-        private IInventoryService m_inventoryService;
-
-        private string m_fetchInventory2Url;
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private FetchInventory2Handler m_fetchHandler;
 
+        private string m_fetchInventory2Url;
+
+        private IInventoryService m_inventoryService;
+
+        private Scene m_scene;
+
+        public bool Enabled { get; private set; }
         #region ISharedRegionModule Members
+
+        public string Name { get { return "FetchInventory2Module"; } }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
+        public void AddRegion(Scene s)
+        {
+            if (!Enabled)
+                return;
+
+            m_scene = s;
+        }
+
+        public void Close()
+        {
+        }
 
         public void Initialise(IConfigSource source)
         {
@@ -73,22 +87,8 @@ namespace OpenSim.Region.ClientStack.Linden
             if (m_fetchInventory2Url != string.Empty)
                 Enabled = true;
         }
-
-        public void AddRegion(Scene s)
+        public void PostInitialise()
         {
-            if (!Enabled)
-                return;
-
-            m_scene = s;
-        }
-
-        public void RemoveRegion(Scene s)
-        {
-            if (!Enabled)
-                return;
-
-            m_scene.EventManager.OnRegisterCaps -= RegisterCaps;
-            m_scene = null;
         }
 
         public void RegionLoaded(Scene s)
@@ -105,18 +105,15 @@ namespace OpenSim.Region.ClientStack.Linden
             m_scene.EventManager.OnRegisterCaps += RegisterCaps;
         }
 
-        public void PostInitialise() {}
-
-        public void Close() {}
-
-        public string Name { get { return "FetchInventory2Module"; } }
-
-        public Type ReplaceableInterface
+        public void RemoveRegion(Scene s)
         {
-            get { return null; }
-        }
+            if (!Enabled)
+                return;
 
-        #endregion
+            m_scene.EventManager.OnRegisterCaps -= RegisterCaps;
+            m_scene = null;
+        }
+        #endregion ISharedRegionModule Members
 
         private void RegisterCaps(UUID agentID, Caps caps)
         {
@@ -144,9 +141,9 @@ namespace OpenSim.Region.ClientStack.Linden
                 caps.RegisterHandler(capName, capUrl);
             }
 
-//            m_log.DebugFormat(
-//                "[FETCH INVENTORY2 MODULE]: Registered capability {0} at {1} in region {2} for {3}",
-//                capName, capUrl, m_scene.RegionInfo.RegionName, agentID);
+            //            m_log.DebugFormat(
+            //                "[FETCH INVENTORY2 MODULE]: Registered capability {0} at {1} in region {2} for {3}",
+            //                capName, capUrl, m_scene.RegionInfo.RegionName, agentID);
         }
     }
 }

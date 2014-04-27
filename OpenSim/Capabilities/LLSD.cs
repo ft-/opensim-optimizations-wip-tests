@@ -25,6 +25,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
 using System;
 using System.Collections;
 using System.Globalization;
@@ -32,7 +33,6 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Xml;
-using OpenMetaverse;
 
 namespace OpenSim.Framework.Capabilities
 {
@@ -41,26 +41,6 @@ namespace OpenSim.Framework.Capabilities
     /// </summary>
     public static class LLSD
     {
-        /// <summary>
-        ///
-        /// </summary>
-        public class LLSDParseException : Exception
-        {
-            public LLSDParseException(string message) : base(message)
-            {
-            }
-        }
-
-        /// <summary>
-        ///
-        /// </summary>
-        public class LLSDSerializeException : Exception
-        {
-            public LLSDSerializeException(string message) : base(message)
-            {
-            }
-        }
-
         /// <summary>
         ///
         /// </summary>
@@ -99,121 +79,147 @@ namespace OpenSim.Framework.Capabilities
         ///
         /// </summary>
         /// <param name="obj"></param>
+        /// <param name="indent"></param>
         /// <returns></returns>
-        public static byte[] LLSDSerialize(object obj)
+        public static String LLSDDump(object obj, int indent)
         {
-            StringWriter sw = new StringWriter();
-            XmlTextWriter writer = new XmlTextWriter(sw);
-            writer.Formatting = Formatting.None;
+            if (obj == null)
+            {
+                return GetSpaces(indent) + "- undef\n";
+            }
+            else if (obj is string)
+            {
+                return GetSpaces(indent) + "- string \"" + (string)obj + "\"\n";
+            }
+            else if (obj is int)
+            {
+                return GetSpaces(indent) + "- integer " + obj.ToString() + "\n";
+            }
+            else if (obj is double)
+            {
+                return GetSpaces(indent) + "- float " + obj.ToString() + "\n";
+            }
+            else if (obj is UUID)
+            {
+                return GetSpaces(indent) + "- uuid " + ((UUID)obj).ToString() + Environment.NewLine;
+            }
+            else if (obj is Hashtable)
+            {
+                StringBuilder ret = new StringBuilder();
+                ret.Append(GetSpaces(indent) + "- map" + Environment.NewLine);
+                Hashtable map = (Hashtable)obj;
 
-            writer.WriteStartElement(String.Empty, "llsd", String.Empty);
-            LLSDWriteOne(writer, obj);
-            writer.WriteEndElement();
+                foreach (string key in map.Keys)
+                {
+                    ret.Append(GetSpaces(indent + 2) + "- key \"" + key + "\"" + Environment.NewLine);
+                    ret.Append(LLSDDump(map[key], indent + 3));
+                }
 
-            writer.Close();
+                return ret.ToString();
+            }
+            else if (obj is ArrayList)
+            {
+                StringBuilder ret = new StringBuilder();
+                ret.Append(GetSpaces(indent) + "- array\n");
+                ArrayList list = (ArrayList)obj;
 
-            return Util.UTF8.GetBytes(sw.ToString());
+                foreach (object item in list)
+                {
+                    ret.Append(LLSDDump(item, indent + 2));
+                }
+
+                return ret.ToString();
+            }
+            else if (obj is byte[])
+            {
+                return GetSpaces(indent) + "- binary\n" + Utils.BytesToHexString((byte[])obj, GetSpaces(indent)) +
+                       Environment.NewLine;
+            }
+            else
+            {
+                return GetSpaces(indent) + "- unknown type " + obj.GetType().Name + Environment.NewLine;
+            }
         }
 
         /// <summary>
         ///
         /// </summary>
-        /// <param name="writer"></param>
-        /// <param name="obj"></param>
-        public static void LLSDWriteOne(XmlTextWriter writer, object obj)
+        /// <param name="reader"></param>
+        /// <returns></returns>
+        public static ArrayList LLSDParseArray(XmlTextReader reader)
         {
-            if (obj == null)
+            ArrayList ret = new ArrayList();
+
+            if (reader.NodeType != XmlNodeType.Element || reader.LocalName != "array")
+                throw new LLSDParseException("Expected <array>");
+
+            if (reader.IsEmptyElement)
             {
-                writer.WriteStartElement(String.Empty, "undef", String.Empty);
-                writer.WriteEndElement();
-                return;
+                reader.Read();
+                return ret;
             }
 
-            if (obj is string)
+            reader.Read();
+
+            while (true)
             {
-                writer.WriteStartElement(String.Empty, "string", String.Empty);
-                writer.WriteString((string) obj);
-                writer.WriteEndElement();
-            }
-            else if (obj is int)
-            {
-                writer.WriteStartElement(String.Empty, "integer", String.Empty);
-                writer.WriteString(obj.ToString());
-                writer.WriteEndElement();
-            }
-            else if (obj is double)
-            {
-                writer.WriteStartElement(String.Empty, "real", String.Empty);
-                writer.WriteString(obj.ToString());
-                writer.WriteEndElement();
-            }
-            else if (obj is bool)
-            {
-                bool b = (bool) obj;
-                writer.WriteStartElement(String.Empty, "boolean", String.Empty);
-                writer.WriteString(b ? "1" : "0");
-                writer.WriteEndElement();
-            }
-            else if (obj is ulong)
-            {
-                throw new Exception("ulong in LLSD is currently not implemented, fix me!");
-            }
-            else if (obj is UUID)
-            {
-                UUID u = (UUID) obj;
-                writer.WriteStartElement(String.Empty, "uuid", String.Empty);
-                writer.WriteString(u.ToString());
-                writer.WriteEndElement();
-            }
-            else if (obj is Hashtable)
-            {
-                Hashtable h = obj as Hashtable;
-                writer.WriteStartElement(String.Empty, "map", String.Empty);
-                foreach (string key in h.Keys)
+                SkipWS(reader);
+
+                if (reader.NodeType == XmlNodeType.EndElement && reader.LocalName == "array")
                 {
-                    writer.WriteStartElement(String.Empty, "key", String.Empty);
-                    writer.WriteString(key);
-                    writer.WriteEndElement();
-                    LLSDWriteOne(writer, h[key]);
+                    reader.Read();
+                    break;
                 }
-                writer.WriteEndElement();
+
+                ret.Insert(ret.Count, LLSDParseOne(reader));
             }
-            else if (obj is ArrayList)
+
+            return ret; // TODO
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
+        public static Hashtable LLSDParseMap(XmlTextReader reader)
+        {
+            Hashtable ret = new Hashtable();
+
+            if (reader.NodeType != XmlNodeType.Element || reader.LocalName != "map")
+                throw new LLSDParseException("Expected <map>");
+
+            if (reader.IsEmptyElement)
             {
-                ArrayList a = obj as ArrayList;
-                writer.WriteStartElement(String.Empty, "array", String.Empty);
-                foreach (object item in a)
+                reader.Read();
+                return ret;
+            }
+
+            reader.Read();
+
+            while (true)
+            {
+                SkipWS(reader);
+                if (reader.NodeType == XmlNodeType.EndElement && reader.LocalName == "map")
                 {
-                    LLSDWriteOne(writer, item);
+                    reader.Read();
+                    break;
                 }
-                writer.WriteEndElement();
+
+                if (reader.NodeType != XmlNodeType.Element || reader.LocalName != "key")
+                    throw new LLSDParseException("Expected <key>");
+
+                string key = reader.ReadString();
+
+                if (reader.NodeType != XmlNodeType.EndElement || reader.LocalName != "key")
+                    throw new LLSDParseException("Expected </key>");
+
+                reader.Read();
+                object val = LLSDParseOne(reader);
+                ret[key] = val;
             }
-            else if (obj is byte[])
-            {
-                byte[] b = obj as byte[];
-                writer.WriteStartElement(String.Empty, "binary", String.Empty);
 
-                writer.WriteStartAttribute(String.Empty, "encoding", String.Empty);
-                writer.WriteString("base64");
-                writer.WriteEndAttribute();
-
-                //// Calculate the length of the base64 output
-                //long length = (long)(4.0d * b.Length / 3.0d);
-                //if (length % 4 != 0) length += 4 - (length % 4);
-
-                //// Create the char[] for base64 output and fill it
-                //char[] tmp = new char[length];
-                //int i = Convert.ToBase64CharArray(b, 0, b.Length, tmp, 0);
-
-                //writer.WriteString(new String(tmp));
-
-                writer.WriteString(Convert.ToBase64String(b));
-                writer.WriteEndElement();
-            }
-            else
-            {
-                throw new LLSDSerializeException("Unknown type " + obj.GetType().Name);
-            }
+            return ret; // TODO
         }
 
         /// <summary>
@@ -362,159 +368,121 @@ namespace OpenSim.Framework.Capabilities
         /// <summary>
         ///
         /// </summary>
-        /// <param name="reader"></param>
-        /// <returns></returns>
-        public static Hashtable LLSDParseMap(XmlTextReader reader)
-        {
-            Hashtable ret = new Hashtable();
-
-            if (reader.NodeType != XmlNodeType.Element || reader.LocalName != "map")
-                throw new LLSDParseException("Expected <map>");
-
-            if (reader.IsEmptyElement)
-            {
-                reader.Read();
-                return ret;
-            }
-
-            reader.Read();
-
-            while (true)
-            {
-                SkipWS(reader);
-                if (reader.NodeType == XmlNodeType.EndElement && reader.LocalName == "map")
-                {
-                    reader.Read();
-                    break;
-                }
-
-                if (reader.NodeType != XmlNodeType.Element || reader.LocalName != "key")
-                    throw new LLSDParseException("Expected <key>");
-
-                string key = reader.ReadString();
-
-                if (reader.NodeType != XmlNodeType.EndElement || reader.LocalName != "key")
-                    throw new LLSDParseException("Expected </key>");
-
-                reader.Read();
-                object val = LLSDParseOne(reader);
-                ret[key] = val;
-            }
-
-            return ret; // TODO
-        }
-
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="reader"></param>
-        /// <returns></returns>
-        public static ArrayList LLSDParseArray(XmlTextReader reader)
-        {
-            ArrayList ret = new ArrayList();
-
-            if (reader.NodeType != XmlNodeType.Element || reader.LocalName != "array")
-                throw new LLSDParseException("Expected <array>");
-
-            if (reader.IsEmptyElement)
-            {
-                reader.Read();
-                return ret;
-            }
-
-            reader.Read();
-
-            while (true)
-            {
-                SkipWS(reader);
-
-                if (reader.NodeType == XmlNodeType.EndElement && reader.LocalName == "array")
-                {
-                    reader.Read();
-                    break;
-                }
-
-                ret.Insert(ret.Count, LLSDParseOne(reader));
-            }
-
-            return ret; // TODO
-        }
-
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="count"></param>
-        /// <returns></returns>
-        private static string GetSpaces(int count)
-        {
-            StringBuilder b = new StringBuilder();
-            for (int i = 0; i < count; i++) b.Append(" ");
-            return b.ToString();
-        }
-
-        /// <summary>
-        ///
-        /// </summary>
         /// <param name="obj"></param>
-        /// <param name="indent"></param>
         /// <returns></returns>
-        public static String LLSDDump(object obj, int indent)
+        public static byte[] LLSDSerialize(object obj)
+        {
+            StringWriter sw = new StringWriter();
+            XmlTextWriter writer = new XmlTextWriter(sw);
+            writer.Formatting = Formatting.None;
+
+            writer.WriteStartElement(String.Empty, "llsd", String.Empty);
+            LLSDWriteOne(writer, obj);
+            writer.WriteEndElement();
+
+            writer.Close();
+
+            return Util.UTF8.GetBytes(sw.ToString());
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="obj"></param>
+        public static void LLSDWriteOne(XmlTextWriter writer, object obj)
         {
             if (obj == null)
             {
-                return GetSpaces(indent) + "- undef\n";
+                writer.WriteStartElement(String.Empty, "undef", String.Empty);
+                writer.WriteEndElement();
+                return;
             }
-            else if (obj is string)
+
+            if (obj is string)
             {
-                return GetSpaces(indent) + "- string \"" + (string) obj + "\"\n";
+                writer.WriteStartElement(String.Empty, "string", String.Empty);
+                writer.WriteString((string)obj);
+                writer.WriteEndElement();
             }
             else if (obj is int)
             {
-                return GetSpaces(indent) + "- integer " + obj.ToString() + "\n";
+                writer.WriteStartElement(String.Empty, "integer", String.Empty);
+                writer.WriteString(obj.ToString());
+                writer.WriteEndElement();
             }
             else if (obj is double)
             {
-                return GetSpaces(indent) + "- float " + obj.ToString() + "\n";
+                writer.WriteStartElement(String.Empty, "real", String.Empty);
+                writer.WriteString(obj.ToString());
+                writer.WriteEndElement();
+            }
+            else if (obj is bool)
+            {
+                bool b = (bool)obj;
+                writer.WriteStartElement(String.Empty, "boolean", String.Empty);
+                writer.WriteString(b ? "1" : "0");
+                writer.WriteEndElement();
+            }
+            else if (obj is ulong)
+            {
+                throw new Exception("ulong in LLSD is currently not implemented, fix me!");
             }
             else if (obj is UUID)
             {
-                return GetSpaces(indent) + "- uuid " + ((UUID) obj).ToString() + Environment.NewLine;
+                UUID u = (UUID)obj;
+                writer.WriteStartElement(String.Empty, "uuid", String.Empty);
+                writer.WriteString(u.ToString());
+                writer.WriteEndElement();
             }
             else if (obj is Hashtable)
             {
-                StringBuilder ret = new StringBuilder();
-                ret.Append(GetSpaces(indent) + "- map" + Environment.NewLine);
-                Hashtable map = (Hashtable) obj;
-
-                foreach (string key in map.Keys)
+                Hashtable h = obj as Hashtable;
+                writer.WriteStartElement(String.Empty, "map", String.Empty);
+                foreach (string key in h.Keys)
                 {
-                    ret.Append(GetSpaces(indent + 2) + "- key \"" + key + "\"" + Environment.NewLine);
-                    ret.Append(LLSDDump(map[key], indent + 3));
+                    writer.WriteStartElement(String.Empty, "key", String.Empty);
+                    writer.WriteString(key);
+                    writer.WriteEndElement();
+                    LLSDWriteOne(writer, h[key]);
                 }
-
-                return ret.ToString();
+                writer.WriteEndElement();
             }
             else if (obj is ArrayList)
             {
-                StringBuilder ret = new StringBuilder();
-                ret.Append(GetSpaces(indent) + "- array\n");
-                ArrayList list = (ArrayList) obj;
-
-                foreach (object item in list)
+                ArrayList a = obj as ArrayList;
+                writer.WriteStartElement(String.Empty, "array", String.Empty);
+                foreach (object item in a)
                 {
-                    ret.Append(LLSDDump(item, indent + 2));
+                    LLSDWriteOne(writer, item);
                 }
-
-                return ret.ToString();
+                writer.WriteEndElement();
             }
             else if (obj is byte[])
             {
-                return GetSpaces(indent) + "- binary\n" + Utils.BytesToHexString((byte[]) obj, GetSpaces(indent)) +
-                       Environment.NewLine;
+                byte[] b = obj as byte[];
+                writer.WriteStartElement(String.Empty, "binary", String.Empty);
+
+                writer.WriteStartAttribute(String.Empty, "encoding", String.Empty);
+                writer.WriteString("base64");
+                writer.WriteEndAttribute();
+
+                //// Calculate the length of the base64 output
+                //long length = (long)(4.0d * b.Length / 3.0d);
+                //if (length % 4 != 0) length += 4 - (length % 4);
+
+                //// Create the char[] for base64 output and fill it
+                //char[] tmp = new char[length];
+                //int i = Convert.ToBase64CharArray(b, 0, b.Length, tmp, 0);
+
+                //writer.WriteString(new String(tmp));
+
+                writer.WriteString(Convert.ToBase64String(b));
+                writer.WriteEndElement();
             }
             else
             {
-                return GetSpaces(indent) + "- unknown type " + obj.GetType().Name + Environment.NewLine;
+                throw new LLSDSerializeException("Unknown type " + obj.GetType().Name);
             }
         }
 
@@ -540,9 +508,11 @@ namespace OpenSim.Framework.Capabilities
                 case '1':
                     endPos = 1;
                     return true;
+
                 case '0':
                     endPos = 1;
                     return false;
+
                 case 'i':
                     {
                         if (llsd.Length < 2) throw new LLSDParseException("Integer value type with no value");
@@ -587,6 +557,7 @@ namespace OpenSim.Framework.Capabilities
                     if (llsd.Length < 2) throw new LLSDParseException("String value type with no value");
                     endPos = FindEnd(llsd, 1);
                     return llsd.Substring(1, endPos - 1);
+
                 case 'd':
                     // Never seen one before, don't know what the format is
                     throw new LLSDParseException("Date value type is unimplemented");
@@ -655,9 +626,21 @@ namespace OpenSim.Framework.Capabilities
 
         private static int FindEnd(string llsd, int start)
         {
-            int end = llsd.IndexOfAny(new char[] {',', ']', '}'});
+            int end = llsd.IndexOfAny(new char[] { ',', ']', '}' });
             if (end == -1) end = llsd.Length - 1;
             return end;
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        private static string GetSpaces(int count)
+        {
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < count; i++) b.Append(" ");
+            return b.ToString();
         }
 
         /// <summary>
@@ -673,6 +656,28 @@ namespace OpenSim.Framework.Capabilities
                 reader.NodeType == XmlNodeType.XmlDeclaration)
             {
                 reader.Read();
+            }
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        public class LLSDParseException : Exception
+        {
+            public LLSDParseException(string message)
+                : base(message)
+            {
+            }
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        public class LLSDSerializeException : Exception
+        {
+            public LLSDSerializeException(string message)
+                : base(message)
+            {
             }
         }
     }

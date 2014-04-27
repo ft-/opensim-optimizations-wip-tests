@@ -32,24 +32,24 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 
-[assembly : AssemblyTitle("OpenSim.Framework.Communications")]
-[assembly : AssemblyDescription("")]
-[assembly : AssemblyConfiguration("")]
-[assembly : AssemblyCompany("http://opensimulator.org")]
-[assembly : AssemblyProduct("OpenSim")]
-[assembly : AssemblyCopyright("Copyright (c) OpenSimulator.org Developers")]
-[assembly : AssemblyTrademark("")]
-[assembly : AssemblyCulture("")]
+[assembly: AssemblyTitle("OpenSim.Framework.Communications")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("http://opensimulator.org")]
+[assembly: AssemblyProduct("OpenSim")]
+[assembly: AssemblyCopyright("Copyright (c) OpenSimulator.org Developers")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible
 // to COM components.  If you need to access a type in this assembly from
 // COM, set the ComVisible attribute to true on that type.
 
-[assembly : ComVisible(false)]
+[assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 
-[assembly : Guid("13e7c396-78a9-4a5c-baf2-6f980ea75d95")]
+[assembly: Guid("13e7c396-78a9-4a5c-baf2-6f980ea75d95")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -61,5 +61,4 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Revision and Build Numbers
 // by using the '*' as shown below:
 
-[assembly : AssemblyVersion("0.8.0.*")]
-
+[assembly: AssemblyVersion("0.8.0.*")]

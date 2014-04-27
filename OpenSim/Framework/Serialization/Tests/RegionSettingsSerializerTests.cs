@@ -25,12 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using OpenMetaverse;
-using OpenMetaverse.StructuredData;
 using NUnit.Framework;
-using OpenSim.Framework;
+using OpenMetaverse;
 using OpenSim.Framework.Serialization.External;
 using OpenSim.Tests.Common;
 
@@ -39,6 +35,8 @@ namespace OpenSim.Framework.Serialization.Tests
     [TestFixture]
     public class RegionSettingsSerializerTests : OpenSimTestCase
     {
+        private RegionSettings m_rs;
+
         private string m_serializedRs = @"<?xml version=""1.0"" encoding=""utf-16""?>
 <RegionSettings>
   <General>
@@ -83,9 +81,6 @@ namespace OpenSim.Framework.Serialization.Tests
     <SpawnPoint>1,-2,0.33</SpawnPoint>
   </Telehub>
 </RegionSettings>";
-
-        private RegionSettings m_rs;
-
         [SetUp]
         public void Setup()
         {
@@ -128,7 +123,7 @@ namespace OpenSim.Framework.Serialization.Tests
         public void TestRegionSettingsDeserialize()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             RegionSettings deserRs = RegionSettingsSerializer.Deserialize(m_serializedRs);
             Assert.That(deserRs, Is.Not.Null);

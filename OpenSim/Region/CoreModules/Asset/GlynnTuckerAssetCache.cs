@@ -25,18 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using log4net;
-using System;
-using System.IO;
-using System.Collections.Generic;
-using System.Reflection;
 using GlynnTucker.Cache;
+using log4net;
 using Mono.Addins;
 using Nini.Config;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.Asset
 {
@@ -47,22 +44,66 @@ namespace OpenSim.Region.CoreModules.Asset
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
-        private bool m_Enabled;
         private ICache m_Cache;
-        private ulong m_Hits;
-        private ulong m_Requests;
-
         // Instrumentation
         private uint m_DebugRate;
 
-        public Type ReplaceableInterface 
-        {
-            get { return null; }
-        }
-
+        private bool m_Enabled;
+        private ulong m_Hits;
+        private ulong m_Requests;
         public string Name
         {
             get { return "GlynnTuckerAssetCache"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+        public void AddRegion(Scene scene)
+        {
+            if (m_Enabled)
+                scene.RegisterModuleInterface<IImprovedAssetCache>(this);
+        }
+
+        public void Cache(AssetBase asset)
+        {
+            if (asset != null)
+                m_Cache.AddOrUpdate(asset.ID, asset);
+        }
+
+        public bool Check(string id)
+        {
+            return m_Cache.Contains(id);
+        }
+
+        public void Clear()
+        {
+            m_Cache.Clear();
+        }
+
+        public void Close()
+        {
+        }
+
+        public void Expire(string id)
+        {
+            Object asset = null;
+            if (m_Cache.TryGet(id, out asset))
+                m_Cache.Remove(id);
+        }
+
+        ////////////////////////////////////////////////////////////
+        // IImprovedAssetCache
+        //
+        public AssetBase Get(string id)
+        {
+            Object asset = null;
+            m_Cache.TryGet(id, out asset);
+
+            Debug(asset);
+
+            return (AssetBase)asset;
         }
 
         public void Initialise(IConfigSource source)
@@ -92,62 +133,13 @@ namespace OpenSim.Region.CoreModules.Asset
         public void PostInitialise()
         {
         }
-
-        public void Close()
+        public void RegionLoaded(Scene scene)
         {
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            if (m_Enabled)
-                scene.RegisterModuleInterface<IImprovedAssetCache>(this);
         }
 
         public void RemoveRegion(Scene scene)
         {
         }
-
-        public void RegionLoaded(Scene scene)
-        {
-        }
-
-        ////////////////////////////////////////////////////////////
-        // IImprovedAssetCache
-        //
-
-        public bool Check(string id)
-        {
-            return m_Cache.Contains(id);
-        }
-
-        public void Cache(AssetBase asset)
-        {
-            if (asset != null)
-                m_Cache.AddOrUpdate(asset.ID, asset);
-        }
-
-        public AssetBase Get(string id)
-        {
-            Object asset = null;
-            m_Cache.TryGet(id, out asset);
-
-            Debug(asset);
-
-            return (AssetBase)asset;
-        }
-
-        public void Expire(string id)
-        {
-            Object asset = null;
-            if (m_Cache.TryGet(id, out asset))
-                m_Cache.Remove(id);
-        }
-
-        public void Clear()
-        {
-            m_Cache.Clear();
-        }
-
         private void Debug(Object asset)
         {
             // Temporary instrumentation to measure the hit/miss rate

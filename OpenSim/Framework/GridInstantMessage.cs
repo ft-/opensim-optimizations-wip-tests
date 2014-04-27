@@ -25,29 +25,27 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
+using System;
 
 namespace OpenSim.Framework
 {
     [Serializable]
     public class GridInstantMessage
     {
+        public byte[] binaryBucket;
+        public byte dialog;
         public Guid fromAgentID;
         public string fromAgentName;
-        public Guid toAgentID;
-        public byte dialog;
         public bool fromGroup;
-        public string message;
         public Guid imSessionID;
+        public string message;
         public byte offline;
-        public Vector3 Position;
-        public byte[] binaryBucket;
-
         public uint ParentEstateID;
+        public Vector3 Position;
         public Guid RegionID;
         public uint timestamp;
-
+        public Guid toAgentID;
         public GridInstantMessage()
         {
             binaryBucket = new byte[0];
@@ -104,7 +102,8 @@ namespace OpenSim.Framework
         public GridInstantMessage(IScene scene, UUID _fromAgentID,
                 string _fromAgentName, UUID _toAgentID, byte _dialog,
                 string _message, bool _offline,
-                Vector3 _position) : this(scene, _fromAgentID, _fromAgentName,
+                Vector3 _position)
+            : this(scene, _fromAgentID, _fromAgentName,
                 _toAgentID, _dialog, false, _message,
                 _fromAgentID ^ _toAgentID, _offline, _position, new byte[0], true)
         {

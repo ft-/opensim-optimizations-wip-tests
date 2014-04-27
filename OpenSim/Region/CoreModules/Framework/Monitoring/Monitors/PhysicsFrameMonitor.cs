@@ -29,7 +29,7 @@ using OpenSim.Region.Framework.Scenes;
 
 namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
 {
-    class PhysicsFrameMonitor : IMonitor
+    internal class PhysicsFrameMonitor : IMonitor
     {
         private readonly Scene m_scene;
 
@@ -39,16 +39,6 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
         }
 
         #region Implementation of IMonitor
-
-        public string GetName()
-        {
-            return "PhysicsFrameMonitor";
-        }
-
-        public double GetValue()
-        {
-            return m_scene.MonitorPhysicsSyncTime + m_scene.MonitorPhysicsUpdateTime;
-        }
 
         public string GetFriendlyName()
         {
@@ -60,6 +50,15 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
             return (int)GetValue() + "ms";
         }
 
-        #endregion
+        public string GetName()
+        {
+            return "PhysicsFrameMonitor";
+        }
+
+        public double GetValue()
+        {
+            return m_scene.MonitorPhysicsSyncTime + m_scene.MonitorPhysicsUpdateTime;
+        }
+        #endregion Implementation of IMonitor
     }
 }

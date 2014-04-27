@@ -30,8 +30,35 @@ using System.Threading;
 
 namespace OpenSim.Framework.Communications
 {
+    internal class AsyncResult<T> : SimpleAsyncResult
+    {
+        private T m_result = default(T);
+
+        public AsyncResult(AsyncCallback asyncCallback, Object state) :
+            base(asyncCallback, state)
+        {
+        }
+
+        public new T EndInvoke()
+        {
+            base.EndInvoke();
+            return m_result;
+        }
+
+        public void SetAsCompleted(T result, bool completedSynchronously)
+        {
+            // Save the asynchronous operation's result
+            m_result = result;
+
+            // Tell the base class that the operation completed
+            // sucessfully (no exception)
+            base.SetAsCompleted(completedSynchronously);
+        }
+    }
+
     internal class SimpleAsyncResult : IAsyncResult
     {
+        private readonly object m_asyncState;
         private readonly AsyncCallback m_callback;
 
         /// <summary>
@@ -47,11 +74,8 @@ namespace OpenSim.Framework.Communications
         /// booleans and VolatileRead as m_completed
         /// </remarks>
         private byte m_completedSynchronously;
-
-        private readonly object m_asyncState;
-        private ManualResetEvent m_waitHandle;
         private Exception m_exception;
-
+        private ManualResetEvent m_waitHandle;
         internal SimpleAsyncResult(AsyncCallback cb, object state)
         {
             m_callback = cb;
@@ -87,56 +111,24 @@ namespace OpenSim.Framework.Communications
                         }
                     }
                 }
-                
+
                 return m_waitHandle;
             }
         }
-
 
         public bool CompletedSynchronously
         {
             get { return Thread.VolatileRead(ref m_completedSynchronously) == 1; }
         }
 
-
         public bool IsCompleted
         {
             get { return Thread.VolatileRead(ref m_completed) == 1; }
         }
 
-        #endregion
+        #endregion IAsyncResult Members
 
         #region class Methods
-
-        internal void SetAsCompleted(bool completedSynchronously)
-        {
-            m_completed = 1;
-            if (completedSynchronously)
-                m_completedSynchronously = 1;
-            else
-                m_completedSynchronously = 0;
-
-            SignalCompletion();
-        }
-
-        internal void HandleException(Exception e, bool completedSynchronously)
-        {
-            m_completed = 1;
-            if (completedSynchronously)
-                m_completedSynchronously = 1;
-            else
-                m_completedSynchronously = 0;
-            m_exception = e;
-
-            SignalCompletion();
-        }
-
-        private void SignalCompletion()
-        {
-            if (m_waitHandle != null) m_waitHandle.Set();
-
-            if (m_callback != null) m_callback(this);
-        }
 
         public void EndInvoke()
         {
@@ -154,32 +146,34 @@ namespace OpenSim.Framework.Communications
             if (m_exception != null) throw m_exception;
         }
 
-        #endregion
-    }
-
-    internal class AsyncResult<T> : SimpleAsyncResult
-    {
-        private T m_result = default(T);
-
-        public AsyncResult(AsyncCallback asyncCallback, Object state) :
-            base(asyncCallback, state)
+        internal void HandleException(Exception e, bool completedSynchronously)
         {
+            m_completed = 1;
+            if (completedSynchronously)
+                m_completedSynchronously = 1;
+            else
+                m_completedSynchronously = 0;
+            m_exception = e;
+
+            SignalCompletion();
         }
 
-        public void SetAsCompleted(T result, bool completedSynchronously)
+        internal void SetAsCompleted(bool completedSynchronously)
         {
-            // Save the asynchronous operation's result
-            m_result = result;
+            m_completed = 1;
+            if (completedSynchronously)
+                m_completedSynchronously = 1;
+            else
+                m_completedSynchronously = 0;
 
-            // Tell the base class that the operation completed
-            // sucessfully (no exception)
-            base.SetAsCompleted(completedSynchronously);
+            SignalCompletion();
         }
-
-        public new T EndInvoke()
+        private void SignalCompletion()
         {
-            base.EndInvoke();
-            return m_result;
+            if (m_waitHandle != null) m_waitHandle.Set();
+
+            if (m_callback != null) m_callback(this);
         }
+        #endregion class Methods
     }
 }

@@ -25,21 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Region.Framework.Scenes;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Threading;
 using System.Xml;
-
-using log4net;
-using OpenMetaverse;
-using OpenSim.Framework;
-
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Region.Framework.Scenes.Serialization;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Services.Interfaces;
 
 //using HyperGrid.Framework;
 //using OpenSim.Region.Communications.Hypergrid;
@@ -49,15 +44,15 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
     public class HGAssetMapper
     {
         #region Fields
+
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         // This maps between inventory server urls and inventory server clients
-//        private Dictionary<string, InventoryClient> m_inventoryServers = new Dictionary<string, InventoryClient>();
+        //        private Dictionary<string, InventoryClient> m_inventoryServers = new Dictionary<string, InventoryClient>();
 
-        private Scene m_scene;
         private string m_HomeURI;
-
-        #endregion
+        private Scene m_scene;
+        #endregion Fields
 
         #region Constructor
 
@@ -67,51 +62,9 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
             m_HomeURI = homeURL;
         }
 
-        #endregion
+        #endregion Constructor
 
         #region Internal functions
-
-        private AssetMetadata FetchMetadata(string url, UUID assetID)
-        {
-            if (string.IsNullOrEmpty(url))
-                return null;
-
-            if (!url.EndsWith("/") && !url.EndsWith("="))
-                url = url + "/";
-
-            AssetMetadata meta = m_scene.AssetService.GetMetadata(url + assetID.ToString());
-
-            if (meta != null)
-                m_log.DebugFormat("[HG ASSET MAPPER]: Fetched metadata for asset {0} of type {1} from {2} ", assetID, meta.Type, url);
-            else
-                m_log.DebugFormat("[HG ASSET MAPPER]: Unable to fetched metadata for asset {0} from {1} ", assetID, url);
-
-            return meta;
-        }
-
-        private AssetBase FetchAsset(string url, UUID assetID)
-        {
-            // Test if it's already here
-            AssetBase asset = m_scene.AssetService.Get(assetID.ToString());
-            if (asset == null)
-            {
-                if (string.IsNullOrEmpty(url))
-                    return null;
-
-                if (!url.EndsWith("/") && !url.EndsWith("="))
-                    url = url + "/";
-
-                asset = m_scene.AssetService.Get(url + assetID.ToString());
-
-                //if (asset != null)
-                //    m_log.DebugFormat("[HG ASSET MAPPER]: Fetched asset {0} of type {1} from {2} ", assetID, asset.Metadata.Type, url);
-                //else
-                //    m_log.DebugFormat("[HG ASSET MAPPER]: Unable to fetch asset {0} from {1} ", assetID, url);
-
-            }
-
-            return asset;
-        }
 
         public bool PostAsset(string url, AssetBase asset)
         {
@@ -152,34 +105,10 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
                 m_log.DebugFormat("[HG ASSET MAPPER]: Asset server {0} did not accept {1}", url, asset.ID);
                 return false;
             }
-            else {
+            else
+            {
                 m_log.DebugFormat("[HG ASSET MAPPER]: Posted copy of asset {0} from local asset server to {1}", asset1.ID, url);
                 return true;
-            }
-        }
-
-        private void Copy(AssetBase from, AssetBase to)
-        {
-            //to.Data        = from.Data; // don't copy this, it's copied elsewhere
-            to.Description = from.Description;
-            to.FullID      = from.FullID;
-            to.ID          = from.ID;
-            to.Local       = from.Local;
-            to.Name        = from.Name;
-            to.Temporary   = from.Temporary;
-            to.Type        = from.Type;
-
-        }
-
-        private void AdjustIdentifiers(AssetMetadata meta)
-        {
-            if (!string.IsNullOrEmpty(meta.CreatorID))
-            {
-                UUID uuid = UUID.Zero;
-                UUID.TryParse(meta.CreatorID, out uuid);
-                UserAccount creator = m_scene.UserAccountService.GetUserAccount(m_scene.RegionInfo.ScopeID, uuid); 
-                if (creator != null)
-                    meta.CreatorID = m_HomeURI + ";" + creator.FirstName + " " + creator.LastName;
             }
         }
 
@@ -232,9 +161,72 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
                 doc.Save(wr);
                 return wr.ToString();
             }
-
         }
 
+        private void AdjustIdentifiers(AssetMetadata meta)
+        {
+            if (!string.IsNullOrEmpty(meta.CreatorID))
+            {
+                UUID uuid = UUID.Zero;
+                UUID.TryParse(meta.CreatorID, out uuid);
+                UserAccount creator = m_scene.UserAccountService.GetUserAccount(m_scene.RegionInfo.ScopeID, uuid);
+                if (creator != null)
+                    meta.CreatorID = m_HomeURI + ";" + creator.FirstName + " " + creator.LastName;
+            }
+        }
+
+        private void Copy(AssetBase from, AssetBase to)
+        {
+            //to.Data        = from.Data; // don't copy this, it's copied elsewhere
+            to.Description = from.Description;
+            to.FullID = from.FullID;
+            to.ID = from.ID;
+            to.Local = from.Local;
+            to.Name = from.Name;
+            to.Temporary = from.Temporary;
+            to.Type = from.Type;
+        }
+
+        private AssetBase FetchAsset(string url, UUID assetID)
+        {
+            // Test if it's already here
+            AssetBase asset = m_scene.AssetService.Get(assetID.ToString());
+            if (asset == null)
+            {
+                if (string.IsNullOrEmpty(url))
+                    return null;
+
+                if (!url.EndsWith("/") && !url.EndsWith("="))
+                    url = url + "/";
+
+                asset = m_scene.AssetService.Get(url + assetID.ToString());
+
+                //if (asset != null)
+                //    m_log.DebugFormat("[HG ASSET MAPPER]: Fetched asset {0} of type {1} from {2} ", assetID, asset.Metadata.Type, url);
+                //else
+                //    m_log.DebugFormat("[HG ASSET MAPPER]: Unable to fetch asset {0} from {1} ", assetID, url);
+            }
+
+            return asset;
+        }
+
+        private AssetMetadata FetchMetadata(string url, UUID assetID)
+        {
+            if (string.IsNullOrEmpty(url))
+                return null;
+
+            if (!url.EndsWith("/") && !url.EndsWith("="))
+                url = url + "/";
+
+            AssetMetadata meta = m_scene.AssetService.GetMetadata(url + assetID.ToString());
+
+            if (meta != null)
+                m_log.DebugFormat("[HG ASSET MAPPER]: Fetched metadata for asset {0} of type {1} from {2} ", assetID, meta.Type, url);
+            else
+                m_log.DebugFormat("[HG ASSET MAPPER]: Unable to fetched metadata for asset {0} from {1} ", assetID, url);
+
+            return meta;
+        }
         // TODO: unused
         // private void Dump(Dictionary<UUID, bool> lst)
         // {
@@ -244,8 +236,7 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
         //     m_log.Debug("XXX -------- UUID DUMP ------- XXX");
         // }
 
-        #endregion
-
+        #endregion Internal functions
 
         #region Public interface
 
@@ -274,7 +265,6 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
             else
                 m_log.DebugFormat("[HG ASSET MAPPER]: Successfully got item {0} from asset server {1}", assetID, userAssetURL);
         }
-
 
         public void Post(UUID assetID, UUID ownerID, string userAssetURL)
         {
@@ -339,7 +329,6 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
                 m_log.DebugFormat("[HG ASSET MAPPER]: Successfully sent asset {0} with children to asset server {1}", assetID, userAssetURL);
         }
 
-        #endregion
-
+        #endregion Public interface
     }
 }

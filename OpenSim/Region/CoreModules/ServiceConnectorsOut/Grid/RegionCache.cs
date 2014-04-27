@@ -25,17 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-
+using log4net;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
+using System.Collections.Generic;
+using System.Reflection;
 using GridRegion = OpenSim.Services.Interfaces.GridRegion;
-
-using OpenMetaverse;
-using log4net;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
 {
@@ -45,32 +40,18 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
-        private Scene m_scene;
         private Dictionary<ulong, GridRegion> m_neighbours = new Dictionary<ulong, GridRegion>();
-
-        public string RegionName
-        {
-            get { return m_scene.RegionInfo.RegionName; }
-        }
-
+        private Scene m_scene;
         public RegionCache(Scene s)
         {
             m_scene = s;
             m_scene.EventManager.OnRegionUp += OnRegionUp;
         }
 
-        private void OnRegionUp(GridRegion otherRegion)
+        public string RegionName
         {
-            // This shouldn't happen
-            if (otherRegion == null)
-                return;
-
-            m_log.DebugFormat("[REGION CACHE]: (on region {0}) Region {1} is up @ {2}-{3}",
-                m_scene.RegionInfo.RegionName, otherRegion.RegionName, Util.WorldToRegionLoc((uint)otherRegion.RegionLocX), Util.WorldToRegionLoc((uint)otherRegion.RegionLocY));
-
-            m_neighbours[otherRegion.RegionHandle] = otherRegion;
+            get { return m_scene.RegionInfo.RegionName; }
         }
-
         public void Clear()
         {
             m_scene.EventManager.OnRegionUp -= OnRegionUp;
@@ -92,11 +73,23 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
             uint xsnap = (uint)(x / Constants.RegionSize) * Constants.RegionSize;
             uint ysnap = (uint)(y / Constants.RegionSize) * Constants.RegionSize;
             ulong handle = Util.RegionWorldLocToHandle(xsnap, ysnap);
-            
+
             if (m_neighbours.ContainsKey(handle))
                 return m_neighbours[handle];
-            
+
             return null;
+        }
+
+        private void OnRegionUp(GridRegion otherRegion)
+        {
+            // This shouldn't happen
+            if (otherRegion == null)
+                return;
+
+            m_log.DebugFormat("[REGION CACHE]: (on region {0}) Region {1} is up @ {2}-{3}",
+                m_scene.RegionInfo.RegionName, otherRegion.RegionName, Util.WorldToRegionLoc((uint)otherRegion.RegionLocX), Util.WorldToRegionLoc((uint)otherRegion.RegionLocY));
+
+            m_neighbours[otherRegion.RegionHandle] = otherRegion;
         }
     }
 }

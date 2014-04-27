@@ -25,14 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using OpenSim.Framework;
 using OpenMetaverse;
+using OpenSim.Framework;
 
 namespace OpenSim.Region.ClientStack.LindenUDP
 {
-
     public delegate void UnackedPacketMethod(OutgoingPacket oPacket);
+
     /// <summary>
     /// Holds a reference to the <seealso cref="LLUDPClient"/> this packet is
     /// destined for, along with the serialized packet data, sequence number
@@ -42,18 +41,21 @@ namespace OpenSim.Region.ClientStack.LindenUDP
     /// </summary>
     public sealed class OutgoingPacket
     {
-        /// <summary>Client this packet is destined for</summary>
-        public LLUDPClient Client;
         /// <summary>Packet data to send</summary>
         public UDPPacketBuffer Buffer;
-        /// <summary>Sequence number of the wrapped packet</summary>
-        public uint SequenceNumber;
-        /// <summary>Number of times this packet has been resent</summary>
-        public int ResendCount;
-        /// <summary>Environment.TickCount when this packet was last sent over the wire</summary>
-        public int TickCount;
+
         /// <summary>Category this packet belongs to</summary>
         public ThrottleOutPacketType Category;
+
+        /// <summary>Client this packet is destined for</summary>
+        public LLUDPClient Client;
+        /// <summary>Number of times this packet has been resent</summary>
+        public int ResendCount;
+
+        /// <summary>Sequence number of the wrapped packet</summary>
+        public uint SequenceNumber;
+        /// <summary>Environment.TickCount when this packet was last sent over the wire</summary>
+        public int TickCount;
         /// <summary>The delegate to be called if this packet is determined to be unacknowledged</summary>
         public UnackedPacketMethod UnackedMethod;
 

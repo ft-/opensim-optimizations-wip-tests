@@ -25,7 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using System.Collections.Generic;
 using System.Xml;
 
@@ -33,17 +32,31 @@ namespace OpenSim.Framework
 {
     public delegate void CommandDelegate(string module, string[] cmd);
 
-    public interface ICommands
+    public delegate void OnOutputDelegate(string message);
+
+    public interface ICommandConsole : IConsole
     {
-        void FromXml(XmlElement root, CommandDelegate fn);
+        event OnOutputDelegate OnOutput;
+
+        ICommands Commands { get; }
 
         /// <summary>
-        /// Get help for the given help string
+        /// The default prompt text.
         /// </summary>
-        /// <param name="cmd">Parsed parts of the help string.  If empty then general help is returned.</param>
-        /// <returns></returns>
-        List<string> GetHelp(string[] cmd);
+        string DefaultPrompt { get; set; }
 
+        /// <summary>
+        /// Display a command prompt on the console and wait for user input
+        /// </summary>
+        void Prompt();
+
+        string ReadLine(string p, bool isCommand, bool e);
+
+        void RunCommand(string cmd);
+    }
+
+    public interface ICommands
+    {
         /// <summary>
         /// Add a command to those which can be invoked from the console.
         /// </summary>
@@ -69,31 +82,16 @@ namespace OpenSim.Framework
 
         string[] FindNextOption(string[] cmd, bool term);
 
-        string[] Resolve(string[] cmd);
+        void FromXml(XmlElement root, CommandDelegate fn);
 
+        /// <summary>
+        /// Get help for the given help string
+        /// </summary>
+        /// <param name="cmd">Parsed parts of the help string.  If empty then general help is returned.</param>
+        /// <returns></returns>
+        List<string> GetHelp(string[] cmd);
         XmlElement GetXml(XmlDocument doc);
-    }
 
-    public delegate void OnOutputDelegate(string message);
-
-    public interface ICommandConsole : IConsole
-    {
-        event OnOutputDelegate OnOutput;
-
-        ICommands Commands { get; }
-
-        /// <summary>
-        /// The default prompt text.
-        /// </summary>
-        string DefaultPrompt { get; set; }
-
-        /// <summary>
-        /// Display a command prompt on the console and wait for user input
-        /// </summary>
-        void Prompt();
-
-        void RunCommand(string cmd);
-
-        string ReadLine(string p, bool isCommand, bool e);
+        string[] Resolve(string[] cmd);
     }
 }

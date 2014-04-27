@@ -25,26 +25,27 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Specialized;
 using System.IO;
-using System.Net;
 using System.Text;
-using System.Web;
 
 namespace OpenSim.Framework.Servers.HttpServer
 {
     public interface IOSHttpResponse
     {
         /// <summary>
-        /// Content type property.
+        /// Return the output stream feeding the body.
         /// </summary>
-        /// <remarks>
-        /// Setting this property will also set IsContentTypeSet to
-        /// true.
-        /// </remarks>
-        string ContentType { get; set; }
+        Stream Body { get; }
+
+        /// <summary>
+        /// Encoding of the body content.
+        /// </summary>
+        Encoding ContentEncoding { get; set; }
+
+        /// <summary>
+        /// Length of the body content; 0 if there is no body.
+        /// </summary>
+        long ContentLength { get; set; }
 
         /// <summary>
         /// Boolean property indicating whether the content type
@@ -58,22 +59,19 @@ namespace OpenSim.Framework.Servers.HttpServer
         //     get { return _contentTypeSet; }
         // }
         // private bool _contentTypeSet;
-
-        /// <summary>
-        /// Length of the body content; 0 if there is no body.
-        /// </summary>
-        long ContentLength { get; set; }
-
         /// <summary>
         /// Alias for ContentLength.
         /// </summary>
         long ContentLength64 { get; set; }
 
         /// <summary>
-        /// Encoding of the body content.
+        /// Content type property.
         /// </summary>
-        Encoding ContentEncoding { get; set; }
-
+        /// <remarks>
+        /// Setting this property will also set IsContentTypeSet to
+        /// true.
+        /// </remarks>
+        string ContentType { get; set; }
         bool KeepAlive { get; set; }
 
         /// <summary>
@@ -92,16 +90,12 @@ namespace OpenSim.Framework.Servers.HttpServer
         Stream OutputStream { get; }
 
         string ProtocolVersion { get; set; }
-
-        /// <summary>
-        /// Return the output stream feeding the body.
-        /// </summary>
-        Stream Body { get; }
-
         /// <summary>
         /// Set a redirct location.
         /// </summary>
         string RedirectLocation { set; }
+
+        bool ReuseContext { get; set; }
 
         /// <summary>
         /// Chunk transfers.
@@ -117,9 +111,6 @@ namespace OpenSim.Framework.Servers.HttpServer
         /// HTTP status description.
         /// </summary>
         string StatusDescription { get; set; }
-
-        bool ReuseContext { get; set; }
-
         /// <summary>
         /// Add a header field and content to the response.
         /// </summary>

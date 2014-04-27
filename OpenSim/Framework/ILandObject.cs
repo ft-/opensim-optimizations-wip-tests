@@ -25,81 +25,82 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
 using OpenMetaverse;
+using System.Collections.Generic;
 
 namespace OpenSim.Framework
 {
     public delegate int overrideParcelMaxPrimCountDelegate(ILandObject obj);
+
     public delegate int overrideSimulatorMaxPrimCountDelegate(ILandObject obj);
 
     public interface ILandObject
     {
-        int GetParcelMaxPrimCount();
-        int GetSimulatorMaxPrimCount();
-        int GetPrimsFree();
-        Dictionary<UUID, int> GetLandObjectOwners();
+        /// <summary>
+        /// The end point for the land object.  This is the eastern-most point as one scans land working from
+        /// south to north.
+        /// </summary>
+        Vector3 EndPoint { get; }
+
+        bool[,] LandBitmap { get; set; }
 
         LandData LandData { get; set; }
-        bool[,] LandBitmap { get; set; }
-        UUID RegionUUID { get; }
-        
+
         /// <summary>
         /// Prim counts for this land object.
         /// </summary>
         IPrimCounts PrimCounts { get; set; }
-        
+
+        UUID RegionUUID { get; }
+
         /// <summary>
-        /// The start point for the land object.  This is the western-most point as one scans land working from 
+        /// The start point for the land object.  This is the western-most point as one scans land working from
         /// north to south.
         /// </summary>
         Vector3 StartPoint { get; }
-        
-        /// <summary>
-        /// The end point for the land object.  This is the eastern-most point as one scans land working from 
-        /// south to north.
-        /// </summary>        
-        Vector3 EndPoint { get; }
-        
-        bool ContainsPoint(int x, int y);
-        
-        ILandObject Copy();
-
-        void SendLandUpdateToAvatarsOverMe();
-
-        void SendLandProperties(int sequence_id, bool snap_selection, int request_result, IClientAPI remote_client);
-        void UpdateLandProperties(LandUpdateArgs args, IClientAPI remote_client);
-        bool IsEitherBannedOrRestricted(UUID avatar);
-        bool IsBannedFromLand(UUID avatar);
-        bool CanBeOnThisLand(UUID avatar, float posHeight);
-        bool IsRestrictedFromLand(UUID avatar);
-        bool IsInLandAccessList(UUID avatar);
-        void SendLandUpdateToClient(IClientAPI remote_client);
-        void SendLandUpdateToClient(bool snap_selection, IClientAPI remote_client);
-        List<LandAccessEntry> CreateAccessListArrayByFlag(AccessList flag);
-        void SendAccessList(UUID agentID, UUID sessionID, uint flags, int sequenceID, IClientAPI remote_client);
-        void UpdateAccessList(uint flags, UUID transactionID, int sequenceID, int sections, List<LandAccessEntry> entries, IClientAPI remote_client);
-        void UpdateLandBitmapByteArray();
-        void SetLandBitmapFromByteArray();
-        bool[,] GetLandBitmap();
-        void ForceUpdateLandInfo();
-        void SetLandBitmap(bool[,] bitmap);
 
         /// <summary>
         /// Get a land bitmap that would cover an entire region.
         /// </summary>
         /// <returns>The bitmap created.</returns>
         bool[,] BasicFullRegionLandBitmap();
-        
+
+        bool CanBeOnThisLand(UUID avatar, float posHeight);
+
+        bool ContainsPoint(int x, int y);
+
+        ILandObject Copy();
+
+        List<LandAccessEntry> CreateAccessListArrayByFlag(AccessList flag);
+
+        void DeedToGroup(UUID groupID);
+
+        void ForceUpdateLandInfo();
+
+        bool[,] GetLandBitmap();
+
+        Dictionary<UUID, int> GetLandObjectOwners();
+
+        /// <summary>
+        /// Get the music url for this land parcel
+        /// </summary>
+        /// <returns>The music url.</returns>
+        string GetMusicUrl();
+
+        int GetParcelMaxPrimCount();
+
+        int GetPrimsFree();
+
+        int GetSimulatorMaxPrimCount();
         /// <summary>
         /// Create a square land bitmap.
         /// </summary>
         /// <remarks>
         /// Land co-ordinates are zero indexed.  The inputs are treated as points.  So if you want to create a bitmap
-        /// that covers an entire 256 x 256m region apart from a strip of land on the east, then you would need to 
+        /// that covers an entire 256 x 256m region apart from a strip of land on the east, then you would need to
         /// specify start_x = 0, start_y = 0, end_x = 252 (or anything up to 255), end_y = 256.
-        /// 
-        /// At the moment, the smallest parcel of land is 4m x 4m, so if the 
+        ///
+        /// At the moment, the smallest parcel of land is 4m x 4m, so if the
         /// region is 256 x 256m (the SL size), the bitmap returned will start at (0,0) and end at (63,63).
         /// </remarks>
         /// <param name="start_x"></param>
@@ -108,36 +109,61 @@ namespace OpenSim.Framework
         /// <param name="end_y"></param>
         /// <returns>The bitmap created.</returns>
         bool[,] GetSquareLandBitmap(int start_x, int start_y, int end_x, int end_y);
-        
-        bool[,] ModifyLandBitmapSquare(bool[,] land_bitmap, int start_x, int start_y, int end_x, int end_y, bool set_value);
+
+        bool IsBannedFromLand(UUID avatar);
+
+        bool IsEitherBannedOrRestricted(UUID avatar);
+
+        bool IsInLandAccessList(UUID avatar);
+
+        bool IsRestrictedFromLand(UUID avatar);
+
         bool[,] MergeLandBitmaps(bool[,] bitmap_base, bool[,] bitmap_add);
-        void SendForceObjectSelect(int local_id, int request_type, List<UUID> returnIDs, IClientAPI remote_client);
-        void SendLandObjectOwners(IClientAPI remote_client);
-        void ReturnLandObjects(uint type, UUID[] owners, UUID[] tasks, IClientAPI remote_client);
+
+        bool[,] ModifyLandBitmapSquare(bool[,] land_bitmap, int start_x, int start_y, int end_x, int end_y, bool set_value);
+
         void ResetOverMeRecord();
-        void UpdateLandSold(UUID avatarID, UUID groupID, bool groupOwned, uint AuctionID, int claimprice, int area);
 
-        void DeedToGroup(UUID groupID);
+        void ReturnLandObjects(uint type, UUID[] owners, UUID[] tasks, IClientAPI remote_client);
 
-        void SetParcelObjectMaxOverride(overrideParcelMaxPrimCountDelegate overrideDel);
-        void SetSimulatorObjectMaxOverride(overrideSimulatorMaxPrimCountDelegate overrideDel);
+        void SendAccessList(UUID agentID, UUID sessionID, uint flags, int sequenceID, IClientAPI remote_client);
+
+        void SendForceObjectSelect(int local_id, int request_type, List<UUID> returnIDs, IClientAPI remote_client);
+
+        void SendLandObjectOwners(IClientAPI remote_client);
+
+        void SendLandProperties(int sequence_id, bool snap_selection, int request_result, IClientAPI remote_client);
+
+        void SendLandUpdateToAvatarsOverMe();
+        void SendLandUpdateToClient(IClientAPI remote_client);
+
+        void SendLandUpdateToClient(bool snap_selection, IClientAPI remote_client);
+
+        void SetLandBitmap(bool[,] bitmap);
+
+        void SetLandBitmapFromByteArray();
 
         /// <summary>
         /// Set the media url for this land parcel
         /// </summary>
         /// <param name="url"></param>
         void SetMediaUrl(string url);
-        
+
         /// <summary>
         /// Set the music url for this land parcel
         /// </summary>
         /// <param name="url"></param>
         void SetMusicUrl(string url);
 
-        /// <summary>
-        /// Get the music url for this land parcel
-        /// </summary>
-        /// <returns>The music url.</returns>
-        string GetMusicUrl();
+        void SetParcelObjectMaxOverride(overrideParcelMaxPrimCountDelegate overrideDel);
+
+        void SetSimulatorObjectMaxOverride(overrideSimulatorMaxPrimCountDelegate overrideDel);
+
+        void UpdateAccessList(uint flags, UUID transactionID, int sequenceID, int sections, List<LandAccessEntry> entries, IClientAPI remote_client);
+
+        void UpdateLandBitmapByteArray();
+
+        void UpdateLandProperties(LandUpdateArgs args, IClientAPI remote_client);
+        void UpdateLandSold(UUID avatarID, UUID groupID, bool groupOwned, uint AuctionID, int claimprice, int area);
     }
 }

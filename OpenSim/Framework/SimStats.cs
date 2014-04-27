@@ -32,56 +32,28 @@ namespace OpenSim.Framework
 {
     /// <summary>
     /// Enapsulate statistics for a simulator/scene.
-    /// 
+    ///
     /// TODO: This looks very much like the OpenMetaverse SimStatsPacket.  It should be much more generic stats
     /// storage.
     /// </summary>
     public class SimStats
     {
-        public uint RegionX
-        {
-            get { return m_regionX; }
-        }
-        private uint m_regionX;
-
-        public uint RegionY
-        {
-            get { return m_regionY; }
-        }
-        private uint m_regionY;
-        
-        public SimStatsPacket.RegionBlock RegionBlock
-        {
-            get { return m_regionBlock; }
-        }
-        private SimStatsPacket.RegionBlock m_regionBlock;
-        
-        public SimStatsPacket.StatBlock[] StatsBlock
-        {
-            get { return m_statsBlock; }
-        }
-        private SimStatsPacket.StatBlock[] m_statsBlock;
-        
-        public uint RegionFlags
-        {
-            get { return m_regionFlags; }
-        }
-        private uint m_regionFlags;
-            
-        public uint ObjectCapacity
-        {
-            get { return m_objectCapacity; }
-        }
         private uint m_objectCapacity;
 
-        public UUID RegionUUID
-        {
-            get { return regionUUID; }
-        }
+        private SimStatsPacket.RegionBlock m_regionBlock;
+
+        private uint m_regionFlags;
+
+        private uint m_regionX;
+
+        private uint m_regionY;
+
+        private SimStatsPacket.StatBlock[] m_statsBlock;
+
         private UUID regionUUID;
-                
+
         public SimStats(
-            uint regionX, uint regionY, uint regionFlags, uint objectCapacity, 
+            uint regionX, uint regionY, uint regionFlags, uint objectCapacity,
             SimStatsPacket.RegionBlock regionBlock, SimStatsPacket.StatBlock[] statsBlock, UUID pRUUID)
         {
             regionUUID = pRUUID;
@@ -91,6 +63,39 @@ namespace OpenSim.Framework
             m_objectCapacity = objectCapacity;
             m_regionBlock = regionBlock;
             m_statsBlock = statsBlock;
+        }
+
+        public uint ObjectCapacity
+        {
+            get { return m_objectCapacity; }
+        }
+
+        public SimStatsPacket.RegionBlock RegionBlock
+        {
+            get { return m_regionBlock; }
+        }
+
+        public uint RegionFlags
+        {
+            get { return m_regionFlags; }
+        }
+
+        public UUID RegionUUID
+        {
+            get { return regionUUID; }
+        }
+
+        public uint RegionX
+        {
+            get { return m_regionX; }
+        }
+        public uint RegionY
+        {
+            get { return m_regionY; }
+        }
+        public SimStatsPacket.StatBlock[] StatsBlock
+        {
+            get { return m_statsBlock; }
         }
     }
 }

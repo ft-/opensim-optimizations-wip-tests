@@ -31,11 +31,10 @@ namespace OpenSim.Framework.Capabilities
     [OSDMap]
     public class LLSDVoiceAccountResponse
     {
-        public string username;
         public string password;
-        public string voice_sip_uri_hostname;
+        public string username;
         public string voice_account_server_name;
-
+        public string voice_sip_uri_hostname;
         public LLSDVoiceAccountResponse()
         {
         }

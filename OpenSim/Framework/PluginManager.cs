@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
@@ -26,35 +25,225 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
+using Mono.Addins;
+using Mono.Addins.Description;
+using Mono.Addins.Setup;
 using System;
-using System.Text;
-using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using Mono.Addins;
-using Mono.Addins.Setup;
-using Mono.Addins.Description;
-using OpenSim.Framework;
-
+using System.Linq;
 
 namespace OpenSim.Framework
 {
     /// <summary>
     /// Manager for registries and plugins
     /// </summary>
-	public class PluginManager : SetupService
-	{
-		public AddinRegistry PluginRegistry;
+    public class PluginManager : SetupService
+    {
+        public AddinRegistry PluginRegistry;
 
-		public PluginManager(AddinRegistry registry): base (registry)
+        public PluginManager(AddinRegistry registry)
+            : base(registry)
         {
-			PluginRegistry = registry;
+            PluginRegistry = registry;
+        }
 
-		}
+        // Show plugin info
+        /// <summary>
+        /// Addins the info.
+        /// </summary>
+        /// <returns>
+        /// The info.
+        /// </returns>
+        /// <param name='args'>
+        /// Arguments.
+        /// </param>
+        public bool AddinInfo(int ndx, out Dictionary<string, object> result)
+        {
+            Dictionary<string, object> res = new Dictionary<string, object>();
+            result = res;
 
-		/// <summary>
+            Addin[] addins = GetSortedAddinList("RobustPlugin");
+
+            if (ndx > (addins.Length - 1))
+            {
+                MainConsole.Instance.Output("Selection out of range");
+                return false;
+            }
+            // author category description
+            Addin addin = addins[ndx];
+
+            res["author"] = addin.Description.Author;
+            res["category"] = addin.Description.Category;
+            res["description"] = addin.Description.Description;
+            res["name"] = addin.Name;
+            res["url"] = addin.Description.Url;
+            res["file_name"] = addin.Description.FileName;
+
+            result = res;
+            return true;
+        }
+
+        // Register a repository
+        /// <summary>
+        /// Register a repository with our server.
+        /// </summary>
+        /// <returns>
+        /// result of the action
+        /// </returns>
+        /// <param name='repo'>
+        /// The URL of the repository we want to add
+        /// </param>
+        public bool AddRepository(string repo)
+        {
+            Repositories.RegisterRepository(null, repo, true);
+            PluginRegistry.Rebuild(null);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Checks the installed.
+        /// </summary>
+        /// <returns>
+        /// The installed.
+        /// </returns>
+        public string CheckInstalled()
+        {
+            return "CheckInstall";
+        }
+
+        // Disable a plugin
+        /// <summary>
+        /// Disables the plugin.
+        /// </summary>
+        /// <param name='args'>
+        /// Arguments.
+        /// </param>
+        public void DisablePlugin(string[] args)
+        {
+            Addin[] addins = GetSortedAddinList("RobustPlugin");
+
+            int n = Convert.ToInt16(args[2]);
+            if (n > (addins.Length - 1))
+            {
+                MainConsole.Instance.Output("Selection out of range");
+                return;
+            }
+
+            Addin addin = addins[n];
+            AddinManager.Registry.DisableAddin(addin.Id);
+            addin.Enabled = false;
+            return;
+        }
+
+        // Disable a repository
+        /// <summary>
+        /// Disables the repository.
+        /// </summary>
+        /// <param name='args'>
+        /// Arguments.
+        /// </param>
+        public void DisableRepository(string[] args)
+        {
+            AddinRepository[] reps = Repositories.GetRepositories();
+            Array.Sort(reps, (r1, r2) => r1.Title.CompareTo(r2.Title));
+            if (reps.Length == 0)
+            {
+                MainConsole.Instance.Output("No repositories have been registered.");
+                return;
+            }
+
+            int n = Convert.ToInt16(args[2]);
+            if (n > (reps.Length - 1))
+            {
+                MainConsole.Instance.Output("Selection out of range");
+                return;
+            }
+
+            AddinRepository rep = reps[n];
+            Repositories.SetRepositoryEnabled(rep.Url, false);
+            return;
+        }
+
+        // Enable plugin
+        /// <summary>
+        /// Enables the plugin.
+        /// </summary>
+        /// <param name='args'>
+        /// Arguments.
+        /// </param>
+        public void EnablePlugin(string[] args)
+        {
+            Addin[] addins = GetSortedAddinList("RobustPlugin");
+
+            int n = Convert.ToInt16(args[2]);
+            if (n > (addins.Length - 1))
+            {
+                MainConsole.Instance.Output("Selection out of range");
+                return;
+            }
+
+            Addin addin = addins[n];
+
+            addin.Enabled = true;
+            AddinManager.Registry.EnableAddin(addin.Id);
+            // AddinManager.Registry.Update();
+            if (PluginRegistry.IsAddinEnabled(addin.Id))
+            {
+                ConsoleProgressStatus ps = new ConsoleProgressStatus(false);
+                if (!AddinManager.AddinEngine.IsAddinLoaded(addin.Id))
+                {
+                    MainConsole.Instance.Output("Ignore the following error...");
+                    AddinManager.Registry.Rebuild(ps);
+                    AddinManager.AddinEngine.LoadAddin(ps, addin.Id);
+                }
+            }
+            else
+            {
+                MainConsole.Instance.OutputFormat("Not Enabled in this domain {0}", addin.Name);
+            }
+            return;
+        }
+
+        // Enable repository
+        /// <summary>
+        /// Enables the repository.
+        /// </summary>
+        /// <param name='args'>
+        /// Arguments.
+        /// </param>
+        public void EnableRepository(string[] args)
+        {
+            AddinRepository[] reps = Repositories.GetRepositories();
+            Array.Sort(reps, (r1, r2) => r1.Title.CompareTo(r2.Title));
+            if (reps.Length == 0)
+            {
+                MainConsole.Instance.Output("No repositories have been registered.");
+                return;
+            }
+
+            int n = Convert.ToInt16(args[2]);
+            if (n > (reps.Length - 1))
+            {
+                MainConsole.Instance.Output("Selection out of range");
+                return;
+            }
+
+            AddinRepository rep = reps[n];
+            Repositories.SetRepositoryEnabled(rep.Url, true);
+            return;
+        }
+
+        /// <summary>
+        /// Gets the repository.
+        /// </summary>
+        public void GetRepository()
+        {
+            Repositories.UpdateAllRepositories(new ConsoleProgressStatus(false));
+        }
+
+        /// <summary>
         /// Installs the plugin.
         /// </summary>
         /// <returns>
@@ -97,87 +286,18 @@ namespace OpenSim.Framework
                 Addin addin = PluginRegistry.GetAddin(aentry.Addin.Id);
                 PluginRegistry.DisableAddin(addin.Id);
                 addin.Enabled = false;
-                
+
                 MainConsole.Instance.Output("Installation Success");
                 ListInstalledAddins(out res);
                 result = res;
                 return true;
-            } 
+            }
             else
-            {                
+            {
                 MainConsole.Instance.Output("Installation Failed");
                 result = res;
                 return false;
             }
-        }
-
-        // Remove plugin
-        /// <summary>
-        /// Uns the install.
-        /// </summary>
-        /// <param name='args'>
-        /// Arguments.
-        /// </param>
-        public void UnInstall(int ndx)
-        {
-            Addin[] addins = GetSortedAddinList("RobustPlugin");
-
-            if (ndx > (addins.Length -1))
-            {
-                MainConsole.Instance.Output("Selection out of range");
-                return;
-            }
-
-            Addin addin = addins[ndx];
-            MainConsole.Instance.OutputFormat("Uninstalling plugin {0}", addin.Id);
-            AddinManager.Registry.DisableAddin(addin.Id);
-            addin.Enabled = false;
-            IProgressStatus ps = new ConsoleProgressStatus(false);
-            Uninstall(ps, addin.Id);
-            MainConsole.Instance.Output("Uninstall Success - restart to complete operation");
-            return;
-        }
-
-        /// <summary>
-        /// Checks the installed.
-        /// </summary>
-        /// <returns>
-        /// The installed.
-        /// </returns>
-        public string CheckInstalled()
-        {
-            return "CheckInstall";
-        }
-
-        /// <summary>
-        /// Lists the installed addins.
-        /// </summary>
-        /// <param name='result'>
-        /// Result.
-        /// </param>
-        public void ListInstalledAddins(out Dictionary<string, object> result)
-        {
-            Dictionary<string, object> res = new Dictionary<string, object>();
-
-			Addin[] addins = GetSortedAddinList("RobustPlugin");
-			if(addins.Count() < 1)
-			{
-				MainConsole.Instance.Output("Error!");
-			}
-            int count = 0;
-            foreach (Addin addin in addins)
-            {
-                Dictionary<string, object> r = new Dictionary<string, object>();
-                r["enabled"] = addin.Enabled == true ? true : false;
-                r["name"] = addin.LocalId;
-                r["version"] = addin.Version;
-
-                res.Add(count.ToString(), r);
-
-                count++;
-            }
-            result = res;
-            return;
         }
 
         // List compatible plugins in registered repositories
@@ -208,146 +328,34 @@ namespace OpenSim.Framework
             return;
         }
 
-        // List available updates ** 1
         /// <summary>
-        /// Lists the updates.
+        /// Lists the installed addins.
         /// </summary>
-        public void ListUpdates()
-        {
-            IProgressStatus ps = new ConsoleProgressStatus(true);
-            Console.WriteLine ("Looking for updates...");
-            Repositories.UpdateAllRepositories (ps);
-            Console.WriteLine ("Available add-in updates:");
-
-            AddinRepositoryEntry[] entries = Repositories.GetAvailableUpdates();
-
-            foreach (AddinRepositoryEntry entry in entries)
-            {
-                Console.WriteLine(String.Format("{0}",entry.Addin.Id));
-            }
-        }
-
-        // Sync to repositories
-        /// <summary>
-        /// Update this instance.
-        /// </summary>
-        public string Update()
-        {
-            IProgressStatus ps = new ConsoleProgressStatus(true);
-            Repositories.UpdateAllRepositories(ps);
-            return "Update";
-        }
-
-        // Register a repository
-        /// <summary>
-        /// Register a repository with our server.
-        /// </summary>
-        /// <returns>
-        /// result of the action
-        /// </returns>
-        /// <param name='repo'>
-        /// The URL of the repository we want to add
+        /// <param name='result'>
+        /// Result.
         /// </param>
-        public bool AddRepository(string repo)
+        public void ListInstalledAddins(out Dictionary<string, object> result)
         {
-            Repositories.RegisterRepository(null, repo, true);
-            PluginRegistry.Rebuild(null);
+            Dictionary<string, object> res = new Dictionary<string, object>();
 
-            return true;
-        }
-
-        /// <summary>
-        /// Gets the repository.
-        /// </summary>
-        public void GetRepository()
-        {
-            Repositories.UpdateAllRepositories(new ConsoleProgressStatus(false));
-        }
-
-        // Remove a repository from the list
-        /// <summary>
-        /// Removes the repository.
-        /// </summary>
-        /// <param name='args'>
-        /// Arguments.
-        /// </param>
-        public void RemoveRepository(string[] args)
-        {
-            AddinRepository[] reps = Repositories.GetRepositories();
-            Array.Sort(reps, (r1,r2) => r1.Title.CompareTo(r2.Title));
-            if (reps.Length == 0)
+            Addin[] addins = GetSortedAddinList("RobustPlugin");
+            if (addins.Count() < 1)
             {
-                MainConsole.Instance.Output("No repositories have been registered.");
-                return;
+                MainConsole.Instance.Output("Error!");
             }
-
-            int n = Convert.ToInt16(args[2]);
-            if (n > (reps.Length -1))
+            int count = 0;
+            foreach (Addin addin in addins)
             {
-                MainConsole.Instance.Output("Selection out of range");
-                return;
+                Dictionary<string, object> r = new Dictionary<string, object>();
+                r["enabled"] = addin.Enabled == true ? true : false;
+                r["name"] = addin.LocalId;
+                r["version"] = addin.Version;
+
+                res.Add(count.ToString(), r);
+
+                count++;
             }
-
-            AddinRepository rep = reps[n];
-            Repositories.RemoveRepository(rep.Url);
-            return;
-        }
-
-        // Enable repository
-        /// <summary>
-        /// Enables the repository.
-        /// </summary>
-        /// <param name='args'>
-        /// Arguments.
-        /// </param>
-        public void EnableRepository(string[] args)
-        {
-            AddinRepository[] reps = Repositories.GetRepositories();
-            Array.Sort(reps, (r1,r2) => r1.Title.CompareTo(r2.Title));
-            if (reps.Length == 0)
-            {
-                MainConsole.Instance.Output("No repositories have been registered.");
-                return;
-            }
-
-            int n = Convert.ToInt16(args[2]);
-            if (n > (reps.Length -1))
-            {
-                MainConsole.Instance.Output("Selection out of range");
-                return;
-            }
-
-            AddinRepository rep = reps[n];
-            Repositories.SetRepositoryEnabled(rep.Url, true);
-            return;
-        }
-
-        // Disable a repository
-        /// <summary>
-        /// Disables the repository.
-        /// </summary>
-        /// <param name='args'>
-        /// Arguments.
-        /// </param>
-        public void DisableRepository(string[] args)
-        {
-            AddinRepository[] reps = Repositories.GetRepositories();
-            Array.Sort(reps, (r1,r2) => r1.Title.CompareTo(r2.Title));
-            if (reps.Length == 0)
-            {
-                MainConsole.Instance.Output("No repositories have been registered.");
-                return;
-            }
-
-            int n = Convert.ToInt16(args[2]);
-            if (n > (reps.Length -1))
-            {
-                MainConsole.Instance.Output("Selection out of range");
-                return;
-            }
-
-            AddinRepository rep = reps[n];
-            Repositories.SetRepositoryEnabled(rep.Url, false);
+            result = res;
             return;
         }
 
@@ -377,13 +385,97 @@ namespace OpenSim.Framework
                 r["enabled"] = rep.Enabled == true ? true : false;
                 r["name"] = rep.Name;
                 r["url"] = rep.Url;
-                
+
                 res.Add(count.ToString(), r);
                 count++;
             }
             return;
         }
 
+        // List available updates ** 1
+        /// <summary>
+        /// Lists the updates.
+        /// </summary>
+        public void ListUpdates()
+        {
+            IProgressStatus ps = new ConsoleProgressStatus(true);
+            Console.WriteLine("Looking for updates...");
+            Repositories.UpdateAllRepositories(ps);
+            Console.WriteLine("Available add-in updates:");
+
+            AddinRepositoryEntry[] entries = Repositories.GetAvailableUpdates();
+
+            foreach (AddinRepositoryEntry entry in entries)
+            {
+                Console.WriteLine(String.Format("{0}", entry.Addin.Id));
+            }
+        }
+
+        // Remove a repository from the list
+        /// <summary>
+        /// Removes the repository.
+        /// </summary>
+        /// <param name='args'>
+        /// Arguments.
+        /// </param>
+        public void RemoveRepository(string[] args)
+        {
+            AddinRepository[] reps = Repositories.GetRepositories();
+            Array.Sort(reps, (r1, r2) => r1.Title.CompareTo(r2.Title));
+            if (reps.Length == 0)
+            {
+                MainConsole.Instance.Output("No repositories have been registered.");
+                return;
+            }
+
+            int n = Convert.ToInt16(args[2]);
+            if (n > (reps.Length - 1))
+            {
+                MainConsole.Instance.Output("Selection out of range");
+                return;
+            }
+
+            AddinRepository rep = reps[n];
+            Repositories.RemoveRepository(rep.Url);
+            return;
+        }
+
+        // Remove plugin
+        /// <summary>
+        /// Uns the install.
+        /// </summary>
+        /// <param name='args'>
+        /// Arguments.
+        /// </param>
+        public void UnInstall(int ndx)
+        {
+            Addin[] addins = GetSortedAddinList("RobustPlugin");
+
+            if (ndx > (addins.Length - 1))
+            {
+                MainConsole.Instance.Output("Selection out of range");
+                return;
+            }
+
+            Addin addin = addins[ndx];
+            MainConsole.Instance.OutputFormat("Uninstalling plugin {0}", addin.Id);
+            AddinManager.Registry.DisableAddin(addin.Id);
+            addin.Enabled = false;
+            IProgressStatus ps = new ConsoleProgressStatus(false);
+            Uninstall(ps, addin.Id);
+            MainConsole.Instance.Output("Uninstall Success - restart to complete operation");
+            return;
+        }
+        // Sync to repositories
+        /// <summary>
+        /// Update this instance.
+        /// </summary>
+        public string Update()
+        {
+            IProgressStatus ps = new ConsoleProgressStatus(true);
+            Repositories.UpdateAllRepositories(ps);
+            return "Update";
+        }
         /// <summary>
         /// Updates the registry.
         /// </summary>
@@ -391,120 +483,43 @@ namespace OpenSim.Framework
         {
             PluginRegistry.Update();
         }
-
-        // Show plugin info
-        /// <summary>
-        /// Addins the info.
-        /// </summary>
-        /// <returns>
-        /// The info.
-        /// </returns>
-        /// <param name='args'>
-        /// Arguments.
-        /// </param>
-        public bool AddinInfo(int ndx, out Dictionary<string, object> result)
-        {
-            Dictionary<string, object> res = new Dictionary<string, object>();
-            result = res;
-
-            Addin[] addins = GetSortedAddinList("RobustPlugin");
-
-            if (ndx > (addins.Length - 1))
-            {
-                MainConsole.Instance.Output("Selection out of range");
-                return false;
-            }
-            // author category description
-            Addin addin = addins[ndx];
-
-            res["author"] = addin.Description.Author;
-            res["category"] = addin.Description.Category;
-            res["description"] = addin.Description.Description;
-            res["name"] = addin.Name;
-            res["url"] = addin.Description.Url;
-            res["file_name"] = addin.Description.FileName;
-
-            result = res;
-            return true;
-        }
-
-        // Disable a plugin
-        /// <summary>
-        /// Disables the plugin.
-        /// </summary>
-        /// <param name='args'>
-        /// Arguments.
-        /// </param>
-        public void DisablePlugin(string[] args)
-        {
-            Addin[] addins = GetSortedAddinList("RobustPlugin");
-
-            int n = Convert.ToInt16(args[2]);
-            if (n > (addins.Length -1))
-            {
-                MainConsole.Instance.Output("Selection out of range");
-                return;
-            }
-
-            Addin addin = addins[n];
-            AddinManager.Registry.DisableAddin(addin.Id);
-            addin.Enabled = false;
-            return;
-        }
-
-        // Enable plugin
-        /// <summary>
-        /// Enables the plugin.
-        /// </summary>
-        /// <param name='args'>
-        /// Arguments.
-        /// </param>
-        public void EnablePlugin(string[] args)
-        {
-            Addin[] addins = GetSortedAddinList("RobustPlugin");
-
-            int n = Convert.ToInt16(args[2]);
-            if (n > (addins.Length -1))
-            {
-                MainConsole.Instance.Output("Selection out of range");
-                return;
-            }
-
-            Addin addin = addins[n];
-
-            addin.Enabled = true;
-            AddinManager.Registry.EnableAddin(addin.Id);
-            // AddinManager.Registry.Update();
-            if(PluginRegistry.IsAddinEnabled(addin.Id))
-            {
-                ConsoleProgressStatus ps = new ConsoleProgressStatus(false);
-                if (!AddinManager.AddinEngine.IsAddinLoaded(addin.Id))
-                {
-                    MainConsole.Instance.Output("Ignore the following error...");
-                    AddinManager.Registry.Rebuild(ps);
-                    AddinManager.AddinEngine.LoadAddin(ps, addin.Id);
-                }
-            }
-            else
-            {
-                MainConsole.Instance.OutputFormat("Not Enabled in this domain {0}", addin.Name);
-            }
-            return;
-        }
-
-
-		
         #region Util
-        private void Testing()
+
+        private Addin[] GetSortedAddinList(string category)
         {
-            Addin[] list = Registry.GetAddins();
-
-            var addins = list.Where( a => a.Description.Category == "RobustPlugin");
-
-            foreach (Addin addin in addins)
+            ArrayList xlist = new ArrayList();
+            ArrayList list = new ArrayList();
+            try
             {
-                MainConsole.Instance.OutputFormat("Addin {0}", addin.Name);
+                list.AddRange(PluginRegistry.GetAddins());
             }
+            catch (Exception)
+            {
+                Addin[] x = xlist.ToArray(typeof(Addin)) as Addin[];
+                return x;
+            }
+
+            foreach (Addin addin in list)
+            {
+                if (addin.Description.Category == category)
+                    xlist.Add(addin);
+            }
+
+            Addin[] addins = xlist.ToArray(typeof(Addin)) as Addin[];
+            Array.Sort(addins, (r1, r2) => r1.Id.CompareTo(r2.Id));
+
+            return addins;
+        }
+
+        private AddinRepository[] GetSortedAddinRepo()
+        {
+            ArrayList list = new ArrayList();
+            list.AddRange(Repositories.GetRepositories());
+
+            AddinRepository[] repos = list.ToArray(typeof(AddinRepository)) as AddinRepository[];
+            Array.Sort(repos, (r1, r2) => r1.Name.CompareTo(r2.Name));
+
+            return repos;
         }
 
         // These will let us deal with numbered lists instead
@@ -516,48 +531,22 @@ namespace OpenSim.Framework
 
             AddinRepositoryEntry[] addins = list.ToArray(typeof(AddinRepositoryEntry)) as AddinRepositoryEntry[];
 
-            Array.Sort(addins,(r1,r2) => r1.Addin.Id.CompareTo(r2.Addin.Id));
+            Array.Sort(addins, (r1, r2) => r1.Addin.Id.CompareTo(r2.Addin.Id));
 
             return addins;
         }
 
-        private AddinRepository[] GetSortedAddinRepo()
+        private void Testing()
         {
-            ArrayList list = new ArrayList();
-            list.AddRange(Repositories.GetRepositories());
+            Addin[] list = Registry.GetAddins();
 
-            AddinRepository[] repos = list.ToArray(typeof(AddinRepository)) as AddinRepository[];
-            Array.Sort (repos,(r1,r2) => r1.Name.CompareTo(r2.Name));
+            var addins = list.Where(a => a.Description.Category == "RobustPlugin");
 
-            return repos;
-        }
-
-        private Addin[] GetSortedAddinList(string category)
-        {
-
-            ArrayList xlist = new ArrayList();
-            ArrayList list = new ArrayList();
-			try 
-			{
-            	list.AddRange(PluginRegistry.GetAddins());
-			}
-			catch (Exception)
-			{
-				Addin[] x = xlist.ToArray(typeof(Addin)) as Addin[];
-				return x;
-			}
-
-            foreach (Addin addin in list)
+            foreach (Addin addin in addins)
             {
-                if (addin.Description.Category == category)
-                    xlist.Add(addin);
+                MainConsole.Instance.OutputFormat("Addin {0}", addin.Name);
             }
-
-            Addin[] addins = xlist.ToArray(typeof(Addin)) as Addin[];
-            Array.Sort(addins,(r1,r2) => r1.Id.CompareTo(r2.Id));
-
-            return addins;
         }
         #endregion Util
-	}
+    }
 }

@@ -53,7 +53,6 @@ namespace OpenSim.Region.CoreModules.Framework.UserManagement
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "UserManagementModule")]
     public class UserManagementModule : ISharedRegionModule, IUserManagement, IPeople
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         protected bool m_Enabled;
         protected List<Scene> m_Scenes = new List<Scene>();

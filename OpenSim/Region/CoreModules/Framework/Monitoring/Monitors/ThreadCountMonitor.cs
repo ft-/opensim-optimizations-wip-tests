@@ -25,22 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
 namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
 {
-    class ThreadCountMonitor : IMonitor
+    internal class ThreadCountMonitor : IMonitor
     {
         #region Implementation of IMonitor
-
-        public string GetName()
-        {
-            return "ThreadCountMonitor";
-        }
-
-        public double GetValue()
-        {
-            return System.Diagnostics.Process.GetCurrentProcess().Threads.Count;
-        }
 
         public string GetFriendlyName()
         {
@@ -52,6 +41,15 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
             return (int)GetValue() + " Thread(s) (Global)";
         }
 
-        #endregion
+        public string GetName()
+        {
+            return "ThreadCountMonitor";
+        }
+
+        public double GetValue()
+        {
+            return System.Diagnostics.Process.GetCurrentProcess().Threads.Count;
+        }
+        #endregion Implementation of IMonitor
     }
 }

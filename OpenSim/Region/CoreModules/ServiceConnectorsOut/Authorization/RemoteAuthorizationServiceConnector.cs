@@ -27,16 +27,15 @@
 
 using log4net;
 using Mono.Addins;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
+using OpenSim.Services.Connectors;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Services.Connectors;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
-using OpenMetaverse;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authorization
 {
@@ -51,14 +50,29 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authorization
         private bool m_Enabled = false;
         private List<Scene> m_scenes = new List<Scene>();
 
-        public Type ReplaceableInterface 
-        {
-            get { return null; }
-        }
-
         public string Name
         {
             get { return "RemoteAuthorizationServicesConnector"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+        public void AddRegion(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+
+            if (!m_scenes.Contains(scene))
+            {
+                m_scenes.Add(scene);
+                scene.RegisterModuleInterface<IAuthorizationService>(this);
+            }
+        }
+
+        public void Close()
+        {
         }
 
         public override void Initialise(IConfigSource source)
@@ -85,49 +99,15 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authorization
             }
         }
 
-        public void PostInitialise()
-        {
-        }
-
-        public void Close()
-        {
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-            if (!m_scenes.Contains(scene))
-            {
-                m_scenes.Add(scene);
-                scene.RegisterModuleInterface<IAuthorizationService>(this);
-            }
-            
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-        }
-
-        public void RegionLoaded(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-            m_log.InfoFormat("[REMOTE AUTHORIZATION CONNECTOR]: Enabled remote authorization for region {0}", scene.RegionInfo.RegionName);
-
-        }
-        
         public bool IsAuthorizedForRegion(
              string userID, string firstName, string lastName, string regionID, out string message)
         {
             m_log.InfoFormat(
                 "[REMOTE AUTHORIZATION CONNECTOR]: IsAuthorizedForRegion checking {0} for region {1}", userID, regionID);
-            
+
             bool isAuthorized = true;
             message = String.Empty;
-            
+
             // get the scene this call is being made for
             Scene scene = null;
             lock (m_scenes)
@@ -140,11 +120,11 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authorization
                     }
                 }
             }
-            
+
             if (scene != null)
             {
                 string mail = String.Empty;
-                
+
                 UserAccount account = scene.UserAccountService.GetUserAccount(UUID.Zero, new UUID(userID));
 
                 //if account not found, we assume its a foreign visitor from HG, else use account data...
@@ -165,8 +145,23 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authorization
                     "[REMOTE AUTHORIZATION CONNECTOR] IsAuthorizedForRegion, can't find scene to match region id of {0}",
                     regionID);
             }
-            
+
             return isAuthorized;
+        }
+
+        public void PostInitialise()
+        {
+        }
+        public void RegionLoaded(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+
+            m_log.InfoFormat("[REMOTE AUTHORIZATION CONNECTOR]: Enabled remote authorization for region {0}", scene.RegionInfo.RegionName);
+        }
+
+        public void RemoveRegion(Scene scene)
+        {
         }
     }
 }

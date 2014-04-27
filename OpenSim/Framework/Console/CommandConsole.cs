@@ -26,65 +26,104 @@
  */
 
 using System;
-using System.Xml;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
-using log4net;
-using OpenSim.Framework;
+using System.Xml;
 
 namespace OpenSim.Framework.Console
 {
-    public class Commands : ICommands
+    /// <summary>
+    /// A console that processes commands internally
+    /// </summary>
+    public class CommandConsole : ConsoleBase, ICommandConsole
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        /// <summary>
-        /// Encapsulates a command that can be invoked from the console
-        /// </summary>
-        private class CommandInfo
+        public CommandConsole(string defaultPrompt)
+            : base(defaultPrompt)
         {
-            /// <value>
-            /// The module from which this command comes
-            /// </value>
-            public string module;
-            
-            /// <value>
-            /// Whether the module is shared
-            /// </value>
-            public bool shared;
-            
-            /// <value>
-            /// Very short BNF description
-            /// </value>
-            public string help_text;
-            
-            /// <value>
-            /// Longer one line help text
-            /// </value>
-            public string long_help;
-            
-            /// <value>
-            /// Full descriptive help for this command
-            /// </value>
-            public string descriptive_help;
-            
-            /// <value>
-            /// The method to invoke for this command
-            /// </value>
-            public List<CommandDelegate> fn;
+            Commands = new Commands();
+
+            Commands.AddCommand(
+                "Help", false, "help", "help [<item>]",
+                "Display help on a particular command or on a list of commands in a category", Help);
         }
 
+        public event OnOutputDelegate OnOutput;
+
+        public ICommands Commands { get; private set; }
+        /// <summary>
+        /// Display a command prompt on the console and wait for user input
+        /// </summary>
+        public void Prompt()
+        {
+            string line = ReadLine(DefaultPrompt + "# ", true, true);
+
+            if (line != String.Empty)
+                Output("Invalid command");
+        }
+
+        public override string ReadLine(string p, bool isCommand, bool e)
+        {
+            System.Console.Write("{0}", p);
+            string cmdinput = System.Console.ReadLine();
+
+            if (isCommand)
+            {
+                string[] cmd = Commands.Resolve(Parser.Parse(cmdinput));
+
+                if (cmd.Length != 0)
+                {
+                    int i;
+
+                    for (i = 0; i < cmd.Length; i++)
+                    {
+                        if (cmd[i].Contains(" "))
+                            cmd[i] = "\"" + cmd[i] + "\"";
+                    }
+                    return String.Empty;
+                }
+            }
+            return cmdinput;
+        }
+
+        public void RunCommand(string cmd)
+        {
+            string[] parts = Parser.Parse(cmd);
+            Commands.Resolve(parts);
+        }
+
+        protected void FireOnOutput(string text)
+        {
+            OnOutputDelegate onOutput = OnOutput;
+            if (onOutput != null)
+                onOutput(text);
+        }
+
+        private void Help(string module, string[] cmd)
+        {
+            List<string> help = Commands.GetHelp(cmd);
+
+            foreach (string s in help)
+                Output(s);
+        }
+    }
+
+    public class Commands : ICommands
+    {
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public const string GeneralHelpText
-            = "To enter an argument that contains spaces, surround the argument with double quotes.\nFor example, show object name \"My long object name\"\n";
+                    = "To enter an argument that contains spaces, surround the argument with double quotes.\nFor example, show object name \"My long object name\"\n";
 
         public const string ItemHelpText
-= @"For more information, type 'help all' to get a list of all commands, 
+        = @"For more information, type 'help all' to get a list of all commands,
   or type help <item>' where <item> is one of the following:";
+
+        /// <summary>
+        /// Commands organized by module
+        /// </summary>
+        private Dictionary<string, List<CommandInfo>> m_modulesCommands = new Dictionary<string, List<CommandInfo>>();
 
         /// <value>
         /// Commands organized by keyword in a tree
@@ -92,183 +131,6 @@ namespace OpenSim.Framework.Console
         private Dictionary<string, object> tree =
                 new Dictionary<string, object>();
 
-        /// <summary>
-        /// Commands organized by module
-        /// </summary>
-        private Dictionary<string, List<CommandInfo>> m_modulesCommands = new Dictionary<string, List<CommandInfo>>();
-
-        /// <summary>
-        /// Get help for the given help string
-        /// </summary>
-        /// <param name="helpParts">Parsed parts of the help string.  If empty then general help is returned.</param>
-        /// <returns></returns>
-        public List<string> GetHelp(string[] cmd)
-        {
-            List<string> help = new List<string>();
-            List<string> helpParts = new List<string>(cmd);
-            
-            // Remove initial help keyword
-            helpParts.RemoveAt(0);
-
-            help.Add(""); // Will become a newline.
-
-            // General help
-            if (helpParts.Count == 0)
-            {
-                help.Add(GeneralHelpText);
-                help.Add(ItemHelpText);
-                help.AddRange(CollectModulesHelp(tree));
-            }
-            else if (helpParts.Count == 1 && helpParts[0] == "all")
-            {
-                help.AddRange(CollectAllCommandsHelp());
-            }
-            else
-            {
-                help.AddRange(CollectHelp(helpParts));
-            }
-
-            help.Add(""); // Will become a newline.
-
-            return help;
-        }
-
-        /// <summary>
-        /// Collects the help from all commands and return in alphabetical order.
-        /// </summary>
-        /// <returns></returns>
-        private List<string> CollectAllCommandsHelp()
-        {
-            List<string> help = new List<string>();
-
-            lock (m_modulesCommands)
-            {
-                foreach (List<CommandInfo> commands in m_modulesCommands.Values)
-                {
-                    var ourHelpText = commands.ConvertAll(c => string.Format("{0} - {1}", c.help_text, c.long_help));
-                    help.AddRange(ourHelpText);
-                }
-            }
-
-            help.Sort();
-
-            return help;
-        }
-        
-        /// <summary>
-        /// See if we can find the requested command in order to display longer help
-        /// </summary>
-        /// <param name="helpParts"></param>
-        /// <returns></returns>
-        private List<string> CollectHelp(List<string> helpParts)
-        {
-            string originalHelpRequest = string.Join(" ", helpParts.ToArray());
-            List<string> help = new List<string>();
-
-            // Check modules first to see if we just need to display a list of those commands
-            if (TryCollectModuleHelp(originalHelpRequest, help))
-            {
-                help.Insert(0, ItemHelpText);
-                return help;
-            }
-            
-            Dictionary<string, object> dict = tree;
-            while (helpParts.Count > 0)
-            {
-                string helpPart = helpParts[0];
-                
-                if (!dict.ContainsKey(helpPart))
-                    break;
-                
-                //m_log.Debug("Found {0}", helpParts[0]);
-                
-                if (dict[helpPart] is Dictionary<string, Object>)
-                    dict = (Dictionary<string, object>)dict[helpPart]; 
-                
-                helpParts.RemoveAt(0);
-            }
-        
-            // There was a command for the given help string
-            if (dict.ContainsKey(String.Empty))
-            {
-                CommandInfo commandInfo = (CommandInfo)dict[String.Empty];
-                help.Add(commandInfo.help_text);
-                help.Add(commandInfo.long_help);
-
-                string descriptiveHelp = commandInfo.descriptive_help;
-
-                // If we do have some descriptive help then insert a spacing line before for readability.
-                if (descriptiveHelp != string.Empty)
-                    help.Add(string.Empty);
-                
-                help.Add(commandInfo.descriptive_help);
-            }
-            else
-            {
-                help.Add(string.Format("No help is available for {0}", originalHelpRequest));
-            }
-            
-            return help;
-        }
-
-        /// <summary>
-        /// Try to collect help for the given module if that module exists.
-        /// </summary>
-        /// <param name="moduleName"></param>
-        /// <param name="helpText">/param>
-        /// <returns>true if there was the module existed, false otherwise.</returns>
-        private bool TryCollectModuleHelp(string moduleName, List<string> helpText)
-        {
-            lock (m_modulesCommands)
-            {
-                foreach (string key in m_modulesCommands.Keys)
-                {
-                    // Allow topic help requests to succeed whether they are upper or lowercase.
-                    if (moduleName.ToLower() == key.ToLower())
-                    {
-                        List<CommandInfo> commands = m_modulesCommands[key];
-                        var ourHelpText = commands.ConvertAll(c => string.Format("{0} - {1}", c.help_text, c.long_help));
-                        ourHelpText.Sort();
-                        helpText.AddRange(ourHelpText);
-
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-        }
-
-        private List<string> CollectModulesHelp(Dictionary<string, object> dict)
-        {
-            lock (m_modulesCommands)
-            {
-                List<string> helpText = new List<string>(m_modulesCommands.Keys);
-                helpText.Sort();
-                return helpText;
-            }
-        }
-
-//        private List<string> CollectHelp(Dictionary<string, object> dict)
-//        {
-//            List<string> result = new List<string>();
-//
-//            foreach (KeyValuePair<string, object> kvp in dict)
-//            {
-//                if (kvp.Value is Dictionary<string, Object>)
-//                {
-//                    result.AddRange(CollectHelp((Dictionary<string, Object>)kvp.Value));
-//                }
-//                else
-//                {
-//                    if (((CommandInfo)kvp.Value).long_help != String.Empty)
-//                        result.Add(((CommandInfo)kvp.Value).help_text+" - "+
-//                                ((CommandInfo)kvp.Value).long_help);
-//                }
-//            }
-//            return result;
-//        }
-        
         /// <summary>
         /// Add a command to those which can be invoked from the console.
         /// </summary>
@@ -283,6 +145,25 @@ namespace OpenSim.Framework.Console
             AddCommand(module, shared, command, help, longhelp, String.Empty, fn);
         }
 
+        //        private List<string> CollectHelp(Dictionary<string, object> dict)
+        //        {
+        //            List<string> result = new List<string>();
+        //
+        //            foreach (KeyValuePair<string, object> kvp in dict)
+        //            {
+        //                if (kvp.Value is Dictionary<string, Object>)
+        //                {
+        //                    result.AddRange(CollectHelp((Dictionary<string, Object>)kvp.Value));
+        //                }
+        //                else
+        //                {
+        //                    if (((CommandInfo)kvp.Value).long_help != String.Empty)
+        //                        result.Add(((CommandInfo)kvp.Value).help_text+" - "+
+        //                                ((CommandInfo)kvp.Value).long_help);
+        //                }
+        //            }
+        //            return result;
+        //        }
         /// <summary>
         /// Add a command to those which can be invoked from the console.
         /// </summary>
@@ -299,7 +180,7 @@ namespace OpenSim.Framework.Console
             string[] parts = Parser.Parse(command);
 
             Dictionary<string, Object> current = tree;
-            
+
             foreach (string part in parts)
             {
                 if (current.ContainsKey(part))
@@ -326,7 +207,7 @@ namespace OpenSim.Framework.Console
 
                 return;
             }
-            
+
             info = new CommandInfo();
             info.module = module;
             info.shared = shared;
@@ -351,7 +232,7 @@ namespace OpenSim.Framework.Console
                     m_modulesCommands[module] = commands;
                 }
 
-//                m_log.DebugFormat("[COMMAND CONSOLE]: Adding to category {0} command {1}", module, command);
+                //                m_log.DebugFormat("[COMMAND CONSOLE]: Adding to category {0} command {1}", module, command);
                 commands.Add(info);
             }
         }
@@ -393,7 +274,7 @@ namespace OpenSim.Framework.Console
                 else
                 {
                     break;
-//                    return new string[] {"<cr>"};
+                    //                    return new string[] {"<cr>"};
                 }
             }
 
@@ -419,9 +300,97 @@ namespace OpenSim.Framework.Console
             }
 
             if (current.ContainsKey(String.Empty))
-                return new string[] { "Command help: "+((CommandInfo)current[String.Empty]).help_text};
+                return new string[] { "Command help: " + ((CommandInfo)current[String.Empty]).help_text };
 
             return new string[] { new List<string>(current.Keys)[0] };
+        }
+
+        public void FromXml(XmlElement root, CommandDelegate fn)
+        {
+            CommandInfo help = (CommandInfo)((Dictionary<string, object>)tree["help"])[String.Empty];
+            ((Dictionary<string, object>)tree["help"]).Remove(string.Empty);
+            if (((Dictionary<string, object>)tree["help"]).Count == 0)
+                tree.Remove("help");
+
+            CommandInfo quit = (CommandInfo)((Dictionary<string, object>)tree["quit"])[String.Empty];
+            ((Dictionary<string, object>)tree["quit"]).Remove(string.Empty);
+            if (((Dictionary<string, object>)tree["quit"]).Count == 0)
+                tree.Remove("quit");
+
+            tree.Clear();
+
+            ReadTreeLevel(tree, root, fn);
+
+            if (!tree.ContainsKey("help"))
+                tree["help"] = (object)new Dictionary<string, object>();
+            ((Dictionary<string, object>)tree["help"])[String.Empty] = help;
+
+            if (!tree.ContainsKey("quit"))
+                tree["quit"] = (object)new Dictionary<string, object>();
+            ((Dictionary<string, object>)tree["quit"])[String.Empty] = quit;
+        }
+
+        /// <summary>
+        /// Get help for the given help string
+        /// </summary>
+        /// <param name="helpParts">Parsed parts of the help string.  If empty then general help is returned.</param>
+        /// <returns></returns>
+        public List<string> GetHelp(string[] cmd)
+        {
+            List<string> help = new List<string>();
+            List<string> helpParts = new List<string>(cmd);
+
+            // Remove initial help keyword
+            helpParts.RemoveAt(0);
+
+            help.Add(""); // Will become a newline.
+
+            // General help
+            if (helpParts.Count == 0)
+            {
+                help.Add(GeneralHelpText);
+                help.Add(ItemHelpText);
+                help.AddRange(CollectModulesHelp(tree));
+            }
+            else if (helpParts.Count == 1 && helpParts[0] == "all")
+            {
+                help.AddRange(CollectAllCommandsHelp());
+            }
+            else
+            {
+                help.AddRange(CollectHelp(helpParts));
+            }
+
+            help.Add(""); // Will become a newline.
+
+            return help;
+        }
+
+        public XmlElement GetXml(XmlDocument doc)
+        {
+            CommandInfo help = (CommandInfo)((Dictionary<string, object>)tree["help"])[String.Empty];
+            ((Dictionary<string, object>)tree["help"]).Remove(string.Empty);
+            if (((Dictionary<string, object>)tree["help"]).Count == 0)
+                tree.Remove("help");
+
+            CommandInfo quit = (CommandInfo)((Dictionary<string, object>)tree["quit"])[String.Empty];
+            ((Dictionary<string, object>)tree["quit"]).Remove(string.Empty);
+            if (((Dictionary<string, object>)tree["quit"]).Count == 0)
+                tree.Remove("quit");
+
+            XmlElement root = doc.CreateElement("", "HelpTree", "");
+
+            ProcessTreeLevel(tree, root, doc);
+
+            if (!tree.ContainsKey("help"))
+                tree["help"] = (object)new Dictionary<string, object>();
+            ((Dictionary<string, object>)tree["help"])[String.Empty] = help;
+
+            if (!tree.ContainsKey("quit"))
+                tree["quit"] = (object)new Dictionary<string, object>();
+            ((Dictionary<string, object>)tree["quit"])[String.Empty] = quit;
+
+            return root;
         }
 
         public string[] Resolve(string[] cmd)
@@ -480,35 +449,96 @@ namespace OpenSim.Framework.Console
                 }
                 return result;
             }
-            
+
             return new string[0];
         }
 
-        public XmlElement GetXml(XmlDocument doc)
+        /// <summary>
+        /// Collects the help from all commands and return in alphabetical order.
+        /// </summary>
+        /// <returns></returns>
+        private List<string> CollectAllCommandsHelp()
         {
-            CommandInfo help = (CommandInfo)((Dictionary<string, object>)tree["help"])[String.Empty];
-            ((Dictionary<string, object>)tree["help"]).Remove(string.Empty);
-            if (((Dictionary<string, object>)tree["help"]).Count == 0)
-                tree.Remove("help");
+            List<string> help = new List<string>();
 
-            CommandInfo quit = (CommandInfo)((Dictionary<string, object>)tree["quit"])[String.Empty];
-            ((Dictionary<string, object>)tree["quit"]).Remove(string.Empty);
-            if (((Dictionary<string, object>)tree["quit"]).Count == 0)
-                tree.Remove("quit");
+            lock (m_modulesCommands)
+            {
+                foreach (List<CommandInfo> commands in m_modulesCommands.Values)
+                {
+                    var ourHelpText = commands.ConvertAll(c => string.Format("{0} - {1}", c.help_text, c.long_help));
+                    help.AddRange(ourHelpText);
+                }
+            }
 
-            XmlElement root = doc.CreateElement("", "HelpTree", "");
+            help.Sort();
 
-            ProcessTreeLevel(tree, root, doc);
+            return help;
+        }
 
-            if (!tree.ContainsKey("help"))
-                tree["help"] = (object) new Dictionary<string, object>();
-            ((Dictionary<string, object>)tree["help"])[String.Empty] = help;
+        /// <summary>
+        /// See if we can find the requested command in order to display longer help
+        /// </summary>
+        /// <param name="helpParts"></param>
+        /// <returns></returns>
+        private List<string> CollectHelp(List<string> helpParts)
+        {
+            string originalHelpRequest = string.Join(" ", helpParts.ToArray());
+            List<string> help = new List<string>();
 
-            if (!tree.ContainsKey("quit"))
-                tree["quit"] = (object) new Dictionary<string, object>();
-            ((Dictionary<string, object>)tree["quit"])[String.Empty] = quit;
+            // Check modules first to see if we just need to display a list of those commands
+            if (TryCollectModuleHelp(originalHelpRequest, help))
+            {
+                help.Insert(0, ItemHelpText);
+                return help;
+            }
 
-            return root;
+            Dictionary<string, object> dict = tree;
+            while (helpParts.Count > 0)
+            {
+                string helpPart = helpParts[0];
+
+                if (!dict.ContainsKey(helpPart))
+                    break;
+
+                //m_log.Debug("Found {0}", helpParts[0]);
+
+                if (dict[helpPart] is Dictionary<string, Object>)
+                    dict = (Dictionary<string, object>)dict[helpPart];
+
+                helpParts.RemoveAt(0);
+            }
+
+            // There was a command for the given help string
+            if (dict.ContainsKey(String.Empty))
+            {
+                CommandInfo commandInfo = (CommandInfo)dict[String.Empty];
+                help.Add(commandInfo.help_text);
+                help.Add(commandInfo.long_help);
+
+                string descriptiveHelp = commandInfo.descriptive_help;
+
+                // If we do have some descriptive help then insert a spacing line before for readability.
+                if (descriptiveHelp != string.Empty)
+                    help.Add(string.Empty);
+
+                help.Add(commandInfo.descriptive_help);
+            }
+            else
+            {
+                help.Add(string.Format("No help is available for {0}", originalHelpRequest));
+            }
+
+            return help;
+        }
+
+        private List<string> CollectModulesHelp(Dictionary<string, object> dict)
+        {
+            lock (m_modulesCommands)
+            {
+                List<string> helpText = new List<string>(m_modulesCommands.Keys);
+                helpText.Sort();
+                return helpText;
+            }
         }
 
         private void ProcessTreeLevel(Dictionary<string, object> level, XmlElement xml, XmlDocument doc)
@@ -557,31 +587,6 @@ namespace OpenSim.Framework.Console
             }
         }
 
-        public void FromXml(XmlElement root, CommandDelegate fn)
-        {
-            CommandInfo help = (CommandInfo)((Dictionary<string, object>)tree["help"])[String.Empty];
-            ((Dictionary<string, object>)tree["help"]).Remove(string.Empty);
-            if (((Dictionary<string, object>)tree["help"]).Count == 0)
-                tree.Remove("help");
-
-            CommandInfo quit = (CommandInfo)((Dictionary<string, object>)tree["quit"])[String.Empty];
-            ((Dictionary<string, object>)tree["quit"]).Remove(string.Empty);
-            if (((Dictionary<string, object>)tree["quit"]).Count == 0)
-                tree.Remove("quit");
-
-            tree.Clear();
-
-            ReadTreeLevel(tree, root, fn);
-
-            if (!tree.ContainsKey("help"))
-                tree["help"] = (object) new Dictionary<string, object>();
-            ((Dictionary<string, object>)tree["help"])[String.Empty] = help;
-
-            if (!tree.ContainsKey("quit"))
-                tree["quit"] = (object) new Dictionary<string, object>();
-            ((Dictionary<string, object>)tree["quit"])[String.Empty] = quit;
-        }
-
         private void ReadTreeLevel(Dictionary<string, object> level, XmlNode node, CommandDelegate fn)
         {
             Dictionary<string, object> next;
@@ -595,42 +600,111 @@ namespace OpenSim.Framework.Console
             {
                 switch (part.Name)
                 {
-                case "Level":
-                    name = ((XmlElement)part).GetAttribute("Name");
-                    next = new Dictionary<string, object>();
-                    level[name] = next;
-                    ReadTreeLevel(next, part, fn);
-                    break;
-                case "Command":
-                    cmdL = part.ChildNodes;
-                    c = new CommandInfo();
-                    foreach (XmlNode cmdPart in cmdL)
-                    {
-                        switch (cmdPart.Name)
+                    case "Level":
+                        name = ((XmlElement)part).GetAttribute("Name");
+                        next = new Dictionary<string, object>();
+                        level[name] = next;
+                        ReadTreeLevel(next, part, fn);
+                        break;
+
+                    case "Command":
+                        cmdL = part.ChildNodes;
+                        c = new CommandInfo();
+                        foreach (XmlNode cmdPart in cmdL)
                         {
-                        case "Module":
-                            c.module = cmdPart.InnerText;
-                            break;
-                        case "Shared":
-                            c.shared = Convert.ToBoolean(cmdPart.InnerText);
-                            break;
-                        case "HelpText":
-                            c.help_text = cmdPart.InnerText;
-                            break;
-                        case "LongHelp":
-                            c.long_help = cmdPart.InnerText;
-                            break;
-                        case "Description":
-                            c.descriptive_help = cmdPart.InnerText;
-                            break;
+                            switch (cmdPart.Name)
+                            {
+                                case "Module":
+                                    c.module = cmdPart.InnerText;
+                                    break;
+
+                                case "Shared":
+                                    c.shared = Convert.ToBoolean(cmdPart.InnerText);
+                                    break;
+
+                                case "HelpText":
+                                    c.help_text = cmdPart.InnerText;
+                                    break;
+
+                                case "LongHelp":
+                                    c.long_help = cmdPart.InnerText;
+                                    break;
+
+                                case "Description":
+                                    c.descriptive_help = cmdPart.InnerText;
+                                    break;
+                            }
                         }
-                    }
-                    c.fn = new List<CommandDelegate>();
-                    c.fn.Add(fn);
-                    level[String.Empty] = c;
-                    break;
+                        c.fn = new List<CommandDelegate>();
+                        c.fn.Add(fn);
+                        level[String.Empty] = c;
+                        break;
                 }
             }
+        }
+
+        /// <summary>
+        /// Try to collect help for the given module if that module exists.
+        /// </summary>
+        /// <param name="moduleName"></param>
+        /// <param name="helpText">/param>
+        /// <returns>true if there was the module existed, false otherwise.</returns>
+        private bool TryCollectModuleHelp(string moduleName, List<string> helpText)
+        {
+            lock (m_modulesCommands)
+            {
+                foreach (string key in m_modulesCommands.Keys)
+                {
+                    // Allow topic help requests to succeed whether they are upper or lowercase.
+                    if (moduleName.ToLower() == key.ToLower())
+                    {
+                        List<CommandInfo> commands = m_modulesCommands[key];
+                        var ourHelpText = commands.ConvertAll(c => string.Format("{0} - {1}", c.help_text, c.long_help));
+                        ourHelpText.Sort();
+                        helpText.AddRange(ourHelpText);
+
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Encapsulates a command that can be invoked from the console
+        /// </summary>
+        private class CommandInfo
+        {
+            /// <value>
+            /// Full descriptive help for this command
+            /// </value>
+            public string descriptive_help;
+
+            /// <value>
+            /// The method to invoke for this command
+            /// </value>
+            public List<CommandDelegate> fn;
+
+            /// <value>
+            /// Very short BNF description
+            /// </value>
+            public string help_text;
+
+            /// <value>
+            /// Longer one line help text
+            /// </value>
+            public string long_help;
+
+            /// <value>
+            /// The module from which this command comes
+            /// </value>
+            public string module;
+
+            /// <value>
+            /// Whether the module is shared
+            /// </value>
+            public bool shared;
         }
     }
 
@@ -647,13 +721,13 @@ namespace OpenSim.Framework.Console
 
             int index;
 
-            string[] unquoted = text.Split(new char[] {'"'});
+            string[] unquoted = text.Split(new char[] { '"' });
 
-            for (index = 0 ; index < unquoted.Length ; index++)
+            for (index = 0; index < unquoted.Length; index++)
             {
                 if (index % 2 == 0)
                 {
-                    string[] words = unquoted[index].Split(new char[] {' '});
+                    string[] words = unquoted[index].Split(new char[] { ' ' });
 
                     bool option = false;
                     foreach (string w in words)
@@ -695,83 +769,6 @@ namespace OpenSim.Framework.Console
             }
 
             return result.ToArray();
-        }
-    }
-
-    /// <summary>
-    /// A console that processes commands internally
-    /// </summary>
-    public class CommandConsole : ConsoleBase, ICommandConsole
-    {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        public event OnOutputDelegate OnOutput;
-
-        public ICommands Commands { get; private set; }
-
-        public CommandConsole(string defaultPrompt) : base(defaultPrompt)
-        {
-            Commands = new Commands();
-
-            Commands.AddCommand(
-                "Help", false, "help", "help [<item>]",
-                "Display help on a particular command or on a list of commands in a category", Help);
-        }
-
-        private void Help(string module, string[] cmd)
-        {
-            List<string> help = Commands.GetHelp(cmd);
-
-            foreach (string s in help)
-                Output(s);
-        }
-
-        protected void FireOnOutput(string text)
-        {
-            OnOutputDelegate onOutput = OnOutput;
-            if (onOutput != null)
-                onOutput(text);
-        }
-
-        /// <summary>
-        /// Display a command prompt on the console and wait for user input
-        /// </summary>
-        public void Prompt()
-        {
-            string line = ReadLine(DefaultPrompt + "# ", true, true);
-
-            if (line != String.Empty)
-                Output("Invalid command");
-        }
-
-        public void RunCommand(string cmd)
-        {
-            string[] parts = Parser.Parse(cmd);
-            Commands.Resolve(parts);
-        }
-
-        public override string ReadLine(string p, bool isCommand, bool e)
-        {
-            System.Console.Write("{0}", p);
-            string cmdinput = System.Console.ReadLine();
-
-            if (isCommand)
-            {
-                string[] cmd = Commands.Resolve(Parser.Parse(cmdinput));
-
-                if (cmd.Length != 0)
-                {
-                    int i;
-
-                    for (i=0 ; i < cmd.Length ; i++)
-                    {
-                        if (cmd[i].Contains(" "))
-                            cmd[i] = "\"" + cmd[i] + "\"";
-                    }
-                    return String.Empty;
-                }
-            }
-            return cmdinput;
         }
     }
 }

@@ -25,21 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
-using System.Collections.Generic;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
-using OpenSim.Framework;
 using OpenSim.Framework.Servers;
-using OpenSim.Region.Framework.Scenes;
 using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
 using OpenSim.Server.Base;
-using OpenSim.Server.Handlers.Base;
 using OpenSim.Server.Handlers.Hypergrid;
 using OpenSim.Services.Interfaces;
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Hypergrid
 {
@@ -48,14 +44,34 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Hypergrid
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private static bool m_Enabled = false;
-        
+
         private IConfigSource m_Config;
-        private bool m_Registered = false;
-        private string m_LocalServiceDll = String.Empty;
         private GatekeeperServiceInConnector m_HypergridHandler;
+        private string m_LocalServiceDll = String.Empty;
+        private bool m_Registered = false;
         private UserAgentServerConnector m_UASHandler;
 
         #region Region Module interface
+
+        public string Name
+        {
+            get { return "HypergridService"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
+        public void AddRegion(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+        }
+
+        public void Close()
+        {
+        }
 
         public void Initialise(IConfigSource config)
         {
@@ -75,41 +91,12 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Hypergrid
                             m_log.WarnFormat("[HGGRID IN CONNECTOR]: Friends LocalServiceModule config missing");
                     }
                 }
-
             }
-
         }
 
         public void PostInitialise()
         {
         }
-
-        public void Close()
-        {
-        }
-
-        public Type ReplaceableInterface 
-        {
-            get { return null; }
-        }
-
-        public string Name
-        {
-            get { return "HypergridService"; }
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-        }
-
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -124,13 +111,13 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Hypergrid
                 ISimulationService simService = scene.RequestModuleInterface<ISimulationService>();
                 IFriendsSimConnector friendsConn = scene.RequestModuleInterface<IFriendsSimConnector>();
                 Object[] args = new Object[] { m_Config };
-//                IFriendsService friendsService = ServerUtils.LoadPlugin<IFriendsService>(m_LocalServiceDll, args)
+                //                IFriendsService friendsService = ServerUtils.LoadPlugin<IFriendsService>(m_LocalServiceDll, args)
                 ServerUtils.LoadPlugin<IFriendsService>(m_LocalServiceDll, args);
 
                 m_HypergridHandler = new GatekeeperServiceInConnector(m_Config, MainServer.Instance, simService);
 
                 m_UASHandler = new UserAgentServerConnector(m_Config, MainServer.Instance, friendsConn);
-                
+
                 new HeloServiceInConnector(m_Config, MainServer.Instance, "HeloService");
 
                 new HGFriendsServerConnector(m_Config, MainServer.Instance, "HGFriendsService", friendsConn);
@@ -139,7 +126,11 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Hypergrid
             scene.RegisterModuleInterface<IUserAgentService>(m_UASHandler.HomeUsersService);
         }
 
-        #endregion
-
+        public void RemoveRegion(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+        }
+        #endregion Region Module interface
     }
 }

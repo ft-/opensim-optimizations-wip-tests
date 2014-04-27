@@ -31,39 +31,12 @@ namespace OpenSim.Framework
 {
     public class EstateBan
     {
-        private uint m_estateID = 1;
-        /// <summary>
-        /// ID of the estate this ban limits access to.
-        /// </summary>
-        public uint EstateID
-        {
-            get
-            {
-                return m_estateID; 
-            }
-            set
-            {
-                m_estateID = value;
-            }
-        }
-
-        private UUID m_bannedUserID = UUID.Zero;
-        /// <summary>
-        /// ID of the banned user.
-        /// </summary>
-        public UUID BannedUserID
-        {
-            get
-            {
-                return m_bannedUserID;
-            }
-            set
-            {
-                m_bannedUserID = value;
-            }
-        }
-
         private string m_bannedHostAddress = string.Empty;
+        private string m_bannedHostIPMask = string.Empty;
+        private string m_bannedHostNameMask = string.Empty;
+        private UUID m_bannedUserID = UUID.Zero;
+        private uint m_estateID = 1;
+
         /// <summary>
         /// IP address or domain name of the banned client.
         /// </summary>
@@ -79,13 +52,12 @@ namespace OpenSim.Framework
             }
         }
 
-        private string m_bannedHostIPMask = string.Empty;
         /// <summary>
         /// IP address mask for banning group of client hosts.
         /// </summary>
         public string BannedHostIPMask
         {
-           get
+            get
             {
                 return m_bannedHostIPMask;
             }
@@ -95,7 +67,6 @@ namespace OpenSim.Framework
             }
         }
 
-        private string m_bannedHostNameMask = string.Empty;
         /// <summary>
         /// Domain name mask for banning group of client hosts.
         /// </summary>
@@ -111,5 +82,34 @@ namespace OpenSim.Framework
             }
         }
 
+        /// <summary>
+        /// ID of the banned user.
+        /// </summary>
+        public UUID BannedUserID
+        {
+            get
+            {
+                return m_bannedUserID;
+            }
+            set
+            {
+                m_bannedUserID = value;
+            }
+        }
+
+        /// <summary>
+        /// ID of the estate this ban limits access to.
+        /// </summary>
+        public uint EstateID
+        {
+            get
+            {
+                return m_estateID;
+            }
+            set
+            {
+                m_estateID = value;
+            }
+        }
     }
 }

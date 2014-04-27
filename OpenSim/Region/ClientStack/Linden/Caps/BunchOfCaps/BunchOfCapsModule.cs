@@ -25,31 +25,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-
-using log4net;
+using Mono.Addins;
 using Nini.Config;
 using OpenMetaverse;
-using Mono.Addins;
-
-using OpenSim.Framework;
-using OpenSim.Region.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
 using Caps = OpenSim.Framework.Capabilities.Caps;
 
 [assembly: Addin("LindenCaps", "0.1")]
 [assembly: AddinDependency("OpenSim", "0.5")]
+
 namespace OpenSim.Region.ClientStack.Linden
 {
-
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "BunchOfCapsModule")]
     public class BunchOfCapsModule : INonSharedRegionModule
     {
-//        private static readonly ILog m_log =
-//            LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log =
+        //            LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private Scene m_Scene;
 
@@ -59,19 +52,20 @@ namespace OpenSim.Region.ClientStack.Linden
 
         public Type ReplaceableInterface { get { return null; } }
 
-        public void Initialise(IConfigSource source)
-        {
-        }
-
-        public void Close() { } 
-
         public void AddRegion(Scene scene)
         {
             m_Scene = scene;
             m_Scene.EventManager.OnRegisterCaps += OnRegisterCaps;
         }
 
-        public void RemoveRegion(Scene scene)
+        public void Close()
+        {
+        }
+
+        public void Initialise(IConfigSource source)
+        {
+        }
+        public void PostInitialise()
         {
         }
 
@@ -79,13 +73,14 @@ namespace OpenSim.Region.ClientStack.Linden
         {
         }
 
-        public void PostInitialise() { }
-        #endregion 
+        public void RemoveRegion(Scene scene)
+        {
+        }
+        #endregion INonSharedRegionModule
 
         private void OnRegisterCaps(UUID agentID, Caps caps)
         {
             new BunchOfCaps(m_Scene, caps);
         }
-
     }
 }

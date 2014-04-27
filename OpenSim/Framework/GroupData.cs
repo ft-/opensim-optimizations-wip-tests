@@ -25,138 +25,144 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
 using OpenMetaverse;
 
 namespace OpenSim.Framework
 {
-    public class GroupRecord
+    public struct GroupActiveProposals
     {
-        public UUID GroupID;
-        public string GroupName;
-        public bool AllowPublish = true;
-        public bool MaturePublish = true;
-        public string Charter;
-        public UUID FounderID = UUID.Zero;
-        public UUID GroupPicture = UUID.Zero;
-        public int MembershipFee = 0;
-        public bool OpenEnrollment = true;
-        public UUID OwnerRoleID = UUID.Zero;
-        public bool ShowInList = false;
+        public string EndDateTime;
+        public string Majority;
+        public string ProposalText;
+        public string Quorum;
+        public string StartDateTime;
+        public string TerseDateID;
+        public string VoteID;
+        public string VoteInitiator;
     }
 
-    public class GroupMembershipData
+    public struct GroupMembersData
     {
-        // Group base data
-        public UUID GroupID;
-        public string GroupName;
-        public bool AllowPublish = true;
-        public bool MaturePublish = true;
-        public string Charter;
-        public UUID FounderID = UUID.Zero;
-        public UUID GroupPicture = UUID.Zero;
-        public int MembershipFee = 0;
-        public bool OpenEnrollment = true;
-        public bool ShowInList = true;
+        public bool AcceptNotices;
+        public UUID AgentID;
+        public ulong AgentPowers;
+        public int Contribution;
+        public bool IsOwner;
+        public bool ListInProfile;
+        public string OnlineStatus;
+        public string Title;
+    }
 
-        // Per user data
-        public bool AcceptNotices = true;
-        public int Contribution = 0;
-        public ulong GroupPowers = 0;
-        public bool Active = false;
-        public UUID ActiveRole = UUID.Zero;
-        public bool ListInProfile = false;
-        public string GroupTitle;
+    public struct GroupNoticeData
+    {
+        public byte AssetType;
+        public string FromName;
+        public bool HasAttachment;
+        public UUID NoticeID;
+        public string Subject;
+        public uint Timestamp;
+    }
+
+    public struct GroupProfileData
+    {
+        public bool AllowPublish;
+        public string Charter;
+        public UUID FounderID;
+        public UUID GroupID;
+        public int GroupMembershipCount;
+        public int GroupRolesCount;
+        public UUID InsigniaID;
+        public bool MaturePublish;
+        public int MembershipFee;
+        public string MemberTitle;
+        public int Money;
+        public string Name;
+        public bool OpenEnrollment;
+        public UUID OwnerRole;
+        public ulong PowersMask;
+        public bool ShowInList;
+    }
+
+    public struct GroupRoleMembersData
+    {
+        public UUID MemberID;
+        public UUID RoleID;
+    }
+
+    public struct GroupRolesData
+    {
+        public string Description;
+        public int Members;
+        public string Name;
+        public ulong Powers;
+        public UUID RoleID;
+        public string Title;
     }
 
     public struct GroupTitlesData
     {
         public string Name;
-        public UUID UUID;
         public bool Selected;
-    }
-
-    public struct GroupProfileData
-    {
-        public UUID GroupID;
-        public string Name;
-        public string Charter;
-        public bool ShowInList;
-        public string MemberTitle;
-        public ulong PowersMask;
-        public UUID InsigniaID;
-        public UUID FounderID;
-        public int MembershipFee;
-        public bool OpenEnrollment;
-        public int Money;
-        public int GroupMembershipCount;
-        public int GroupRolesCount;
-        public bool AllowPublish;
-        public bool MaturePublish;
-        public UUID OwnerRole;
-    }
-
-    public struct GroupMembersData
-    {
-        public UUID AgentID;
-        public int Contribution;
-        public string OnlineStatus;
-        public ulong AgentPowers;
-        public string Title;
-        public bool IsOwner;
-        public bool ListInProfile;
-        public bool AcceptNotices;
-    }
-
-    public struct GroupRolesData
-    {
-        public UUID RoleID;
-        public string Name;
-        public string Title;
-        public string Description;
-        public ulong Powers;
-        public int Members;
-    }
-
-    public struct GroupRoleMembersData
-    {
-        public UUID RoleID;
-        public UUID MemberID;
-    }
-
-    public struct GroupNoticeData
-    {
-        public UUID NoticeID;
-        public uint Timestamp;
-        public string FromName;
-        public string Subject;
-        public bool HasAttachment;
-        public byte AssetType;
+        public UUID UUID;
     }
 
     public struct GroupVoteHistory
     {
+        public string EndDateTime;
+        public string Majority;
+        public string ProposalText;
+        public string Quorum;
+        public string StartDateTime;
+        public string TerseDateID;
         public string VoteID;
         public string VoteInitiator;
-        public string Majority;
-        public string Quorum;
-        public string TerseDateID;
-        public string StartDateTime;
-        public string EndDateTime;
-        public string VoteType;
         public string VoteResult;
-        public string ProposalText;
+        public string VoteType;
     }
 
-    public struct GroupActiveProposals
+    public class GroupMembershipData
     {
-        public string VoteID;
-        public string VoteInitiator;
-        public string Majority;
-        public string Quorum;
-        public string TerseDateID;
-        public string StartDateTime;
-        public string EndDateTime;
-        public string ProposalText;
+        // Per user data
+        public bool AcceptNotices = true;
+
+        public bool Active = false;
+
+        public UUID ActiveRole = UUID.Zero;
+
+        public bool AllowPublish = true;
+
+        public string Charter;
+
+        public int Contribution = 0;
+
+        public UUID FounderID = UUID.Zero;
+
+        // Group base data
+        public UUID GroupID;
+
+        public string GroupName;
+        public UUID GroupPicture = UUID.Zero;
+        public ulong GroupPowers = 0;
+        public string GroupTitle;
+        public bool ListInProfile = false;
+        public bool MaturePublish = true;
+        public int MembershipFee = 0;
+        public bool OpenEnrollment = true;
+        public bool ShowInList = true;
+    }
+
+    public class GroupRecord
+    {
+        public bool AllowPublish = true;
+        public string Charter;
+        public UUID FounderID = UUID.Zero;
+        public UUID GroupID;
+        public string GroupName;
+        public UUID GroupPicture = UUID.Zero;
+        public bool MaturePublish = true;
+        public int MembershipFee = 0;
+        public bool OpenEnrollment = true;
+        public UUID OwnerRoleID = UUID.Zero;
+        public bool ShowInList = false;
     }
 }

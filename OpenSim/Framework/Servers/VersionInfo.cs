@@ -29,9 +29,25 @@ namespace OpenSim
 {
     public class VersionInfo
     {
-        private const string VERSION_NUMBER = "0.8.0";
-        private const Flavour VERSION_FLAVOUR = Flavour.Dev;
+        public const int VERSIONINFO_VERSION_LENGTH = 27;
+        /// <value>
+        /// This is the external interface version.  It is separate from the OpenSimulator project version.
+        ///
+        /// This version number should be
+        /// increased by 1 every time a code change makes the previous OpenSimulator revision incompatible
+        /// with the new revision.  This will usually be due to interregion or grid facing interface changes.
+        ///
+        /// Changes which are compatible with an older revision (e.g. older revisions experience degraded functionality
+        /// but not outright failure) do not need a version number increment.
+        ///
+        /// Having this version number allows the grid service to reject connections from regions running a version
+        /// of the code that is too old.
+        ///
+        /// </value>
+        public readonly static int MajorInterfaceVersion = 7;
 
+        private const Flavour VERSION_FLAVOUR = Flavour.Dev;
+        private const string VERSION_NUMBER = "0.8.0";
         public enum Flavour
         {
             Unknown,
@@ -53,23 +69,5 @@ namespace OpenSim
             string versionString = "OpenSim " + versionNumber + " " + flavour;
             return versionString.PadRight(VERSIONINFO_VERSION_LENGTH);
         }
-
-        public const int VERSIONINFO_VERSION_LENGTH = 27;
-        
-        /// <value>
-        /// This is the external interface version.  It is separate from the OpenSimulator project version.
-        /// 
-        /// This version number should be 
-        /// increased by 1 every time a code change makes the previous OpenSimulator revision incompatible
-        /// with the new revision.  This will usually be due to interregion or grid facing interface changes.
-        /// 
-        /// Changes which are compatible with an older revision (e.g. older revisions experience degraded functionality
-        /// but not outright failure) do not need a version number increment.
-        /// 
-        /// Having this version number allows the grid service to reject connections from regions running a version
-        /// of the code that is too old. 
-        ///
-        /// </value>
-        public readonly static int MajorInterfaceVersion = 7;
     }
 }

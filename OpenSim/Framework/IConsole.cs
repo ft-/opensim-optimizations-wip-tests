@@ -25,7 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using System.Collections.Generic;
 
 namespace OpenSim.Framework
@@ -34,18 +33,22 @@ namespace OpenSim.Framework
     {
         object ConsoleScene { get; set; }
 
-        void Output(string text, string level);
-        void Output(string text);
-        void OutputFormat(string format, params object[] components);
-
         string CmdPrompt(string p);
+
         string CmdPrompt(string p, string def);
+
         string CmdPrompt(string p, List<char> excludedCharacters);
+
         string CmdPrompt(string p, string def, List<char> excludedCharacters);
 
         // Displays a command prompt and returns a default value, user may only enter 1 of 2 options
         string CmdPrompt(string prompt, string defaultresponse, List<string> options);
 
+        void Output(string text, string level);
+
+        void Output(string text);
+
+        void OutputFormat(string format, params object[] components);
         // Displays a prompt and waits for the user to enter a string, then returns that string
         // (Done with no echo and suitable for passwords)
         string PasswdPrompt(string p);

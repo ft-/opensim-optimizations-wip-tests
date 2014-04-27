@@ -29,7 +29,7 @@ using OpenSim.Region.CoreModules.Framework.Monitoring.Monitors;
 
 namespace OpenSim.Region.CoreModules.Framework.Monitoring.Alerts
 {
-    class DeadlockAlert : IAlert
+    internal class DeadlockAlert : IAlert
     {
         private LastFrameTimeMonitor m_monitor;
 
@@ -39,6 +39,8 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring.Alerts
         }
 
         #region Implementation of IAlert
+
+        public event Alert OnTriggerAlert;
 
         public string GetName()
         {
@@ -51,14 +53,11 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring.Alerts
             {
                 if (OnTriggerAlert != null)
                 {
-                    OnTriggerAlert(typeof (DeadlockAlert),
-                                   (int) (m_monitor.GetValue()/1000) + " second(s) since last frame processed.", true);
+                    OnTriggerAlert(typeof(DeadlockAlert),
+                                   (int)(m_monitor.GetValue() / 1000) + " second(s) since last frame processed.", true);
                 }
             }
         }
-
-        public event Alert OnTriggerAlert;
-
-        #endregion
+        #endregion Implementation of IAlert
     }
 }

@@ -25,27 +25,25 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Net;
-using System.Net.Sockets;
 using Nini.Config;
 using OpenSim.Framework;
+using System.Net;
 
 namespace OpenSim.Region.ClientStack
 {
     public interface IClientNetworkServer
     {
-        void Initialise(
-            IPAddress _listenIP, ref uint port, int proxyPortOffsetParm, bool allow_alternate_port, IConfigSource configSource, 
-            AgentCircuitManager authenticateClass);
-
-        bool HandlesRegion(Location x);
-
         /// <summary>
         /// Add the given scene to be handled by this IClientNetworkServer.
         /// </summary>
         /// <param name='scene'></param>
         void AddScene(IScene scene);
 
+        bool HandlesRegion(Location x);
+
+        void Initialise(
+            IPAddress _listenIP, ref uint port, int proxyPortOffsetParm, bool allow_alternate_port, IConfigSource configSource,
+            AgentCircuitManager authenticateClass);
         /// <summary>
         /// Start sending and receiving data.
         /// </summary>

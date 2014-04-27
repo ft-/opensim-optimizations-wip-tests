@@ -25,15 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using Nini.Config;
 using log4net;
 using Mono.Addins;
-using System.Reflection;
+using Nini.Config;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
 using OpenSim.Services.Connectors;
+using OpenSim.Services.Interfaces;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authentication
 {
@@ -47,14 +47,27 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authentication
 
         private bool m_Enabled = false;
 
-        public Type ReplaceableInterface 
-        {
-            get { return null; }
-        }
-
         public string Name
         {
             get { return "RemoteAuthenticationServicesConnector"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+        public void AddRegion(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+
+            scene.RegisterModuleInterface<IAuthenticationService>(this);
+        }
+
+        public void Close()
+        {
+            if (!m_Enabled)
+                return;
         }
 
         public override void Initialise(IConfigSource source)
@@ -86,28 +99,13 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authentication
             if (!m_Enabled)
                 return;
         }
-
-        public void Close()
+        public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
                 return;
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-            scene.RegisterModuleInterface<IAuthenticationService>(this);
         }
 
         public void RemoveRegion(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-        }
-
-        public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
                 return;

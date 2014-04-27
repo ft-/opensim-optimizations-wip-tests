@@ -25,24 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Specialized;
-using System.Reflection;
-using System.IO;
-using System.Web;
 using Mono.Addins;
-using log4net;
 using Nini.Config;
 using OpenMetaverse;
-using OpenMetaverse.StructuredData;
 using OpenSim.Capabilities.Handlers;
-using OpenSim.Framework;
-using OpenSim.Framework.Servers;
 using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
+using System;
 using Caps = OpenSim.Framework.Capabilities.Caps;
 
 namespace OpenSim.Region.ClientStack.Linden
@@ -50,19 +41,33 @@ namespace OpenSim.Region.ClientStack.Linden
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "GetMeshModule")]
     public class GetMeshModule : INonSharedRegionModule
     {
-//        private static readonly ILog m_log =
-//            LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        
-        private Scene m_scene;
+        //        private static readonly ILog m_log =
+        //            LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         private IAssetService m_AssetService;
         private bool m_Enabled = true;
+        private Scene m_scene;
         private string m_URL;
 
         #region Region Module interfaceBase Members
 
+        public string Name { get { return "GetMeshModule"; } }
+
         public Type ReplaceableInterface
         {
             get { return null; }
+        }
+
+        public void AddRegion(Scene pScene)
+        {
+            if (!m_Enabled)
+                return;
+
+            m_scene = pScene;
+        }
+
+        public void Close()
+        {
         }
 
         public void Initialise(IConfigSource source)
@@ -76,13 +81,13 @@ namespace OpenSim.Region.ClientStack.Linden
             if (m_URL != string.Empty)
                 m_Enabled = true;
         }
-
-        public void AddRegion(Scene pScene)
+        public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
                 return;
 
-            m_scene = pScene;
+            m_AssetService = m_scene.RequestModuleInterface<IAssetService>();
+            m_scene.EventManager.OnRegisterCaps += RegisterCaps;
         }
 
         public void RemoveRegion(Scene scene)
@@ -93,32 +98,16 @@ namespace OpenSim.Region.ClientStack.Linden
             m_scene.EventManager.OnRegisterCaps -= RegisterCaps;
             m_scene = null;
         }
-
-        public void RegionLoaded(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-            m_AssetService = m_scene.RequestModuleInterface<IAssetService>();
-            m_scene.EventManager.OnRegisterCaps += RegisterCaps;
-        }
-
-
-        public void Close() { }
-
-        public string Name { get { return "GetMeshModule"; } }
-
-        #endregion
-
+        #endregion Region Module interfaceBase Members
 
         public void RegisterCaps(UUID agentID, Caps caps)
         {
-//            UUID capID = UUID.Random();
+            //            UUID capID = UUID.Random();
 
             //caps.RegisterHandler("GetTexture", new StreamHandler("GET", "/CAPS/" + capID, ProcessGetTexture));
             if (m_URL == "localhost")
             {
-//                m_log.DebugFormat("[GETMESH]: /CAPS/{0} in region {1}", capID, m_scene.RegionInfo.RegionName);
+                //                m_log.DebugFormat("[GETMESH]: /CAPS/{0} in region {1}", capID, m_scene.RegionInfo.RegionName);
                 GetMeshHandler gmeshHandler = new GetMeshHandler(m_AssetService);
                 IRequestHandler reqHandler
                     = new RestHTTPHandler(
@@ -132,10 +121,9 @@ namespace OpenSim.Region.ClientStack.Linden
             }
             else
             {
-//                m_log.DebugFormat("[GETMESH]: {0} in region {1}", m_URL, m_scene.RegionInfo.RegionName);
+                //                m_log.DebugFormat("[GETMESH]: {0} in region {1}", m_URL, m_scene.RegionInfo.RegionName);
                 caps.RegisterHandler("GetMesh", m_URL);
             }
         }
-
     }
 }

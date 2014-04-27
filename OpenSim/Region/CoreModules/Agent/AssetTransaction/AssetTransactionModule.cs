@@ -25,17 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Threading;
-using log4net;
+using Mono.Addins;
 using Nini.Config;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using Mono.Addins;
+using System;
+using System.Threading
+using System.Collections.Generic;
 
 namespace OpenSim.Region.CoreModules.Agent.AssetTransaction
 {
@@ -43,8 +41,6 @@ namespace OpenSim.Region.CoreModules.Agent.AssetTransaction
     public class AssetTransactionModule : INonSharedRegionModule,
             IAgentAssetTransactions
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        
         protected Scene m_Scene;
         private bool m_dumpAssetsToFile = false;
         private ReaderWriterLock m_RwLock = new ReaderWriterLock();

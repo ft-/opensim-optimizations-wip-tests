@@ -25,29 +25,25 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using OpenMetaverse;
+using OpenMetaverse.StructuredData;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Reflection;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
-using log4net;
-using OpenMetaverse;
-using OpenMetaverse.StructuredData;
 
 namespace OpenSim.Framework
 {
-    public enum ProfileShape : byte
+    public enum Extrusion : byte
     {
-        Circle = 0,
-        Square = 1,
-        IsometricTriangle = 2,
-        EquilateralTriangle = 3,
-        RightTriangle = 4,
-        HalfCircle = 5
+        Straight = 16,
+        Curve1 = 32,
+        Curve2 = 48,
+        Flexible = 128
     }
 
     public enum HollowShape : byte
@@ -68,22 +64,77 @@ namespace OpenSim.Framework
         Tree = 255
     }
 
-    public enum Extrusion : byte
+    public enum ProfileShape : byte
     {
-        Straight = 16,
-        Curve1 = 32,
-        Curve2 = 48,
-        Flexible = 128
+        Circle = 0,
+        Square = 1,
+        IsometricTriangle = 2,
+        EquilateralTriangle = 3,
+        RightTriangle = 4,
+        HalfCircle = 5
     }
-
     [Serializable]
     public class PrimitiveBaseShape
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
         private static readonly byte[] DEFAULT_TEXTURE = new Primitive.TextureEntry(new UUID("89556747-24cb-43ed-920b-47caed15465f")).GetBytes();
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        [XmlIgnore]
+        private float _flexiDrag;
 
-        private byte[] m_textureEntry;
+        [XmlIgnore]
+        private bool _flexiEntry;
+
+        [XmlIgnore]
+        private float _flexiForceX;
+
+        [XmlIgnore]
+        private float _flexiForceY;
+
+        [XmlIgnore]
+        private float _flexiForceZ;
+
+        [XmlIgnore]
+        private float _flexiGravity;
+
+        // Flexi
+        [XmlIgnore]
+        private int _flexiSoftness;
+
+        [XmlIgnore]
+        private float _flexiTension;
+
+        [XmlIgnore]
+        private float _flexiWind;
+
+        private HollowShape _hollowShape;
+        private byte _lastattach;
+        [XmlIgnore]
+        private float _lightColorA = 1.0f;
+
+        [XmlIgnore]
+        private float _lightColorB;
+
+        [XmlIgnore]
+        private float _lightColorG;
+
+        //Bright n sparkly
+        [XmlIgnore]
+        private float _lightColorR;
+
+        [XmlIgnore]
+        private float _lightCutoff;
+
+        [XmlIgnore]
+        private bool _lightEntry;
+
+        [XmlIgnore]
+        private float _lightFalloff;
+
+        [XmlIgnore]
+        private float _lightIntensity = 1.0f;
+
+        [XmlIgnore]
+        private float _lightRadius;
 
         private ushort _pathBegin;
         private byte _pathCurve;
@@ -103,46 +154,554 @@ namespace OpenSim.Framework
         private ushort _profileBegin;
         private ushort _profileEnd;
         private ushort _profileHollow;
-        private Vector3 _scale;
-        private byte _state;
-        private byte _lastattach;
         private ProfileShape _profileShape;
-        private HollowShape _hollowShape;
-
-        // Sculpted
-        [XmlIgnore] private UUID _sculptTexture;
-        [XmlIgnore] private byte _sculptType;
-        [XmlIgnore] private byte[] _sculptData = Utils.EmptyBytes;
-
-        // Flexi
-        [XmlIgnore] private int _flexiSoftness;
-        [XmlIgnore] private float _flexiTension;
-        [XmlIgnore] private float _flexiDrag;
-        [XmlIgnore] private float _flexiGravity;
-        [XmlIgnore] private float _flexiWind;
-        [XmlIgnore] private float _flexiForceX;
-        [XmlIgnore] private float _flexiForceY;
-        [XmlIgnore] private float _flexiForceZ;
-
-        //Bright n sparkly
-        [XmlIgnore] private float _lightColorR;
-        [XmlIgnore] private float _lightColorG;
-        [XmlIgnore] private float _lightColorB;
-        [XmlIgnore] private float _lightColorA = 1.0f;
-        [XmlIgnore] private float _lightRadius;
-        [XmlIgnore] private float _lightCutoff;
-        [XmlIgnore] private float _lightFalloff;
-        [XmlIgnore] private float _lightIntensity = 1.0f;
-        [XmlIgnore] private bool _flexiEntry;
-        [XmlIgnore] private bool _lightEntry;
-        [XmlIgnore] private bool _sculptEntry;
+        [XmlIgnore]
+        private float _projectionAmb;
 
         // Light Projection Filter
-        [XmlIgnore] private bool _projectionEntry;
-        [XmlIgnore] private UUID _projectionTextureID;
-        [XmlIgnore] private float _projectionFOV;
-        [XmlIgnore] private float _projectionFocus;
-        [XmlIgnore] private float _projectionAmb;
+        [XmlIgnore]
+        private bool _projectionEntry;
+
+        [XmlIgnore]
+        private float _projectionFocus;
+
+        [XmlIgnore]
+        private float _projectionFOV;
+
+        [XmlIgnore]
+        private UUID _projectionTextureID;
+
+        private Vector3 _scale;
+        [XmlIgnore]
+        private byte[] _sculptData = Utils.EmptyBytes;
+
+        [XmlIgnore]
+        private bool _sculptEntry;
+
+        // Sculpted
+        [XmlIgnore]
+        private UUID _sculptTexture;
+
+        [XmlIgnore]
+        private byte _sculptType;
+
+        private byte _state;
+        private byte[] m_textureEntry;
+        public PrimitiveBaseShape()
+        {
+            PCode = (byte)PCodeEnum.Primitive;
+            m_textureEntry = DEFAULT_TEXTURE;
+        }
+
+        /// <summary>
+        /// Construct a PrimitiveBaseShape object from a OpenMetaverse.Primitive object
+        /// </summary>
+        /// <param name="prim"></param>
+        public PrimitiveBaseShape(Primitive prim)
+        {
+            //            m_log.DebugFormat("[PRIMITIVE BASE SHAPE]: Creating from {0}", prim.ID);
+
+            PCode = (byte)prim.PrimData.PCode;
+
+            State = prim.PrimData.State;
+            LastAttachPoint = prim.PrimData.State;
+            PathBegin = Primitive.PackBeginCut(prim.PrimData.PathBegin);
+            PathEnd = Primitive.PackEndCut(prim.PrimData.PathEnd);
+            PathScaleX = Primitive.PackPathScale(prim.PrimData.PathScaleX);
+            PathScaleY = Primitive.PackPathScale(prim.PrimData.PathScaleY);
+            PathShearX = (byte)Primitive.PackPathShear(prim.PrimData.PathShearX);
+            PathShearY = (byte)Primitive.PackPathShear(prim.PrimData.PathShearY);
+            PathSkew = Primitive.PackPathTwist(prim.PrimData.PathSkew);
+            ProfileBegin = Primitive.PackBeginCut(prim.PrimData.ProfileBegin);
+            ProfileEnd = Primitive.PackEndCut(prim.PrimData.ProfileEnd);
+            Scale = prim.Scale;
+            PathCurve = (byte)prim.PrimData.PathCurve;
+            ProfileCurve = (byte)prim.PrimData.ProfileCurve;
+            ProfileHollow = Primitive.PackProfileHollow(prim.PrimData.ProfileHollow);
+            PathRadiusOffset = Primitive.PackPathTwist(prim.PrimData.PathRadiusOffset);
+            PathRevolutions = Primitive.PackPathRevolutions(prim.PrimData.PathRevolutions);
+            PathTaperX = Primitive.PackPathTaper(prim.PrimData.PathTaperX);
+            PathTaperY = Primitive.PackPathTaper(prim.PrimData.PathTaperY);
+            PathTwist = Primitive.PackPathTwist(prim.PrimData.PathTwist);
+            PathTwistBegin = Primitive.PackPathTwist(prim.PrimData.PathTwistBegin);
+
+            m_textureEntry = prim.Textures.GetBytes();
+
+            if (prim.Sculpt != null)
+            {
+                SculptEntry = (prim.Sculpt.Type != OpenMetaverse.SculptType.None);
+                SculptData = prim.Sculpt.GetBytes();
+                SculptTexture = prim.Sculpt.SculptTexture;
+                SculptType = (byte)prim.Sculpt.Type;
+            }
+            else
+            {
+                SculptType = (byte)OpenMetaverse.SculptType.None;
+            }
+        }
+
+        public static PrimitiveBaseShape Default
+        {
+            get
+            {
+                PrimitiveBaseShape boxShape = CreateBox();
+
+                boxShape.SetScale(0.5f);
+
+                return boxShape;
+            }
+        }
+
+        public byte[] ExtraParams
+        {
+            get
+            {
+                return ExtraParamsToBytes();
+            }
+            set
+            {
+                ReadInExtraParamsBytes(value);
+            }
+        }
+
+        public float FlexiDrag
+        {
+            get
+            {
+                return _flexiDrag;
+            }
+            set
+            {
+                _flexiDrag = value;
+            }
+        }
+
+        public bool FlexiEntry
+        {
+            get
+            {
+                return _flexiEntry;
+            }
+            set
+            {
+                _flexiEntry = value;
+            }
+        }
+
+        public float FlexiForceX
+        {
+            get
+            {
+                return _flexiForceX;
+            }
+            set
+            {
+                _flexiForceX = value;
+            }
+        }
+
+        public float FlexiForceY
+        {
+            get
+            {
+                return _flexiForceY;
+            }
+            set
+            {
+                _flexiForceY = value;
+            }
+        }
+
+        public float FlexiForceZ
+        {
+            get
+            {
+                return _flexiForceZ;
+            }
+            set
+            {
+                _flexiForceZ = value;
+            }
+        }
+
+        public float FlexiGravity
+        {
+            get
+            {
+                return _flexiGravity;
+            }
+            set
+            {
+                _flexiGravity = value;
+            }
+        }
+
+        public int FlexiSoftness
+        {
+            get
+            {
+                return _flexiSoftness;
+            }
+            set
+            {
+                _flexiSoftness = value;
+            }
+        }
+
+        public float FlexiTension
+        {
+            get
+            {
+                return _flexiTension;
+            }
+            set
+            {
+                _flexiTension = value;
+            }
+        }
+
+        public float FlexiWind
+        {
+            get
+            {
+                return _flexiWind;
+            }
+            set
+            {
+                _flexiWind = value;
+            }
+        }
+
+        public HollowShape HollowShape
+        {
+            get
+            {
+                return _hollowShape;
+            }
+            set
+            {
+                _hollowShape = value;
+            }
+        }
+
+        public byte LastAttachPoint
+        {
+            get
+            {
+                return _lastattach;
+            }
+            set
+            {
+                _lastattach = value;
+            }
+        }
+
+        public float LightColorA
+        {
+            get
+            {
+                return _lightColorA;
+            }
+            set
+            {
+                _lightColorA = value;
+            }
+        }
+
+        public float LightColorB
+        {
+            get
+            {
+                return _lightColorB;
+            }
+            set
+            {
+                _lightColorB = value;
+            }
+        }
+
+        public float LightColorG
+        {
+            get
+            {
+                return _lightColorG;
+            }
+            set
+            {
+                _lightColorG = value;
+            }
+        }
+
+        public float LightColorR
+        {
+            get
+            {
+                return _lightColorR;
+            }
+            set
+            {
+                _lightColorR = value;
+            }
+        }
+
+        public float LightCutoff
+        {
+            get
+            {
+                return _lightCutoff;
+            }
+            set
+            {
+                _lightCutoff = value;
+            }
+        }
+
+        public bool LightEntry
+        {
+            get
+            {
+                return _lightEntry;
+            }
+            set
+            {
+                _lightEntry = value;
+            }
+        }
+
+        public float LightFalloff
+        {
+            get
+            {
+                return _lightFalloff;
+            }
+            set
+            {
+                _lightFalloff = value;
+            }
+        }
+
+        public float LightIntensity
+        {
+            get
+            {
+                return _lightIntensity;
+            }
+            set
+            {
+                _lightIntensity = value;
+            }
+        }
+
+        public float LightRadius
+        {
+            get
+            {
+                return _lightRadius;
+            }
+            set
+            {
+                _lightRadius = value;
+            }
+        }
+
+        /// <summary>
+        /// Entries to store media textures on each face
+        /// </summary>
+        /// Do not change this value directly - always do it through an IMoapModule.
+        /// Lock before manipulating.
+        public MediaList Media { get; set; }
+
+        public ushort PathBegin
+        {
+            get
+            {
+                return _pathBegin;
+            }
+            set
+            {
+                _pathBegin = value;
+            }
+        }
+
+        public byte PathCurve
+        {
+            get
+            {
+                return _pathCurve;
+            }
+            set
+            {
+                _pathCurve = value;
+            }
+        }
+
+        public ushort PathEnd
+        {
+            get
+            {
+                return _pathEnd;
+            }
+            set
+            {
+                _pathEnd = value;
+            }
+        }
+
+        public sbyte PathRadiusOffset
+        {
+            get
+            {
+                return _pathRadiusOffset;
+            }
+            set
+            {
+                _pathRadiusOffset = value;
+            }
+        }
+
+        public byte PathRevolutions
+        {
+            get
+            {
+                return _pathRevolutions;
+            }
+            set
+            {
+                _pathRevolutions = value;
+            }
+        }
+
+        public byte PathScaleX
+        {
+            get
+            {
+                return _pathScaleX;
+            }
+            set
+            {
+                _pathScaleX = value;
+            }
+        }
+
+        public byte PathScaleY
+        {
+            get
+            {
+                return _pathScaleY;
+            }
+            set
+            {
+                _pathScaleY = value;
+            }
+        }
+
+        public byte PathShearX
+        {
+            get
+            {
+                return _pathShearX;
+            }
+            set
+            {
+                _pathShearX = value;
+            }
+        }
+
+        public byte PathShearY
+        {
+            get
+            {
+                return _pathShearY;
+            }
+            set
+            {
+                _pathShearY = value;
+            }
+        }
+
+        public sbyte PathSkew
+        {
+            get
+            {
+                return _pathSkew;
+            }
+            set
+            {
+                _pathSkew = value;
+            }
+        }
+
+        public sbyte PathTaperX
+        {
+            get
+            {
+                return _pathTaperX;
+            }
+            set
+            {
+                _pathTaperX = value;
+            }
+        }
+
+        public sbyte PathTaperY
+        {
+            get
+            {
+                return _pathTaperY;
+            }
+            set
+            {
+                _pathTaperY = value;
+            }
+        }
+
+        public sbyte PathTwist
+        {
+            get
+            {
+                return _pathTwist;
+            }
+            set
+            {
+                _pathTwist = value;
+            }
+        }
+
+        public sbyte PathTwistBegin
+        {
+            get
+            {
+                return _pathTwistBegin;
+            }
+            set
+            {
+                _pathTwistBegin = value;
+            }
+        }
+
+        public byte PCode
+        {
+            get
+            {
+                return _pCode;
+            }
+            set
+            {
+                _pCode = value;
+            }
+        }
+
+        public ushort ProfileBegin
+        {
+            get
+            {
+                return _profileBegin;
+            }
+            set
+            {
+                _profileBegin = value;
+            }
+        }
 
         public byte ProfileCurve
         {
@@ -183,440 +742,149 @@ namespace OpenSim.Framework
                 }
             }
         }
-
-        /// <summary>
-        /// Entries to store media textures on each face
-        /// </summary>
-        /// Do not change this value directly - always do it through an IMoapModule.
-        /// Lock before manipulating.
-        public MediaList Media { get; set; }
-
-        public PrimitiveBaseShape()
-        {
-            PCode = (byte)PCodeEnum.Primitive;
-            m_textureEntry = DEFAULT_TEXTURE;
-        }
-
-        /// <summary>
-        /// Construct a PrimitiveBaseShape object from a OpenMetaverse.Primitive object
-        /// </summary>
-        /// <param name="prim"></param>
-        public PrimitiveBaseShape(Primitive prim)
-        {
-//            m_log.DebugFormat("[PRIMITIVE BASE SHAPE]: Creating from {0}", prim.ID);
-
-            PCode = (byte)prim.PrimData.PCode;
-
-            State = prim.PrimData.State;
-            LastAttachPoint = prim.PrimData.State;
-            PathBegin = Primitive.PackBeginCut(prim.PrimData.PathBegin);
-            PathEnd = Primitive.PackEndCut(prim.PrimData.PathEnd);
-            PathScaleX = Primitive.PackPathScale(prim.PrimData.PathScaleX);
-            PathScaleY = Primitive.PackPathScale(prim.PrimData.PathScaleY);
-            PathShearX = (byte)Primitive.PackPathShear(prim.PrimData.PathShearX);
-            PathShearY = (byte)Primitive.PackPathShear(prim.PrimData.PathShearY);
-            PathSkew = Primitive.PackPathTwist(prim.PrimData.PathSkew);
-            ProfileBegin = Primitive.PackBeginCut(prim.PrimData.ProfileBegin);
-            ProfileEnd = Primitive.PackEndCut(prim.PrimData.ProfileEnd);
-            Scale = prim.Scale;
-            PathCurve = (byte)prim.PrimData.PathCurve;
-            ProfileCurve = (byte)prim.PrimData.ProfileCurve;
-            ProfileHollow = Primitive.PackProfileHollow(prim.PrimData.ProfileHollow);
-            PathRadiusOffset = Primitive.PackPathTwist(prim.PrimData.PathRadiusOffset);
-            PathRevolutions = Primitive.PackPathRevolutions(prim.PrimData.PathRevolutions);
-            PathTaperX = Primitive.PackPathTaper(prim.PrimData.PathTaperX);
-            PathTaperY = Primitive.PackPathTaper(prim.PrimData.PathTaperY);
-            PathTwist = Primitive.PackPathTwist(prim.PrimData.PathTwist);
-            PathTwistBegin = Primitive.PackPathTwist(prim.PrimData.PathTwistBegin);
-
-            m_textureEntry = prim.Textures.GetBytes();
-
-            if (prim.Sculpt != null)
-            {
-                SculptEntry = (prim.Sculpt.Type != OpenMetaverse.SculptType.None);
-                SculptData = prim.Sculpt.GetBytes();
-                SculptTexture = prim.Sculpt.SculptTexture;
-                SculptType = (byte)prim.Sculpt.Type;
-            }
-            else 
-            {  
-                SculptType = (byte)OpenMetaverse.SculptType.None;
-            }
-        }
-
-        [XmlIgnore]
-        public Primitive.TextureEntry Textures
+        public ushort ProfileEnd
         {
             get
             {
-//                m_log.DebugFormat("[SHAPE]: get m_textureEntry length {0}", m_textureEntry.Length);
-                try { return new Primitive.TextureEntry(m_textureEntry, 0, m_textureEntry.Length); }
-                catch { }
-
-                m_log.Warn("[SHAPE]: Failed to decode texture, length=" + ((m_textureEntry != null) ? m_textureEntry.Length : 0));
-                return new Primitive.TextureEntry(UUID.Zero);
-            }
-
-            set { m_textureEntry = value.GetBytes(); }
-        }
-
-        public byte[] TextureEntry
-        {
-            get { return m_textureEntry; }
-
-            set
-            {
-                if (value == null)
-                    m_textureEntry = new byte[1];
-                else
-                    m_textureEntry = value;
-            }
-        }
-
-        public static PrimitiveBaseShape Default
-        {
-            get
-            {
-                PrimitiveBaseShape boxShape = CreateBox();
-
-                boxShape.SetScale(0.5f);
-
-                return boxShape;
-            }
-        }
-
-        public static PrimitiveBaseShape Create()
-        {
-            PrimitiveBaseShape shape = new PrimitiveBaseShape();
-            return shape;
-        }
-
-        public static PrimitiveBaseShape CreateBox()
-        {
-            PrimitiveBaseShape shape = Create();
-
-            shape._pathCurve = (byte) Extrusion.Straight;
-            shape._profileShape = ProfileShape.Square;
-            shape._pathScaleX = 100;
-            shape._pathScaleY = 100;
-
-            return shape;
-        }
-
-        public static PrimitiveBaseShape CreateSphere()
-        {
-            PrimitiveBaseShape shape = Create();
-
-            shape._pathCurve = (byte) Extrusion.Curve1;
-            shape._profileShape = ProfileShape.HalfCircle;
-            shape._pathScaleX = 100;
-            shape._pathScaleY = 100;
-
-            return shape;
-        }
-
-        public static PrimitiveBaseShape CreateCylinder()
-        {
-            PrimitiveBaseShape shape = Create();
-
-            shape._pathCurve = (byte) Extrusion.Curve1;
-            shape._profileShape = ProfileShape.Square;
-
-            shape._pathScaleX = 100;
-            shape._pathScaleY = 100;
-
-            return shape;
-        }
-
-        public void SetScale(float side)
-        {
-            _scale = new Vector3(side, side, side);
-        }
-
-        public void SetHeigth(float height)
-        {
-            _scale.Z = height;
-        }
-
-        public void SetRadius(float radius)
-        {
-            _scale.X = _scale.Y = radius * 2f;
-        }
-
-        // TODO: void returns need to change of course
-        public virtual void GetMesh()
-        {
-        }
-
-        public PrimitiveBaseShape Copy()
-        {
-            return (PrimitiveBaseShape) MemberwiseClone();
-        }
-
-        public static PrimitiveBaseShape CreateCylinder(float radius, float heigth)
-        {
-            PrimitiveBaseShape shape = CreateCylinder();
-
-            shape.SetHeigth(heigth);
-            shape.SetRadius(radius);
-
-            return shape;
-        }
-
-        public void SetPathRange(Vector3 pathRange)
-        {
-            _pathBegin = Primitive.PackBeginCut(pathRange.X);
-            _pathEnd = Primitive.PackEndCut(pathRange.Y);
-        }
-
-        public void SetPathRange(float begin, float end)
-        {
-            _pathBegin = Primitive.PackBeginCut(begin);
-            _pathEnd = Primitive.PackEndCut(end);
-        }
-
-        public void SetSculptProperties(byte sculptType, UUID SculptTextureUUID)
-        {
-            _sculptType = sculptType;
-            _sculptTexture = SculptTextureUUID;
-        }
-
-        public void SetProfileRange(Vector3 profileRange)
-        {
-            _profileBegin = Primitive.PackBeginCut(profileRange.X);
-            _profileEnd = Primitive.PackEndCut(profileRange.Y);
-        }
-
-        public void SetProfileRange(float begin, float end)
-        {
-            _profileBegin = Primitive.PackBeginCut(begin);
-            _profileEnd = Primitive.PackEndCut(end);
-        }
-
-        public byte[] ExtraParams
-        {
-            get
-            {
-                return ExtraParamsToBytes();
-            }
-            set
-            {
-                ReadInExtraParamsBytes(value);
-            }
-        }
-
-        public ushort PathBegin {
-            get {
-                return _pathBegin;
-            }
-            set {
-                _pathBegin = value;
-            }
-        }
-
-        public byte PathCurve {
-            get {
-                return _pathCurve;
-            }
-            set {
-                _pathCurve = value;
-            }
-        }
-
-        public ushort PathEnd {
-            get {
-                return _pathEnd;
-            }
-            set {
-                _pathEnd = value;
-            }
-        }
-
-        public sbyte PathRadiusOffset {
-            get {
-                return _pathRadiusOffset;
-            }
-            set {
-                _pathRadiusOffset = value;
-            }
-        }
-
-        public byte PathRevolutions {
-            get {
-                return _pathRevolutions;
-            }
-            set {
-                _pathRevolutions = value;
-            }
-        }
-
-        public byte PathScaleX {
-            get {
-                return _pathScaleX;
-            }
-            set {
-                _pathScaleX = value;
-            }
-        }
-
-        public byte PathScaleY {
-            get {
-                return _pathScaleY;
-            }
-            set {
-                _pathScaleY = value;
-            }
-        }
-
-        public byte PathShearX {
-            get {
-                return _pathShearX;
-            }
-            set {
-                _pathShearX = value;
-            }
-        }
-
-        public byte PathShearY {
-            get {
-                return _pathShearY;
-            }
-            set {
-                _pathShearY = value;
-            }
-        }
-
-        public sbyte PathSkew {
-            get {
-                return _pathSkew;
-            }
-            set {
-                _pathSkew = value;
-            }
-        }
-
-        public sbyte PathTaperX {
-            get {
-                return _pathTaperX;
-            }
-            set {
-                _pathTaperX = value;
-            }
-        }
-
-        public sbyte PathTaperY {
-            get {
-                return _pathTaperY;
-            }
-            set {
-                _pathTaperY = value;
-            }
-        }
-
-        public sbyte PathTwist {
-            get {
-                return _pathTwist;
-            }
-            set {
-                _pathTwist = value;
-            }
-        }
-
-        public sbyte PathTwistBegin {
-            get {
-                return _pathTwistBegin;
-            }
-            set {
-                _pathTwistBegin = value;
-            }
-        }
-
-        public byte PCode {
-            get {
-                return _pCode;
-            }
-            set {
-                _pCode = value;
-            }
-        }
-
-        public ushort ProfileBegin {
-            get {
-                return _profileBegin;
-            }
-            set {
-                _profileBegin = value;
-            }
-        }
-
-        public ushort ProfileEnd {
-            get {
                 return _profileEnd;
             }
-            set {
+            set
+            {
                 _profileEnd = value;
             }
         }
 
-        public ushort ProfileHollow {
-            get {
+        public ushort ProfileHollow
+        {
+            get
+            {
                 return _profileHollow;
             }
-            set {
+            set
+            {
                 _profileHollow = value;
             }
         }
 
-        public Vector3 Scale {
-            get {
-                return _scale;
-            }
-            set {
-                _scale = value;
-            }
-        }
-
-        public byte State {
-            get {
-                return _state;
-            }
-            set {
-                _state = value;
-            }
-        }
-
-        public byte LastAttachPoint {
-            get {
-                return _lastattach;
-            }
-            set {
-                _lastattach = value;
-            }
-        }
-
-        public ProfileShape ProfileShape {
-            get {
+        public ProfileShape ProfileShape
+        {
+            get
+            {
                 return _profileShape;
             }
-            set {
+            set
+            {
                 _profileShape = value;
             }
         }
 
-        public HollowShape HollowShape {
-            get {
-                return _hollowShape;
+        public float ProjectionAmbiance
+        {
+            get
+            {
+                return _projectionAmb;
             }
-            set {
-                _hollowShape = value;
+            set
+            {
+                _projectionAmb = value;
             }
         }
 
-        public UUID SculptTexture {
-            get {
+        public bool ProjectionEntry
+        {
+            get
+            {
+                return _projectionEntry;
+            }
+            set
+            {
+                _projectionEntry = value;
+            }
+        }
+
+        public float ProjectionFocus
+        {
+            get
+            {
+                return _projectionFocus;
+            }
+            set
+            {
+                _projectionFocus = value;
+            }
+        }
+
+        public float ProjectionFOV
+        {
+            get
+            {
+                return _projectionFOV;
+            }
+            set
+            {
+                _projectionFOV = value;
+            }
+        }
+
+        public UUID ProjectionTextureUUID
+        {
+            get
+            {
+                return _projectionTextureID;
+            }
+            set
+            {
+                _projectionTextureID = value;
+            }
+        }
+
+        public Vector3 Scale
+        {
+            get
+            {
+                return _scale;
+            }
+            set
+            {
+                _scale = value;
+            }
+        }
+
+        // This is only used at runtime. For sculpties this holds the texture data, and for meshes
+        // the mesh data.
+        public byte[] SculptData
+        {
+            get
+            {
+                return _sculptData;
+            }
+            set
+            {
+                //                m_log.DebugFormat("[PRIMITIVE BASE SHAPE]: Setting SculptData to data with length {0}", value.Length);
+                _sculptData = value;
+            }
+        }
+
+        public bool SculptEntry
+        {
+            get
+            {
+                return _sculptEntry;
+            }
+            set
+            {
+                _sculptEntry = value;
+            }
+        }
+
+        public UUID SculptTexture
+        {
+            get
+            {
                 return _sculptTexture;
             }
-            set {
+            set
+            {
                 _sculptTexture = value;
             }
         }
@@ -633,304 +901,106 @@ namespace OpenSim.Framework
             }
         }
 
-        // This is only used at runtime. For sculpties this holds the texture data, and for meshes
-        // the mesh data.
-        public byte[] SculptData
+        public byte State
         {
             get
             {
-                return _sculptData;
+                return _state;
             }
             set
             {
-//                m_log.DebugFormat("[PRIMITIVE BASE SHAPE]: Setting SculptData to data with length {0}", value.Length);
-                _sculptData = value;
+                _state = value;
             }
         }
 
-        public int FlexiSoftness
+        public byte[] TextureEntry
+        {
+            get { return m_textureEntry; }
+
+            set
+            {
+                if (value == null)
+                    m_textureEntry = new byte[1];
+                else
+                    m_textureEntry = value;
+            }
+        }
+
+        [XmlIgnore]
+        public Primitive.TextureEntry Textures
         {
             get
             {
-                return _flexiSoftness;
-            }
-            set
-            {
-                _flexiSoftness = value;
-            }
-        }
+                //                m_log.DebugFormat("[SHAPE]: get m_textureEntry length {0}", m_textureEntry.Length);
+                try { return new Primitive.TextureEntry(m_textureEntry, 0, m_textureEntry.Length); }
+                catch { }
 
-        public float FlexiTension {
-            get {
-                return _flexiTension;
+                m_log.Warn("[SHAPE]: Failed to decode texture, length=" + ((m_textureEntry != null) ? m_textureEntry.Length : 0));
+                return new Primitive.TextureEntry(UUID.Zero);
             }
-            set {
-                _flexiTension = value;
-            }
-        }
 
-        public float FlexiDrag {
-            get {
-                return _flexiDrag;
-            }
-            set {
-                _flexiDrag = value;
-            }
+            set { m_textureEntry = value.GetBytes(); }
         }
-
-        public float FlexiGravity {
-            get {
-                return _flexiGravity;
-            }
-            set {
-                _flexiGravity = value;
-            }
-        }
-
-        public float FlexiWind {
-            get {
-                return _flexiWind;
-            }
-            set {
-                _flexiWind = value;
-            }
-        }
-
-        public float FlexiForceX {
-            get {
-                return _flexiForceX;
-            }
-            set {
-                _flexiForceX = value;
-            }
-        }
-
-        public float FlexiForceY {
-            get {
-                return _flexiForceY;
-            }
-            set {
-                _flexiForceY = value;
-            }
-        }
-
-        public float FlexiForceZ {
-            get {
-                return _flexiForceZ;
-            }
-            set {
-                _flexiForceZ = value;
-            }
-        }
-
-        public float LightColorR {
-            get {
-                return _lightColorR;
-            }
-            set {
-                _lightColorR = value;
-            }
-        }
-
-        public float LightColorG {
-            get {
-                return _lightColorG;
-            }
-            set {
-                _lightColorG = value;
-            }
-        }
-
-        public float LightColorB {
-            get {
-                return _lightColorB;
-            }
-            set {
-                _lightColorB = value;
-            }
-        }
-
-        public float LightColorA {
-            get {
-                return _lightColorA;
-            }
-            set {
-                _lightColorA = value;
-            }
-        }
-
-        public float LightRadius {
-            get {
-                return _lightRadius;
-            }
-            set {
-                _lightRadius = value;
-            }
-        }
-
-        public float LightCutoff {
-            get {
-                return _lightCutoff;
-            }
-            set {
-                _lightCutoff = value;
-            }
-        }
-
-        public float LightFalloff {
-            get {
-                return _lightFalloff;
-            }
-            set {
-                _lightFalloff = value;
-            }
-        }
-
-        public float LightIntensity {
-            get {
-                return _lightIntensity;
-            }
-            set {
-                _lightIntensity = value;
-            }
-        }
-
-        public bool FlexiEntry {
-            get {
-                return _flexiEntry;
-            }
-            set {
-                _flexiEntry = value;
-            }
-        }
-
-        public bool LightEntry {
-            get {
-                return _lightEntry;
-            }
-            set {
-                _lightEntry = value;
-            }
-        }
-
-        public bool SculptEntry {
-            get {
-                return _sculptEntry;
-            }
-            set {
-                _sculptEntry = value;
-            }
-        }
-
-        public bool ProjectionEntry {
-            get {
-                return _projectionEntry;
-            }
-            set {
-                _projectionEntry = value;
-            }
-        }
-
-        public UUID ProjectionTextureUUID {
-            get {
-                return _projectionTextureID;
-            }
-            set {
-                _projectionTextureID = value;
-            }
-        }
-
-        public float ProjectionFOV {
-            get {
-                return _projectionFOV;
-            }
-            set {
-                _projectionFOV = value;
-            }
-        }
-
-        public float ProjectionFocus {
-            get {
-                return _projectionFocus;
-            }
-            set {
-                _projectionFocus = value;
-            }
-        }
-
-        public float ProjectionAmbiance {
-            get {
-                return _projectionAmb;
-            }
-            set {
-                _projectionAmb = value;
-            }
-        }
-
-        public ulong GetMeshKey(Vector3 size, float lod)
+        public static PrimitiveBaseShape Create()
         {
-            ulong hash = 5381;
-
-            hash = djb2(hash, this.PathCurve);
-            hash = djb2(hash, (byte)((byte)this.HollowShape | (byte)this.ProfileShape));
-            hash = djb2(hash, this.PathBegin);
-            hash = djb2(hash, this.PathEnd);
-            hash = djb2(hash, this.PathScaleX);
-            hash = djb2(hash, this.PathScaleY);
-            hash = djb2(hash, this.PathShearX);
-            hash = djb2(hash, this.PathShearY);
-            hash = djb2(hash, (byte)this.PathTwist);
-            hash = djb2(hash, (byte)this.PathTwistBegin);
-            hash = djb2(hash, (byte)this.PathRadiusOffset);
-            hash = djb2(hash, (byte)this.PathTaperX);
-            hash = djb2(hash, (byte)this.PathTaperY);
-            hash = djb2(hash, this.PathRevolutions);
-            hash = djb2(hash, (byte)this.PathSkew);
-            hash = djb2(hash, this.ProfileBegin);
-            hash = djb2(hash, this.ProfileEnd);
-            hash = djb2(hash, this.ProfileHollow);
-
-            // TODO: Separate scale out from the primitive shape data (after
-            // scaling is supported at the physics engine level)
-            byte[] scaleBytes = size.GetBytes();
-            for (int i = 0; i < scaleBytes.Length; i++)
-                hash = djb2(hash, scaleBytes[i]);
-
-            // Include LOD in hash, accounting for endianness
-            byte[] lodBytes = new byte[4];
-            Buffer.BlockCopy(BitConverter.GetBytes(lod), 0, lodBytes, 0, 4);
-            if (!BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(lodBytes, 0, 4);
-            }
-            for (int i = 0; i < lodBytes.Length; i++)
-                hash = djb2(hash, lodBytes[i]);
-
-            // include sculpt UUID
-            if (this.SculptEntry)
-            {
-                scaleBytes = this.SculptTexture.GetBytes();
-                for (int i = 0; i < scaleBytes.Length; i++)
-                    hash = djb2(hash, scaleBytes[i]);
-            }
-
-            return hash;
+            PrimitiveBaseShape shape = new PrimitiveBaseShape();
+            return shape;
         }
 
-        private ulong djb2(ulong hash, byte c)
+        public static PrimitiveBaseShape CreateBox()
         {
-            return ((hash << 5) + hash) + (ulong)c;
+            PrimitiveBaseShape shape = Create();
+
+            shape._pathCurve = (byte)Extrusion.Straight;
+            shape._profileShape = ProfileShape.Square;
+            shape._pathScaleX = 100;
+            shape._pathScaleY = 100;
+
+            return shape;
         }
 
-        private ulong djb2(ulong hash, ushort c)
+        public static PrimitiveBaseShape CreateCylinder()
         {
-            hash = ((hash << 5) + hash) + (ulong)((byte)c);
-            return ((hash << 5) + hash) + (ulong)(c >> 8);
+            PrimitiveBaseShape shape = Create();
+
+            shape._pathCurve = (byte)Extrusion.Curve1;
+            shape._profileShape = ProfileShape.Square;
+
+            shape._pathScaleX = 100;
+            shape._pathScaleY = 100;
+
+            return shape;
+        }
+
+        public static PrimitiveBaseShape CreateCylinder(float radius, float heigth)
+        {
+            PrimitiveBaseShape shape = CreateCylinder();
+
+            shape.SetHeigth(heigth);
+            shape.SetRadius(radius);
+
+            return shape;
+        }
+
+        public static PrimitiveBaseShape CreateSphere()
+        {
+            PrimitiveBaseShape shape = Create();
+
+            shape._pathCurve = (byte)Extrusion.Curve1;
+            shape._profileShape = ProfileShape.HalfCircle;
+            shape._pathScaleX = 100;
+            shape._pathScaleY = 100;
+
+            return shape;
+        }
+        public PrimitiveBaseShape Copy()
+        {
+            return (PrimitiveBaseShape)MemberwiseClone();
         }
 
         public byte[] ExtraParamsToBytes()
         {
-//            m_log.DebugFormat("[EXTRAPARAMS]: Called ExtraParamsToBytes()");
+            //            m_log.DebugFormat("[EXTRAPARAMS]: Called ExtraParamsToBytes()");
 
             ushort FlexiEP = 0x10;
             ushort LightEP = 0x20;
@@ -1045,49 +1115,145 @@ namespace OpenSim.Framework
             return returnbytes;
         }
 
-        public void ReadInUpdateExtraParam(ushort type, bool inUse, byte[] data)
+        public byte[] GetFlexiBytes()
         {
-            const ushort FlexiEP = 0x10;
-            const ushort LightEP = 0x20;
-            const ushort SculptEP = 0x30;
-            const ushort ProjectionEP = 0x40;
+            byte[] data = new byte[16];
+            int i = 0;
 
-            switch (type)
+            // Softness is packed in the upper bits of tension and drag
+            data[i] = (byte)((_flexiSoftness & 2) << 6);
+            data[i + 1] = (byte)((_flexiSoftness & 1) << 7);
+
+            data[i++] |= (byte)((byte)(_flexiTension * 10.01f) & 0x7F);
+            data[i++] |= (byte)((byte)(_flexiDrag * 10.01f) & 0x7F);
+            data[i++] = (byte)((_flexiGravity + 10.0f) * 10.01f);
+            data[i++] = (byte)(_flexiWind * 10.01f);
+            Vector3 lForce = new Vector3(_flexiForceX, _flexiForceY, _flexiForceZ);
+            lForce.GetBytes().CopyTo(data, i);
+
+            return data;
+        }
+
+        public byte[] GetLightBytes()
+        {
+            byte[] data = new byte[16];
+
+            // Alpha channel in color is intensity
+            Color4 tmpColor = new Color4(_lightColorR, _lightColorG, _lightColorB, _lightIntensity);
+
+            tmpColor.GetBytes().CopyTo(data, 0);
+            Utils.FloatToBytes(_lightRadius).CopyTo(data, 4);
+            Utils.FloatToBytes(_lightCutoff).CopyTo(data, 8);
+            Utils.FloatToBytes(_lightFalloff).CopyTo(data, 12);
+
+            return data;
+        }
+
+        // TODO: void returns need to change of course
+        public virtual void GetMesh()
+        {
+        }
+
+        public ulong GetMeshKey(Vector3 size, float lod)
+        {
+            ulong hash = 5381;
+
+            hash = djb2(hash, this.PathCurve);
+            hash = djb2(hash, (byte)((byte)this.HollowShape | (byte)this.ProfileShape));
+            hash = djb2(hash, this.PathBegin);
+            hash = djb2(hash, this.PathEnd);
+            hash = djb2(hash, this.PathScaleX);
+            hash = djb2(hash, this.PathScaleY);
+            hash = djb2(hash, this.PathShearX);
+            hash = djb2(hash, this.PathShearY);
+            hash = djb2(hash, (byte)this.PathTwist);
+            hash = djb2(hash, (byte)this.PathTwistBegin);
+            hash = djb2(hash, (byte)this.PathRadiusOffset);
+            hash = djb2(hash, (byte)this.PathTaperX);
+            hash = djb2(hash, (byte)this.PathTaperY);
+            hash = djb2(hash, this.PathRevolutions);
+            hash = djb2(hash, (byte)this.PathSkew);
+            hash = djb2(hash, this.ProfileBegin);
+            hash = djb2(hash, this.ProfileEnd);
+            hash = djb2(hash, this.ProfileHollow);
+
+            // TODO: Separate scale out from the primitive shape data (after
+            // scaling is supported at the physics engine level)
+            byte[] scaleBytes = size.GetBytes();
+            for (int i = 0; i < scaleBytes.Length; i++)
+                hash = djb2(hash, scaleBytes[i]);
+
+            // Include LOD in hash, accounting for endianness
+            byte[] lodBytes = new byte[4];
+            Buffer.BlockCopy(BitConverter.GetBytes(lod), 0, lodBytes, 0, 4);
+            if (!BitConverter.IsLittleEndian)
             {
-                case FlexiEP:
-                    if (!inUse)
-                    {
-                        _flexiEntry = false;
-                        return;
-                    }
-                    ReadFlexiData(data, 0);
-                    break;
+                Array.Reverse(lodBytes, 0, 4);
+            }
+            for (int i = 0; i < lodBytes.Length; i++)
+                hash = djb2(hash, lodBytes[i]);
 
-                case LightEP:
-                    if (!inUse)
-                    {
-                        _lightEntry = false;
-                        return;
-                    }
-                    ReadLightData(data, 0);
-                    break;
+            // include sculpt UUID
+            if (this.SculptEntry)
+            {
+                scaleBytes = this.SculptTexture.GetBytes();
+                for (int i = 0; i < scaleBytes.Length; i++)
+                    hash = djb2(hash, scaleBytes[i]);
+            }
 
-                case SculptEP:
-                    if (!inUse)
-                    {
-                        _sculptEntry = false;
-                        return;
-                    }
-                    ReadSculptData(data, 0);
-                    break;
-                case ProjectionEP:
-                    if (!inUse)
-                    {
-                        _projectionEntry = false;
-                        return;
-                    }
-                    ReadProjectionData(data, 0);
-                    break;
+            return hash;
+        }
+
+        public byte[] GetProjectionBytes()
+        {
+            byte[] data = new byte[28];
+
+            _projectionTextureID.GetBytes().CopyTo(data, 0);
+            Utils.FloatToBytes(_projectionFOV).CopyTo(data, 16);
+            Utils.FloatToBytes(_projectionFocus).CopyTo(data, 20);
+            Utils.FloatToBytes(_projectionAmb).CopyTo(data, 24);
+
+            return data;
+        }
+
+        public byte[] GetSculptBytes()
+        {
+            byte[] data = new byte[17];
+
+            _sculptTexture.GetBytes().CopyTo(data, 0);
+            data[16] = (byte)_sculptType;
+
+            return data;
+        }
+
+        public void ReadFlexiData(byte[] data, int pos)
+        {
+            if (data.Length - pos >= 16)
+            {
+                _flexiEntry = true;
+                _flexiSoftness = ((data[pos] & 0x80) >> 6) | ((data[pos + 1] & 0x80) >> 7);
+
+                _flexiTension = (float)(data[pos++] & 0x7F) / 10.0f;
+                _flexiDrag = (float)(data[pos++] & 0x7F) / 10.0f;
+                _flexiGravity = (float)(data[pos++] / 10.0f) - 10.0f;
+                _flexiWind = (float)data[pos++] / 10.0f;
+                Vector3 lForce = new Vector3(data, pos);
+                _flexiForceX = lForce.X;
+                _flexiForceY = lForce.Y;
+                _flexiForceZ = lForce.Z;
+            }
+            else
+            {
+                _flexiEntry = false;
+                _flexiSoftness = 0;
+
+                _flexiTension = 0.0f;
+                _flexiDrag = 0.0f;
+                _flexiGravity = 0.0f;
+                _flexiWind = 0.0f;
+                _flexiForceX = 0f;
+                _flexiForceY = 0f;
+                _flexiForceZ = 0f;
             }
         }
 
@@ -1140,6 +1306,7 @@ namespace OpenSim.Framework
                         i += 17;
                         lGotSculpt = true;
                         break;
+
                     case ProjectionEP:
                         ReadProjectionData(data, i);
                         i += 28;
@@ -1158,95 +1325,51 @@ namespace OpenSim.Framework
                 _projectionEntry = false;
         }
 
-        public void ReadSculptData(byte[] data, int pos)
+        public void ReadInUpdateExtraParam(ushort type, bool inUse, byte[] data)
         {
-            UUID SculptUUID;
-            byte SculptTypel;
+            const ushort FlexiEP = 0x10;
+            const ushort LightEP = 0x20;
+            const ushort SculptEP = 0x30;
+            const ushort ProjectionEP = 0x40;
 
-            if (data.Length-pos >= 17)
+            switch (type)
             {
-                _sculptEntry = true;
-                byte[] SculptTextureUUID = new byte[16];
-                SculptTypel = data[16 + pos];
-                Array.Copy(data, pos, SculptTextureUUID,0, 16);
-                SculptUUID = new UUID(SculptTextureUUID, 0);
+                case FlexiEP:
+                    if (!inUse)
+                    {
+                        _flexiEntry = false;
+                        return;
+                    }
+                    ReadFlexiData(data, 0);
+                    break;
+
+                case LightEP:
+                    if (!inUse)
+                    {
+                        _lightEntry = false;
+                        return;
+                    }
+                    ReadLightData(data, 0);
+                    break;
+
+                case SculptEP:
+                    if (!inUse)
+                    {
+                        _sculptEntry = false;
+                        return;
+                    }
+                    ReadSculptData(data, 0);
+                    break;
+
+                case ProjectionEP:
+                    if (!inUse)
+                    {
+                        _projectionEntry = false;
+                        return;
+                    }
+                    ReadProjectionData(data, 0);
+                    break;
             }
-            else
-            {
-                _sculptEntry = false;
-                SculptUUID = UUID.Zero;
-                SculptTypel = 0x00;
-            }
-
-            if (_sculptEntry)
-            {
-                if (_sculptType != (byte)1 && _sculptType != (byte)2 && _sculptType != (byte)3 && _sculptType != (byte)4)
-                    _sculptType = 4;
-            }
-
-            _sculptTexture = SculptUUID;
-            _sculptType = SculptTypel;
-            //m_log.Info("[SCULPT]:" + SculptUUID.ToString());
-        }
-
-        public byte[] GetSculptBytes()
-        {
-            byte[] data = new byte[17];
-
-            _sculptTexture.GetBytes().CopyTo(data, 0);
-            data[16] = (byte)_sculptType;
-
-            return data;
-        }
-
-        public void ReadFlexiData(byte[] data, int pos)
-        {
-            if (data.Length-pos >= 16)
-            {
-                _flexiEntry = true;
-                _flexiSoftness = ((data[pos] & 0x80) >> 6) | ((data[pos + 1] & 0x80) >> 7);
-
-                _flexiTension = (float)(data[pos++] & 0x7F) / 10.0f;
-                _flexiDrag = (float)(data[pos++] & 0x7F) / 10.0f;
-                _flexiGravity = (float)(data[pos++] / 10.0f) - 10.0f;
-                _flexiWind = (float)data[pos++] / 10.0f;
-                Vector3 lForce = new Vector3(data, pos);
-                _flexiForceX = lForce.X;
-                _flexiForceY = lForce.Y;
-                _flexiForceZ = lForce.Z;
-            }
-            else
-            {
-                _flexiEntry = false;
-                _flexiSoftness = 0;
-
-                _flexiTension = 0.0f;
-                _flexiDrag = 0.0f;
-                _flexiGravity = 0.0f;
-                _flexiWind = 0.0f;
-                _flexiForceX = 0f;
-                _flexiForceY = 0f;
-                _flexiForceZ = 0f;
-            }
-        }
-
-        public byte[] GetFlexiBytes()
-        {
-            byte[] data = new byte[16];
-            int i = 0;
-
-            // Softness is packed in the upper bits of tension and drag
-            data[i] = (byte)((_flexiSoftness & 2) << 6);
-            data[i + 1] = (byte)((_flexiSoftness & 1) << 7);
-
-            data[i++] |= (byte)((byte)(_flexiTension * 10.01f) & 0x7F);
-            data[i++] |= (byte)((byte)(_flexiDrag * 10.01f) & 0x7F);
-            data[i++] = (byte)((_flexiGravity + 10.0f) * 10.01f);
-            data[i++] = (byte)(_flexiWind * 10.01f);
-            Vector3 lForce = new Vector3(_flexiForceX, _flexiForceY, _flexiForceZ);
-            lForce.GetBytes().CopyTo(data, i);
-
-            return data;
         }
 
         public void ReadLightData(byte[] data, int pos)
@@ -1279,21 +1402,6 @@ namespace OpenSim.Framework
             }
         }
 
-        public byte[] GetLightBytes()
-        {
-            byte[] data = new byte[16];
-
-            // Alpha channel in color is intensity
-            Color4 tmpColor = new Color4(_lightColorR,_lightColorG,_lightColorB,_lightIntensity);
-
-            tmpColor.GetBytes().CopyTo(data, 0);
-            Utils.FloatToBytes(_lightRadius).CopyTo(data, 4);
-            Utils.FloatToBytes(_lightCutoff).CopyTo(data, 8);
-            Utils.FloatToBytes(_lightFalloff).CopyTo(data, 12);
-
-            return data;
-        }
-
         public void ReadProjectionData(byte[] data, int pos)
         {
             byte[] ProjectionTextureUUID = new byte[16];
@@ -1301,7 +1409,7 @@ namespace OpenSim.Framework
             if (data.Length - pos >= 28)
             {
                 _projectionEntry = true;
-                Array.Copy(data, pos, ProjectionTextureUUID,0, 16);
+                Array.Copy(data, pos, ProjectionTextureUUID, 0, 16);
                 _projectionTextureID = new UUID(ProjectionTextureUUID, 0);
 
                 _projectionFOV = Utils.BytesToFloat(data, pos + 16);
@@ -1318,19 +1426,80 @@ namespace OpenSim.Framework
             }
         }
 
-        public byte[] GetProjectionBytes()
+        public void ReadSculptData(byte[] data, int pos)
         {
-            byte[] data = new byte[28];
+            UUID SculptUUID;
+            byte SculptTypel;
 
-            _projectionTextureID.GetBytes().CopyTo(data, 0);
-            Utils.FloatToBytes(_projectionFOV).CopyTo(data, 16);
-            Utils.FloatToBytes(_projectionFocus).CopyTo(data, 20);
-            Utils.FloatToBytes(_projectionAmb).CopyTo(data, 24);
+            if (data.Length - pos >= 17)
+            {
+                _sculptEntry = true;
+                byte[] SculptTextureUUID = new byte[16];
+                SculptTypel = data[16 + pos];
+                Array.Copy(data, pos, SculptTextureUUID, 0, 16);
+                SculptUUID = new UUID(SculptTextureUUID, 0);
+            }
+            else
+            {
+                _sculptEntry = false;
+                SculptUUID = UUID.Zero;
+                SculptTypel = 0x00;
+            }
 
-            return data;
+            if (_sculptEntry)
+            {
+                if (_sculptType != (byte)1 && _sculptType != (byte)2 && _sculptType != (byte)3 && _sculptType != (byte)4)
+                    _sculptType = 4;
+            }
+
+            _sculptTexture = SculptUUID;
+            _sculptType = SculptTypel;
+            //m_log.Info("[SCULPT]:" + SculptUUID.ToString());
         }
 
+        public void SetHeigth(float height)
+        {
+            _scale.Z = height;
+        }
 
+        public void SetPathRange(Vector3 pathRange)
+        {
+            _pathBegin = Primitive.PackBeginCut(pathRange.X);
+            _pathEnd = Primitive.PackEndCut(pathRange.Y);
+        }
+
+        public void SetPathRange(float begin, float end)
+        {
+            _pathBegin = Primitive.PackBeginCut(begin);
+            _pathEnd = Primitive.PackEndCut(end);
+        }
+
+        public void SetProfileRange(Vector3 profileRange)
+        {
+            _profileBegin = Primitive.PackBeginCut(profileRange.X);
+            _profileEnd = Primitive.PackEndCut(profileRange.Y);
+        }
+
+        public void SetProfileRange(float begin, float end)
+        {
+            _profileBegin = Primitive.PackBeginCut(begin);
+            _profileEnd = Primitive.PackEndCut(end);
+        }
+
+        public void SetRadius(float radius)
+        {
+            _scale.X = _scale.Y = radius * 2f;
+        }
+
+        public void SetScale(float side)
+        {
+            _scale = new Vector3(side, side, side);
+        }
+        public void SetSculptProperties(byte sculptType, UUID SculptTextureUUID)
+        {
+            _sculptType = sculptType;
+            _sculptTexture = SculptTextureUUID;
+        }
         /// <summary>
         /// Creates a OpenMetaverse.Primitive and populates it with converted PrimitiveBaseShape values
         /// </summary>
@@ -1341,7 +1510,6 @@ namespace OpenSim.Framework
             return ToOmvPrimitive(new Vector3(0.0f, 0.0f, 0.0f),
                 new Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
         }
-
 
         /// <summary>
         /// Creates a OpenMetaverse.Primitive and populates it with converted PrimitiveBaseShape values
@@ -1429,6 +1597,16 @@ namespace OpenSim.Framework
             return prim;
         }
 
+        private ulong djb2(ulong hash, byte c)
+        {
+            return ((hash << 5) + hash) + (ulong)c;
+        }
+
+        private ulong djb2(ulong hash, ushort c)
+        {
+            hash = ((hash << 5) + hash) + (ulong)((byte)c);
+            return ((hash << 5) + hash) + (ulong)(c >> 8);
+        }
         /// <summary>
         /// Encapsulates a list of media entries.
         /// </summary>
@@ -1438,13 +1616,67 @@ namespace OpenSim.Framework
         {
             public const string MEDIA_TEXTURE_TYPE = "sl";
 
-            public MediaList() : base() {}
-            public MediaList(IEnumerable<MediaEntry> collection) : base(collection) {}
-            public MediaList(int capacity) : base(capacity) {}
+            public MediaList()
+                : base()
+            {
+            }
+
+            public MediaList(IEnumerable<MediaEntry> collection)
+                : base(collection)
+            {
+            }
+
+            public MediaList(int capacity)
+                : base(capacity)
+            {
+            }
+
+            public static MediaList FromXml(string rawXml)
+            {
+                MediaList ml = new MediaList();
+                ml.ReadXml(rawXml);
+                return ml;
+            }
 
             public XmlSchema GetSchema()
             {
                 return null;
+            }
+
+            public void ReadXml(string rawXml)
+            {
+                using (StringReader sr = new StringReader(rawXml))
+                {
+                    using (XmlTextReader xtr = new XmlTextReader(sr))
+                    {
+                        xtr.MoveToContent();
+
+                        string type = xtr.GetAttribute("type");
+                        //m_log.DebugFormat("[MOAP]: Loaded media texture entry with type {0}", type);
+
+                        if (type != MEDIA_TEXTURE_TYPE)
+                            return;
+
+                        xtr.ReadStartElement("OSMedia");
+
+                        OSDArray osdMeArray = (OSDArray)OSDParser.DeserializeLLSDXml(xtr.ReadInnerXml());
+                        foreach (OSD osdMe in osdMeArray)
+                        {
+                            MediaEntry me = (osdMe is OSDMap ? MediaEntry.FromOSD(osdMe) : new MediaEntry());
+                            Add(me);
+                        }
+
+                        xtr.ReadEndElement();
+                    }
+                }
+            }
+
+            public void ReadXml(XmlReader reader)
+            {
+                if (reader.IsEmptyElement)
+                    return;
+
+                ReadXml(reader.ReadInnerXml());
             }
 
             public string ToXml()
@@ -1482,49 +1714,6 @@ namespace OpenSim.Framework
             public void WriteXml(XmlWriter writer)
             {
                 writer.WriteRaw(ToXml());
-            }
-
-            public static MediaList FromXml(string rawXml)
-            {
-                MediaList ml = new MediaList();
-                ml.ReadXml(rawXml);
-                return ml;
-            }
-
-            public void ReadXml(string rawXml)
-            {
-                using (StringReader sr = new StringReader(rawXml))
-                {
-                    using (XmlTextReader xtr = new XmlTextReader(sr))
-                    {
-                        xtr.MoveToContent();
-
-                        string type = xtr.GetAttribute("type");
-                        //m_log.DebugFormat("[MOAP]: Loaded media texture entry with type {0}", type);
-
-                        if (type != MEDIA_TEXTURE_TYPE)
-                            return;
-
-                        xtr.ReadStartElement("OSMedia");
-
-                        OSDArray osdMeArray = (OSDArray)OSDParser.DeserializeLLSDXml(xtr.ReadInnerXml());
-                        foreach (OSD osdMe in osdMeArray)
-                        {
-                            MediaEntry me = (osdMe is OSDMap ? MediaEntry.FromOSD(osdMe) : new MediaEntry());
-                            Add(me);
-                        }
-
-                        xtr.ReadEndElement();
-                    }
-                }
-            }
-
-            public void ReadXml(XmlReader reader)
-            {
-                if (reader.IsEmptyElement)
-                    return;
-
-                ReadXml(reader.ReadInnerXml());
             }
         }
     }

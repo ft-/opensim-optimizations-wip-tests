@@ -30,9 +30,8 @@ namespace OpenSim.Framework.Capabilities
     [LLSDType("MAP")]
     public class LLSDCapEvent
     {
-        public int id = 0;
         public OSDArray events = new OSDArray();
-
+        public int id = 0;
         public LLSDCapEvent()
         {
         }

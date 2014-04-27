@@ -44,7 +44,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         /// </summary>
         InfoSwitchingProtocols = 101,
 
-        #endregion
+        #endregion 1xx Informational status codes providing a provisional response.
 
         #region 2xx Success codes
 
@@ -83,7 +83,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         /// </summary>
         SuccessOkPartialContent = 206,
 
-        #endregion
+        #endregion 2xx Success codes
 
         #region 3xx Redirect code: user agent needs to go somewhere else
 
@@ -91,7 +91,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         /// 300 Redirect: different presentation forms available, take a pick
         /// </summary>
         RedirectMultipleChoices = 300,
-        
+
         /// <summary>
         /// 301 Redirect: requested resource has moved and now lives somewhere else
         /// </summary>
@@ -122,7 +122,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         /// </summary>
         RedirectMovedTemporarily = 307,
 
-        #endregion
+        #endregion 3xx Redirect code: user agent needs to go somewhere else
 
         #region 4xx Client error: the client borked the request
 
@@ -235,7 +235,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         /// </summary>
         ClientErrorJoker = 499,
 
-        #endregion
+        #endregion 4xx Client error: the client borked the request
 
         #region 5xx Server errors (rare)
 
@@ -274,6 +274,6 @@ namespace OpenSim.Framework.Servers.HttpServer
         /// </summary>
         ServerErrorNetworkAuthenticationRequired = 511,
 
-        #endregion
+        #endregion 5xx Server errors (rare)
     }
 }

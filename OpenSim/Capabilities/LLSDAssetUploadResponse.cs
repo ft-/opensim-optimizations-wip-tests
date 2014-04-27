@@ -32,9 +32,8 @@ namespace OpenSim.Framework.Capabilities
     [OSDMap]
     public class LLSDAssetUploadResponse
     {
-        public string uploader = String.Empty;
         public string state = String.Empty;
-
+        public string uploader = String.Empty;
         public LLSDAssetUploadResponse()
         {
         }
@@ -44,10 +43,9 @@ namespace OpenSim.Framework.Capabilities
     public class LLSDNewFileAngentInventoryVariablePriceReplyResponse
     {
         public int resource_cost;
+        public string rsvp;
         public string state;
         public int upload_price;
-        public string rsvp;
-        
         public LLSDNewFileAngentInventoryVariablePriceReplyResponse()
         {
             state = "confirm_upload";

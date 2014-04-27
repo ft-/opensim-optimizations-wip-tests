@@ -25,19 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using System.Xml;
-using log4net;
-using OpenMetaverse;
 
 namespace OpenSim.Framework
 {
     public static class SLUtil
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         /// <summary>
         /// Asset types used only in OpenSim.
@@ -48,85 +44,17 @@ namespace OpenSim.Framework
             Material = -2
         }
 
-        
         #region SL / file extension / content-type conversions
 
-        /// <summary>
-        /// Returns the Enum entry corresponding to the given code, regardless of whether it belongs
-        /// to the AssetType or OpenSimAssetType enums.
-        /// </summary>
-        public static object AssetTypeFromCode(sbyte assetType)
-        {
-            if (Enum.IsDefined(typeof(OpenMetaverse.AssetType), assetType))
-                return (OpenMetaverse.AssetType)assetType;
-            else if (Enum.IsDefined(typeof(OpenSimAssetType), assetType))
-                return (OpenSimAssetType)assetType;
-            else
-                return OpenMetaverse.AssetType.Unknown;
-        }
+        private static Dictionary<sbyte, string> asset2Content;
 
-        private class TypeMapping
-        {
-            private sbyte assetType;
-            private InventoryType inventoryType;
-            private string contentType;
-            private string contentType2;
-            private string extension;
+        private static Dictionary<sbyte, string> asset2Extension;
 
-            public sbyte AssetTypeCode
-            {
-                get { return assetType; }
-            }
+        private static Dictionary<string, sbyte> content2Asset;
 
-            public object AssetType
-            {
-                get { return AssetTypeFromCode(assetType); }
-            }
+        private static Dictionary<string, InventoryType> content2Inventory;
 
-            public InventoryType InventoryType
-            {
-                get { return inventoryType; }
-            }
-
-            public string ContentType
-            {
-                get { return contentType; }
-            }
-
-            public string ContentType2
-            {
-                get { return contentType2; }
-            }
-
-            public string Extension
-            {
-                get { return extension; }
-            }
-
-            private TypeMapping(sbyte assetType, InventoryType inventoryType, string contentType, string contentType2, string extension)
-            {
-                this.assetType = assetType;
-                this.inventoryType = inventoryType;
-                this.contentType = contentType;
-                this.contentType2 = contentType2;
-                this.extension = extension;
-            }
-
-            public TypeMapping(AssetType assetType, InventoryType inventoryType, string contentType, string contentType2, string extension)
-                : this((sbyte)assetType, inventoryType, contentType, contentType2, extension)
-            {
-            }
-
-            public TypeMapping(AssetType assetType, InventoryType inventoryType, string contentType, string extension)
-                : this((sbyte)assetType, inventoryType, contentType, null, extension)
-            {
-            }
-
-            public TypeMapping(OpenSimAssetType assetType, InventoryType inventoryType, string contentType, string extension)
-                : this((sbyte)assetType, inventoryType, contentType, null, extension)
-            {
-            }
-        }
+        private static Dictionary<InventoryType, string> inventory2Content;
 
         /// <summary>
         /// Maps between AssetType, InventoryType and Content-Type.
@@ -167,15 +95,9 @@ namespace OpenSim.Framework
             new TypeMapping(AssetType.OutfitFolder, InventoryType.Unknown, "application/vnd.ll.outfitfolder", "outfitfolder"),
             new TypeMapping(AssetType.MyOutfitsFolder, InventoryType.Unknown, "application/vnd.ll.myoutfitsfolder", "myoutfitsfolder"),
             new TypeMapping(AssetType.Mesh, InventoryType.Mesh, "application/vnd.ll.mesh", "llm"),
-            
+
             new TypeMapping(OpenSimAssetType.Material, InventoryType.Unknown, "application/llsd+xml", "material")
         };
-
-        private static Dictionary<sbyte, string> asset2Content;
-        private static Dictionary<sbyte, string> asset2Extension;
-        private static Dictionary<InventoryType, string> inventory2Content;
-        private static Dictionary<string, sbyte> content2Asset;
-        private static Dictionary<string, InventoryType> content2Inventory;
 
         static SLUtil()
         {
@@ -184,7 +106,7 @@ namespace OpenSim.Framework
             inventory2Content = new Dictionary<InventoryType, string>();
             content2Asset = new Dictionary<string, sbyte>();
             content2Inventory = new Dictionary<string, InventoryType>();
-            
+
             foreach (TypeMapping mapping in MAPPINGS)
             {
                 sbyte assetType = mapping.AssetTypeCode;
@@ -208,21 +130,19 @@ namespace OpenSim.Framework
                 }
             }
         }
-        
-        public static string SLAssetTypeToContentType(int assetType)
-        {
-            string contentType;
-            if (!asset2Content.TryGetValue((sbyte)assetType, out contentType))
-                contentType = asset2Content[(sbyte)AssetType.Unknown];
-            return contentType;
-        }
 
-        public static string SLInvTypeToContentType(int invType)
+        /// <summary>
+        /// Returns the Enum entry corresponding to the given code, regardless of whether it belongs
+        /// to the AssetType or OpenSimAssetType enums.
+        /// </summary>
+        public static object AssetTypeFromCode(sbyte assetType)
         {
-            string contentType;
-            if (!inventory2Content.TryGetValue((InventoryType)invType, out contentType))
-                contentType = inventory2Content[InventoryType.Unknown];
-            return contentType;
+            if (Enum.IsDefined(typeof(OpenMetaverse.AssetType), assetType))
+                return (OpenMetaverse.AssetType)assetType;
+            else if (Enum.IsDefined(typeof(OpenSimAssetType), assetType))
+                return (OpenSimAssetType)assetType;
+            else
+                return OpenMetaverse.AssetType.Unknown;
         }
 
         public static sbyte ContentTypeToSLAssetType(string contentType)
@@ -241,6 +161,14 @@ namespace OpenSim.Framework
             return (sbyte)invType;
         }
 
+        public static string SLAssetTypeToContentType(int assetType)
+        {
+            string contentType;
+            if (!asset2Content.TryGetValue((sbyte)assetType, out contentType))
+                contentType = asset2Content[(sbyte)AssetType.Unknown];
+            return contentType;
+        }
+
         public static string SLAssetTypeToExtension(int assetType)
         {
             string extension;
@@ -249,23 +177,76 @@ namespace OpenSim.Framework
             return extension;
         }
 
+        public static string SLInvTypeToContentType(int invType)
+        {
+            string contentType;
+            if (!inventory2Content.TryGetValue((InventoryType)invType, out contentType))
+                contentType = inventory2Content[InventoryType.Unknown];
+            return contentType;
+        }
+
+        private class TypeMapping
+        {
+            private sbyte assetType;
+            private string contentType;
+            private string contentType2;
+            private string extension;
+            private InventoryType inventoryType;
+            public TypeMapping(AssetType assetType, InventoryType inventoryType, string contentType, string contentType2, string extension)
+                : this((sbyte)assetType, inventoryType, contentType, contentType2, extension)
+            {
+            }
+
+            public TypeMapping(AssetType assetType, InventoryType inventoryType, string contentType, string extension)
+                : this((sbyte)assetType, inventoryType, contentType, null, extension)
+            {
+            }
+
+            public TypeMapping(OpenSimAssetType assetType, InventoryType inventoryType, string contentType, string extension)
+                : this((sbyte)assetType, inventoryType, contentType, null, extension)
+            {
+            }
+
+            private TypeMapping(sbyte assetType, InventoryType inventoryType, string contentType, string contentType2, string extension)
+            {
+                this.assetType = assetType;
+                this.inventoryType = inventoryType;
+                this.contentType = contentType;
+                this.contentType2 = contentType2;
+                this.extension = extension;
+            }
+
+            public object AssetType
+            {
+                get { return AssetTypeFromCode(assetType); }
+            }
+
+            public sbyte AssetTypeCode
+            {
+                get { return assetType; }
+            }
+            public string ContentType
+            {
+                get { return contentType; }
+            }
+
+            public string ContentType2
+            {
+                get { return contentType2; }
+            }
+
+            public string Extension
+            {
+                get { return extension; }
+            }
+
+            public InventoryType InventoryType
+            {
+                get { return inventoryType; }
+            }
+        }
         #endregion SL / file extension / content-type conversions
 
-        /// <summary>
-        /// Parse a notecard in Linden format to a string of ordinary text.
-        /// </summary>
-        /// <param name="rawInput"></param>
-        /// <returns></returns>
-        public static string ParseNotecardToString(string rawInput)
-        {
-            string[] output = ParseNotecardToList(rawInput).ToArray();
-
-//            foreach (string line in output)
-//                m_log.DebugFormat("[PARSE NOTECARD]: ParseNotecardToString got line {0}", line);
-            
-            return string.Join("\n", output);
-        }
-                
         /// <summary>
         /// Parse a notecard in Linden format to a list of ordinary lines.
         /// </summary>
@@ -282,7 +263,7 @@ namespace OpenSim.Framework
             //The Linden format always ends with a } after the input data.
             //Strip off trailing } so there is nothing after the input data.
             int i = rawInput.LastIndexOf("}");
-            rawInput = rawInput.Remove(i, rawInput.Length-i);
+            rawInput = rawInput.Remove(i, rawInput.Length - i);
             input = rawInput.Replace("\r", "").Split('\n');
 
             while (idx < input.Length)
@@ -294,7 +275,7 @@ namespace OpenSim.Framework
                     continue;
                 }
 
-                if (input[idx]== "}")
+                if (input[idx] == "}")
                 {
                     level--;
                     idx++;
@@ -303,54 +284,71 @@ namespace OpenSim.Framework
 
                 switch (level)
                 {
-                case 0:
-                    words = input[idx].Split(' '); // Linden text ver
-                    // Notecards are created *really* empty. Treat that as "no text" (just like after saving an empty notecard)
-                    if (words.Length < 3)
-                        return output;
+                    case 0:
+                        words = input[idx].Split(' '); // Linden text ver
+                        // Notecards are created *really* empty. Treat that as "no text" (just like after saving an empty notecard)
+                        if (words.Length < 3)
+                            return output;
 
-                    int version = int.Parse(words[3]);
-                    if (version != 2)
-                        return output;
-                    break;
-                case 1:
-                    words = input[idx].Split(' ');
-                    if (words[0] == "LLEmbeddedItems")
-                        break;
-                    if (words[0] == "Text")
-                    {
-                        idx++;  //Now points to first line of notecard text
-
-                        //Number of lines in notecard.
-                        int lines = input.Length - idx;
-                        int line = 0;
-
-                        while (line < lines)
-                        {
-//                            m_log.DebugFormat("[PARSE NOTECARD]: Adding line {0}", input[idx]);
-                            output.Add(input[idx]);
-                            idx++;
-                            line++;
-                        }
-
-                        return output;
-                    }
-                    break;
-                case 2:
-                    words = input[idx].Split(' '); // count
-                    if (words[0] == "count")
-                    {
-                        int c = int.Parse(words[1]);
-                        if (c > 0)
+                        int version = int.Parse(words[3]);
+                        if (version != 2)
                             return output;
                         break;
-                    }
-                    break;
+
+                    case 1:
+                        words = input[idx].Split(' ');
+                        if (words[0] == "LLEmbeddedItems")
+                            break;
+                        if (words[0] == "Text")
+                        {
+                            idx++;  //Now points to first line of notecard text
+
+                            //Number of lines in notecard.
+                            int lines = input.Length - idx;
+                            int line = 0;
+
+                            while (line < lines)
+                            {
+                                //                            m_log.DebugFormat("[PARSE NOTECARD]: Adding line {0}", input[idx]);
+                                output.Add(input[idx]);
+                                idx++;
+                                line++;
+                            }
+
+                            return output;
+                        }
+                        break;
+
+                    case 2:
+                        words = input[idx].Split(' '); // count
+                        if (words[0] == "count")
+                        {
+                            int c = int.Parse(words[1]);
+                            if (c > 0)
+                                return output;
+                            break;
+                        }
+                        break;
                 }
                 idx++;
             }
-            
+
             return output;
+        }
+
+        /// <summary>
+        /// Parse a notecard in Linden format to a string of ordinary text.
+        /// </summary>
+        /// <param name="rawInput"></param>
+        /// <returns></returns>
+        public static string ParseNotecardToString(string rawInput)
+        {
+            string[] output = ParseNotecardToList(rawInput).ToArray();
+
+            //            foreach (string line in output)
+            //                m_log.DebugFormat("[PARSE NOTECARD]: ParseNotecardToString got line {0}", line);
+
+            return string.Join("\n", output);
         }
     }
 }

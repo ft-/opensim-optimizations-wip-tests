@@ -25,9 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Timers;
-
 using OpenMetaverse.StructuredData;
+using System.Timers;
 
 namespace OpenSim.Framework.Monitoring
 {
@@ -38,17 +37,11 @@ namespace OpenSim.Framework.Monitoring
     {
         private Timer ageStatsTimer = new Timer(24 * 60 * 60 * 1000);
 
+        private int logouts;
+        private int successfulLogins;
         private int successfulLoginsToday;
-        public int SuccessfulLoginsToday { get { return successfulLoginsToday; } }
 
         private int successfulLoginsYesterday;
-        public int SuccessfulLoginsYesterday { get { return successfulLoginsYesterday; } }
-
-        private int successfulLogins;
-        public int SuccessfulLogins { get { return successfulLogins; } }
-
-        private int logouts;
-        public int Logouts { get { return logouts; } }
 
         public UserStatsCollector()
         {
@@ -56,13 +49,15 @@ namespace OpenSim.Framework.Monitoring
             ageStatsTimer.Enabled = true;
         }
 
-        private void OnAgeing(object source, ElapsedEventArgs e)
-        {
-            successfulLoginsYesterday = successfulLoginsToday;
+        public int Logouts { get { return logouts; } }
 
-            // There is a possibility that an asset request could occur between the execution of these
-            // two statements.  But we're better off without the synchronization overhead.
-            successfulLoginsToday = 0;
+        public int SuccessfulLogins { get { return successfulLogins; } }
+
+        public int SuccessfulLoginsToday { get { return successfulLoginsToday; } }
+        public int SuccessfulLoginsYesterday { get { return successfulLoginsYesterday; } }
+        public void AddLogout()
+        {
+            logouts++;
         }
 
         /// <summary>
@@ -74,9 +69,15 @@ namespace OpenSim.Framework.Monitoring
             successfulLoginsToday++;
         }
 
-        public void AddLogout()
+        public override OSDMap OReport(string uptime, string version)
         {
-            logouts++;
+            OSDMap ret = new OSDMap();
+            ret.Add("SuccessfulLogins", OSD.FromInteger(SuccessfulLogins));
+            ret.Add("SuccessfulLoginsToday", OSD.FromInteger(SuccessfulLoginsToday));
+            ret.Add("SuccessfulLoginsYesterday", OSD.FromInteger(SuccessfulLoginsYesterday));
+            ret.Add("Logouts", OSD.FromInteger(Logouts));
+
+            return ret;
         }
 
         /// <summary>
@@ -96,15 +97,13 @@ namespace OpenSim.Framework.Monitoring
             return OSDParser.SerializeJsonString(OReport(uptime, version));
         }
 
-        public override OSDMap OReport(string uptime, string version)
+        private void OnAgeing(object source, ElapsedEventArgs e)
         {
-            OSDMap ret = new OSDMap();
-            ret.Add("SuccessfulLogins", OSD.FromInteger(SuccessfulLogins));
-            ret.Add("SuccessfulLoginsToday", OSD.FromInteger(SuccessfulLoginsToday));
-            ret.Add("SuccessfulLoginsYesterday", OSD.FromInteger(SuccessfulLoginsYesterday));
-            ret.Add("Logouts", OSD.FromInteger(Logouts));
+            successfulLoginsYesterday = successfulLoginsToday;
 
-            return ret;
+            // There is a possibility that an asset request could occur between the execution of these
+            // two statements.  But we're better off without the synchronization overhead.
+            successfulLoginsToday = 0;
         }
     }
 }

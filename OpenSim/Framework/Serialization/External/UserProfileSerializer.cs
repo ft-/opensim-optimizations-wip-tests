@@ -25,10 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
 using System.IO;
 using System.Xml;
-using OpenMetaverse;
-using OpenSim.Framework;
 
 namespace OpenSim.Framework.Serialization.External
 {
@@ -42,31 +41,31 @@ namespace OpenSim.Framework.Serialization.External
     {
         public const int MAJOR_VERSION = 0;
         public const int MINOR_VERSION = 1;
-        
+
         public static string Serialize(UUID userID, string firstName, string lastName)
         {
             StringWriter sw = new StringWriter();
             XmlTextWriter xtw = new XmlTextWriter(sw);
             xtw.Formatting = Formatting.Indented;
             xtw.WriteStartDocument();
-            
+
             xtw.WriteStartElement("user_profile");
             xtw.WriteAttributeString("major_version", MAJOR_VERSION.ToString());
             xtw.WriteAttributeString("minor_version", MINOR_VERSION.ToString());
-                       
+
             xtw.WriteElementString("name", firstName + " " + lastName);
             xtw.WriteElementString("id", userID.ToString());
             xtw.WriteElementString("about", "");
-  
+
             // Not sure if we're storing this yet, need to take a look
-//            xtw.WriteElementString("Url", profile.Url);
+            //            xtw.WriteElementString("Url", profile.Url);
             // or, indeed, interests
 
             xtw.WriteEndElement();
-            
+
             xtw.Close();
             sw.Close();
-            
+
             return sw.ToString();
         }
     }

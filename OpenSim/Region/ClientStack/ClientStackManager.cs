@@ -25,13 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Nini.Config;
+using OpenSim.Framework;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Reflection;
-using log4net;
-using Nini.Config;
-using OpenSim.Framework;
 
 namespace OpenSim.Region.ClientStack
 {
@@ -42,7 +42,7 @@ namespace OpenSim.Region.ClientStack
         private List<Type> plugin = new List<Type>();
         private List<Assembly> pluginAssembly = new List<Assembly>();
 
-        public ClientStackManager(string pDllName) 
+        public ClientStackManager(string pDllName)
         {
             List<string> clientstacks = new List<string>();
             if (pDllName.Contains(","))
@@ -88,7 +88,7 @@ namespace OpenSim.Region.ClientStack
                 }
             }
         }
-        
+
         /// <summary>
         /// Create a server that can set up sessions for virtual world client <-> server communications
         /// </summary>
@@ -130,7 +130,7 @@ namespace OpenSim.Region.ClientStack
                 for (int i = 0; i < plugin.Count; i++)
                 {
                     IClientNetworkServer server =
-                        (IClientNetworkServer) Activator.CreateInstance(pluginAssembly[i].GetType(plugin[i].ToString()));
+                        (IClientNetworkServer)Activator.CreateInstance(pluginAssembly[i].GetType(plugin[i].ToString()));
 
                     server.Initialise(
                         _listenIP, ref port, proxyPortOffset, allow_alternate_port,
@@ -139,7 +139,7 @@ namespace OpenSim.Region.ClientStack
                 }
                 return servers;
             }
-            
+
             m_log.Error("[CLIENTSTACK]: Couldn't initialize a new server");
             return null;
         }

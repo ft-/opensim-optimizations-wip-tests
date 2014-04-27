@@ -48,7 +48,8 @@ namespace OpenSim.Framework.Capabilities
     [AttributeUsage(AttributeTargets.Class)]
     public class OSDMap : LLSDType
     {
-        public OSDMap() : base("MAP")
+        public OSDMap()
+            : base("MAP")
         {
         }
     }

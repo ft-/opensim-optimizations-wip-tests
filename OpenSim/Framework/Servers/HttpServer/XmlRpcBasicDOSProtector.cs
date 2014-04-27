@@ -25,33 +25,28 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Net;
 using Nwc.XmlRpc;
-using OpenSim.Framework;
-
+using System.Net;
 
 namespace OpenSim.Framework.Servers.HttpServer
 {
     public class XmlRpcBasicDOSProtector
     {
-        private readonly XmlRpcMethod _normalMethod;
-        private readonly XmlRpcMethod _throttledMethod;
-       
-        private readonly BasicDosProtectorOptions _options;
         private readonly BasicDOSProtector _dosProtector;
-
-        public XmlRpcBasicDOSProtector(XmlRpcMethod normalMethod, XmlRpcMethod throttledMethod,BasicDosProtectorOptions options)
+        private readonly XmlRpcMethod _normalMethod;
+        private readonly BasicDosProtectorOptions _options;
+        private readonly XmlRpcMethod _throttledMethod;
+        public XmlRpcBasicDOSProtector(XmlRpcMethod normalMethod, XmlRpcMethod throttledMethod, BasicDosProtectorOptions options)
         {
             _normalMethod = normalMethod;
             _throttledMethod = throttledMethod;
-           
+
             _options = options;
             _dosProtector = new BasicDOSProtector(_options);
-
         }
+
         public XmlRpcResponse Process(XmlRpcRequest request, IPEndPoint client)
         {
-
             XmlRpcResponse resp = null;
             string clientstring = GetClientString(request, client);
             string endpoint = GetEndPoint(request, client);
@@ -82,10 +77,7 @@ namespace OpenSim.Framework.Servers.HttpServer
 
         private string GetEndPoint(XmlRpcRequest request, IPEndPoint client)
         {
-             return client.Address.ToString();
+            return client.Address.ToString();
         }
-
     }
-
-    
 }

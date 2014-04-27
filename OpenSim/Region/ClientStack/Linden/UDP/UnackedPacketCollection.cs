@@ -25,11 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Threading;
-using OpenMetaverse;
 
 namespace OpenSim.Region.ClientStack.LindenUDP
 {
@@ -38,50 +37,17 @@ namespace OpenSim.Region.ClientStack.LindenUDP
     /// </summary>
     public sealed class UnackedPacketCollection
     {
-        /// <summary>
-        /// Holds information about a pending acknowledgement
-        /// </summary>
-        private struct PendingAck
-        {
-            /// <summary>Sequence number of the packet to remove</summary>
-            public uint SequenceNumber;
-            /// <summary>Environment.TickCount value when the remove was queued.
-            /// This is used to update round-trip times for packets</summary>
-            public int RemoveTime;
-            /// <summary>Whether or not this acknowledgement was attached to a
-            /// resent packet. If so, round-trip time will not be calculated</summary>
-            public bool FromResend;
-
-            public PendingAck(uint sequenceNumber, int currentTime, bool fromResend)
-            {
-                SequenceNumber = sequenceNumber;
-                RemoveTime = currentTime;
-                FromResend = fromResend;
-            }
-        }
-
         /// <summary>Holds the actual unacked packet data, sorted by sequence number</summary>
         private Dictionary<uint, OutgoingPacket> m_packets = new Dictionary<uint, OutgoingPacket>();
-        /// <summary>Holds packets that need to be added to the unacknowledged list</summary>
-        private LocklessQueue<OutgoingPacket> m_pendingAdds = new LocklessQueue<OutgoingPacket>();
+
         /// <summary>Holds information about pending acknowledgements</summary>
         private LocklessQueue<PendingAck> m_pendingAcknowledgements = new LocklessQueue<PendingAck>();
+
+        /// <summary>Holds packets that need to be added to the unacknowledged list</summary>
+        private LocklessQueue<OutgoingPacket> m_pendingAdds = new LocklessQueue<OutgoingPacket>();
+
         /// <summary>Holds information about pending removals</summary>
         private LocklessQueue<uint> m_pendingRemoves = new LocklessQueue<uint>();
-
-        /// <summary>
-        /// Add an unacked packet to the collection
-        /// </summary>
-        /// <param name="packet">Packet that is awaiting acknowledgement</param>
-        /// <returns>True if the packet was successfully added, false if the
-        /// packet already existed in the collection</returns>
-        /// <remarks>This does not immediately add the ACK to the collection,
-        /// it only queues it so it can be added in a thread-safe way later</remarks>
-        public void Add(OutgoingPacket packet)
-        {
-            m_pendingAdds.Enqueue(packet);
-            Interlocked.Add(ref packet.Client.UnackedBytes, packet.Buffer.DataLength);            
-        }
 
         /// <summary>
         /// Marks a packet as acknowledged
@@ -100,18 +66,17 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         }
 
         /// <summary>
-        /// Marks a packet as no longer needing acknowledgement without a received acknowledgement.
-        /// This method is called when a packet expires and we no longer need an acknowledgement.
-        /// When some reliable packet types expire, they are handled in a way other than simply 
-        /// resending them. The only effect of removal this way is to update unacked byte count.
+        /// Add an unacked packet to the collection
         /// </summary>
-        /// <param name="sequenceNumber">Sequence number of the packet to
-        /// acknowledge</param>
-        /// <remarks>The does not immediately remove the packet, it only queues the removal
-        /// so it can be handled in a thread safe way later</remarks>
-        public void Remove(uint sequenceNumber)
+        /// <param name="packet">Packet that is awaiting acknowledgement</param>
+        /// <returns>True if the packet was successfully added, false if the
+        /// packet already existed in the collection</returns>
+        /// <remarks>This does not immediately add the ACK to the collection,
+        /// it only queues it so it can be added in a thread-safe way later</remarks>
+        public void Add(OutgoingPacket packet)
         {
-            m_pendingRemoves.Enqueue(sequenceNumber);
+            m_pendingAdds.Enqueue(packet);
+            Interlocked.Add(ref packet.Client.UnackedBytes, packet.Buffer.DataLength);
         }
 
         /// <summary>
@@ -141,7 +106,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
                 foreach (OutgoingPacket packet in m_packets.Values)
                 {
-                    // TickCount of zero means a packet is in the resend queue 
+                    // TickCount of zero means a packet is in the resend queue
                     // but hasn't actually been sent over the wire yet
                     if (packet.TickCount == 0)
                         continue;
@@ -158,16 +123,31 @@ namespace OpenSim.Region.ClientStack.LindenUDP
                         // As with other network applications, assume that an expired packet is
                         // an indication of some network problem, slow transmission
                         packet.Client.FlowThrottle.ExpirePackets(1);
-                        
+
                         expiredPackets.Add(packet);
                     }
                 }
             }
 
-                //if (expiredPackets != null)
-                //   m_log.DebugFormat("[UNACKED PACKET COLLECTION]: Found {0} expired packets on timeout of {1}", expiredPackets.Count, timeoutMS);
+            //if (expiredPackets != null)
+            //   m_log.DebugFormat("[UNACKED PACKET COLLECTION]: Found {0} expired packets on timeout of {1}", expiredPackets.Count, timeoutMS);
 
             return expiredPackets;
+        }
+
+        /// <summary>
+        /// Marks a packet as no longer needing acknowledgement without a received acknowledgement.
+        /// This method is called when a packet expires and we no longer need an acknowledgement.
+        /// When some reliable packet types expire, they are handled in a way other than simply
+        /// resending them. The only effect of removal this way is to update unacked byte count.
+        /// </summary>
+        /// <param name="sequenceNumber">Sequence number of the packet to
+        /// acknowledge</param>
+        /// <remarks>The does not immediately remove the packet, it only queues the removal
+        /// so it can be handled in a thread safe way later</remarks>
+        public void Remove(uint sequenceNumber)
+        {
+            m_pendingRemoves.Enqueue(sequenceNumber);
         }
 
         private void ProcessQueues()
@@ -177,7 +157,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             while (m_pendingAdds.TryDequeue(out pendingAdd))
                 if (pendingAdd != null)
                     m_packets[pendingAdd.SequenceNumber] = pendingAdd;
-            
+
             // Process all the pending removes, including updating statistics and round-trip times
             PendingAck pendingAcknowledgement;
             while (m_pendingAcknowledgements.TryDequeue(out pendingAcknowledgement))
@@ -207,13 +187,13 @@ namespace OpenSim.Region.ClientStack.LindenUDP
                     }
                     else
                     {
-                         //m_log.WarnFormat("[UNACKED PACKET COLLECTION]: Could not find packet with sequence number {0} to ack", pendingAcknowledgement.SequenceNumber);
+                        //m_log.WarnFormat("[UNACKED PACKET COLLECTION]: Could not find packet with sequence number {0} to ack", pendingAcknowledgement.SequenceNumber);
                     }
                 }
             }
 
             uint pendingRemove;
-            while(m_pendingRemoves.TryDequeue(out pendingRemove))
+            while (m_pendingRemoves.TryDequeue(out pendingRemove))
             {
                 OutgoingPacket removedPacket;
                 if (m_packets.TryGetValue(pendingRemove, out removedPacket))
@@ -226,6 +206,29 @@ namespace OpenSim.Region.ClientStack.LindenUDP
                         Interlocked.Add(ref removedPacket.Client.UnackedBytes, -removedPacket.Buffer.DataLength);
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Holds information about a pending acknowledgement
+        /// </summary>
+        private struct PendingAck
+        {
+            /// <summary>Whether or not this acknowledgement was attached to a
+            /// resent packet. If so, round-trip time will not be calculated</summary>
+            public bool FromResend;
+
+            /// <summary>Environment.TickCount value when the remove was queued.
+            /// This is used to update round-trip times for packets</summary>
+            public int RemoveTime;
+
+            /// <summary>Sequence number of the packet to remove</summary>
+            public uint SequenceNumber;
+            public PendingAck(uint sequenceNumber, int currentTime, bool fromResend)
+            {
+                SequenceNumber = sequenceNumber;
+                RemoveTime = currentTime;
+                FromResend = fromResend;
             }
         }
     }

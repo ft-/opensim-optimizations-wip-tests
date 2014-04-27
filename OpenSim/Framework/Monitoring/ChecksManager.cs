@@ -25,12 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
+using log4net;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using log4net;
 
 namespace OpenSim.Framework.Monitoring
 {
@@ -39,13 +37,8 @@ namespace OpenSim.Framework.Monitoring
     /// </summary>
     public static class ChecksManager
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
         // Subcommand used to list other stats.
         public const string ListSubCommand = "list";
-
-        // All subcommands
-        public static HashSet<string> SubCommands = new HashSet<string> { ListSubCommand };
 
         /// <summary>
         /// Checks categorized by category/container/shortname
@@ -56,18 +49,55 @@ namespace OpenSim.Framework.Monitoring
         public static SortedDictionary<string, SortedDictionary<string, SortedDictionary<string, Check>>> RegisteredChecks
             = new SortedDictionary<string, SortedDictionary<string, SortedDictionary<string, Check>>>();
 
-        public static void RegisterConsoleCommands(ICommandConsole console)
+        // All subcommands
+        public static HashSet<string> SubCommands = new HashSet<string> { ListSubCommand };
+
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        public static void CheckChecks()
         {
-            console.Commands.AddCommand(
-                "General",
-                false,
-                "show checks",
-                "show checks",
-                "Show checks configured for this server",
-                "If no argument is specified then info on all checks will be shown.\n"
-                    + "'list' argument will show check categories.\n"
-                    + "THIS FACILITY IS EXPERIMENTAL",
-                HandleShowchecksCommand);
+            lock (RegisteredChecks)
+            {
+                foreach (SortedDictionary<string, SortedDictionary<string, Check>> category in RegisteredChecks.Values)
+                {
+                    foreach (SortedDictionary<string, Check> container in category.Values)
+                    {
+                        foreach (Check check in container.Values)
+                        {
+                            if (!check.CheckIt())
+                                m_log.WarnFormat(
+                                    "[CHECKS MANAGER]: Check {0}.{1}.{2} failed with message {3}", check.Category, check.Container, check.ShortName, check.LastFailureMessage);
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Deregister an check
+        /// </summary>>
+        /// <param name='stat'></param>
+        /// <returns></returns>
+        public static bool DeregisterCheck(Check check)
+        {
+            SortedDictionary<string, SortedDictionary<string, Check>> category = null, newCategory;
+            SortedDictionary<string, Check> container = null, newContainer;
+
+            lock (RegisteredChecks)
+            {
+                if (!TryGetCheckParents(check, out category, out container))
+                    return false;
+
+                newContainer = new SortedDictionary<string, Check>(container);
+                newContainer.Remove(check.ShortName);
+
+                newCategory = new SortedDictionary<string, SortedDictionary<string, Check>>(category);
+                newCategory.Remove(check.Container);
+
+                newCategory[check.Container] = newContainer;
+                RegisteredChecks[check.Category] = newCategory;
+
+                return true;
+            }
         }
 
         public static void HandleShowchecksCommand(string module, string[] cmd)
@@ -81,7 +111,7 @@ namespace OpenSim.Framework.Monitoring
                     string[] components = name.Split('.');
 
                     string categoryName = components[0];
-//                    string containerName = components.Length > 1 ? components[1] : null;
+                    //                    string containerName = components.Length > 1 ? components[1] : null;
 
                     if (categoryName == ListSubCommand)
                     {
@@ -90,33 +120,33 @@ namespace OpenSim.Framework.Monitoring
                         foreach (string category in RegisteredChecks.Keys)
                             con.OutputFormat("  {0}", category);
                     }
-//                    else
-//                    {
-//                        SortedDictionary<string, SortedDictionary<string, Check>> category;
-//                        if (!Registeredchecks.TryGetValue(categoryName, out category))
-//                        {
-//                            con.OutputFormat("No such category as {0}", categoryName);
-//                        }
-//                        else
-//                        {
-//                            if (String.IsNullOrEmpty(containerName))
-//                            {
-//                                OutputConfiguredToConsole(con, category);
-//                            }
-//                            else
-//                            {
-//                                SortedDictionary<string, Check> container;
-//                                if (category.TryGetValue(containerName, out container))
-//                                {
-//                                    OutputContainerChecksToConsole(con, container);
-//                                }
-//                                else
-//                                {
-//                                    con.OutputFormat("No such container {0} in category {1}", containerName, categoryName);
-//                                }
-//                            }
-//                        }
-//                    }
+                    //                    else
+                    //                    {
+                    //                        SortedDictionary<string, SortedDictionary<string, Check>> category;
+                    //                        if (!Registeredchecks.TryGetValue(categoryName, out category))
+                    //                        {
+                    //                            con.OutputFormat("No such category as {0}", categoryName);
+                    //                        }
+                    //                        else
+                    //                        {
+                    //                            if (String.IsNullOrEmpty(containerName))
+                    //                            {
+                    //                                OutputConfiguredToConsole(con, category);
+                    //                            }
+                    //                            else
+                    //                            {
+                    //                                SortedDictionary<string, Check> container;
+                    //                                if (category.TryGetValue(containerName, out container))
+                    //                                {
+                    //                                    OutputContainerChecksToConsole(con, container);
+                    //                                }
+                    //                                else
+                    //                                {
+                    //                                    con.OutputFormat("No such container {0} in category {1}", containerName, categoryName);
+                    //                                }
+                    //                            }
+                    //                        }
+                    //                    }
                 }
             }
             else
@@ -164,34 +194,19 @@ namespace OpenSim.Framework.Monitoring
             return true;
         }
 
-        /// <summary>
-        /// Deregister an check
-        /// </summary>>
-        /// <param name='stat'></param>
-        /// <returns></returns>
-        public static bool DeregisterCheck(Check check)
+        public static void RegisterConsoleCommands(ICommandConsole console)
         {
-            SortedDictionary<string, SortedDictionary<string, Check>> category = null, newCategory;
-            SortedDictionary<string, Check> container = null, newContainer;
-
-            lock (RegisteredChecks)
-            {
-                if (!TryGetCheckParents(check, out category, out container))
-                    return false;
-
-                newContainer = new SortedDictionary<string, Check>(container);
-                newContainer.Remove(check.ShortName);
-
-                newCategory = new SortedDictionary<string, SortedDictionary<string, Check>>(category);
-                newCategory.Remove(check.Container);
-
-                newCategory[check.Container] = newContainer;
-                RegisteredChecks[check.Category] = newCategory;
-
-                return true;
-            }
+            console.Commands.AddCommand(
+                "General",
+                false,
+                "show checks",
+                "show checks",
+                "Show checks configured for this server",
+                "If no argument is specified then info on all checks will be shown.\n"
+                    + "'list' argument will show check categories.\n"
+                    + "THIS FACILITY IS EXPERIMENTAL",
+                HandleShowchecksCommand);
         }
-
         public static bool TryGetCheckParents(
             Check check,
             out SortedDictionary<string, SortedDictionary<string, Check>> category,
@@ -214,26 +229,6 @@ namespace OpenSim.Framework.Monitoring
 
             return false;
         }
-
-        public static void CheckChecks()
-        {
-            lock (RegisteredChecks)
-            {
-                foreach (SortedDictionary<string, SortedDictionary<string, Check>> category in RegisteredChecks.Values)
-                {
-                    foreach (SortedDictionary<string, Check> container in category.Values)
-                    {
-                        foreach (Check check in container.Values)
-                        {
-                            if (!check.CheckIt())
-                                m_log.WarnFormat(
-                                    "[CHECKS MANAGER]: Check {0}.{1}.{2} failed with message {3}", check.Category, check.Container, check.ShortName, check.LastFailureMessage);
-                        }
-                    }
-                }
-            }
-        }
-
         private static void OutputAllChecksToConsole(ICommandConsole con)
         {
             foreach (var category in RegisteredChecks.Values)

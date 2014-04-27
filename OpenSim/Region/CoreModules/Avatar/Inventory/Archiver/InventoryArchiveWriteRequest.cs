@@ -25,12 +25,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.IO.Compression;
-using System.Reflection;
-using System.Xml;
+using Ionic.Zlib;
 using log4net;
 using OpenMetaverse;
 using OpenSim.Framework;
@@ -39,36 +34,24 @@ using OpenSim.Framework.Serialization.External;
 using OpenSim.Region.CoreModules.World.Archiver;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
-using Ionic.Zlib;
-using GZipStream = Ionic.Zlib.GZipStream;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Xml;
 using CompressionMode = Ionic.Zlib.CompressionMode;
+using GZipStream = Ionic.Zlib.GZipStream;
 
 namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver
 {
     public class InventoryArchiveWriteRequest
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        /// <summary>
-        /// Determine whether this archive will save assets.  Default is true.
-        /// </summary>
-        public bool SaveAssets { get; set; }
-
-        /// <value>
-        /// Used to select all inventory nodes in a folder but not the folder itself
-        /// </value>
-        private const string STAR_WILDCARD = "*";
-
-        private InventoryArchiverModule m_module;
-        private UserAccount m_userInfo;
-        private string m_invPath;
         protected TarArchiveWriter m_archiveWriter;
         protected UuidGatherer m_assetGatherer;
-
         /// <value>
-        /// We only use this to request modules
+        /// Used to collect the uuids of the assets that we need to save into the archive
         /// </value>
-        protected Scene m_scene;
+        protected Dictionary<UUID, sbyte> m_assetUuids = new Dictionary<UUID, sbyte>();
 
         /// <value>
         /// ID of this request
@@ -76,9 +59,9 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver
         protected Guid m_id;
 
         /// <value>
-        /// Used to collect the uuids of the assets that we need to save into the archive
+        /// We only use this to request modules
         /// </value>
-        protected Dictionary<UUID, sbyte> m_assetUuids = new Dictionary<UUID, sbyte>();
+        protected Scene m_scene;
 
         /// <value>
         /// Used to collect the uuids of the users that we need to save into the archive
@@ -86,9 +69,22 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver
         protected Dictionary<UUID, int> m_userUuids = new Dictionary<UUID, int>();
 
         /// <value>
+        /// Used to select all inventory nodes in a folder but not the folder itself
+        /// </value>
+        private const string STAR_WILDCARD = "*";
+
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        private string m_invPath;
+
+        private InventoryArchiverModule m_module;
+
+        /// <value>
         /// The stream to which the inventory archive will be saved.
         /// </value>
         private Stream m_saveStream;
+
+        private UserAccount m_userInfo;
 
         /// <summary>
         /// Constructor
@@ -124,122 +120,109 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver
             SaveAssets = true;
         }
 
-        protected void ReceivedAllAssets(ICollection<UUID> assetsFoundUuids, ICollection<UUID> assetsNotFoundUuids, bool timedOut)
+        /// <summary>
+        /// Determine whether this archive will save assets.  Default is true.
+        /// </summary>
+        public bool SaveAssets { get; set; }
+        /// <summary>
+        /// Create the archive name for a particular folder.
+        /// </summary>
+        ///
+        /// These names are prepended with an inventory folder's UUID so that more than one folder can have the
+        /// same name
+        ///
+        /// <param name="folder"></param>
+        /// <returns></returns>
+        public static string CreateArchiveFolderName(InventoryFolderBase folder)
         {
-            Exception reportedException = null;
-            bool succeeded = true;
-
-            try
-            {
-                m_archiveWriter.Close();
-            }
-            catch (Exception e)
-            {
-                reportedException = e;
-                succeeded = false;
-            }
-            finally
-            {
-                m_saveStream.Close();
-            }
-
-            if (timedOut)
-            {
-                succeeded = false;
-                reportedException = new Exception("Loading assets timed out");
-            }
-
-            m_module.TriggerInventoryArchiveSaved(
-                m_id, succeeded, m_userInfo, m_invPath, m_saveStream, reportedException);
-        }
-
-        protected void SaveInvItem(InventoryItemBase inventoryItem, string path, Dictionary<string, object> options, IUserAccountService userAccountService)
-        {
-            if (options.ContainsKey("exclude"))
-            {
-                if (((List<String>)options["exclude"]).Contains(inventoryItem.Name) ||
-                    ((List<String>)options["exclude"]).Contains(inventoryItem.ID.ToString()))
-                {
-                    if (options.ContainsKey("verbose"))
-                    {
-                        m_log.InfoFormat(
-                            "[INVENTORY ARCHIVER]: Skipping inventory item {0} {1} at {2}",
-                            inventoryItem.Name, inventoryItem.ID, path);
-                    }
-                    return;
-                }
-            }
-
-            if (options.ContainsKey("verbose"))
-                m_log.InfoFormat(
-                    "[INVENTORY ARCHIVER]: Saving item {0} {1} (asset UUID {2})",
-                    inventoryItem.ID, inventoryItem.Name, inventoryItem.AssetID);
-
-            string filename = path + CreateArchiveItemName(inventoryItem);
-
-            // Record the creator of this item for user record purposes (which might go away soon)
-            m_userUuids[inventoryItem.CreatorIdAsUuid] = 1;
-
-            string serialization = UserInventoryItemSerializer.Serialize(inventoryItem, options, userAccountService);
-            m_archiveWriter.WriteFile(filename, serialization);
-
-            AssetType itemAssetType = (AssetType)inventoryItem.AssetType;
-
-            // Don't chase down link asset items as they actually point to their target item IDs rather than an asset
-            if (SaveAssets && itemAssetType != AssetType.Link && itemAssetType != AssetType.LinkFolder)
-                m_assetGatherer.GatherAssetUuids(inventoryItem.AssetID, (sbyte)inventoryItem.AssetType, m_assetUuids);
+            return CreateArchiveFolderName(folder.Name, folder.ID);
         }
 
         /// <summary>
-        /// Save an inventory folder
+        /// Create an archive folder name given its constituent components
         /// </summary>
-        /// <param name="inventoryFolder">The inventory folder to save</param>
-        /// <param name="path">The path to which the folder should be saved</param>
-        /// <param name="saveThisFolderItself">If true, save this folder itself.  If false, only saves contents</param>
-        /// <param name="options"></param>
-        /// <param name="userAccountService"></param>
-        protected void SaveInvFolder(
-            InventoryFolderBase inventoryFolder, string path, bool saveThisFolderItself,
-            Dictionary<string, object> options, IUserAccountService userAccountService)
+        /// <param name="name"></param>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public static string CreateArchiveFolderName(string name, UUID id)
         {
-            if (options.ContainsKey("excludefolders"))
+            return string.Format(
+                "{0}{1}{2}/",
+                InventoryArchiveUtils.EscapeArchivePath(name),
+                ArchiveConstants.INVENTORY_NODE_NAME_COMPONENT_SEPARATOR,
+                id);
+        }
+
+        /// <summary>
+        /// Create the archive name for a particular item.
+        /// </summary>
+        ///
+        /// These names are prepended with an inventory item's UUID so that more than one item can have the
+        /// same name
+        ///
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public static string CreateArchiveItemName(InventoryItemBase item)
+        {
+            return CreateArchiveItemName(item.Name, item.ID);
+        }
+
+        /// <summary>
+        /// Create an archive item name given its constituent components
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public static string CreateArchiveItemName(string name, UUID id)
+        {
+            return string.Format(
+                "{0}{1}{2}.xml",
+                InventoryArchiveUtils.EscapeArchivePath(name),
+                ArchiveConstants.INVENTORY_NODE_NAME_COMPONENT_SEPARATOR,
+                id);
+        }
+
+        /// <summary>
+        /// Create the control file for the archive
+        /// </summary>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public string CreateControlFile(Dictionary<string, object> options)
+        {
+            int majorVersion, minorVersion;
+
+            if (options.ContainsKey("home"))
             {
-                if (((List<String>)options["excludefolders"]).Contains(inventoryFolder.Name) ||
-                    ((List<String>)options["excludefolders"]).Contains(inventoryFolder.ID.ToString()))
-                {
-                    if (options.ContainsKey("verbose"))
-                    {
-                        m_log.InfoFormat(
-                            "[INVENTORY ARCHIVER]: Skipping folder {0} at {1}",
-                            inventoryFolder.Name, path);
-                    }
-                    return;
-                }
+                majorVersion = 1;
+                minorVersion = 2;
+            }
+            else
+            {
+                majorVersion = 0;
+                minorVersion = 3;
             }
 
-            if (options.ContainsKey("verbose"))
-                m_log.InfoFormat("[INVENTORY ARCHIVER]: Saving folder {0}", inventoryFolder.Name);
+            m_log.InfoFormat("[INVENTORY ARCHIVER]: Creating version {0}.{1} IAR", majorVersion, minorVersion);
 
-            if (saveThisFolderItself)
-            {
-                path += CreateArchiveFolderName(inventoryFolder);
+            StringWriter sw = new StringWriter();
+            XmlTextWriter xtw = new XmlTextWriter(sw);
+            xtw.Formatting = Formatting.Indented;
+            xtw.WriteStartDocument();
+            xtw.WriteStartElement("archive");
+            xtw.WriteAttributeString("major_version", majorVersion.ToString());
+            xtw.WriteAttributeString("minor_version", minorVersion.ToString());
 
-                // We need to make sure that we record empty folders
-                m_archiveWriter.WriteDir(path);
-            }
+            xtw.WriteElementString("assets_included", SaveAssets.ToString());
 
-            InventoryCollection contents
-                = m_scene.InventoryService.GetFolderContent(inventoryFolder.Owner, inventoryFolder.ID);
+            xtw.WriteEndElement();
 
-            foreach (InventoryFolderBase childFolder in contents.Folders)
-            {
-                SaveInvFolder(childFolder, path, true, options, userAccountService);
-            }
+            xtw.Flush();
+            xtw.Close();
 
-            foreach (InventoryItemBase item in contents.Items)
-            {
-                SaveInvItem(item, path, options, userAccountService);
-            }
+            String s = sw.ToString();
+            sw.Close();
+
+            return s;
         }
 
         /// <summary>
@@ -372,6 +355,123 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver
             }
         }
 
+        protected void ReceivedAllAssets(ICollection<UUID> assetsFoundUuids, ICollection<UUID> assetsNotFoundUuids, bool timedOut)
+        {
+            Exception reportedException = null;
+            bool succeeded = true;
+
+            try
+            {
+                m_archiveWriter.Close();
+            }
+            catch (Exception e)
+            {
+                reportedException = e;
+                succeeded = false;
+            }
+            finally
+            {
+                m_saveStream.Close();
+            }
+
+            if (timedOut)
+            {
+                succeeded = false;
+                reportedException = new Exception("Loading assets timed out");
+            }
+
+            m_module.TriggerInventoryArchiveSaved(
+                m_id, succeeded, m_userInfo, m_invPath, m_saveStream, reportedException);
+        }
+
+        /// <summary>
+        /// Save an inventory folder
+        /// </summary>
+        /// <param name="inventoryFolder">The inventory folder to save</param>
+        /// <param name="path">The path to which the folder should be saved</param>
+        /// <param name="saveThisFolderItself">If true, save this folder itself.  If false, only saves contents</param>
+        /// <param name="options"></param>
+        /// <param name="userAccountService"></param>
+        protected void SaveInvFolder(
+            InventoryFolderBase inventoryFolder, string path, bool saveThisFolderItself,
+            Dictionary<string, object> options, IUserAccountService userAccountService)
+        {
+            if (options.ContainsKey("excludefolders"))
+            {
+                if (((List<String>)options["excludefolders"]).Contains(inventoryFolder.Name) ||
+                    ((List<String>)options["excludefolders"]).Contains(inventoryFolder.ID.ToString()))
+                {
+                    if (options.ContainsKey("verbose"))
+                    {
+                        m_log.InfoFormat(
+                            "[INVENTORY ARCHIVER]: Skipping folder {0} at {1}",
+                            inventoryFolder.Name, path);
+                    }
+                    return;
+                }
+            }
+
+            if (options.ContainsKey("verbose"))
+                m_log.InfoFormat("[INVENTORY ARCHIVER]: Saving folder {0}", inventoryFolder.Name);
+
+            if (saveThisFolderItself)
+            {
+                path += CreateArchiveFolderName(inventoryFolder);
+
+                // We need to make sure that we record empty folders
+                m_archiveWriter.WriteDir(path);
+            }
+
+            InventoryCollection contents
+                = m_scene.InventoryService.GetFolderContent(inventoryFolder.Owner, inventoryFolder.ID);
+
+            foreach (InventoryFolderBase childFolder in contents.Folders)
+            {
+                SaveInvFolder(childFolder, path, true, options, userAccountService);
+            }
+
+            foreach (InventoryItemBase item in contents.Items)
+            {
+                SaveInvItem(item, path, options, userAccountService);
+            }
+        }
+
+        protected void SaveInvItem(InventoryItemBase inventoryItem, string path, Dictionary<string, object> options, IUserAccountService userAccountService)
+        {
+            if (options.ContainsKey("exclude"))
+            {
+                if (((List<String>)options["exclude"]).Contains(inventoryItem.Name) ||
+                    ((List<String>)options["exclude"]).Contains(inventoryItem.ID.ToString()))
+                {
+                    if (options.ContainsKey("verbose"))
+                    {
+                        m_log.InfoFormat(
+                            "[INVENTORY ARCHIVER]: Skipping inventory item {0} {1} at {2}",
+                            inventoryItem.Name, inventoryItem.ID, path);
+                    }
+                    return;
+                }
+            }
+
+            if (options.ContainsKey("verbose"))
+                m_log.InfoFormat(
+                    "[INVENTORY ARCHIVER]: Saving item {0} {1} (asset UUID {2})",
+                    inventoryItem.ID, inventoryItem.Name, inventoryItem.AssetID);
+
+            string filename = path + CreateArchiveItemName(inventoryItem);
+
+            // Record the creator of this item for user record purposes (which might go away soon)
+            m_userUuids[inventoryItem.CreatorIdAsUuid] = 1;
+
+            string serialization = UserInventoryItemSerializer.Serialize(inventoryItem, options, userAccountService);
+            m_archiveWriter.WriteFile(filename, serialization);
+
+            AssetType itemAssetType = (AssetType)inventoryItem.AssetType;
+
+            // Don't chase down link asset items as they actually point to their target item IDs rather than an asset
+            if (SaveAssets && itemAssetType != AssetType.Link && itemAssetType != AssetType.LinkFolder)
+                m_assetGatherer.GatherAssetUuids(inventoryItem.AssetID, (sbyte)inventoryItem.AssetType, m_assetUuids);
+        }
         /// <summary>
         /// Save information for the users that we've collected.
         /// </summary>
@@ -395,107 +495,6 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver
                     m_log.WarnFormat("[INVENTORY ARCHIVER]: Failed to get creator profile for {0}", creatorId);
                 }
             }
-        }
-
-        /// <summary>
-        /// Create the archive name for a particular folder.
-        /// </summary>
-        ///
-        /// These names are prepended with an inventory folder's UUID so that more than one folder can have the
-        /// same name
-        ///
-        /// <param name="folder"></param>
-        /// <returns></returns>
-        public static string CreateArchiveFolderName(InventoryFolderBase folder)
-        {
-            return CreateArchiveFolderName(folder.Name, folder.ID);
-        }
-
-        /// <summary>
-        /// Create the archive name for a particular item.
-        /// </summary>
-        ///
-        /// These names are prepended with an inventory item's UUID so that more than one item can have the
-        /// same name
-        ///
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public static string CreateArchiveItemName(InventoryItemBase item)
-        {
-            return CreateArchiveItemName(item.Name, item.ID);
-        }
-
-        /// <summary>
-        /// Create an archive folder name given its constituent components
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        public static string CreateArchiveFolderName(string name, UUID id)
-        {
-            return string.Format(
-                "{0}{1}{2}/",
-                InventoryArchiveUtils.EscapeArchivePath(name),
-                ArchiveConstants.INVENTORY_NODE_NAME_COMPONENT_SEPARATOR,
-                id);
-        }
-
-        /// <summary>
-        /// Create an archive item name given its constituent components
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        public static string CreateArchiveItemName(string name, UUID id)
-        {
-            return string.Format(
-                "{0}{1}{2}.xml",
-                InventoryArchiveUtils.EscapeArchivePath(name),
-                ArchiveConstants.INVENTORY_NODE_NAME_COMPONENT_SEPARATOR,
-                id);
-        }
-
-        /// <summary>
-        /// Create the control file for the archive
-        /// </summary>
-        /// <param name="options"></param>
-        /// <returns></returns>
-        public string CreateControlFile(Dictionary<string, object> options)
-        {
-            int majorVersion, minorVersion;
-
-            if (options.ContainsKey("home"))
-            {
-                majorVersion = 1;
-                minorVersion = 2;
-            }
-            else
-            {
-                majorVersion = 0;
-                minorVersion = 3;
-            }
-
-            m_log.InfoFormat("[INVENTORY ARCHIVER]: Creating version {0}.{1} IAR", majorVersion, minorVersion);
-
-            StringWriter sw = new StringWriter();
-            XmlTextWriter xtw = new XmlTextWriter(sw);
-            xtw.Formatting = Formatting.Indented;
-            xtw.WriteStartDocument();
-            xtw.WriteStartElement("archive");
-            xtw.WriteAttributeString("major_version", majorVersion.ToString());
-            xtw.WriteAttributeString("minor_version", minorVersion.ToString());
-
-            xtw.WriteElementString("assets_included", SaveAssets.ToString());
-
-            xtw.WriteEndElement();
-
-            xtw.Flush();
-            xtw.Close();
-
-            String s = sw.ToString();
-            sw.Close();
-
-            return s;
         }
     }
 }

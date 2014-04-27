@@ -25,17 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using log4net;
+using Mono.Addins;
 using Nini.Config;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
-using Mono.Addins;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 using PermissionMask = OpenSim.Framework.PermissionMask;
 
 namespace OpenSim.Region.CoreModules.Avatar.Friends
@@ -43,15 +43,17 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "XCallingCard")]
     public class CallingCardModule : ISharedRegionModule, ICallingCardModule
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        protected List<Scene> m_Scenes = new List<Scene>();
         protected bool m_Enabled = true;
-
-        public void Initialise(IConfigSource source)
+        protected List<Scene> m_Scenes = new List<Scene>();
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        public string Name
         {
-            IConfig ccConfig = source.Configs["XCallingCard"];
-            if (ccConfig != null)
-                m_Enabled = ccConfig.GetBoolean("Enabled", true);
+            get { return "XCallingCardModule"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
         }
 
         public void AddRegion(Scene scene)
@@ -62,6 +64,50 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
             m_Scenes.Add(scene);
 
             scene.RegisterModuleInterface<ICallingCardModule>(this);
+        }
+
+        public void Close()
+        {
+        }
+
+        // Create a calling card in the user's inventory. This is called
+        // from direct calling card creation, when the offer is forwarded,
+        // and from the friends module when the friend is confirmed.
+        // Because of the latter, it will send a bulk inventory update
+        // if the receiving user is in the same simulator.
+        public UUID CreateCallingCard(UUID userID, UUID creatorID, UUID folderID)
+        {
+            return CreateCallingCard(userID, creatorID, folderID, false);
+        }
+
+        public IClientAPI FindClientObject(UUID agentID)
+        {
+            Scene scene = GetClientScene(agentID);
+            if (scene == null)
+                return null;
+
+            ScenePresence presence = scene.GetScenePresence(agentID);
+            if (presence == null)
+                return null;
+
+            return presence.ControllingClient;
+        }
+
+        public void Initialise(IConfigSource source)
+        {
+            IConfig ccConfig = source.Configs["XCallingCard"];
+            if (ccConfig != null)
+                m_Enabled = ccConfig.GetBoolean("Enabled", true);
+        }
+        public void PostInitialise()
+        {
+        }
+
+        public void RegionLoaded(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+            scene.EventManager.OnNewClient += OnNewClient;
         }
 
         public void RemoveRegion(Scene scene)
@@ -77,93 +123,6 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
 
             scene.UnregisterModuleInterface<ICallingCardModule>(this);
         }
-
-        public void RegionLoaded(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-            scene.EventManager.OnNewClient += OnNewClient;
-        }
-
-        public void PostInitialise()
-        {
-        }
-
-        public void Close()
-        {
-        }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
-        public string Name
-        {
-            get { return "XCallingCardModule"; }
-        }
-
-        private void OnNewClient(IClientAPI client)
-        {
-            client.OnOfferCallingCard += OnOfferCallingCard;
-            client.OnAcceptCallingCard += OnAcceptCallingCard;
-            client.OnDeclineCallingCard += OnDeclineCallingCard;
-        }
-
-        private void OnOfferCallingCard(IClientAPI client, UUID destID, UUID transactionID)
-        {
-            ScenePresence sp = GetClientPresence(client.AgentId);
-            if (sp != null)
-            {
-                // If we're in god mode, we reverse the meaning. Offer
-                // calling card becomes "Take a calling card" for that
-                // person, no matter if they agree or not.
-                if (sp.GodLevel >= 200)
-                {
-                    CreateCallingCard(client.AgentId, destID, UUID.Zero, true);
-                    return;
-                }
-            }
-
-            IClientAPI dest = FindClientObject(destID);
-            if (dest != null)
-            {
-                DoCallingCardOffer(dest, client.AgentId);
-                return;
-            }
-
-            IMessageTransferModule transferModule =
-                    m_Scenes[0].RequestModuleInterface<IMessageTransferModule>();
-
-            if (transferModule != null)
-            {
-                transferModule.SendInstantMessage(new GridInstantMessage(
-                        client.Scene, client.AgentId,
-                        client.FirstName+" "+client.LastName,
-                        destID, (byte)211, false,
-                        String.Empty,
-                        transactionID, false, new Vector3(), new byte[0], true),
-                        delegate(bool success) {} );
-            }
-        }
-
-        private void DoCallingCardOffer(IClientAPI dest, UUID from)
-        {
-            UUID itemID = CreateCallingCard(dest.AgentId, from, UUID.Zero, false);
-
-            dest.SendOfferCallingCard(from, itemID);
-        }
-
-        // Create a calling card in the user's inventory. This is called
-        // from direct calling card creation, when the offer is forwarded,
-        // and from the friends module when the friend is confirmed.
-        // Because of the latter, it will send a bulk inventory update
-        // if the receiving user is in the same simulator.
-        public UUID CreateCallingCard(UUID userID, UUID creatorID, UUID folderID)
-        {
-            return CreateCallingCard(userID, creatorID, folderID, false);
-        }
-
         private UUID CreateCallingCard(UUID userID, UUID creatorID, UUID folderID, bool isGod)
         {
             IUserAccountService userv = m_Scenes[0].UserAccountService;
@@ -228,6 +187,47 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
             return item.ID;
         }
 
+        private void DoCallingCardOffer(IClientAPI dest, UUID from)
+        {
+            UUID itemID = CreateCallingCard(dest.AgentId, from, UUID.Zero, false);
+
+            dest.SendOfferCallingCard(from, itemID);
+        }
+
+        private ScenePresence GetClientPresence(UUID agentId)
+        {
+            lock (m_Scenes)
+            {
+                foreach (Scene scene in m_Scenes)
+                {
+                    ScenePresence presence = scene.GetScenePresence(agentId);
+                    if (presence != null)
+                    {
+                        if (!presence.IsChildAgent)
+                            return presence;
+                    }
+                }
+            }
+            return null;
+        }
+
+        private Scene GetClientScene(UUID agentId)
+        {
+            lock (m_Scenes)
+            {
+                foreach (Scene scene in m_Scenes)
+                {
+                    ScenePresence presence = scene.GetScenePresence(agentId);
+                    if (presence != null)
+                    {
+                        if (!presence.IsChildAgent)
+                            return scene;
+                    }
+                }
+            }
+            return null;
+        }
+
         private void OnAcceptCallingCard(IClientAPI client, UUID transactionID, UUID folderID)
         {
         }
@@ -252,53 +252,6 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
             }
         }
 
-        public IClientAPI FindClientObject(UUID agentID)
-        {
-            Scene scene = GetClientScene(agentID);
-            if (scene == null)
-                return null;
-
-            ScenePresence presence = scene.GetScenePresence(agentID);
-            if (presence == null)
-                return null;
-
-            return presence.ControllingClient;
-        }
-
-        private Scene GetClientScene(UUID agentId)
-        {
-            lock (m_Scenes)
-            {
-                foreach (Scene scene in m_Scenes)
-                {
-                    ScenePresence presence = scene.GetScenePresence(agentId);
-                    if (presence != null)
-                    {
-                        if (!presence.IsChildAgent)
-                            return scene;
-                    }
-                }
-            }
-            return null;
-        }
-
-        private ScenePresence GetClientPresence(UUID agentId)
-        {
-            lock (m_Scenes)
-            {
-                foreach (Scene scene in m_Scenes)
-                {
-                    ScenePresence presence = scene.GetScenePresence(agentId);
-                    if (presence != null)
-                    {
-                        if (!presence.IsChildAgent)
-                            return presence;
-                    }
-                }
-            }
-            return null;
-        }
-
         private void OnIncomingInstantMessage(GridInstantMessage msg)
         {
             if (msg.dialog == (uint)211)
@@ -308,6 +261,50 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
                     return;
 
                 DoCallingCardOffer(client, new UUID(msg.fromAgentID));
+            }
+        }
+
+        private void OnNewClient(IClientAPI client)
+        {
+            client.OnOfferCallingCard += OnOfferCallingCard;
+            client.OnAcceptCallingCard += OnAcceptCallingCard;
+            client.OnDeclineCallingCard += OnDeclineCallingCard;
+        }
+
+        private void OnOfferCallingCard(IClientAPI client, UUID destID, UUID transactionID)
+        {
+            ScenePresence sp = GetClientPresence(client.AgentId);
+            if (sp != null)
+            {
+                // If we're in god mode, we reverse the meaning. Offer
+                // calling card becomes "Take a calling card" for that
+                // person, no matter if they agree or not.
+                if (sp.GodLevel >= 200)
+                {
+                    CreateCallingCard(client.AgentId, destID, UUID.Zero, true);
+                    return;
+                }
+            }
+
+            IClientAPI dest = FindClientObject(destID);
+            if (dest != null)
+            {
+                DoCallingCardOffer(dest, client.AgentId);
+                return;
+            }
+
+            IMessageTransferModule transferModule =
+                    m_Scenes[0].RequestModuleInterface<IMessageTransferModule>();
+
+            if (transferModule != null)
+            {
+                transferModule.SendInstantMessage(new GridInstantMessage(
+                        client.Scene, client.AgentId,
+                        client.FirstName + " " + client.LastName,
+                        destID, (byte)211, false,
+                        String.Empty,
+                        transactionID, false, new Vector3(), new byte[0], true),
+                        delegate(bool success) { });
             }
         }
     }

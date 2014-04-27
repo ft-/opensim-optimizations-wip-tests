@@ -25,20 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Server.Base;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Xml;
-
-using OpenSim.Framework;
-using OpenSim.Server.Base;
-using OpenSim.Framework.Servers.HttpServer;
-using FriendInfo = OpenSim.Services.Interfaces.FriendInfo;
-using OpenSim.Services.Interfaces;
-
-using OpenMetaverse;
-using log4net;
 
 namespace OpenSim.Region.CoreModules.Avatar.Friends
 {
@@ -49,15 +46,15 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
         private FriendsModule m_FriendsModule;
 
         public FriendsRequestHandler(FriendsModule fmodule)
-                : base("POST", "/friends", new BasicDosProtectorOptions()
-                                          {
-                                              AllowXForwardedFor = true,
-                                              ForgetTimeSpan = TimeSpan.FromMinutes(2),
-                                              MaxRequestsInTimeframe = 20,
-                                              ReportingName = "FRIENDSDOSPROTECTOR",
-                                              RequestTimeSpan = TimeSpan.FromSeconds(5),
-                                              ThrottledAction = BasicDOSProtector.ThrottleAction.DoThrottledMethod
-                                          })
+            : base("POST", "/friends", new BasicDosProtectorOptions()
+                                      {
+                                          AllowXForwardedFor = true,
+                                          ForgetTimeSpan = TimeSpan.FromMinutes(2),
+                                          MaxRequestsInTimeframe = 20,
+                                          ReportingName = "FRIENDSDOSPROTECTOR",
+                                          RequestTimeSpan = TimeSpan.FromSeconds(5),
+                                          ThrottledAction = BasicDOSProtector.ThrottleAction.DoThrottledMethod
+                                      })
         {
             m_FriendsModule = fmodule;
         }
@@ -87,14 +84,19 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
                 {
                     case "friendship_offered":
                         return FriendshipOffered(request);
+
                     case "friendship_approved":
                         return FriendshipApproved(request);
+
                     case "friendship_denied":
                         return FriendshipDenied(request);
+
                     case "friendship_terminated":
                         return FriendshipTerminated(request);
+
                     case "grant_rights":
                         return GrantRights(request);
+
                     case "status":
                         return StatusNotification(request);
                 }
@@ -107,39 +109,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
             return FailureResult();
         }
 
-        byte[] FriendshipOffered(Dictionary<string, object> request)
-        {
-            UUID fromID = UUID.Zero;
-            UUID toID = UUID.Zero;
-            string message = string.Empty;
-
-            if (!request.ContainsKey("FromID") || !request.ContainsKey("ToID"))
-                return FailureResult();
-
-            message = request["Message"].ToString();
-
-            if (!UUID.TryParse(request["FromID"].ToString(), out fromID))
-                return FailureResult();
-
-            if (!UUID.TryParse(request["ToID"].ToString(), out toID))
-                return FailureResult();
-
-            UserAccount account = m_FriendsModule.UserAccountService.GetUserAccount(UUID.Zero, fromID);
-            string name = (account == null) ? "Unknown" : account.FirstName + " " + account.LastName;
-
-            GridInstantMessage im = new GridInstantMessage(m_FriendsModule.Scene, fromID, name, toID, 
-                (byte)InstantMessageDialog.FriendshipOffered, message, false, Vector3.Zero);
-
-            // !! HACK
-            im.imSessionID = im.fromAgentID;
-
-            if (m_FriendsModule.LocalFriendshipOffered(toID, im))
-                return SuccessResult();
-
-            return FailureResult();
-        }
-
-        byte[] FriendshipApproved(Dictionary<string, object> request)
+        private byte[] FriendshipApproved(Dictionary<string, object> request)
         {
             UUID fromID = UUID.Zero;
             UUID toID = UUID.Zero;
@@ -163,7 +133,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
             return FailureResult();
         }
 
-        byte[] FriendshipDenied(Dictionary<string, object> request)
+        private byte[] FriendshipDenied(Dictionary<string, object> request)
         {
             UUID fromID = UUID.Zero;
             UUID toID = UUID.Zero;
@@ -187,7 +157,38 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
             return FailureResult();
         }
 
-        byte[] FriendshipTerminated(Dictionary<string, object> request)
+        private byte[] FriendshipOffered(Dictionary<string, object> request)
+        {
+            UUID fromID = UUID.Zero;
+            UUID toID = UUID.Zero;
+            string message = string.Empty;
+
+            if (!request.ContainsKey("FromID") || !request.ContainsKey("ToID"))
+                return FailureResult();
+
+            message = request["Message"].ToString();
+
+            if (!UUID.TryParse(request["FromID"].ToString(), out fromID))
+                return FailureResult();
+
+            if (!UUID.TryParse(request["ToID"].ToString(), out toID))
+                return FailureResult();
+
+            UserAccount account = m_FriendsModule.UserAccountService.GetUserAccount(UUID.Zero, fromID);
+            string name = (account == null) ? "Unknown" : account.FirstName + " " + account.LastName;
+
+            GridInstantMessage im = new GridInstantMessage(m_FriendsModule.Scene, fromID, name, toID,
+                (byte)InstantMessageDialog.FriendshipOffered, message, false, Vector3.Zero);
+
+            // !! HACK
+            im.imSessionID = im.fromAgentID;
+
+            if (m_FriendsModule.LocalFriendshipOffered(toID, im))
+                return SuccessResult();
+
+            return FailureResult();
+        }
+        private byte[] FriendshipTerminated(Dictionary<string, object> request)
         {
             UUID fromID = UUID.Zero;
             UUID toID = UUID.Zero;
@@ -207,7 +208,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
             return FailureResult();
         }
 
-        byte[] GrantRights(Dictionary<string, object> request)
+        private byte[] GrantRights(Dictionary<string, object> request)
         {
             UUID fromID = UUID.Zero;
             UUID toID = UUID.Zero;
@@ -234,7 +235,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
             return FailureResult();
         }
 
-        byte[] StatusNotification(Dictionary<string, object> request)
+        private byte[] StatusNotification(Dictionary<string, object> request)
         {
             UUID fromID = UUID.Zero;
             UUID toID = UUID.Zero;
@@ -259,16 +260,6 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
         }
 
         #region Misc
-
-        private byte[] FailureResult()
-        {
-            return BoolResult(false);
-        }
-
-        private byte[] SuccessResult()
-        {
-            return BoolResult(true);
-        }
 
         private byte[] BoolResult(bool value)
         {
@@ -303,6 +294,15 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
             return ms.ToArray();
         }
 
-        #endregion
+        private byte[] FailureResult()
+        {
+            return BoolResult(false);
+        }
+
+        private byte[] SuccessResult()
+        {
+            return BoolResult(true);
+        }
+        #endregion Misc
     }
 }

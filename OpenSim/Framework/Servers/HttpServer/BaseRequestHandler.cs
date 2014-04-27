@@ -31,29 +31,14 @@ namespace OpenSim.Framework.Servers.HttpServer
 {
     public abstract class BaseRequestHandler
     {
-        public int RequestsReceived { get; protected set; }
-
-        public int RequestsHandled { get; protected set; }
-
-        public virtual string ContentType
-        {
-            get { return "application/xml"; }
-        }
-
         private readonly string m_httpMethod;
-
-        public virtual string HttpMethod
-        {
-            get { return m_httpMethod; }
-        }
 
         private readonly string m_path;
 
-        public string Name { get; private set; }
-
-        public string Description { get; private set; }
-
-        protected BaseRequestHandler(string httpMethod, string path) : this(httpMethod, path, null, null) {}
+        protected BaseRequestHandler(string httpMethod, string path)
+            : this(httpMethod, path, null, null)
+        {
+        }
 
         protected BaseRequestHandler(string httpMethod, string path, string name, string description)
         {
@@ -63,11 +48,28 @@ namespace OpenSim.Framework.Servers.HttpServer
             m_path = path;
         }
 
+        public virtual string ContentType
+        {
+            get { return "application/xml"; }
+        }
+
+        public string Description { get; private set; }
+
+        public virtual string HttpMethod
+        {
+            get { return m_httpMethod; }
+        }
+
+        public string Name { get; private set; }
+
         public virtual string Path
         {
             get { return m_path; }
         }
 
+        public int RequestsHandled { get; protected set; }
+
+        public int RequestsReceived { get; protected set; }
         public string GetParam(string path)
         {
             if (CheckParam(path))
@@ -78,6 +80,13 @@ namespace OpenSim.Framework.Servers.HttpServer
             return String.Empty;
         }
 
+        public string[] SplitParams(string path)
+        {
+            string param = GetParam(path);
+
+            return param.Split(new char[] { '/', '?', '&' }, StringSplitOptions.RemoveEmptyEntries);
+        }
+
         protected bool CheckParam(string path)
         {
             if (String.IsNullOrEmpty(path))
@@ -86,13 +95,6 @@ namespace OpenSim.Framework.Servers.HttpServer
             }
 
             return path.StartsWith(Path);
-        }
-
-        public string[] SplitParams(string path)
-        {
-            string param = GetParam(path);
-
-            return param.Split(new char[] { '/', '?', '&' }, StringSplitOptions.RemoveEmptyEntries);
         }
     }
 }

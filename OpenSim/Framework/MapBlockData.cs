@@ -25,9 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
+using System;
 
 namespace OpenSim.Framework
 {
@@ -38,12 +38,11 @@ namespace OpenSim.Framework
         public UUID MapImageId;
         public String Name;
         public uint RegionFlags;
+        public ushort SizeX;
+        public ushort SizeY;
         public byte WaterHeight;
         public ushort X;
         public ushort Y;
-        public ushort SizeX;
-        public ushort SizeY;
-
         public MapBlockData()
         {
         }

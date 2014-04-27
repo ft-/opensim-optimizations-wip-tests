@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Reflection;
-
+﻿using log4net;
 using Nini.Config;
-using log4net;
-
 using OpenMetaverse;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Framework
 {
@@ -15,9 +12,8 @@ namespace OpenSim.Framework
             LogManager.GetLogger(
             MethodBase.GetCurrentMethod().DeclaringType);
 
-        private bool[] m_DisallowExport, m_DisallowImport;
         private string[] m_AssetTypeNames;
-
+        private bool[] m_DisallowExport, m_DisallowImport;
         public AssetPermissions(IConfig config)
         {
             Type enumType = typeof(AssetType);
@@ -30,25 +26,6 @@ namespace OpenSim.Framework
 
             LoadPermsFromConfig(config, "DisallowExport", m_DisallowExport);
             LoadPermsFromConfig(config, "DisallowImport", m_DisallowImport);
-
-        }
-
-        private void LoadPermsFromConfig(IConfig assetConfig, string variable, bool[] bitArray)
-        {
-            if (assetConfig == null)
-                return;
-
-            string perms = assetConfig.GetString(variable, String.Empty);
-            string[] parts = perms.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-            foreach (string s in parts)
-            {
-                int index = Array.IndexOf(m_AssetTypeNames, s.Trim().ToLower());
-                if (index >= 0)
-                    bitArray[index] = true;
-                else
-                    m_log.WarnFormat("[Asset Permissions]: Invalid AssetType {0}", s);
-            }
-
         }
 
         public bool AllowedExport(sbyte type)
@@ -79,6 +56,21 @@ namespace OpenSim.Framework
             return true;
         }
 
+        private void LoadPermsFromConfig(IConfig assetConfig, string variable, bool[] bitArray)
+        {
+            if (assetConfig == null)
+                return;
 
+            string perms = assetConfig.GetString(variable, String.Empty);
+            string[] parts = perms.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (string s in parts)
+            {
+                int index = Array.IndexOf(m_AssetTypeNames, s.Trim().ToLower());
+                if (index >= 0)
+                    bitArray[index] = true;
+                else
+                    m_log.WarnFormat("[Asset Permissions]: Invalid AssetType {0}", s);
+            }
+        }
     }
 }

@@ -1,3 +1,10 @@
+using log4net;
+using Mono.Addins;
+using Nini.Config;
+using OpenSim.Framework;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
+
 /*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
@@ -24,19 +31,10 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using log4net;
-using Nini.Config;
-using Mono.Addins;
-using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Framework.Servers;
-using OpenSim.Framework.Client;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
 
 namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
 {
@@ -46,8 +44,34 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private bool enabled = true;
-        private List<Scene> m_SceneList = new List<Scene>();
         private string m_RestURL = String.Empty;
+        private List<Scene> m_SceneList = new List<Scene>();
+        public string Name
+        {
+            get { return "MuteListModule"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
+        public void AddRegion(Scene scene)
+        {
+            if (!enabled)
+                return;
+
+            lock (m_SceneList)
+            {
+                m_SceneList.Add(scene);
+
+                scene.EventManager.OnNewClient += OnNewClient;
+            }
+        }
+
+        public void Close()
+        {
+        }
 
         public void Initialise(IConfigSource config)
         {
@@ -73,18 +97,12 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
                 return;
             }
         }
-
-        public void AddRegion(Scene scene)
+        public void PostInitialise()
         {
             if (!enabled)
                 return;
 
-            lock (m_SceneList)
-            {
-                m_SceneList.Add(scene);
-
-                scene.EventManager.OnNewClient += OnNewClient;
-            }
+            m_log.Debug("[MUTE LIST] Mute list enabled");
         }
 
         public void RegionLoaded(Scene scene)
@@ -101,38 +119,10 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
                 m_SceneList.Remove(scene);
             }
         }
-
-        public void PostInitialise()
-        {
-            if (!enabled)
-                return;
-
-            m_log.Debug("[MUTE LIST] Mute list enabled");
-        }
-
-        public string Name
-        {
-            get { return "MuteListModule"; }
-        }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-        
-        public void Close()
-        {
-        }
-       
-        private void OnNewClient(IClientAPI client)
-        {
-            client.OnMuteListRequest += OnMuteListRequest;
-        }
-
         private void OnMuteListRequest(IClientAPI client, uint crc)
         {
             m_log.DebugFormat("[MUTE LIST] Got mute list request for crc {0}", crc);
-            string filename = "mutes"+client.AgentId.ToString();
+            string filename = "mutes" + client.AgentId.ToString();
 
             IXfer xfer = client.Scene.RequestModuleInterface<IXfer>();
             if (xfer != null)
@@ -141,6 +131,10 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
                 client.SendMuteListUpdate(filename);
             }
         }
+
+        private void OnNewClient(IClientAPI client)
+        {
+            client.OnMuteListRequest += OnMuteListRequest;
+        }
     }
 }
-

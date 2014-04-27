@@ -24,28 +24,70 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using System.Threading;
 
 namespace OpenSim.Framework
 {
     public sealed class LocklessQueue<T>
     {
-        private sealed class SingleLinkNode
-        {
-            public SingleLinkNode Next;
-            public T Item;
-        }
+        private int count;
 
-        SingleLinkNode head;
-        SingleLinkNode tail;
-        int count;
+        private SingleLinkNode head;
 
-        public int Count { get { return count; } }
+        private SingleLinkNode tail;
 
         public LocklessQueue()
         {
             Init();
+        }
+
+        public int Count { get { return count; } }
+
+        public void Clear()
+        {
+            // ugly
+            T item;
+            while (count > 0)
+                Dequeue(out item);
+            Init();
+        }
+
+        public bool Dequeue(out T item)
+        {
+            item = default(T);
+            SingleLinkNode oldHead = null;
+            bool haveAdvancedHead = false;
+
+            while (!haveAdvancedHead)
+            {
+                oldHead = head;
+                SingleLinkNode oldTail = tail;
+                SingleLinkNode oldHeadNext = oldHead.Next;
+
+                if (oldHead == head)
+                {
+                    if (oldHead == oldTail)
+                    {
+                        if (oldHeadNext == null)
+                            return false;
+
+                        CAS(ref tail, oldTail, oldHeadNext);
+                    }
+                    else
+                    {
+                        item = oldHeadNext.Item;
+                        haveAdvancedHead = CAS(ref head, oldHead, oldHeadNext);
+                        if (haveAdvancedHead)
+                        {
+                            oldHeadNext.Item = default(T);
+                            oldHead.Next = null;
+                        }
+                    }
+                }
+            }
+
+            Interlocked.Decrement(ref count);
+            return true;
         }
 
         public void Enqueue(T item)
@@ -76,51 +118,11 @@ namespace OpenSim.Framework
             Interlocked.Increment(ref count);
         }
 
-        public bool Dequeue(out T item)
+        private static bool CAS(ref SingleLinkNode location, SingleLinkNode comparand, SingleLinkNode newValue)
         {
-            item = default(T);
-            SingleLinkNode oldHead = null;
-            bool haveAdvancedHead = false;
-
-            while (!haveAdvancedHead)
-            {
-                oldHead = head;
-                SingleLinkNode oldTail = tail;
-                SingleLinkNode oldHeadNext = oldHead.Next;
-
-                if (oldHead == head)
-                {
-                    if (oldHead == oldTail)
-                    {
-                        if (oldHeadNext == null)
-                            return false;
-
-                        CAS(ref tail, oldTail, oldHeadNext);
-                    }
-                    else
-                    {
-                        item = oldHeadNext.Item;                       
-                        haveAdvancedHead = CAS(ref head, oldHead, oldHeadNext);
-                        if (haveAdvancedHead)
-                        {
-                            oldHeadNext.Item = default(T);
-                            oldHead.Next = null;
-                        }
-                    }
-                }
-            }
-
-            Interlocked.Decrement(ref count);
-            return true;
-        }
-
-        public void Clear()
-        {
-            // ugly
-            T item;
-            while(count > 0)
-                Dequeue(out item);
-            Init();
+            return
+                (object)comparand ==
+                (object)Interlocked.CompareExchange<SingleLinkNode>(ref location, newValue, comparand);
         }
 
         private void Init()
@@ -129,11 +131,10 @@ namespace OpenSim.Framework
             head = tail = new SingleLinkNode();
         }
 
-        private static bool CAS(ref SingleLinkNode location, SingleLinkNode comparand, SingleLinkNode newValue)
+        private sealed class SingleLinkNode
         {
-            return
-                (object)comparand ==
-                (object)Interlocked.CompareExchange<SingleLinkNode>(ref location, newValue, comparand);
+            public T Item;
+            public SingleLinkNode Next;
         }
     }
 }

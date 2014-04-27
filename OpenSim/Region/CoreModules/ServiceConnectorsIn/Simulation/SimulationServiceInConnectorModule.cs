@@ -25,19 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
-using System.Collections.Generic;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
-using OpenSim.Framework;
 using OpenSim.Framework.Servers;
-using OpenSim.Region.Framework.Scenes;
 using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
 using OpenSim.Server.Base;
 using OpenSim.Server.Handlers.Base;
-
+using System;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Simulation
 {
@@ -48,9 +45,29 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Simulation
         private static bool m_Enabled = false;
 
         private IConfigSource m_Config;
-        bool m_Registered = false;
+        private bool m_Registered = false;
 
         #region Region Module interface
+
+        public string Name
+        {
+            get { return "SimulationServiceInConnectorModule"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
+        public void AddRegion(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+        }
+
+        public void Close()
+        {
+        }
 
         public void Initialise(IConfigSource config)
         {
@@ -63,41 +80,13 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Simulation
                 if (m_Enabled)
                 {
                     m_log.Info("[SIM SERVICE]: SimulationService IN connector enabled");
-
                 }
             }
-
         }
 
         public void PostInitialise()
         {
         }
-
-        public void Close()
-        {
-        }
-
-        public Type ReplaceableInterface 
-        {
-            get { return null; }
-        }
-
-        public string Name
-        {
-            get { return "SimulationServiceInConnectorModule"; }
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-        }
-
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -115,7 +104,9 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Simulation
             }
         }
 
-        #endregion
-
+        public void RemoveRegion(Scene scene)
+        {
+        }
+        #endregion Region Module interface
     }
 }

@@ -25,47 +25,35 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using Nini.Config;
 using log4net;
-using OpenSim.Framework;
-using OpenSim.Services.Interfaces;
+using Nini.Config;
+using OpenMetaverse;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using OpenMetaverse;
-
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
+using OpenSim.Services.Interfaces;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authorization
 {
     public class AuthorizationService : IAuthorizationService
     {
-        private enum AccessFlags
-        {
-            None = 0,               /* No restrictions */
-            DisallowResidents = 1,  /* Only gods and managers*/
-            DisallowForeigners = 2, /* Only local people */
-        }
-
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
-        private IUserManagement m_UserManagement;
-//        private IGridService m_GridService;
+        private AccessFlags m_accessValue = AccessFlags.None;
 
         private Scene m_Scene;
-        AccessFlags m_accessValue = AccessFlags.None;
 
+        private IUserManagement m_UserManagement;
 
+        //        private IGridService m_GridService;
         public AuthorizationService(IConfig config, Scene scene)
         {
             m_Scene = scene;
             m_UserManagement = scene.RequestModuleInterface<IUserManagement>();
-//            m_GridService = scene.GridService;
+            //            m_GridService = scene.GridService;
 
             if (config != null)
             {
@@ -83,7 +71,13 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authorization
                 }
                 m_log.DebugFormat("[AuthorizationService]: Region {0} access restrictions: {1}", m_Scene.RegionInfo.RegionName, m_accessValue);
             }
+        }
 
+        private enum AccessFlags
+        {
+            None = 0,               /* No restrictions */
+            DisallowResidents = 1,  /* Only gods and managers*/
+            DisallowForeigners = 2, /* Only local people */
         }
 
         public bool IsAuthorizedForRegion(
@@ -119,6 +113,5 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authorization
 
             return authorized;
         }
-
     }
 }

@@ -29,7 +29,7 @@ using OpenSim.Region.Framework.Scenes;
 
 namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
 {
-    class ChildAgentCountMonitor : IMonitor
+    internal class ChildAgentCountMonitor : IMonitor
     {
         private readonly Scene m_scene;
 
@@ -39,16 +39,6 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
         }
 
         #region Implementation of IMonitor
-
-        public string GetName()
-        {
-            return "ChildAgentCountMonitor";
-        }
-
-        public double GetValue()
-        {
-            return m_scene.SceneGraph.GetChildAgentCount();
-        }
 
         public string GetFriendlyName()
         {
@@ -60,6 +50,15 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
             return (int)GetValue() + " child agent(s)";
         }
 
-        #endregion
+        public string GetName()
+        {
+            return "ChildAgentCountMonitor";
+        }
+
+        public double GetValue()
+        {
+            return m_scene.SceneGraph.GetChildAgentCount();
+        }
+        #endregion Implementation of IMonitor
     }
 }

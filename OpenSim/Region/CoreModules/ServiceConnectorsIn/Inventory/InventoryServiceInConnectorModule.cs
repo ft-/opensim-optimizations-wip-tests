@@ -25,18 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
-using System.Collections.Generic;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
-using OpenSim.Framework;
 using OpenSim.Framework.Servers;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Server.Base;
 using OpenSim.Server.Handlers.Base;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Inventory
 {
@@ -45,42 +43,20 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Inventory
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private static bool m_Enabled = false;
-        
+
         private IConfigSource m_Config;
-        bool m_Registered = false;
+        private bool m_Registered = false;
 
         #region Region Module interface
-
-        public void Initialise(IConfigSource config)
-        {
-            m_Config = config;
-            IConfig moduleConfig = config.Configs["Modules"];
-            if (moduleConfig != null)
-            {
-                m_Enabled = moduleConfig.GetBoolean("InventoryServiceInConnector", false);
-                if (m_Enabled)
-                {
-                    m_log.Info("[INVENTORY IN CONNECTOR]: Inventory Service In Connector enabled");
-                }
-            }
-        }
-
-        public void PostInitialise()
-        {
-        }
-
-        public void Close()
-        {
-        }
-
-        public Type ReplaceableInterface 
-        {
-            get { return null; }
-        }
 
         public string Name
         {
             get { return "RegionInventoryService"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
         }
 
         public void AddRegion(Scene scene)
@@ -100,15 +76,34 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Inventory
             }
         }
 
-        public void RemoveRegion(Scene scene)
+        public void Close()
         {
         }
 
+        public void Initialise(IConfigSource config)
+        {
+            m_Config = config;
+            IConfig moduleConfig = config.Configs["Modules"];
+            if (moduleConfig != null)
+            {
+                m_Enabled = moduleConfig.GetBoolean("InventoryServiceInConnector", false);
+                if (m_Enabled)
+                {
+                    m_log.Info("[INVENTORY IN CONNECTOR]: Inventory Service In Connector enabled");
+                }
+            }
+        }
+
+        public void PostInitialise()
+        {
+        }
         public void RegionLoaded(Scene scene)
         {
         }
 
-        #endregion
-
+        public void RemoveRegion(Scene scene)
+        {
+        }
+        #endregion Region Module interface
     }
 }

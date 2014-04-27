@@ -25,10 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
-using System.Net;
 using OpenSim.Framework.Client;
 using OpenSim.Region.Framework.Scenes;
+using System.Collections.Generic;
+using System.Net;
 
 namespace OpenSim.Region.CoreModules.Agent.IPBan
 {
@@ -38,6 +38,7 @@ namespace OpenSim.Region.CoreModules.Agent.IPBan
                     = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
         private List<string> bans;
+
         // private SceneBase m_scene;
         public SceneBanner(SceneBase scene, List<string> banList)
         {
@@ -47,7 +48,7 @@ namespace OpenSim.Region.CoreModules.Agent.IPBan
             // m_scene = scene;
         }
 
-        void EventManager_OnClientConnect(IClientCore client)
+        private void EventManager_OnClientConnect(IClientCore client)
         {
             // Only need to run through all this if there are entries in the ban list
             if (bans.Count > 0)

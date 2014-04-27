@@ -25,24 +25,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenSim.Framework.Servers.HttpServer;
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Net;
 using System.Text;
-using log4net;
-using OpenSim.Framework;
-using OpenSim.Framework.Console;
-using OpenSim.Framework.Servers.HttpServer;
 
 namespace OpenSim.Framework.Servers
 {
     public class MainServer
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private static BaseHttpServer instance = null;
         private static Dictionary<uint, BaseHttpServer> m_Servers = new Dictionary<uint, BaseHttpServer>();
+
+        private static int s_debugLevel;
 
         /// <summary>
         /// Control the printing of certain debug messages.
@@ -67,9 +65,6 @@ namespace OpenSim.Framework.Servers
                         server.DebugLevel = s_debugLevel;
             }
         }
-
-        private static int s_debugLevel;
-
         /// <summary>
         /// Set the main HTTP server instance.
         /// </summary>
@@ -105,6 +100,82 @@ namespace OpenSim.Framework.Servers
             get { return new Dictionary<uint, BaseHttpServer>(m_Servers); }
         }
 
+        /// <summary>
+        /// Register an already started HTTP server to the collection of known servers.
+        /// </summary>
+        /// <param name='server'></param>
+        public static void AddHttpServer(BaseHttpServer server)
+        {
+            lock (m_Servers)
+            {
+                if (m_Servers.ContainsKey(server.Port))
+                    throw new Exception(string.Format("HTTP server for port {0} already exists.", server.Port));
+
+                m_Servers.Add(server.Port, server);
+            }
+        }
+
+        /// <summary>
+        /// Does this collection of servers contain one with the given port?
+        /// </summary>
+        /// <remarks>
+        /// Unlike GetHttpServer, this will not instantiate a server if one does not exist on that port.
+        /// </remarks>
+        /// <param name='port'></param>
+        /// <returns>true if a server with the given port is registered, false otherwise.</returns>
+        public static bool ContainsHttpServer(uint port)
+        {
+            lock (m_Servers)
+                return m_Servers.ContainsKey(port);
+        }
+
+        /// <summary>
+        /// Get the default http server or an http server for a specific port.
+        /// </summary>
+        /// <remarks>
+        /// If the requested HTTP server doesn't already exist then a new one is instantiated and started.
+        /// </remarks>
+        /// <returns></returns>
+        /// <param name='port'>If 0 then the default HTTP server is returned.</param>
+        public static IHttpServer GetHttpServer(uint port)
+        {
+            return GetHttpServer(port, null);
+        }
+
+        /// <summary>
+        /// Get the default http server, an http server for a specific port
+        /// and/or an http server bound to a specific address
+        /// </summary>
+        /// <remarks>
+        /// If the requested HTTP server doesn't already exist then a new one is instantiated and started.
+        /// </remarks>
+        /// <returns></returns>
+        /// <param name='port'>If 0 then the default HTTP server is returned.</param>
+        /// <param name='ipaddr'>A specific IP address to bind to.  If null then the default IP address is used.</param>
+        public static IHttpServer GetHttpServer(uint port, IPAddress ipaddr)
+        {
+            if (port == 0)
+                return Instance;
+
+            if (instance != null && port == Instance.Port)
+                return Instance;
+
+            lock (m_Servers)
+            {
+                if (m_Servers.ContainsKey(port))
+                    return m_Servers[port];
+
+                m_Servers[port] = new BaseHttpServer(port);
+
+                if (ipaddr != null)
+                    m_Servers[port].ListenIPAddress = ipaddr;
+
+                m_Servers[port].Start();
+
+                return m_Servers[port];
+            }
+        }
+
         public static void RegisterHttpConsoleCommands(ICommandConsole console)
         {
             console.Commands.AddCommand(
@@ -130,6 +201,25 @@ namespace OpenSim.Framework.Servers
                     + "  level >= 5 then a sample from the beginning of the data is logged.\n"
                     + "  level >= 6 then the entire data is logged.\n",
                 HandleDebugHttpCommand);
+        }
+
+        /// <summary>
+        /// Removes the http server listening on the given port.
+        /// </summary>
+        /// <remarks>
+        /// It is the responsibility of the caller to do clean up.
+        /// </remarks>
+        /// <param name='port'></param>
+        /// <returns></returns>
+        public static bool RemoveHttpServer(uint port)
+        {
+            lock (m_Servers)
+            {
+                if (instance != null && instance.Port == port)
+                    instance = null;
+
+                return m_Servers.Remove(port);
+            }
         }
 
         /// <summary>
@@ -223,11 +313,11 @@ namespace OpenSim.Framework.Servers
                 {
                     handlers.AppendFormat(
                         "Registered HTTP Handlers for server at {0}:{1}\n", httpServer.ListenIPAddress, httpServer.Port);
-        
+
                     handlers.AppendFormat("* XMLRPC:\n");
                     foreach (String s in httpServer.GetXmlRpcHandlerKeys())
                         handlers.AppendFormat("\t{0}\n", s);
-        
+
                     handlers.AppendFormat("* HTTP:\n");
                     foreach (String s in httpServer.GetHTTPHandlerKeys())
                         handlers.AppendFormat("\t{0}\n", s);
@@ -235,19 +325,19 @@ namespace OpenSim.Framework.Servers
                     handlers.AppendFormat("* HTTP (poll):\n");
                     foreach (String s in httpServer.GetPollServiceHandlerKeys())
                         handlers.AppendFormat("\t{0}\n", s);
-                    
+
                     handlers.AppendFormat("* JSONRPC:\n");
                     foreach (String s in httpServer.GetJsonRpcHandlerKeys())
                         handlers.AppendFormat("\t{0}\n", s);
-        
-//                    handlers.AppendFormat("* Agent:\n");
-//                    foreach (String s in httpServer.GetAgentHandlerKeys())
-//                        handlers.AppendFormat("\t{0}\n", s);
-        
+
+                    //                    handlers.AppendFormat("* Agent:\n");
+                    //                    foreach (String s in httpServer.GetAgentHandlerKeys())
+                    //                        handlers.AppendFormat("\t{0}\n", s);
+
                     handlers.AppendFormat("* LLSD:\n");
                     foreach (String s in httpServer.GetLLSDHandlerKeys())
                         handlers.AppendFormat("\t{0}\n", s);
-        
+
                     handlers.AppendFormat("* StreamHandlers ({0}):\n", httpServer.GetStreamHandlerKeys().Count);
                     foreach (String s in httpServer.GetStreamHandlerKeys())
                         handlers.AppendFormat("\t{0}\n", s);
@@ -257,101 +347,6 @@ namespace OpenSim.Framework.Servers
             }
 
             MainConsole.Instance.Output(handlers.ToString());
-        }
-
-        /// <summary>
-        /// Register an already started HTTP server to the collection of known servers.
-        /// </summary>
-        /// <param name='server'></param>
-        public static void AddHttpServer(BaseHttpServer server)
-        {
-            lock (m_Servers)
-            {
-                if (m_Servers.ContainsKey(server.Port))
-                    throw new Exception(string.Format("HTTP server for port {0} already exists.", server.Port));
-
-                m_Servers.Add(server.Port, server);
-            }
-        }
-
-        /// <summary>
-        /// Removes the http server listening on the given port.
-        /// </summary>
-        /// <remarks>
-        /// It is the responsibility of the caller to do clean up.
-        /// </remarks>
-        /// <param name='port'></param>
-        /// <returns></returns>
-        public static bool RemoveHttpServer(uint port)
-        {
-            lock (m_Servers)
-            {
-                if (instance != null && instance.Port == port)
-                    instance = null;
-
-                return m_Servers.Remove(port);
-            }
-        }
-
-        /// <summary>
-        /// Does this collection of servers contain one with the given port?
-        /// </summary>
-        /// <remarks>
-        /// Unlike GetHttpServer, this will not instantiate a server if one does not exist on that port.
-        /// </remarks>
-        /// <param name='port'></param>
-        /// <returns>true if a server with the given port is registered, false otherwise.</returns>
-        public static bool ContainsHttpServer(uint port)
-        {
-            lock (m_Servers)
-                return m_Servers.ContainsKey(port);
-        }
-
-        /// <summary>
-        /// Get the default http server or an http server for a specific port.
-        /// </summary>
-        /// <remarks>
-        /// If the requested HTTP server doesn't already exist then a new one is instantiated and started.
-        /// </remarks>
-        /// <returns></returns>
-        /// <param name='port'>If 0 then the default HTTP server is returned.</param>
-        public static IHttpServer GetHttpServer(uint port)
-        {
-            return GetHttpServer(port, null);
-        }
-
-        /// <summary>
-        /// Get the default http server, an http server for a specific port
-        /// and/or an http server bound to a specific address
-        /// </summary>
-        /// <remarks>
-        /// If the requested HTTP server doesn't already exist then a new one is instantiated and started.
-        /// </remarks>
-        /// <returns></returns>
-        /// <param name='port'>If 0 then the default HTTP server is returned.</param>
-        /// <param name='ipaddr'>A specific IP address to bind to.  If null then the default IP address is used.</param>
-        public static IHttpServer GetHttpServer(uint port, IPAddress ipaddr)
-        {
-            if (port == 0)
-                return Instance;
-            
-            if (instance != null && port == Instance.Port)
-                return Instance;
-
-            lock (m_Servers)
-            {
-                if (m_Servers.ContainsKey(port))
-                    return m_Servers[port];
-
-                m_Servers[port] = new BaseHttpServer(port);
-
-                if (ipaddr != null)
-                    m_Servers[port].ListenIPAddress = ipaddr;
-
-                m_Servers[port].Start();
-
-                return m_Servers[port];
-            }
         }
     }
 }

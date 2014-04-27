@@ -25,22 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using OpenMetaverse;
 //using OpenSim.Framework.Console;
 using Nini.Config;
+using OpenMetaverse;
 
 namespace OpenSim.Framework
 {
     public delegate void restart(RegionInfo thisRegion);
 
-    public enum RegionStatus : int
-    {
-        Down = 0,
-        Up = 1,
-        Crashed = 2,
-        Starting = 3,
-    };
-            
     /// <value>
     /// Indicate what action to take on an object derez request
     /// </value>
@@ -54,15 +46,18 @@ namespace OpenSim.Framework
         Return = 9
     };
 
+    public enum RegionStatus : int
+    {
+        Down = 0,
+        Up = 1,
+        Crashed = 2,
+        Starting = 3,
+    };
     public interface IScene
     {
-        /// <summary>
-        /// The name of this scene.
-        /// </summary>
-        string Name { get; }
+        event restart OnRestart;
 
-        RegionInfo RegionInfo { get; }
-        RegionStatus RegionStatus { get; set; }
+        bool AllowScriptCrossings { get; }
 
         IConfigSource Config { get; }
 
@@ -72,6 +67,11 @@ namespace OpenSim.Framework
         bool LoginsEnabled { get; set; }
 
         /// <summary>
+        /// The name of this scene.
+        /// </summary>
+        string Name { get; }
+
+        /// <summary>
         /// Is this region ready for use?
         /// </summary>
         /// <remarks>
@@ -79,12 +79,10 @@ namespace OpenSim.Framework
         /// </remarks>
         bool Ready { get; set; }
 
+        RegionInfo RegionInfo { get; }
+
+        RegionStatus RegionStatus { get; set; }
         float TimeDilation { get; }
-
-        bool AllowScriptCrossings { get; }
-
-        event restart OnRestart;
-
         /// <summary>
         /// Add a new agent with an attached client.  All agents except initial login clients will starts off as a child agent
         /// - the later agent crossing will promote it to a root agent.
@@ -94,6 +92,8 @@ namespace OpenSim.Framework
         /// <returns>
         /// The scene agent if the new client was added or if an agent that already existed.</returns>
         ISceneAgent AddNewAgent(IClientAPI client, PresenceType type);
+
+        bool CheckClient(UUID agentID, System.Net.IPEndPoint ep);
 
         /// <summary>
         /// Tell a single agent to disconnect from the region.
@@ -105,11 +105,9 @@ namespace OpenSim.Framework
         /// </param>
         bool CloseAgent(UUID agentID, bool force);
 
-        void Restart();
+        ISceneObject DeserializeObject(string representation);
 
         string GetSimulatorVersion();
-
-        bool TryGetScenePresence(UUID agentID, out object scenePresence);
 
         /// <summary>
         /// Register an interface to a region module.  This allows module methods to be called directly as
@@ -118,8 +116,6 @@ namespace OpenSim.Framework
         /// </summary>
         /// <param name="mod"></param>
         void RegisterModuleInterface<M>(M mod);
-        
-        void StackModuleInterface<M>(M mod);
 
         /// <summary>
         /// For the given interface, retrieve the region module which implements it.
@@ -133,15 +129,15 @@ namespace OpenSim.Framework
         /// <returns>an empty array if there are no registered modules implementing that interface</returns>
         T[] RequestModuleInterfaces<T>();
 
-//        void AddCommand(object module, string command, string shorthelp, string longhelp, CommandDelegate callback);
+        void Restart();
+        void StackModuleInterface<M>(M mod);
 
-        ISceneObject DeserializeObject(string representation);
-
-        bool CheckClient(UUID agentID, System.Net.IPEndPoint ep);
-
+        //        void AddCommand(object module, string command, string shorthelp, string longhelp, CommandDelegate callback);
         /// <summary>
         /// Start the scene and associated scripts within it.
         /// </summary>
         void Start();
+
+        bool TryGetScenePresence(UUID agentID, out object scenePresence);
     }
 }

@@ -25,13 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse.StructuredData;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using System.Text;
-using log4net;
-using OpenMetaverse.StructuredData;
 
 namespace OpenSim.Framework.Monitoring
 {
@@ -40,68 +37,9 @@ namespace OpenSim.Framework.Monitoring
     /// </summary>
     public class Stat : IDisposable
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         public static readonly char[] DisallowedShortNameCharacters = { '.' };
-
-        /// <summary>
-        /// Category of this stat (e.g. cache, scene, etc).
-        /// </summary>
-        public string Category { get; private set; }
-
-        /// <summary>
-        /// Containing name for this stat.
-        /// FIXME: In the case of a scene, this is currently the scene name (though this leaves
-        /// us with a to-be-resolved problem of non-unique region names).
-        /// </summary>
-        /// <value>
-        /// The container.
-        /// </value>
-        public string Container { get; private set; }
-
-        public StatType StatType { get; private set; }
-
-        public MeasuresOfInterest MeasuresOfInterest { get; private set; }
-
-        /// <summary>
-        /// Action used to update this stat when the value is requested if it's a pull type.
-        /// </summary>
-        public Action<Stat> PullAction { get; private set; }
-
-        public StatVerbosity Verbosity { get; private set; }
-        public string ShortName { get; private set; }
-        public string Name { get; private set; }
-        public string Description { get; private set; }
-        public virtual string UnitName { get; private set; }
-
-        public virtual double Value
-        {
-            get
-            {
-                // Asking for an update here means that the updater cannot access this value without infinite recursion.
-                // XXX: A slightly messy but simple solution may be to flick a flag so we can tell if this is being
-                // called by the pull action and just return the value.
-                if (StatType == StatType.Pull)
-                    PullAction(this);
-
-                return m_value;
-            }
-
-            set
-            {
-                m_value = value;
-            }
-        }
-
-        private double m_value;
-
-        /// <summary>
-        /// Historical samples for calculating measures of interest average.
-        /// </summary>
-        /// <remarks>
-        /// Will be null if no measures of interest require samples.
-        /// </remarks>
-        private Queue<double> m_samples;
 
         /// <summary>
         /// Maximum number of statistical samples.
@@ -112,27 +50,37 @@ namespace OpenSim.Framework.Monitoring
         /// </remarks>
         private static int m_maxSamples = 24;
 
+        /// <summary>
+        /// Historical samples for calculating measures of interest average.
+        /// </summary>
+        /// <remarks>
+        /// Will be null if no measures of interest require samples.
+        /// </remarks>
+        private Queue<double> m_samples;
+
+        private double m_value;
+
         public Stat(
-            string shortName,
-            string name,
-            string description,
-            string unitName,
-            string category,
-            string container,
-            StatType type,
-            Action<Stat> pullAction,
-            StatVerbosity verbosity) 
-                : this(
-                    shortName, 
-                    name, 
-                    description, 
-                    unitName, 
-                    category, 
-                    container, 
-                    type, 
-                    MeasuresOfInterest.None, 
-                    pullAction, 
-                    verbosity)
+                    string shortName,
+                    string name,
+                    string description,
+                    string unitName,
+                    string category,
+                    string container,
+                    StatType type,
+                    Action<Stat> pullAction,
+                    StatVerbosity verbosity)
+            : this(
+                shortName,
+                name,
+                description,
+                unitName,
+                category,
+                container,
+                type,
+                MeasuresOfInterest.None,
+                pullAction,
+                verbosity)
         {
         }
 
@@ -195,6 +143,102 @@ namespace OpenSim.Framework.Monitoring
             Verbosity = verbosity;
         }
 
+        /// <summary>
+        /// Category of this stat (e.g. cache, scene, etc).
+        /// </summary>
+        public string Category { get; private set; }
+
+        /// <summary>
+        /// Containing name for this stat.
+        /// FIXME: In the case of a scene, this is currently the scene name (though this leaves
+        /// us with a to-be-resolved problem of non-unique region names).
+        /// </summary>
+        /// <value>
+        /// The container.
+        /// </value>
+        public string Container { get; private set; }
+
+        public string Description { get; private set; }
+
+        public MeasuresOfInterest MeasuresOfInterest { get; private set; }
+
+        public string Name { get; private set; }
+
+        /// <summary>
+        /// Action used to update this stat when the value is requested if it's a pull type.
+        /// </summary>
+        public Action<Stat> PullAction { get; private set; }
+
+        public string ShortName { get; private set; }
+
+        public StatType StatType { get; private set; }
+        public virtual string UnitName { get; private set; }
+
+        public virtual double Value
+        {
+            get
+            {
+                // Asking for an update here means that the updater cannot access this value without infinite recursion.
+                // XXX: A slightly messy but simple solution may be to flick a flag so we can tell if this is being
+                // called by the pull action and just return the value.
+                if (StatType == StatType.Pull)
+                    PullAction(this);
+
+                return m_value;
+            }
+
+            set
+            {
+                m_value = value;
+            }
+        }
+
+        public StatVerbosity Verbosity { get; private set; }
+        // Compute the averages over time and return same.
+        // Return 'true' if averages were actually computed. 'false' if no average info.
+        public bool ComputeMeasuresOfInterest(out double lastChangeOverTime, out double averageChangeOverTime)
+        {
+            bool ret = false;
+            lastChangeOverTime = 0;
+            averageChangeOverTime = 0;
+
+            if ((MeasuresOfInterest & MeasuresOfInterest.AverageChangeOverTime) == MeasuresOfInterest.AverageChangeOverTime)
+            {
+                double totalChange = 0;
+                double? penultimateSample = null;
+                double? lastSample = null;
+
+                lock (m_samples)
+                {
+                    //                    m_log.DebugFormat(
+                    //                        "[STAT]: Samples for {0} are {1}",
+                    //                        Name, string.Join(",", m_samples.Select(s => s.ToString()).ToArray()));
+
+                    foreach (double s in m_samples)
+                    {
+                        if (lastSample != null)
+                            totalChange += s - (double)lastSample;
+
+                        penultimateSample = lastSample;
+                        lastSample = s;
+                    }
+                }
+
+                if (lastSample != null && penultimateSample != null)
+                {
+                    lastChangeOverTime
+                        = ((double)lastSample - (double)penultimateSample) / (Watchdog.WATCHDOG_INTERVAL_MS / 1000);
+                }
+
+                int divisor = m_samples.Count <= 1 ? 1 : m_samples.Count - 1;
+
+                averageChangeOverTime = totalChange / divisor / (Watchdog.WATCHDOG_INTERVAL_MS / 1000);
+                ret = true;
+            }
+
+            return ret;
+        }
+
         // IDisposable.Dispose()
         public virtual void Dispose()
         {
@@ -216,7 +260,7 @@ namespace OpenSim.Framework.Monitoring
                 if (m_samples.Count >= m_maxSamples)
                     m_samples.Dequeue();
 
-//                m_log.DebugFormat("[STAT]: Recording value {0} for {1}", newValue, Name);
+                //                m_log.DebugFormat("[STAT]: Recording value {0} for {1}", newValue, Name);
 
                 m_samples.Enqueue(newValue);
             }
@@ -226,11 +270,11 @@ namespace OpenSim.Framework.Monitoring
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendFormat(
-                "{0}.{1}.{2} : {3}{4}", 
-                Category, 
-                Container, 
-                ShortName, 
-                Value, 
+                "{0}.{1}.{2} : {3}{4}",
+                Category,
+                Container,
+                ShortName,
+                Value,
                 string.IsNullOrEmpty(UnitName) ? "" : string.Format(" {0}", UnitName));
 
             AppendMeasuresOfInterest(sb);
@@ -260,52 +304,6 @@ namespace OpenSim.Framework.Monitoring
 
             return ret;
         }
-
-        // Compute the averages over time and return same.
-        // Return 'true' if averages were actually computed. 'false' if no average info.
-        public bool ComputeMeasuresOfInterest(out double lastChangeOverTime, out double averageChangeOverTime)
-        {
-            bool ret = false;
-            lastChangeOverTime = 0;
-            averageChangeOverTime = 0;
-
-            if ((MeasuresOfInterest & MeasuresOfInterest.AverageChangeOverTime) == MeasuresOfInterest.AverageChangeOverTime)
-            {
-                double totalChange = 0;
-                double? penultimateSample = null;
-                double? lastSample = null;
-
-                lock (m_samples)
-                {
-                    //                    m_log.DebugFormat(
-                    //                        "[STAT]: Samples for {0} are {1}", 
-                    //                        Name, string.Join(",", m_samples.Select(s => s.ToString()).ToArray()));
-
-                    foreach (double s in m_samples)
-                    {
-                        if (lastSample != null)
-                            totalChange += s - (double)lastSample;
-
-                        penultimateSample = lastSample;
-                        lastSample = s;
-                    }
-                }
-
-                if (lastSample != null && penultimateSample != null)
-                {
-                    lastChangeOverTime
-                        = ((double)lastSample - (double)penultimateSample) / (Watchdog.WATCHDOG_INTERVAL_MS / 1000);
-                }
-
-                int divisor = m_samples.Count <= 1 ? 1 : m_samples.Count - 1;
-
-                averageChangeOverTime = totalChange / divisor / (Watchdog.WATCHDOG_INTERVAL_MS / 1000);
-                ret = true;
-            }
-
-            return ret;
-        }
-
         protected void AppendMeasuresOfInterest(StringBuilder sb)
         {
             double lastChangeOverTime = 0;
@@ -314,9 +312,9 @@ namespace OpenSim.Framework.Monitoring
             if (ComputeMeasuresOfInterest(out lastChangeOverTime, out averageChangeOverTime))
             {
                 sb.AppendFormat(
-                    ", {0:0.##}{1}/s, {2:0.##}{3}/s", 
-                    lastChangeOverTime, 
-                    string.IsNullOrEmpty(UnitName) ? "" : string.Format(" {0}", UnitName), 
+                    ", {0:0.##}{1}/s, {2:0.##}{3}/s",
+                    lastChangeOverTime,
+                    string.IsNullOrEmpty(UnitName) ? "" : string.Format(" {0}", UnitName),
                     averageChangeOverTime,
                     string.IsNullOrEmpty(UnitName) ? "" : string.Format(" {0}", UnitName));
             }

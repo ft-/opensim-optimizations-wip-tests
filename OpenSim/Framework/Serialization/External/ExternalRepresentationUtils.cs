@@ -25,14 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using OpenMetaverse;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Xml;
-using log4net;
-using OpenMetaverse;
-using OpenSim.Services.Interfaces;
 
 namespace OpenSim.Framework.Serialization.External
 {
@@ -42,6 +42,11 @@ namespace OpenSim.Framework.Serialization.External
     public class ExternalRepresentationUtils
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        public static string CalcCreatorData(string homeURL, string name)
+        {
+            return homeURL + ";" + name;
+        }
 
         /// <summary>
         /// Populate a node with data read from xml using a dictinoary of processors
@@ -86,12 +91,12 @@ namespace OpenSim.Framework.Serialization.External
             {
                 nodeName = xtr.Name;
 
-//                        m_log.DebugFormat("[ExternalRepresentationUtils]: Processing: {0}", nodeName);
+                //                        m_log.DebugFormat("[ExternalRepresentationUtils]: Processing: {0}", nodeName);
 
                 Action<NodeType, XmlTextReader> p = null;
                 if (processors.TryGetValue(xtr.Name, out p))
                 {
-//                            m_log.DebugFormat("[ExternalRepresentationUtils]: Found {0} processor, nodeName);
+                    //                            m_log.DebugFormat("[ExternalRepresentationUtils]: Found {0} processor, nodeName);
 
                     try
                     {
@@ -172,12 +177,6 @@ namespace OpenSim.Framework.Serialization.External
                 return wr.ToString();
             }
         }
-
-        public static string CalcCreatorData(string homeURL, string name)
-        {
-            return homeURL + ";" + name;
-        }
-
         internal static string CalcCreatorData(string homeURL, UUID uuid, string name)
         {
             return homeURL + "/" + uuid + ";" + name;

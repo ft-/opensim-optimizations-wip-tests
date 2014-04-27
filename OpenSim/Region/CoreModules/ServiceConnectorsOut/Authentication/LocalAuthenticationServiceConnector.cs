@@ -25,18 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
+using OpenMetaverse;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Server.Base;
 using OpenSim.Services.Interfaces;
-
-using OpenMetaverse;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authentication
 {
@@ -53,14 +51,27 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authentication
 
         #region ISharedRegionModule
 
-        public Type ReplaceableInterface 
-        {
-            get { return null; }
-        }
-
         public string Name
         {
             get { return "LocalAuthenticationServicesConnector"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+        public void AddRegion(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+
+            scene.RegisterModuleInterface<IAuthenticationService>(m_AuthenticationService);
+        }
+
+        public void Close()
+        {
+            if (!m_Enabled)
+                return;
         }
 
         public void Initialise(IConfigSource source)
@@ -108,19 +119,10 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authentication
             if (!m_Enabled)
                 return;
         }
-
-        public void Close()
+        public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
                 return;
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-            scene.RegisterModuleInterface<IAuthenticationService>(m_AuthenticationService);
         }
 
         public void RemoveRegion(Scene scene)
@@ -128,36 +130,14 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authentication
             if (!m_Enabled)
                 return;
         }
-
-        public void RegionLoaded(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-        }
-
-        #endregion
+        #endregion ISharedRegionModule
 
         #region IAuthenticationService
 
         public string Authenticate(UUID principalID, string password, int lifetime)
         {
             // Not implemented at the regions
-            return string.Empty; 
-        }
-
-        public bool Verify(UUID principalID, string token, int lifetime)
-        {
-            return m_AuthenticationService.Verify(principalID, token, lifetime);
-        }
-
-        public bool Release(UUID principalID, string token)
-        {
-            return m_AuthenticationService.Release(principalID, token);
-        }
-
-        public bool SetPassword(UUID principalID, string passwd)
-        {
-            return m_AuthenticationService.SetPassword(principalID, passwd);
+            return string.Empty;
         }
 
         public AuthInfo GetAuthInfo(UUID principalID)
@@ -165,11 +145,25 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authentication
             return m_AuthenticationService.GetAuthInfo(principalID);
         }
 
+        public bool Release(UUID principalID, string token)
+        {
+            return m_AuthenticationService.Release(principalID, token);
+        }
+
         public bool SetAuthInfo(AuthInfo info)
         {
             return m_AuthenticationService.SetAuthInfo(info);
         }
 
-        #endregion
+        public bool SetPassword(UUID principalID, string passwd)
+        {
+            return m_AuthenticationService.SetPassword(principalID, passwd);
+        }
+
+        public bool Verify(UUID principalID, string token, int lifetime)
+        {
+            return m_AuthenticationService.Verify(principalID, token, lifetime);
+        }
+        #endregion IAuthenticationService
     }
 }

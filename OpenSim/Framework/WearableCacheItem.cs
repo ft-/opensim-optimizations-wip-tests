@@ -25,36 +25,29 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
+using System;
+using System.Collections.Generic;
 
 namespace OpenSim.Framework
 {
     [Serializable]
     public class WearableCacheItem
     {
-        public uint TextureIndex { get; set; }
         public UUID CacheId { get; set; }
-        public UUID TextureID { get; set; }
+
         public AssetBase TextureAsset { get; set; }
 
+        public UUID TextureID { get; set; }
 
-        public static WearableCacheItem[] GetDefaultCacheItem()
-        {
-            int itemmax = 21;
-            WearableCacheItem[] retitems = new WearableCacheItem[itemmax];
-            for (uint i=0;i<itemmax;i++)
-                retitems[i] = new WearableCacheItem() {CacheId = UUID.Zero, TextureID = UUID.Zero, TextureIndex = i + 1};
-            return retitems;
-        }
+        public uint TextureIndex { get; set; }
         public static WearableCacheItem[] FromOSD(OSD pInput, IImprovedAssetCache dataCache)
         {
             List<WearableCacheItem> ret = new List<WearableCacheItem>();
             if (pInput.Type == OSDType.Array)
             {
-                OSDArray itemarray = (OSDArray) pInput;
+                OSDArray itemarray = (OSDArray)pInput;
                 foreach (OSDMap item in itemarray)
                 {
                     ret.Add(new WearableCacheItem()
@@ -63,10 +56,10 @@ namespace OpenSim.Framework
                                     CacheId = item["cacheid"].AsUUID(),
                                     TextureID = item["textureid"].AsUUID()
                                 });
-                    
+
                     if (dataCache != null && item.ContainsKey("assetdata"))
                     {
-                        AssetBase asset = new AssetBase(item["textureid"].AsUUID(),"BakedTexture",(sbyte)AssetType.Texture,UUID.Zero.ToString());
+                        AssetBase asset = new AssetBase(item["textureid"].AsUUID(), "BakedTexture", (sbyte)AssetType.Texture, UUID.Zero.ToString());
                         asset.Temporary = true;
                         asset.Data = item["assetdata"].AsBinary();
                         dataCache.Cache(asset);
@@ -75,12 +68,13 @@ namespace OpenSim.Framework
             }
             else if (pInput.Type == OSDType.Map)
             {
-                OSDMap item = (OSDMap) pInput;
-                ret.Add(new WearableCacheItem(){
-                                    TextureIndex = item["textureindex"].AsUInteger(),
-                                    CacheId = item["cacheid"].AsUUID(),
-                                    TextureID = item["textureid"].AsUUID()
-                                });
+                OSDMap item = (OSDMap)pInput;
+                ret.Add(new WearableCacheItem()
+                {
+                    TextureIndex = item["textureindex"].AsUInteger(),
+                    CacheId = item["cacheid"].AsUUID(),
+                    TextureID = item["textureid"].AsUUID()
+                });
                 if (dataCache != null && item.ContainsKey("assetdata"))
                 {
                     string assetCreator = item["assetcreator"].AsString();
@@ -96,8 +90,46 @@ namespace OpenSim.Framework
                 return new WearableCacheItem[0];
             }
             return ret.ToArray();
-
         }
+
+        public static WearableCacheItem[] GetDefaultCacheItem()
+        {
+            int itemmax = 21;
+            WearableCacheItem[] retitems = new WearableCacheItem[itemmax];
+            for (uint i = 0; i < itemmax; i++)
+                retitems[i] = new WearableCacheItem() { CacheId = UUID.Zero, TextureID = UUID.Zero, TextureIndex = i + 1 };
+            return retitems;
+        }
+        public static WearableCacheItem SearchTextureCacheId(UUID pCacheId, WearableCacheItem[] pcacheItems)
+        {
+            for (int i = 0; i < pcacheItems.Length; i++)
+            {
+                if (pcacheItems[i].CacheId == pCacheId)
+                    return pcacheItems[i];
+            }
+            return null;
+        }
+
+        public static WearableCacheItem SearchTextureIndex(uint pTextureIndex, WearableCacheItem[] pcacheItems)
+        {
+            for (int i = 0; i < pcacheItems.Length; i++)
+            {
+                if (pcacheItems[i].TextureIndex == pTextureIndex)
+                    return pcacheItems[i];
+            }
+            return null;
+        }
+
+        public static WearableCacheItem SearchTextureTextureId(UUID pTextureId, WearableCacheItem[] pcacheItems)
+        {
+            for (int i = 0; i < pcacheItems.Length; i++)
+            {
+                if (pcacheItems[i].TextureID == pTextureId)
+                    return pcacheItems[i];
+            }
+            return null;
+        }
+
         public static OSD ToOSD(WearableCacheItem[] pcacheItems, IImprovedAssetCache dataCache)
         {
             OSDArray arr = new OSDArray();
@@ -124,34 +156,5 @@ namespace OpenSim.Framework
             }
             return arr;
         }
-        public static WearableCacheItem SearchTextureIndex(uint pTextureIndex,WearableCacheItem[] pcacheItems)
-        {
-            for (int i = 0; i < pcacheItems.Length; i++)
-            {
-                if (pcacheItems[i].TextureIndex == pTextureIndex)
-                    return pcacheItems[i];
-            }
-            return null;
-        }
-        public static WearableCacheItem SearchTextureCacheId(UUID pCacheId, WearableCacheItem[] pcacheItems)
-        {
-            for (int i = 0; i < pcacheItems.Length; i++)
-            {
-                if (pcacheItems[i].CacheId == pCacheId)
-                    return pcacheItems[i];
-            }
-            return null;
-        }
-        public static WearableCacheItem SearchTextureTextureId(UUID pTextureId, WearableCacheItem[] pcacheItems)
-        {
-            for (int i = 0; i < pcacheItems.Length; i++)
-            {
-                if (pcacheItems[i].TextureID == pTextureId)
-                    return pcacheItems[i];
-            }
-            return null;
-        }
     }
-
-
 }

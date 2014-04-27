@@ -26,16 +26,13 @@
  */
 
 using log4net;
-using System;
-using System.IO;
-using System.Collections.Generic;
-using System.Reflection;
 using Mono.Addins;
 using Nini.Config;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.Asset
 {
@@ -46,17 +43,56 @@ namespace OpenSim.Region.CoreModules.Asset
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
-        private bool m_Enabled;
         private Cache m_Cache;
-
+        private bool m_Enabled;
         public string Name
         {
             get { return "CoreAssetCache"; }
         }
 
-        public Type ReplaceableInterface 
+        public Type ReplaceableInterface
         {
             get { return null; }
+        }
+
+        public void AddRegion(Scene scene)
+        {
+            if (m_Enabled)
+                scene.RegisterModuleInterface<IImprovedAssetCache>(this);
+        }
+
+        public void Cache(AssetBase asset)
+        {
+            if (asset != null)
+                m_Cache.Store(asset.ID, asset);
+        }
+
+        ////////////////////////////////////////////////////////////
+        // IImprovedAssetCache
+        //
+        public bool Check(string id)
+        {
+            // XXX This is probably not an efficient implementation.
+            return Get(id) != null;
+        }
+
+        public void Clear()
+        {
+            m_Cache.Clear();
+        }
+
+        public void Close()
+        {
+        }
+
+        public void Expire(string id)
+        {
+            m_Cache.Invalidate(id);
+        }
+
+        public AssetBase Get(string id)
+        {
+            return (AssetBase)m_Cache.Get(id);
         }
 
         public void Initialise(IConfigSource source)
@@ -90,53 +126,12 @@ namespace OpenSim.Region.CoreModules.Asset
         public void PostInitialise()
         {
         }
-
-        public void Close()
-        {
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            if (m_Enabled)
-                scene.RegisterModuleInterface<IImprovedAssetCache>(this);
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-        }
-
         public void RegionLoaded(Scene scene)
         {
         }
 
-        ////////////////////////////////////////////////////////////
-        // IImprovedAssetCache
-        //
-        public bool Check(string id)
+        public void RemoveRegion(Scene scene)
         {
-            // XXX This is probably not an efficient implementation.
-            return Get(id) != null;
-        }
-
-        public void Cache(AssetBase asset)
-        {
-            if (asset != null)
-                m_Cache.Store(asset.ID, asset);
-        }
-
-        public AssetBase Get(string id)
-        {
-            return (AssetBase)m_Cache.Get(id);
-        }
-
-        public void Expire(string id)
-        {
-            m_Cache.Invalidate(id);
-        }
-
-        public void Clear()
-        {
-            m_Cache.Clear();
         }
     }
 }

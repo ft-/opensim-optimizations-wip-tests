@@ -25,117 +25,52 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using Nini.Config;
 using log4net;
+using Mono.Addins;
+using Nini.Config;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-
-using Mono.Addins;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.Agent.Xfer
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "XferModule")]
     public class XferModule : INonSharedRegionModule, IXfer
     {
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private Scene m_scene;
         private Dictionary<string, FileData> NewFiles = new Dictionary<string, FileData>();
         private Dictionary<ulong, XferDownLoad> Transfers = new Dictionary<ulong, XferDownLoad>();
-
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        public struct XferRequest
-        {
-            public IClientAPI remoteClient;
-            public ulong xferID;
-            public string fileName;
-            public DateTime timeStamp;
-        }
-
-        private class FileData
-        {
-            public byte[] Data;
-            public int Count;
-        }
-       
-        #region INonSharedRegionModule Members
-
-        public void Initialise(IConfigSource config)
-        {
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            m_scene = scene;
-            m_scene.EventManager.OnNewClient += NewClient;
-
-            m_scene.RegisterModuleInterface<IXfer>(this);
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-            m_scene.EventManager.OnNewClient -= NewClient;
-
-            m_scene.UnregisterModuleInterface<IXfer>(this);
-            m_scene = null;
-        }
-
-        public void RegionLoaded(Scene scene)
-        {
-        }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
-        public void Close()
-        {
-        }
-
-        public string Name
-        {
-            get { return "XferModule"; }
-        }
-
-        #endregion
-
-        #region IXfer Members
-
-        /// <summary>
-        /// Let the Xfer module know about a file that the client is about to request.
-        /// Caller is responsible for making sure that the file is here before
-        /// the client starts the XferRequest.
-        /// </summary>
-        /// <param name="fileName"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        public bool AddNewFile(string fileName, byte[] data)
+        public void AbortXfer(IClientAPI remoteClient, ulong xferID)
         {
             lock (NewFiles)
             {
-                if (NewFiles.ContainsKey(fileName))
-                {
-                    NewFiles[fileName].Count++;
-                    NewFiles[fileName].Data = data;
-                }
-                else
-                {
-                    FileData fd = new FileData();
-                    fd.Count = 1;
-                    fd.Data = data;
-                    NewFiles.Add(fileName, fd);
-                }
-            }
+                if (Transfers.ContainsKey(xferID))
+                    RemoveOrDecrement(Transfers[xferID].FileName);
 
-            return true;
+                RemoveXferData(xferID);
+            }
         }
 
-        #endregion
+        public void AckPacket(IClientAPI remoteClient, ulong xferID, uint packet)
+        {
+            lock (NewFiles)  // This is actually to lock Transfers
+            {
+                if (Transfers.ContainsKey(xferID))
+                {
+                    XferDownLoad dl = Transfers[xferID];
+                    if (Transfers[xferID].AckPacket(packet))
+                    {
+                        RemoveXferData(xferID);
+                        RemoveOrDecrement(dl.FileName);
+                    }
+                }
+            }
+        }
 
         public void NewClient(IClientAPI client)
         {
@@ -168,53 +103,10 @@ namespace OpenSim.Region.CoreModules.Agent.Xfer
 
                         // The transaction for this file is either complete or on its way
                         RemoveOrDecrement(fileName);
-
                     }
                 }
                 else
                     m_log.WarnFormat("[Xfer]: {0} not found", fileName);
-                
-            }
-        }
-
-        public void AckPacket(IClientAPI remoteClient, ulong xferID, uint packet)
-        {
-            lock (NewFiles)  // This is actually to lock Transfers
-            {
-                if (Transfers.ContainsKey(xferID))
-                {
-                    XferDownLoad dl = Transfers[xferID];
-                    if (Transfers[xferID].AckPacket(packet))
-                    {
-                        RemoveXferData(xferID);
-                        RemoveOrDecrement(dl.FileName);
-                    }
-                }
-            }
-        }
-
-        private void RemoveXferData(ulong xferID)
-        {
-            // NewFiles must be locked!
-            if (Transfers.ContainsKey(xferID))
-            {
-                XferModule.XferDownLoad xferItem = Transfers[xferID];
-                //string filename = xferItem.FileName;
-                Transfers.Remove(xferID);
-                xferItem.Data = new byte[0]; // Clear the data
-                xferItem.DataPointer = 0;
-
-            }
-        }
-
-        public void AbortXfer(IClientAPI remoteClient, ulong xferID)
-        {
-            lock (NewFiles)
-            {
-                if (Transfers.ContainsKey(xferID))
-                    RemoveOrDecrement(Transfers[xferID].FileName);
-
-                RemoveXferData(xferID);
             }
         }
 
@@ -231,19 +123,117 @@ namespace OpenSim.Region.CoreModules.Agent.Xfer
             }
         }
 
+        private void RemoveXferData(ulong xferID)
+        {
+            // NewFiles must be locked!
+            if (Transfers.ContainsKey(xferID))
+            {
+                XferModule.XferDownLoad xferItem = Transfers[xferID];
+                //string filename = xferItem.FileName;
+                Transfers.Remove(xferID);
+                xferItem.Data = new byte[0]; // Clear the data
+                xferItem.DataPointer = 0;
+            }
+        }
+
+        public struct XferRequest
+        {
+            public string fileName;
+            public IClientAPI remoteClient;
+            public DateTime timeStamp;
+            public ulong xferID;
+        }
+
+        private class FileData
+        {
+            public int Count;
+            public byte[] Data;
+        }
+
+        #region INonSharedRegionModule Members
+
+        public string Name
+        {
+            get { return "XferModule"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
+        public void AddRegion(Scene scene)
+        {
+            m_scene = scene;
+            m_scene.EventManager.OnNewClient += NewClient;
+
+            m_scene.RegisterModuleInterface<IXfer>(this);
+        }
+
+        public void Close()
+        {
+        }
+
+        public void Initialise(IConfigSource config)
+        {
+        }
+        public void RegionLoaded(Scene scene)
+        {
+        }
+
+        public void RemoveRegion(Scene scene)
+        {
+            m_scene.EventManager.OnNewClient -= NewClient;
+
+            m_scene.UnregisterModuleInterface<IXfer>(this);
+            m_scene = null;
+        }
+        #endregion INonSharedRegionModule Members
+
+        #region IXfer Members
+
+        /// <summary>
+        /// Let the Xfer module know about a file that the client is about to request.
+        /// Caller is responsible for making sure that the file is here before
+        /// the client starts the XferRequest.
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public bool AddNewFile(string fileName, byte[] data)
+        {
+            lock (NewFiles)
+            {
+                if (NewFiles.ContainsKey(fileName))
+                {
+                    NewFiles[fileName].Count++;
+                    NewFiles[fileName].Data = data;
+                }
+                else
+                {
+                    FileData fd = new FileData();
+                    fd.Count = 1;
+                    fd.Data = data;
+                    NewFiles.Add(fileName, fd);
+                }
+            }
+
+            return true;
+        }
+
+        #endregion IXfer Members
         #region Nested type: XferDownLoad
 
         public class XferDownLoad
         {
             public IClientAPI Client;
-            private bool complete;
             public byte[] Data = new byte[0];
             public int DataPointer = 0;
             public string FileName = String.Empty;
             public uint Packet = 0;
             public uint Serial = 1;
             public ulong XferID = 0;
-
+            private bool complete;
             public XferDownLoad(string fileName, byte[] data, ulong xferID, IClientAPI client)
             {
                 FileName = fileName;
@@ -254,6 +244,39 @@ namespace OpenSim.Region.CoreModules.Agent.Xfer
 
             public XferDownLoad()
             {
+            }
+
+            /// <summary>
+            /// Respond to an ack packet from the client
+            /// </summary>
+            /// <param name="packet"></param>
+            /// <returns>True if the transfer is complete, false otherwise</returns>
+            public bool AckPacket(uint packet)
+            {
+                if (!complete)
+                {
+                    if ((Data.Length - DataPointer) > 1000)
+                    {
+                        byte[] transferData = new byte[1000];
+                        Array.Copy(Data, DataPointer, transferData, 0, 1000);
+                        Client.SendXferPacket(XferID, Packet, transferData);
+                        Packet++;
+                        DataPointer += 1000;
+                    }
+                    else
+                    {
+                        byte[] transferData = new byte[Data.Length - DataPointer];
+                        Array.Copy(Data, DataPointer, transferData, 0, Data.Length - DataPointer);
+                        uint endPacket = Packet |= (uint)0x80000000;
+                        Client.SendXferPacket(XferID, endPacket, transferData);
+                        Packet++;
+                        DataPointer += (Data.Length - DataPointer);
+
+                        complete = true;
+                    }
+                }
+
+                return complete;
             }
 
             /// <summary>
@@ -283,41 +306,8 @@ namespace OpenSim.Region.CoreModules.Agent.Xfer
 
                 return complete;
             }
-
-            /// <summary>
-            /// Respond to an ack packet from the client
-            /// </summary>
-            /// <param name="packet"></param>
-            /// <returns>True if the transfer is complete, false otherwise</returns>
-            public bool AckPacket(uint packet)
-            {
-                if (!complete)
-                {
-                    if ((Data.Length - DataPointer) > 1000)
-                    {
-                        byte[] transferData = new byte[1000];
-                        Array.Copy(Data, DataPointer, transferData, 0, 1000);
-                        Client.SendXferPacket(XferID, Packet, transferData);
-                        Packet++;
-                        DataPointer += 1000;
-                    }
-                    else
-                    {
-                        byte[] transferData = new byte[Data.Length - DataPointer];
-                        Array.Copy(Data, DataPointer, transferData, 0, Data.Length - DataPointer);
-                        uint endPacket = Packet |= (uint) 0x80000000;
-                        Client.SendXferPacket(XferID, endPacket, transferData);
-                        Packet++;
-                        DataPointer += (Data.Length - DataPointer);
-
-                        complete = true;
-                    }
-                }
-
-                return complete;
-            }
         }
 
-        #endregion
+        #endregion Nested type: XferDownLoad
     }
 }

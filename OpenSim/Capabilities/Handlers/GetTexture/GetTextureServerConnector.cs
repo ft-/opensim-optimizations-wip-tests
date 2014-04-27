@@ -25,13 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using Nini.Config;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
 using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Server.Base;
 using OpenSim.Server.Handlers.Base;
-using OpenMetaverse;
+using OpenSim.Services.Interfaces;
+using System;
 
 namespace OpenSim.Capabilities.Handlers
 {
@@ -41,7 +40,7 @@ namespace OpenSim.Capabilities.Handlers
         private string m_ConfigName = "CapsService";
 
         public GetTextureServerConnector(IConfigSource config, IHttpServer server, string configName) :
-                base(config, server, configName)
+            base(config, server, configName)
         {
             if (configName != String.Empty)
                 m_ConfigName = configName;

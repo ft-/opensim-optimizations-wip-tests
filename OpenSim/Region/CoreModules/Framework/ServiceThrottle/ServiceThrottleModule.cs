@@ -25,18 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Threading;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Framework.Monitoring;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 
 namespace OpenSim.Region.CoreModules.Framework
@@ -48,13 +46,36 @@ namespace OpenSim.Region.CoreModules.Framework
                 MethodBase.GetCurrentMethod().DeclaringType);
 
         private readonly List<Scene> m_scenes = new List<Scene>();
-        private System.Timers.Timer m_timer = new System.Timers.Timer();
-
-        private Queue<Action> m_RequestQueue = new Queue<Action>();
-        private Dictionary<string, List<string>> m_Pending = new Dictionary<string, List<string>>();
         private int m_Interval;
-
+        private Dictionary<string, List<string>> m_Pending = new Dictionary<string, List<string>>();
+        private Queue<Action> m_RequestQueue = new Queue<Action>();
+        private System.Timers.Timer m_timer = new System.Timers.Timer();
         #region ISharedRegionModule
+
+        public string Name
+        {
+            get { return "ServiceThrottleModule"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
+        public void AddRegion(Scene scene)
+        {
+            lock (m_scenes)
+            {
+                m_scenes.Add(scene);
+                scene.RegisterModuleInterface<IServiceThrottleModule>(this);
+                scene.EventManager.OnNewClient += OnNewClient;
+                scene.EventManager.OnMakeRootAgent += OnMakeRootAgent;
+            }
+        }
+
+        public void Close()
+        {
+        }
 
         public void Initialise(IConfigSource config)
         {
@@ -74,16 +95,8 @@ namespace OpenSim.Region.CoreModules.Framework
             //    true,
             //    false);
         }
-
-        public void AddRegion(Scene scene)
+        public void PostInitialise()
         {
-            lock (m_scenes)
-            {
-                m_scenes.Add(scene);
-                scene.RegisterModuleInterface<IServiceThrottleModule>(this);
-                scene.EventManager.OnNewClient += OnNewClient;
-                scene.EventManager.OnMakeRootAgent += OnMakeRootAgent;
-            }
         }
 
         public void RegionLoaded(Scene scene)
@@ -98,46 +111,9 @@ namespace OpenSim.Region.CoreModules.Framework
                 scene.EventManager.OnNewClient -= OnNewClient;
             }
         }
-
-        public void PostInitialise()
-        {
-        }
-
-        public void Close()
-        {
-        }
-
-        public string Name
-        {
-            get { return "ServiceThrottleModule"; }
-        }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
-        #endregion ISharedRegionMOdule
+        #endregion ISharedRegionModule
 
         #region Events
-
-        void OnNewClient(IClientAPI client)
-        {
-            client.OnRegionHandleRequest += OnRegionHandleRequest;
-        }
-
-        void OnMakeRootAgent(ScenePresence obj)
-        {
-            lock (m_timer)
-            {
-                if (!m_timer.Enabled)
-                {
-                    m_timer.Interval = m_Interval;
-                    m_timer.Enabled = true;
-                    m_timer.Start();
-                }
-            }
-        }
 
         public void OnRegionHandleRequest(IClientAPI client, UUID regionID)
         {
@@ -160,6 +136,23 @@ namespace OpenSim.Region.CoreModules.Framework
             Enqueue("region", regionID.ToString(), action);
         }
 
+        private void OnMakeRootAgent(ScenePresence obj)
+        {
+            lock (m_timer)
+            {
+                if (!m_timer.Enabled)
+                {
+                    m_timer.Interval = m_Interval;
+                    m_timer.Enabled = true;
+                    m_timer.Start();
+                }
+            }
+        }
+
+        private void OnNewClient(IClientAPI client)
+        {
+            client.OnRegionHandleRequest += OnRegionHandleRequest;
+        }
         #endregion Events
 
         #region IServiceThrottleModule
@@ -219,24 +212,11 @@ namespace OpenSim.Region.CoreModules.Framework
             else
                 lock (m_timer)
                     m_timer.Enabled = false;
-
         }
 
         #endregion Process Continuation Queue
 
         #region Misc
-
-        private bool IsLocalRegionHandle(UUID regionID, out ulong regionHandle)
-        {
-            regionHandle = 0;
-            foreach (Scene s in m_scenes)
-                if (s.RegionInfo.RegionID == regionID)
-                {
-                    regionHandle = s.RegionInfo.RegionHandle;
-                    return true;
-                }
-            return false;
-        }
 
         private bool AreThereRootAgents()
         {
@@ -250,7 +230,17 @@ namespace OpenSim.Region.CoreModules.Framework
             return false;
         }
 
+        private bool IsLocalRegionHandle(UUID regionID, out ulong regionHandle)
+        {
+            regionHandle = 0;
+            foreach (Scene s in m_scenes)
+                if (s.RegionInfo.RegionID == regionID)
+                {
+                    regionHandle = s.RegionInfo.RegionHandle;
+                    return true;
+                }
+            return false;
+        }
         #endregion Misc
     }
-
 }

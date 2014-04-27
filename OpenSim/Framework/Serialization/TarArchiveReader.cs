@@ -27,9 +27,7 @@
 
 using System;
 using System.IO;
-using System.Reflection;
 using System.Text;
-using log4net;
 
 namespace OpenSim.Framework.Serialization
 {
@@ -39,6 +37,30 @@ namespace OpenSim.Framework.Serialization
     public class TarArchiveReader
     {
         //private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        /// <summary>
+        /// Used to trim off null chars
+        /// </summary>
+        protected static char[] m_nullCharArray = new char[] { '\0' };
+
+        /// <summary>
+        /// Used to trim off space chars
+        /// </summary>
+        protected static char[] m_spaceCharArray = new char[] { ' ' };
+
+        /// <summary>
+        /// Binary reader for the underlying stream
+        /// </summary>
+        protected BinaryReader m_br;
+
+        /// <summary>
+        /// Generate a tar reader which reads from the given stream.
+        /// </summary>
+        /// <param name="s"></param>
+        public TarArchiveReader(Stream s)
+        {
+            m_br = new BinaryReader(s);
+        }
 
         public enum TarEntryType
         {
@@ -52,28 +74,31 @@ namespace OpenSim.Framework.Serialization
             TYPE_FIFO = 7,
             TYPE_CONTIGUOUS_FILE = 8,
         }
-
         /// <summary>
-        /// Binary reader for the underlying stream
+        /// Convert octal bytes to a decimal representation
         /// </summary>
-        protected BinaryReader m_br;
-
-        /// <summary>
-        /// Used to trim off null chars
-        /// </summary>
-        protected static char[] m_nullCharArray = new char[] { '\0' };
-        /// <summary>
-        /// Used to trim off space chars
-        /// </summary>
-        protected static char[] m_spaceCharArray = new char[] { ' ' };
-
-        /// <summary>
-        /// Generate a tar reader which reads from the given stream.
-        /// </summary>
-        /// <param name="s"></param>
-        public TarArchiveReader(Stream s)
+        /// <param name="bytes"></param>
+        /// <returns></returns>
+        public static int ConvertOctalBytesToDecimal(byte[] bytes, int startIndex, int count)
         {
-            m_br = new BinaryReader(s);
+            // Trim leading white space: ancient tars do that instead
+            // of leading 0s :-( don't ask. really.
+            string oString = Encoding.ASCII.GetString(bytes, startIndex, count).TrimStart(m_spaceCharArray);
+
+            int d = 0;
+
+            foreach (char c in oString)
+            {
+                d <<= 3;
+                d |= c - '0';
+            }
+
+            return d;
+        }
+
+        public void Close()
+        {
+            m_br.Close();
         }
 
         /// <summary>
@@ -93,6 +118,30 @@ namespace OpenSim.Framework.Serialization
             entryType = header.EntryType;
             filePath = header.FilePath;
             return ReadData(header.FileSize);
+        }
+
+        /// <summary>
+        /// Read data following a header
+        /// </summary>
+        /// <param name="fileSize"></param>
+        /// <returns></returns>
+        protected byte[] ReadData(int fileSize)
+        {
+            byte[] data = m_br.ReadBytes(fileSize);
+
+            //m_log.DebugFormat("[TAR ARCHIVE READER]: fileSize {0}", fileSize);
+
+            // Read the rest of the empty padding in the 512 byte block
+            if (fileSize % 512 != 0)
+            {
+                int paddingLeft = 512 - (fileSize % 512);
+
+                //m_log.DebugFormat("[TAR ARCHIVE READER]: Reading {0} padding bytes", paddingLeft);
+
+                m_br.ReadBytes(paddingLeft);
+            }
+
+            return data;
         }
 
         /// <summary>
@@ -136,91 +185,48 @@ namespace OpenSim.Framework.Serialization
                 case 0:
                     tarHeader.EntryType = TarEntryType.TYPE_NORMAL_FILE;
                     break;
+
                 case (byte)'0':
                     tarHeader.EntryType = TarEntryType.TYPE_NORMAL_FILE;
-                break;
+                    break;
+
                 case (byte)'1':
                     tarHeader.EntryType = TarEntryType.TYPE_HARD_LINK;
-                break;
+                    break;
+
                 case (byte)'2':
                     tarHeader.EntryType = TarEntryType.TYPE_SYMBOLIC_LINK;
-                break;
+                    break;
+
                 case (byte)'3':
                     tarHeader.EntryType = TarEntryType.TYPE_CHAR_SPECIAL;
-                break;
+                    break;
+
                 case (byte)'4':
                     tarHeader.EntryType = TarEntryType.TYPE_BLOCK_SPECIAL;
-                break;
+                    break;
+
                 case (byte)'5':
                     tarHeader.EntryType = TarEntryType.TYPE_DIRECTORY;
-                break;
+                    break;
+
                 case (byte)'6':
                     tarHeader.EntryType = TarEntryType.TYPE_FIFO;
-                break;
+                    break;
+
                 case (byte)'7':
                     tarHeader.EntryType = TarEntryType.TYPE_CONTIGUOUS_FILE;
-                break;
+                    break;
             }
 
             return tarHeader;
-        }
-
-        /// <summary>
-        /// Read data following a header
-        /// </summary>
-        /// <param name="fileSize"></param>
-        /// <returns></returns>
-        protected byte[] ReadData(int fileSize)
-        {
-            byte[] data = m_br.ReadBytes(fileSize);
-
-            //m_log.DebugFormat("[TAR ARCHIVE READER]: fileSize {0}", fileSize);
-
-            // Read the rest of the empty padding in the 512 byte block
-            if (fileSize % 512 != 0)
-            {
-                int paddingLeft = 512 - (fileSize % 512);
-
-                //m_log.DebugFormat("[TAR ARCHIVE READER]: Reading {0} padding bytes", paddingLeft);
-
-                m_br.ReadBytes(paddingLeft);
-            }
-
-            return data;
-        }
-
-        public void Close()
-        {
-            m_br.Close();
-        }
-
-        /// <summary>
-        /// Convert octal bytes to a decimal representation
-        /// </summary>
-        /// <param name="bytes"></param>
-        /// <returns></returns>
-        public static int ConvertOctalBytesToDecimal(byte[] bytes, int startIndex, int count)
-        {
-            // Trim leading white space: ancient tars do that instead
-            // of leading 0s :-( don't ask. really.
-            string oString = Encoding.ASCII.GetString(bytes, startIndex, count).TrimStart(m_spaceCharArray);
-
-            int d = 0;
-
-            foreach (char c in oString)
-            {
-                d <<= 3;
-                d |= c - '0';
-            }
-
-            return d;
         }
     }
 
     public class TarHeader
     {
+        public TarArchiveReader.TarEntryType EntryType;
         public string FilePath;
         public int FileSize;
-        public TarArchiveReader.TarEntryType EntryType;
     }
 }

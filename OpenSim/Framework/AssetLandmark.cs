@@ -25,17 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Text;
 using OpenMetaverse;
 
 namespace OpenSim.Framework
 {
     public class AssetLandmark : AssetBase
     {
+        public string Gatekeeper = string.Empty;
         public Vector3 Position;
         public ulong RegionHandle;
         public UUID RegionID;
-        public string Gatekeeper = string.Empty;
         public int Version;
 
         public AssetLandmark(AssetBase a)

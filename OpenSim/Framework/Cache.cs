@@ -27,14 +27,27 @@
 
 using System;
 using System.Collections.Generic;
-using OpenMetaverse;
 
 namespace OpenSim.Framework
 {
+    public delegate bool ExpireDelegate(string index);
+
     // The delegate we will use for performing fetch from backing store
     //
     public delegate Object FetchDelegate(string index);
-    public delegate bool ExpireDelegate(string index);
+    public enum CacheFlags
+    {
+        CacheMissing = 1,
+        AllowUpdate = 2
+    }
+
+    // Select classes to store data on different media
+    //
+    public enum CacheMedium
+    {
+        Memory = 0,
+        File = 1
+    }
 
     // Strategy
     //
@@ -48,157 +61,17 @@ namespace OpenSim.Framework
         Balanced = 1,
         Aggressive = 2
     }
-
-    // Select classes to store data on different media
-    //
-    public enum CacheMedium
-    {
-        Memory = 0,
-        File = 1
-    }
-
-    public enum CacheFlags
-    {
-        CacheMissing = 1,
-        AllowUpdate = 2
-    }
-
-    // The base class of all cache objects. Implements comparison and sorting
-    // by the string member.
-    //
-    // This is not abstract because we need to instantiate it briefly as a
-    // method parameter
-    //
-    public class CacheItemBase : IEquatable<CacheItemBase>, IComparable<CacheItemBase>
-    {
-        public string uuid;
-        public DateTime entered;
-        public DateTime lastUsed;
-        public DateTime expires = new DateTime(0);
-        public int hits = 0;
-
-        public virtual Object Retrieve()
-        {
-            return null;
-        }
-
-        public virtual void Store(Object data)
-        {
-        }
-
-        public CacheItemBase(string index)
-        {
-            uuid = index;
-            entered = DateTime.Now;
-            lastUsed = entered;
-        }
-
-        public CacheItemBase(string index, DateTime ttl)
-        {
-            uuid = index;
-            entered = DateTime.Now;
-            lastUsed = entered;
-            expires = ttl;
-        }
-
-        public virtual bool Equals(CacheItemBase item)
-        {
-            return uuid == item.uuid;
-        }
-
-        public virtual int CompareTo(CacheItemBase item)
-        {
-            return uuid.CompareTo(item.uuid);
-        }
-
-        public virtual bool IsLocked()
-        {
-            return false;
-        }
-    }
-
-    // Simple in-memory storage. Boxes the object and stores it in a variable
-    //
-    public class MemoryCacheItem : CacheItemBase
-    {
-        private Object m_Data;
-
-        public MemoryCacheItem(string index) :
-            base(index)
-        {
-        }
-
-        public MemoryCacheItem(string index, DateTime ttl) :
-            base(index, ttl)
-        {
-        }
-
-        public MemoryCacheItem(string index, Object data) :
-            base(index)
-        {
-            Store(data);
-        }
-
-        public MemoryCacheItem(string index, DateTime ttl, Object data) :
-            base(index, ttl)
-        {
-            Store(data);
-        }
-
-        public override Object Retrieve()
-        {
-            return m_Data;
-        }
-
-        public override void Store(Object data)
-        {
-            m_Data = data;
-        }
-    }
-
-    // Simple persistent file storage
-    //
-    public class FileCacheItem : CacheItemBase
-    {
-        public FileCacheItem(string index) :
-            base(index)
-        {
-        }
-
-        public FileCacheItem(string index, DateTime ttl) :
-            base(index, ttl)
-        {
-        }
-
-        public FileCacheItem(string index, Object data) :
-            base(index)
-        {
-            Store(data);
-        }
-
-        public FileCacheItem(string index, DateTime ttl, Object data) :
-            base(index, ttl)
-        {
-            Store(data);
-        }
-
-        public override Object Retrieve()
-        {
-            //TODO: Add file access code
-            return null;
-        }
-
-        public override void Store(Object data)
-        {
-            //TODO: Add file access code
-        }
-    }
-
     // The main cache class. This is the class you instantiate to create
     // a cache
     //
     public class Cache
     {
+        public ExpireDelegate OnExpire;
+
+        private TimeSpan m_DefaultTTL = new TimeSpan(0);
+
+        private CacheFlags m_Flags = 0;
+
         /// <summary>
         /// Must only be accessed under lock.
         /// </summary>
@@ -210,30 +83,9 @@ namespace OpenSim.Framework
         private Dictionary<string, CacheItemBase> m_Lookup =
             new Dictionary<string, CacheItemBase>();
 
-        private CacheStrategy m_Strategy;
         private CacheMedium m_Medium;
-        private CacheFlags m_Flags = 0;
         private int m_Size = 1024;
-        private TimeSpan m_DefaultTTL = new TimeSpan(0);
-        public ExpireDelegate OnExpire;
-
-        // Comparison interfaces
-        //
-        private class SortLRU : IComparer<CacheItemBase>
-        {
-            public int Compare(CacheItemBase a, CacheItemBase b)
-            {
-                if (a == null && b == null)
-                    return 0;
-                if (a == null)
-                    return -1;
-                if (b == null)
-                    return 1;
-
-                return(a.lastUsed.CompareTo(b.lastUsed));
-            }
-        }
-
+        private CacheStrategy m_Strategy;
         // Convenience constructors
         //
         public Cache()
@@ -269,7 +121,7 @@ namespace OpenSim.Framework
         }
 
         public Cache(CacheMedium medium, CacheStrategy strategy,
-                CacheFlags flags)
+                        CacheFlags flags)
         {
             m_Strategy = strategy;
             m_Medium = medium;
@@ -283,6 +135,12 @@ namespace OpenSim.Framework
             get { lock (m_Index) { return m_Index.Count; } }
         }
 
+        public TimeSpan DefaultTTL
+        {
+            get { return m_DefaultTTL; }
+            set { m_DefaultTTL = value; }
+        }
+
         // Maximum number of items this cache will hold
         //
         public int Size
@@ -291,56 +149,28 @@ namespace OpenSim.Framework
             set { SetSize(value); }
         }
 
-        private void SetSize(int newSize)
+        public void Clear()
         {
             lock (m_Index)
             {
-                if (Count <= Size)
-                    return;
-
-                m_Index.Sort(new SortLRU());
-                m_Index.Reverse();
-
-                m_Index.RemoveRange(newSize, Count - newSize);
-                m_Size = newSize;
-
+                m_Index.Clear();
                 m_Lookup.Clear();
-
-                foreach (CacheItemBase item in m_Index)
-                    m_Lookup[item.uuid] = item;
             }
         }
 
-        public TimeSpan DefaultTTL
-        {
-            get { return m_DefaultTTL; }
-            set { m_DefaultTTL = value; }
-        }
-
-        // Get an item from cache. Return the raw item, not it's data
+        // Find an object in cache by delegate.
         //
-        protected virtual CacheItemBase GetItem(string index)
+        public Object Find(Predicate<CacheItemBase> d)
         {
-            CacheItemBase item = null;
+            CacheItemBase item;
 
             lock (m_Index)
-            {
-                if (m_Lookup.ContainsKey(index))
-                    item = m_Lookup[index];
+                item = m_Index.Find(d);
 
-                if (item == null)
-                {
-                    Expire(true);
-                    return null;
-                }
-    
-                item.hits++;
-                item.lastUsed = DateTime.Now;
-    
-                Expire(true);
-            }
+            if (item == null)
+                return null;
 
-            return item;
+            return item.Retrieve();
         }
 
         // Get an item from cache. Do not try to fetch from source if not
@@ -388,19 +218,17 @@ namespace OpenSim.Framework
             return data;
         }
 
-        // Find an object in cache by delegate.
-        //
-        public Object Find(Predicate<CacheItemBase> d)
+        public void Invalidate(string uuid)
         {
-            CacheItemBase item;
-
             lock (m_Index)
-                item = m_Index.Find(d);
+            {
+                if (!m_Lookup.ContainsKey(uuid))
+                    return;
 
-            if (item == null)
-                return null;
-
-            return item.Retrieve();
+                CacheItemBase item = m_Lookup[uuid];
+                m_Lookup.Remove(uuid);
+                m_Index.Remove(item);
+            }
         }
 
         public virtual void Store(string index, Object data)
@@ -409,13 +237,15 @@ namespace OpenSim.Framework
 
             switch (m_Medium)
             {
-            case CacheMedium.Memory:
-                container = typeof(MemoryCacheItem);
-                break;
-            case CacheMedium.File:
-                return;
-            default:
-                return;
+                case CacheMedium.Memory:
+                    container = typeof(MemoryCacheItem);
+                    break;
+
+                case CacheMedium.File:
+                    return;
+
+                default:
+                    return;
             }
 
             Store(index, data, container);
@@ -427,7 +257,7 @@ namespace OpenSim.Framework
         }
 
         public virtual void Store(string index, Object data, Type container,
-                Object[] parameters)
+                        Object[] parameters)
         {
             CacheItemBase item;
 
@@ -478,7 +308,7 @@ namespace OpenSim.Framework
 
             if (m_DefaultTTL.Ticks != 0)
             {
-                DateTime now= DateTime.Now;
+                DateTime now = DateTime.Now;
 
                 foreach (CacheItemBase item in new List<CacheItemBase>(m_Index))
                 {
@@ -532,31 +362,202 @@ namespace OpenSim.Framework
 
                     break;
 
-                    default:
-                        break;
+                default:
+                    break;
             }
         }
 
-        public void Invalidate(string uuid)
+        // Get an item from cache. Return the raw item, not it's data
+        //
+        protected virtual CacheItemBase GetItem(string index)
+        {
+            CacheItemBase item = null;
+
+            lock (m_Index)
+            {
+                if (m_Lookup.ContainsKey(index))
+                    item = m_Lookup[index];
+
+                if (item == null)
+                {
+                    Expire(true);
+                    return null;
+                }
+
+                item.hits++;
+                item.lastUsed = DateTime.Now;
+
+                Expire(true);
+            }
+
+            return item;
+        }
+
+        private void SetSize(int newSize)
         {
             lock (m_Index)
             {
-                if (!m_Lookup.ContainsKey(uuid))
+                if (Count <= Size)
                     return;
 
-                CacheItemBase item = m_Lookup[uuid];
-                m_Lookup.Remove(uuid);
-                m_Index.Remove(item);
+                m_Index.Sort(new SortLRU());
+                m_Index.Reverse();
+
+                m_Index.RemoveRange(newSize, Count - newSize);
+                m_Size = newSize;
+
+                m_Lookup.Clear();
+
+                foreach (CacheItemBase item in m_Index)
+                    m_Lookup[item.uuid] = item;
             }
         }
 
-        public void Clear()
+        // Comparison interfaces
+        //
+        private class SortLRU : IComparer<CacheItemBase>
         {
-            lock (m_Index)
+            public int Compare(CacheItemBase a, CacheItemBase b)
             {
-                m_Index.Clear();
-                m_Lookup.Clear();
+                if (a == null && b == null)
+                    return 0;
+                if (a == null)
+                    return -1;
+                if (b == null)
+                    return 1;
+
+                return (a.lastUsed.CompareTo(b.lastUsed));
             }
+        }
+    }
+
+    // The base class of all cache objects. Implements comparison and sorting
+    // by the string member.
+    //
+    // This is not abstract because we need to instantiate it briefly as a
+    // method parameter
+    //
+    public class CacheItemBase : IEquatable<CacheItemBase>, IComparable<CacheItemBase>
+    {
+        public DateTime entered;
+        public DateTime expires = new DateTime(0);
+        public int hits = 0;
+        public DateTime lastUsed;
+        public string uuid;
+        public CacheItemBase(string index)
+        {
+            uuid = index;
+            entered = DateTime.Now;
+            lastUsed = entered;
+        }
+
+        public CacheItemBase(string index, DateTime ttl)
+        {
+            uuid = index;
+            entered = DateTime.Now;
+            lastUsed = entered;
+            expires = ttl;
+        }
+
+        public virtual int CompareTo(CacheItemBase item)
+        {
+            return uuid.CompareTo(item.uuid);
+        }
+
+        public virtual bool Equals(CacheItemBase item)
+        {
+            return uuid == item.uuid;
+        }
+
+        public virtual bool IsLocked()
+        {
+            return false;
+        }
+
+        public virtual Object Retrieve()
+        {
+            return null;
+        }
+
+        public virtual void Store(Object data)
+        {
+        }
+    }
+
+    // Simple persistent file storage
+    //
+    public class FileCacheItem : CacheItemBase
+    {
+        public FileCacheItem(string index) :
+            base(index)
+        {
+        }
+
+        public FileCacheItem(string index, DateTime ttl) :
+            base(index, ttl)
+        {
+        }
+
+        public FileCacheItem(string index, Object data) :
+            base(index)
+        {
+            Store(data);
+        }
+
+        public FileCacheItem(string index, DateTime ttl, Object data) :
+            base(index, ttl)
+        {
+            Store(data);
+        }
+
+        public override Object Retrieve()
+        {
+            //TODO: Add file access code
+            return null;
+        }
+
+        public override void Store(Object data)
+        {
+            //TODO: Add file access code
+        }
+    }
+
+    // Simple in-memory storage. Boxes the object and stores it in a variable
+    //
+    public class MemoryCacheItem : CacheItemBase
+    {
+        private Object m_Data;
+
+        public MemoryCacheItem(string index) :
+            base(index)
+        {
+        }
+
+        public MemoryCacheItem(string index, DateTime ttl) :
+            base(index, ttl)
+        {
+        }
+
+        public MemoryCacheItem(string index, Object data) :
+            base(index)
+        {
+            Store(data);
+        }
+
+        public MemoryCacheItem(string index, DateTime ttl, Object data) :
+            base(index, ttl)
+        {
+            Store(data);
+        }
+
+        public override Object Retrieve()
+        {
+            return m_Data;
+        }
+
+        public override void Store(Object data)
+        {
+            m_Data = data;
         }
     }
 }

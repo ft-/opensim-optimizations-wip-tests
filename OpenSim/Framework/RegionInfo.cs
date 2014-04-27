@@ -25,134 +25,71 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Net.Sockets;
-using System.Reflection;
-using System.Xml;
-using System.IO;
 using log4net;
 using Nini.Config;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net;
+using System.Net.Sockets;
+using System.Reflection;
+using System.Xml;
+
 //using OpenSim.Framework.Console;
 
 namespace OpenSim.Framework
 {
-    public class RegionLightShareData : ICloneable
-    {
-        public bool valid = false;
-        public UUID regionID = UUID.Zero;
-        public Vector3 waterColor = new Vector3(4.0f,38.0f,64.0f);
-        public float waterFogDensityExponent = 4.0f;
-        public float underwaterFogModifier = 0.25f;
-        public Vector3 reflectionWaveletScale = new Vector3(2.0f,2.0f,2.0f);
-        public float fresnelScale = 0.40f;
-        public float fresnelOffset = 0.50f;
-        public float refractScaleAbove = 0.03f;
-        public float refractScaleBelow = 0.20f;
-        public float blurMultiplier = 0.040f;
-        public Vector2 bigWaveDirection = new Vector2(1.05f,-0.42f);
-        public Vector2 littleWaveDirection = new Vector2(1.11f,-1.16f);
-        public UUID normalMapTexture = new UUID("822ded49-9a6c-f61c-cb89-6df54f42cdf4");
-        public Vector4 horizon = new Vector4(0.25f, 0.25f, 0.32f, 0.32f);
-        public float hazeHorizon = 0.19f;
-        public Vector4 blueDensity = new Vector4(0.12f, 0.22f, 0.38f, 0.38f);
-        public float hazeDensity = 0.70f;
-        public float densityMultiplier = 0.18f;
-        public float distanceMultiplier = 0.8f;
-        public UInt16 maxAltitude = 1605;
-        public Vector4 sunMoonColor = new Vector4(0.24f, 0.26f, 0.30f, 0.30f);
-        public float sunMoonPosition = 0.317f;
-        public Vector4 ambient = new Vector4(0.35f,0.35f,0.35f,0.35f);
-        public float eastAngle = 0.0f;
-        public float sunGlowFocus = 0.10f;
-        public float sunGlowSize = 1.75f;
-        public float sceneGamma = 1.0f;
-        public float starBrightness = 0.0f;
-        public Vector4 cloudColor = new Vector4(0.41f, 0.41f, 0.41f, 0.41f);
-        public Vector3 cloudXYDensity = new Vector3(1.00f, 0.53f, 1.00f);
-        public float cloudCoverage = 0.27f;
-        public float cloudScale = 0.42f;
-        public Vector3 cloudDetailXYDensity = new Vector3(1.00f, 0.53f, 0.12f);
-        public float cloudScrollX = 0.20f;
-        public bool cloudScrollXLock = false;
-        public float cloudScrollY = 0.01f;
-        public bool cloudScrollYLock = false;
-        public bool drawClassicClouds = true;
-
-        public delegate void SaveDelegate(RegionLightShareData wl);
-        public event SaveDelegate OnSave;
-        public void Save()
-        {
-            if (OnSave != null)
-                OnSave(this);
-        }
-        public object Clone()
-        {
-            return this.MemberwiseClone();      // call clone method
-        }
-
-    }
-
     public class RegionInfo
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        private static readonly string LogHeader = "[REGION INFO]";
-
         public bool commFailTF = false;
-        public string RegionFile = String.Empty;
         public bool isSandbox = false;
-        public bool Persistent = true;
-
-        private EstateSettings m_estateSettings;
-        private RegionSettings m_regionSettings;
-        // private IConfigSource m_configSource = null;
-
-        public UUID originRegionID = UUID.Zero;
-        public string proxyUrl = "";
-        public int ProxyOffset = 0;
-        public string regionSecret = UUID.Random().ToString();
-
-        public string osSecret;
-
-        public UUID lastMapUUID = UUID.Zero;
         public string lastMapRefresh = "0";
-
-        private float m_nonphysPrimMin = 0;
-        private int m_nonphysPrimMax = 0;
-        private float m_physPrimMin = 0;
-        private int m_physPrimMax = 0;
-        private bool m_clampPrimSize = false;
-        private int m_objectCapacity = 0;
-        private int m_maxPrimsPerUser = -1;
-        private int m_linksetCapacity = 0;
-        private int m_agentCapacity = 0;
-        private string m_regionType = String.Empty;
-        private RegionLightShareData m_windlight = new RegionLightShareData();
-        protected uint m_httpPort;
-        protected string m_serverURI;
-        protected string m_regionName = String.Empty;
-        protected bool Allow_Alternate_Ports;
+        public UUID lastMapUUID = UUID.Zero;
         public bool m_allow_alternate_ports;
-        protected string m_externalHostName;
-        protected IPEndPoint m_internalEndPoint;
-        protected uint m_remotingPort;
-        public UUID RegionID = UUID.Zero;
-        public string RemotingAddress;
-        public UUID ScopeID = UUID.Zero;
-        private UUID m_maptileStaticUUID = UUID.Zero;
+        public UUID originRegionID = UUID.Zero;
+        public string osSecret;
+        public bool Persistent = true;
+        public int ProxyOffset = 0;
+        // private IConfigSource m_configSource = null;
+        public string proxyUrl = "";
 
-        public uint WorldLocX = 0;
-        public uint WorldLocY = 0;
-        public uint WorldLocZ = 0;
+        public string RegionFile = String.Empty;
+        public UUID RegionID = UUID.Zero;
+        public string regionSecret = UUID.Random().ToString();
         public uint RegionSizeX = Constants.RegionSize;
         public uint RegionSizeY = Constants.RegionSize;
         public uint RegionSizeZ = Constants.RegionHeight;
-
+        public string RemotingAddress;
+        public UUID ScopeID = UUID.Zero;
+        public uint WorldLocX = 0;
+        public uint WorldLocY = 0;
+        public uint WorldLocZ = 0;
+        protected bool Allow_Alternate_Ports;
+        protected string m_externalHostName;
+        protected uint m_httpPort;
+        protected IPEndPoint m_internalEndPoint;
+        protected string m_regionName = String.Empty;
+        protected uint m_remotingPort;
+        protected string m_serverURI;
+        private static readonly string LogHeader = "[REGION INFO]";
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private int m_agentCapacity = 0;
+        private bool m_clampPrimSize = false;
+        private EstateSettings m_estateSettings;
         private Dictionary<String, String> m_extraSettings = new Dictionary<string, string>();
-
+        private int m_linksetCapacity = 0;
+        private UUID m_maptileStaticUUID = UUID.Zero;
+        private int m_maxPrimsPerUser = -1;
+        private int m_nonphysPrimMax = 0;
+        private float m_nonphysPrimMin = 0;
+        private int m_objectCapacity = 0;
+        private int m_physPrimMax = 0;
+        private float m_physPrimMin = 0;
+        private RegionSettings m_regionSettings;
+        private string m_regionType = String.Empty;
+        private RegionLightShareData m_windlight = new RegionLightShareData();
         // Apparently, we're applying the same estatesettings regardless of whether it's local or remote.
 
         // MT: Yes. Estates can't span trust boundaries. Therefore, it can be
@@ -162,7 +99,8 @@ namespace OpenSim.Framework
 
         // File based loading
         //
-        public RegionInfo(string description, string filename, bool skipConsoleConfig, IConfigSource configSource) : this(description, filename, skipConsoleConfig, configSource, String.Empty)
+        public RegionInfo(string description, string filename, bool skipConsoleConfig, IConfigSource configSource)
+            : this(description, filename, skipConsoleConfig, configSource, String.Empty)
         {
         }
 
@@ -246,6 +184,21 @@ namespace OpenSim.Framework
             m_serverURI = string.Empty;
         }
 
+        public byte AccessLevel
+        {
+            get { return (byte)Util.ConvertMaturityToAccessLevel((uint)RegionSettings.Maturity); }
+        }
+
+        public int AgentCapacity
+        {
+            get { return m_agentCapacity; }
+        }
+
+        public bool ClampPrimSize
+        {
+            get { return m_clampPrimSize; }
+        }
+
         public EstateSettings EstateSettings
         {
             get
@@ -259,141 +212,6 @@ namespace OpenSim.Framework
             }
 
             set { m_estateSettings = value; }
-        }
-
-        public RegionSettings RegionSettings
-        {
-            get
-            {
-                if (m_regionSettings == null)
-                {
-                    m_regionSettings = new RegionSettings();
-                }
-
-                return m_regionSettings;
-            }
-
-            set { m_regionSettings = value; }
-        }
-
-        public RegionLightShareData WindlightSettings
-        {
-            get
-            {
-                if (m_windlight == null)
-                {
-                    m_windlight = new RegionLightShareData();
-                }
-
-                return m_windlight;
-            }
-
-            set { m_windlight = value; }
-        }
-
-        public float NonphysPrimMin
-        {
-            get { return m_nonphysPrimMin; }
-        }
-
-        public int NonphysPrimMax
-        {
-            get { return m_nonphysPrimMax; }
-        }
-
-        public float PhysPrimMin
-        {
-            get { return m_physPrimMin; }
-        }
-
-        public int PhysPrimMax
-        {
-            get { return m_physPrimMax; }
-        }
-
-        public bool ClampPrimSize
-        {
-            get { return m_clampPrimSize; }
-        }
-
-        public int ObjectCapacity
-        {
-            get { return m_objectCapacity; }
-        }
-
-        public int MaxPrimsPerUser
-        {
-            get { return m_maxPrimsPerUser; }
-        }
-
-        public int LinksetCapacity
-        {
-            get { return m_linksetCapacity; }
-        }
-
-        public int AgentCapacity
-        {
-            get { return m_agentCapacity; }
-        }
-
-        public byte AccessLevel
-        {
-            get { return (byte)Util.ConvertMaturityToAccessLevel((uint)RegionSettings.Maturity); }
-        }
-
-        public string RegionType
-        {
-            get { return m_regionType; }
-        }
-
-        public UUID MaptileStaticUUID
-        {
-            get { return m_maptileStaticUUID; }
-        }
-
-        public string MaptileStaticFile { get; private set; }
-        
-        /// <summary>
-        /// The port by which http communication occurs with the region (most noticeably, CAPS communication)
-        /// </summary>
-        public uint HttpPort
-        {
-            get { return m_httpPort; }
-            set { m_httpPort = value; }
-        }
-
-        /// <summary>
-        /// A well-formed URI for the host region server (namely "http://" + ExternalHostName)
-        /// </summary>
-        
-        public string ServerURI
-        {
-            get { 
-                if ( m_serverURI != string.Empty ) {
-                    return m_serverURI;
-                } else {
-                    return "http://" + m_externalHostName + ":" + m_httpPort + "/";
-                }
-            }            
-            set { 
-                if ( value.EndsWith("/") ) {
-                    m_serverURI = value;
-                } else {
-                    m_serverURI = value + '/';
-                }
-            }
-        }
-
-        public string RegionName
-        {
-            get { return m_regionName; }
-            set { m_regionName = value; }
-        }
-
-        public uint RemotingPort
-        {
-            get { return m_remotingPort; }
-            set { m_remotingPort = value; }
         }
 
         /// <value>
@@ -448,10 +266,69 @@ namespace OpenSim.Framework
             set { m_externalHostName = value; }
         }
 
+        /// <summary>
+        /// The port by which http communication occurs with the region (most noticeably, CAPS communication)
+        /// </summary>
+        public uint HttpPort
+        {
+            get { return m_httpPort; }
+            set { m_httpPort = value; }
+        }
+
         public IPEndPoint InternalEndPoint
         {
             get { return m_internalEndPoint; }
             set { m_internalEndPoint = value; }
+        }
+
+        public int LinksetCapacity
+        {
+            get { return m_linksetCapacity; }
+        }
+
+        public string MaptileStaticFile { get; private set; }
+
+        public UUID MaptileStaticUUID
+        {
+            get { return m_maptileStaticUUID; }
+        }
+
+        public int MaxPrimsPerUser
+        {
+            get { return m_maxPrimsPerUser; }
+        }
+
+        public int NonphysPrimMax
+        {
+            get { return m_nonphysPrimMax; }
+        }
+
+        public float NonphysPrimMin
+        {
+            get { return m_nonphysPrimMin; }
+        }
+
+        public int ObjectCapacity
+        {
+            get { return m_objectCapacity; }
+        }
+
+        public int PhysPrimMax
+        {
+            get { return m_physPrimMax; }
+        }
+
+        public float PhysPrimMin
+        {
+            get { return m_physPrimMin; }
+        }
+
+        // A unique region handle is created from the region's world coordinates.
+        // This cannot be changed because some code expects to receive the region handle and then
+        //    compute the region coordinates from it.
+        public ulong RegionHandle
+        {
+            get { return Util.UIntsToLong(WorldLocX, WorldLocY); }
         }
 
         /// <summary>
@@ -476,29 +353,90 @@ namespace OpenSim.Framework
             set { WorldLocY = value * Constants.RegionSize; }
         }
 
-        public void SetDefaultRegionSize()
+        public string RegionName
         {
-            WorldLocX = 0;
-            WorldLocY = 0;
-            WorldLocZ = 0;
-            RegionSizeX = Constants.RegionSize;
-            RegionSizeY = Constants.RegionSize;
-            RegionSizeZ = Constants.RegionHeight;
+            get { return m_regionName; }
+            set { m_regionName = value; }
         }
 
-        // A unique region handle is created from the region's world coordinates.
-        // This cannot be changed because some code expects to receive the region handle and then
-        //    compute the region coordinates from it.
-        public ulong RegionHandle
+        public RegionSettings RegionSettings
         {
-            get { return Util.UIntsToLong(WorldLocX, WorldLocY); }
+            get
+            {
+                if (m_regionSettings == null)
+                {
+                    m_regionSettings = new RegionSettings();
+                }
+
+                return m_regionSettings;
+            }
+
+            set { m_regionSettings = value; }
         }
 
-        public void SetEndPoint(string ipaddr, int port)
+        public string RegionType
         {
-            IPAddress tmpIP = IPAddress.Parse(ipaddr);
-            IPEndPoint tmpEPE = new IPEndPoint(tmpIP, port);
-            m_internalEndPoint = tmpEPE;
+            get { return m_regionType; }
+        }
+
+        public uint RemotingPort
+        {
+            get { return m_remotingPort; }
+            set { m_remotingPort = value; }
+        }
+
+        public string ServerURI
+        {
+            get
+            {
+                if (m_serverURI != string.Empty)
+                {
+                    return m_serverURI;
+                }
+                else
+                {
+                    return "http://" + m_externalHostName + ":" + m_httpPort + "/";
+                }
+            }
+            set
+            {
+                if (value.EndsWith("/"))
+                {
+                    m_serverURI = value;
+                }
+                else
+                {
+                    m_serverURI = value + '/';
+                }
+            }
+        }
+
+        public RegionLightShareData WindlightSettings
+        {
+            get
+            {
+                if (m_windlight == null)
+                {
+                    m_windlight = new RegionLightShareData();
+                }
+
+                return m_windlight;
+            }
+
+            set { m_windlight = value; }
+        }
+        public static RegionInfo Create(UUID regionID, string regionName, uint regX, uint regY, string externalHostName, uint httpPort, uint simPort, uint remotingPort, string serverURI)
+        {
+            RegionInfo regionInfo;
+            IPEndPoint neighbourInternalEndPoint = new IPEndPoint(Util.GetHostFromDNS(externalHostName), (int)simPort);
+            regionInfo = new RegionInfo(regX, regY, neighbourInternalEndPoint, externalHostName);
+            regionInfo.RemotingPort = remotingPort;
+            regionInfo.RemotingAddress = externalHostName;
+            regionInfo.HttpPort = httpPort;
+            regionInfo.RegionID = regionID;
+            regionInfo.RegionName = regionName;
+            regionInfo.ServerURI = serverURI;
+            return regionInfo;
         }
 
         public string GetSetting(string key)
@@ -511,15 +449,196 @@ namespace OpenSim.Framework
             return null;
         }
 
-        private void SetExtraSetting(string key, string value)
+        public bool ignoreIncomingConfiguration(string configuration_key, object configuration_result)
         {
-            string keylower = key.ToLower();
-            m_extraSettings[keylower] = value;
+            return true;
+        }
+
+        public OSDMap PackRegionInfoData()
+        {
+            OSDMap args = new OSDMap();
+            args["region_id"] = OSD.FromUUID(RegionID);
+            if ((RegionName != null) && !RegionName.Equals(""))
+                args["region_name"] = OSD.FromString(RegionName);
+            args["external_host_name"] = OSD.FromString(ExternalHostName);
+            args["http_port"] = OSD.FromString(HttpPort.ToString());
+            args["server_uri"] = OSD.FromString(ServerURI);
+
+            args["region_xloc"] = OSD.FromString(RegionLocX.ToString());
+            args["region_yloc"] = OSD.FromString(RegionLocY.ToString());
+            args["region_size_x"] = OSD.FromString(RegionSizeX.ToString());
+            args["region_size_y"] = OSD.FromString(RegionSizeY.ToString());
+            args["region_size_z"] = OSD.FromString(RegionSizeZ.ToString());
+
+            args["internal_ep_address"] = OSD.FromString(InternalEndPoint.Address.ToString());
+            args["internal_ep_port"] = OSD.FromString(InternalEndPoint.Port.ToString());
+            if ((RemotingAddress != null) && !RemotingAddress.Equals(""))
+                args["remoting_address"] = OSD.FromString(RemotingAddress);
+            args["remoting_port"] = OSD.FromString(RemotingPort.ToString());
+            args["allow_alt_ports"] = OSD.FromBoolean(m_allow_alternate_ports);
+            if ((proxyUrl != null) && !proxyUrl.Equals(""))
+                args["proxy_url"] = OSD.FromString(proxyUrl);
+            if (RegionType != String.Empty)
+                args["region_type"] = OSD.FromString(RegionType);
+
+            return args;
+        }
+
+        public void SaveLastMapUUID(UUID mapUUID)
+        {
+            lastMapUUID = mapUUID;
+            lastMapRefresh = Util.UnixTimeSinceEpoch().ToString();
+        }
+
+        public void SaveRegionToFile(string description, string filename)
+        {
+            if (filename.ToLower().EndsWith(".ini"))
+            {
+                IniConfigSource source = new IniConfigSource();
+                try
+                {
+                    source = new IniConfigSource(filename); // Load if it exists
+                }
+                catch (Exception)
+                {
+                }
+
+                WriteNiniConfig(source);
+
+                source.Save(filename);
+
+                return;
+            }
+            else
+                throw new Exception("Invalid file type for region persistence.");
+        }
+
+        /// <summary>
+        /// A well-formed URI for the host region server (namely "http://" + ExternalHostName)
+        /// </summary>
+        public void SetDefaultRegionSize()
+        {
+            WorldLocX = 0;
+            WorldLocY = 0;
+            WorldLocZ = 0;
+            RegionSizeX = Constants.RegionSize;
+            RegionSizeY = Constants.RegionSize;
+            RegionSizeZ = Constants.RegionHeight;
+        }
+        public void SetEndPoint(string ipaddr, int port)
+        {
+            IPAddress tmpIP = IPAddress.Parse(ipaddr);
+            IPEndPoint tmpEPE = new IPEndPoint(tmpIP, port);
+            m_internalEndPoint = tmpEPE;
+        }
+        public void UnpackRegionInfoData(OSDMap args)
+        {
+            if (args["region_id"] != null)
+                RegionID = args["region_id"].AsUUID();
+            if (args["region_name"] != null)
+                RegionName = args["region_name"].AsString();
+            if (args["external_host_name"] != null)
+                ExternalHostName = args["external_host_name"].AsString();
+            if (args["http_port"] != null)
+                UInt32.TryParse(args["http_port"].AsString(), out m_httpPort);
+            if (args["server_uri"] != null)
+                ServerURI = args["server_uri"].AsString();
+            if (args["region_xloc"] != null)
+            {
+                uint locx;
+                UInt32.TryParse(args["region_xloc"].AsString(), out locx);
+                RegionLocX = locx;
+            }
+            if (args["region_yloc"] != null)
+            {
+                uint locy;
+                UInt32.TryParse(args["region_yloc"].AsString(), out locy);
+                RegionLocY = locy;
+            }
+            if (args.ContainsKey("region_size_x"))
+                RegionSizeX = (uint)args["region_size_x"].AsInteger();
+            if (args.ContainsKey("region_size_y"))
+                RegionSizeY = (uint)args["region_size_y"].AsInteger();
+            if (args.ContainsKey("region_size_z"))
+                RegionSizeZ = (uint)args["region_size_z"].AsInteger();
+
+            IPAddress ip_addr = null;
+            if (args["internal_ep_address"] != null)
+            {
+                IPAddress.TryParse(args["internal_ep_address"].AsString(), out ip_addr);
+            }
+            int port = 0;
+            if (args["internal_ep_port"] != null)
+            {
+                Int32.TryParse(args["internal_ep_port"].AsString(), out port);
+            }
+            InternalEndPoint = new IPEndPoint(ip_addr, port);
+            if (args["remoting_address"] != null)
+                RemotingAddress = args["remoting_address"].AsString();
+            if (args["remoting_port"] != null)
+                UInt32.TryParse(args["remoting_port"].AsString(), out m_remotingPort);
+            if (args["allow_alt_ports"] != null)
+                m_allow_alternate_ports = args["allow_alt_ports"].AsBoolean();
+            if (args["proxy_url"] != null)
+                proxyUrl = args["proxy_url"].AsString();
+            if (args["region_type"] != null)
+                m_regionType = args["region_type"].AsString();
+        }
+
+        // Make sure user specified region sizes are sane.
+        // Must be multiples of legacy region size (256).
+        private void DoRegionSizeSanityChecks()
+        {
+            if (RegionSizeX != Constants.RegionSize || RegionSizeY != Constants.RegionSize)
+            {
+                // Doing non-legacy region sizes.
+                // Enforce region size to be multiples of the legacy region size (256)
+                uint partial = RegionSizeX % Constants.RegionSize;
+                if (partial != 0)
+                {
+                    RegionSizeX -= partial;
+                    if (RegionSizeX == 0)
+                        RegionSizeX = Constants.RegionSize;
+                    m_log.ErrorFormat("{0} Region size must be multiple of {1}. Enforcing {2}.RegionSizeX={3} instead of specified {4}",
+                        LogHeader, Constants.RegionSize, m_regionName, RegionSizeX, RegionSizeX + partial);
+                }
+                partial = RegionSizeY % Constants.RegionSize;
+                if (partial != 0)
+                {
+                    RegionSizeY -= partial;
+                    if (RegionSizeY == 0)
+                        RegionSizeY = Constants.RegionSize;
+                    m_log.ErrorFormat("{0} Region size must be multiple of {1}. Enforcing {2}.RegionSizeY={3} instead of specified {4}",
+                        LogHeader, Constants.RegionSize, m_regionName, RegionSizeY, RegionSizeY + partial);
+                }
+
+                // Because of things in the viewer, regions MUST be square.
+                // Remove this check when viewers have been updated.
+                if (RegionSizeX != RegionSizeY)
+                {
+                    uint minSize = Math.Min(RegionSizeX, RegionSizeY);
+                    RegionSizeX = minSize;
+                    RegionSizeY = minSize;
+                    m_log.ErrorFormat("{0} Regions must be square until viewers are updated. Forcing region {1} size to <{2},{3}>",
+                                        LogHeader, m_regionName, RegionSizeX, RegionSizeY);
+                }
+
+                // There is a practical limit to region size.
+                if (RegionSizeX > Constants.MaximumRegionSize || RegionSizeY > Constants.MaximumRegionSize)
+                {
+                    RegionSizeX = Util.Clamp<uint>(RegionSizeX, Constants.RegionSize, Constants.MaximumRegionSize);
+                    RegionSizeY = Util.Clamp<uint>(RegionSizeY, Constants.RegionSize, Constants.MaximumRegionSize);
+                    m_log.ErrorFormat("{0} Region dimensions must be less than {1}. Clamping {2}'s size to <{3},{4}>",
+                                        LogHeader, Constants.MaximumRegionSize, m_regionName, RegionSizeX, RegionSizeY);
+                }
+
+                m_log.InfoFormat("{0} Region {1} size set to <{2},{3}>", LogHeader, m_regionName, RegionSizeX, RegionSizeY);
+            }
         }
 
         private void ReadNiniConfig(IConfigSource source, string name)
         {
-//            bool creatingNew = false;
+            //            bool creatingNew = false;
 
             if (source.Configs.Count == 0)
             {
@@ -543,7 +662,7 @@ namespace OpenSim.Framework
 
                 source.AddConfig(name);
 
-//                creatingNew = true;
+                //                creatingNew = true;
             }
 
             if (name == String.Empty)
@@ -596,7 +715,7 @@ namespace OpenSim.Framework
                 config.Set("Location", location);
             }
 
-            string[] locationElements = location.Split(new char[] {','});
+            string[] locationElements = location.Split(new char[] { ',' });
 
             RegionLocX = Convert.ToUInt32(locationElements[0]);
             RegionLocY = Convert.ToUInt32(locationElements[1]);
@@ -703,10 +822,10 @@ namespace OpenSim.Framework
 
             m_physPrimMax = config.GetInt("PhysicalPrimMax", 0);
             allKeys.Remove("PhysicalPrimMax");
-            
+
             m_clampPrimSize = config.GetBoolean("ClampPrimSize", false);
             allKeys.Remove("ClampPrimSize");
-            
+
             m_objectCapacity = config.GetInt("MaxPrims", 15000);
             allKeys.Remove("MaxPrims");
 
@@ -720,13 +839,13 @@ namespace OpenSim.Framework
             string mapTileStaticUUID = config.GetString("MaptileStaticUUID", UUID.Zero.ToString());
             if (UUID.TryParse(mapTileStaticUUID.Trim(), out m_maptileStaticUUID))
             {
-                config.Set("MaptileStaticUUID", m_maptileStaticUUID.ToString()); 
+                config.Set("MaptileStaticUUID", m_maptileStaticUUID.ToString());
             }
 
             MaptileStaticFile = config.GetString("MaptileStaticFile", String.Empty);
             allKeys.Remove("MaptileStaticFile");
-            
-            #endregion
+
+            #endregion Prim and map stuff
 
             m_agentCapacity = config.GetInt("MaxAgents", 100);
             allKeys.Remove("MaxAgents");
@@ -742,57 +861,11 @@ namespace OpenSim.Framework
             }
         }
 
-        // Make sure user specified region sizes are sane.
-        // Must be multiples of legacy region size (256).
-        private void DoRegionSizeSanityChecks()
+        private void SetExtraSetting(string key, string value)
         {
-            if (RegionSizeX != Constants.RegionSize || RegionSizeY != Constants.RegionSize)
-            {
-                // Doing non-legacy region sizes.
-                // Enforce region size to be multiples of the legacy region size (256)
-                uint partial = RegionSizeX % Constants.RegionSize;
-                if (partial != 0)
-                {
-                    RegionSizeX -= partial;
-                    if (RegionSizeX == 0)
-                        RegionSizeX = Constants.RegionSize;
-                    m_log.ErrorFormat("{0} Region size must be multiple of {1}. Enforcing {2}.RegionSizeX={3} instead of specified {4}",
-                        LogHeader, Constants.RegionSize, m_regionName, RegionSizeX, RegionSizeX + partial);
-                }
-                partial = RegionSizeY % Constants.RegionSize;
-                if (partial != 0)
-                {
-                    RegionSizeY -= partial;
-                    if (RegionSizeY == 0)
-                        RegionSizeY = Constants.RegionSize;
-                    m_log.ErrorFormat("{0} Region size must be multiple of {1}. Enforcing {2}.RegionSizeY={3} instead of specified {4}",
-                        LogHeader, Constants.RegionSize, m_regionName, RegionSizeY, RegionSizeY + partial);
-                }
-
-                // Because of things in the viewer, regions MUST be square.
-                // Remove this check when viewers have been updated.
-                if (RegionSizeX != RegionSizeY)
-                {
-                    uint minSize = Math.Min(RegionSizeX, RegionSizeY);
-                    RegionSizeX = minSize;
-                    RegionSizeY = minSize;
-                    m_log.ErrorFormat("{0} Regions must be square until viewers are updated. Forcing region {1} size to <{2},{3}>",
-                                        LogHeader, m_regionName, RegionSizeX, RegionSizeY);
-                }
-
-                // There is a practical limit to region size.
-                if (RegionSizeX > Constants.MaximumRegionSize || RegionSizeY > Constants.MaximumRegionSize)
-                {
-                    RegionSizeX = Util.Clamp<uint>(RegionSizeX, Constants.RegionSize, Constants.MaximumRegionSize);
-                    RegionSizeY = Util.Clamp<uint>(RegionSizeY, Constants.RegionSize, Constants.MaximumRegionSize);
-                    m_log.ErrorFormat("{0} Region dimensions must be less than {1}. Clamping {2}'s size to <{3},{4}>",
-                                        LogHeader, Constants.MaximumRegionSize, m_regionName, RegionSizeX, RegionSizeY);
-                }
-
-                m_log.InfoFormat("{0} Region {1} size set to <{2},{3}>", LogHeader, m_regionName, RegionSizeX, RegionSizeY);
-            }
+            string keylower = key.ToLower();
+            m_extraSettings[keylower] = value;
         }
-
         private void WriteNiniConfig(IConfigSource source)
         {
             IConfig config = source.Configs[RegionName];
@@ -829,10 +902,10 @@ namespace OpenSim.Framework
 
             if (m_physPrimMin > 0)
                 config.Set("PhysicalPrimMax", m_physPrimMin);
-            
+
             if (m_physPrimMax > 0)
                 config.Set("PhysicalPrimMax", m_physPrimMax);
-                        
+
             config.Set("ClampPrimSize", m_clampPrimSize.ToString());
 
             if (m_objectCapacity > 0)
@@ -859,137 +932,62 @@ namespace OpenSim.Framework
             if (MaptileStaticFile != String.Empty)
                 config.Set("MaptileStaticFile", MaptileStaticFile);
         }
+    }
 
-        public bool ignoreIncomingConfiguration(string configuration_key, object configuration_result)
+    public class RegionLightShareData : ICloneable
+    {
+        public Vector4 ambient = new Vector4(0.35f, 0.35f, 0.35f, 0.35f);
+        public Vector2 bigWaveDirection = new Vector2(1.05f, -0.42f);
+        public Vector4 blueDensity = new Vector4(0.12f, 0.22f, 0.38f, 0.38f);
+        public float blurMultiplier = 0.040f;
+        public Vector4 cloudColor = new Vector4(0.41f, 0.41f, 0.41f, 0.41f);
+        public float cloudCoverage = 0.27f;
+        public Vector3 cloudDetailXYDensity = new Vector3(1.00f, 0.53f, 0.12f);
+        public float cloudScale = 0.42f;
+        public float cloudScrollX = 0.20f;
+        public bool cloudScrollXLock = false;
+        public float cloudScrollY = 0.01f;
+        public bool cloudScrollYLock = false;
+        public Vector3 cloudXYDensity = new Vector3(1.00f, 0.53f, 1.00f);
+        public float densityMultiplier = 0.18f;
+        public float distanceMultiplier = 0.8f;
+        public bool drawClassicClouds = true;
+        public float eastAngle = 0.0f;
+        public float fresnelOffset = 0.50f;
+        public float fresnelScale = 0.40f;
+        public float hazeDensity = 0.70f;
+        public float hazeHorizon = 0.19f;
+        public Vector4 horizon = new Vector4(0.25f, 0.25f, 0.32f, 0.32f);
+        public Vector2 littleWaveDirection = new Vector2(1.11f, -1.16f);
+        public UInt16 maxAltitude = 1605;
+        public UUID normalMapTexture = new UUID("822ded49-9a6c-f61c-cb89-6df54f42cdf4");
+        public Vector3 reflectionWaveletScale = new Vector3(2.0f, 2.0f, 2.0f);
+        public float refractScaleAbove = 0.03f;
+        public float refractScaleBelow = 0.20f;
+        public UUID regionID = UUID.Zero;
+        public float sceneGamma = 1.0f;
+        public float starBrightness = 0.0f;
+        public float sunGlowFocus = 0.10f;
+        public float sunGlowSize = 1.75f;
+        public Vector4 sunMoonColor = new Vector4(0.24f, 0.26f, 0.30f, 0.30f);
+        public float sunMoonPosition = 0.317f;
+        public float underwaterFogModifier = 0.25f;
+        public bool valid = false;
+        public Vector3 waterColor = new Vector3(4.0f, 38.0f, 64.0f);
+        public float waterFogDensityExponent = 4.0f;
+        public delegate void SaveDelegate(RegionLightShareData wl);
+
+        public event SaveDelegate OnSave;
+
+        public object Clone()
         {
-            return true;
+            return this.MemberwiseClone();      // call clone method
         }
 
-        public void SaveRegionToFile(string description, string filename)
+        public void Save()
         {
-            if (filename.ToLower().EndsWith(".ini"))
-            {
-                IniConfigSource source = new IniConfigSource();
-                try
-                {
-                    source = new IniConfigSource(filename); // Load if it exists
-                }
-                catch (Exception)
-                {
-                }
-
-                WriteNiniConfig(source);
-
-                source.Save(filename);
-
-                return;
-            }
-            else
-                throw new Exception("Invalid file type for region persistence.");
-        }
-
-        public void SaveLastMapUUID(UUID mapUUID)
-        {
-            lastMapUUID = mapUUID;
-            lastMapRefresh = Util.UnixTimeSinceEpoch().ToString();
-        }
-
-        public OSDMap PackRegionInfoData()
-        {
-            OSDMap args = new OSDMap();
-            args["region_id"] = OSD.FromUUID(RegionID);
-            if ((RegionName != null) && !RegionName.Equals(""))
-                args["region_name"] = OSD.FromString(RegionName);
-            args["external_host_name"] = OSD.FromString(ExternalHostName);
-            args["http_port"] = OSD.FromString(HttpPort.ToString());
-            args["server_uri"] = OSD.FromString(ServerURI);
-
-            args["region_xloc"] = OSD.FromString(RegionLocX.ToString());
-            args["region_yloc"] = OSD.FromString(RegionLocY.ToString());
-            args["region_size_x"] = OSD.FromString(RegionSizeX.ToString());
-            args["region_size_y"] = OSD.FromString(RegionSizeY.ToString());
-            args["region_size_z"] = OSD.FromString(RegionSizeZ.ToString());
-
-            args["internal_ep_address"] = OSD.FromString(InternalEndPoint.Address.ToString());
-            args["internal_ep_port"] = OSD.FromString(InternalEndPoint.Port.ToString());
-            if ((RemotingAddress != null) && !RemotingAddress.Equals(""))
-                args["remoting_address"] = OSD.FromString(RemotingAddress);
-            args["remoting_port"] = OSD.FromString(RemotingPort.ToString());
-            args["allow_alt_ports"] = OSD.FromBoolean(m_allow_alternate_ports);
-            if ((proxyUrl != null) && !proxyUrl.Equals(""))
-                args["proxy_url"] = OSD.FromString(proxyUrl);
-            if (RegionType != String.Empty)
-                args["region_type"] = OSD.FromString(RegionType);
-
-            return args;
-        }
-
-        public void UnpackRegionInfoData(OSDMap args)
-        {
-            if (args["region_id"] != null)
-                RegionID = args["region_id"].AsUUID();
-            if (args["region_name"] != null)
-                RegionName = args["region_name"].AsString();
-            if (args["external_host_name"] != null)
-                ExternalHostName = args["external_host_name"].AsString();
-            if (args["http_port"] != null)
-                UInt32.TryParse(args["http_port"].AsString(), out m_httpPort);
-            if (args["server_uri"] != null)
-                ServerURI = args["server_uri"].AsString();
-            if (args["region_xloc"] != null)
-            {
-                uint locx;
-                UInt32.TryParse(args["region_xloc"].AsString(), out locx);
-                RegionLocX = locx;
-            }
-            if (args["region_yloc"] != null)
-            {
-                uint locy;
-                UInt32.TryParse(args["region_yloc"].AsString(), out locy);
-                RegionLocY = locy;
-            }
-            if (args.ContainsKey("region_size_x"))
-                RegionSizeX = (uint)args["region_size_x"].AsInteger();
-            if (args.ContainsKey("region_size_y"))
-                RegionSizeY = (uint)args["region_size_y"].AsInteger();
-            if (args.ContainsKey("region_size_z"))
-                RegionSizeZ = (uint)args["region_size_z"].AsInteger();
-
-            IPAddress ip_addr = null;
-            if (args["internal_ep_address"] != null)
-            {
-                IPAddress.TryParse(args["internal_ep_address"].AsString(), out ip_addr);
-            }
-            int port = 0;
-            if (args["internal_ep_port"] != null)
-            {
-                Int32.TryParse(args["internal_ep_port"].AsString(), out port);
-            }
-            InternalEndPoint = new IPEndPoint(ip_addr, port);
-            if (args["remoting_address"] != null)
-                RemotingAddress = args["remoting_address"].AsString();
-            if (args["remoting_port"] != null)
-                UInt32.TryParse(args["remoting_port"].AsString(), out m_remotingPort);
-            if (args["allow_alt_ports"] != null)
-                m_allow_alternate_ports = args["allow_alt_ports"].AsBoolean();
-            if (args["proxy_url"] != null)
-                proxyUrl = args["proxy_url"].AsString();
-            if (args["region_type"] != null)
-                m_regionType = args["region_type"].AsString();
-        }
-
-        public static RegionInfo Create(UUID regionID, string regionName, uint regX, uint regY, string externalHostName, uint httpPort, uint simPort, uint remotingPort, string serverURI)
-        {
-            RegionInfo regionInfo;
-            IPEndPoint neighbourInternalEndPoint = new IPEndPoint(Util.GetHostFromDNS(externalHostName), (int)simPort);
-            regionInfo = new RegionInfo(regX, regY, neighbourInternalEndPoint, externalHostName);
-            regionInfo.RemotingPort = remotingPort;
-            regionInfo.RemotingAddress = externalHostName;
-            regionInfo.HttpPort = httpPort;
-            regionInfo.RegionID = regionID;
-            regionInfo.RegionName = regionName;
-            regionInfo.ServerURI = serverURI;
-            return regionInfo;
+            if (OnSave != null)
+                OnSave(this);
         }
     }
 }

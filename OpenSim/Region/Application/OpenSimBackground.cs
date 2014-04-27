@@ -25,10 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Reflection;
-using System.Threading;
 using log4net;
 using Nini.Config;
+using System.Reflection;
+using System.Threading;
 
 namespace OpenSim
 {
@@ -41,8 +41,19 @@ namespace OpenSim
 
         private ManualResetEvent WorldHasComeToAnEnd = new ManualResetEvent(false);
 
-        public OpenSimBackground(IConfigSource configSource) : base(configSource)
+        public OpenSimBackground(IConfigSource configSource)
+            : base(configSource)
         {
+        }
+
+        /// <summary>
+        /// Performs any last-minute sanity checking and shuts down the region server
+        /// </summary>
+        public override void Shutdown()
+        {
+            WorldHasComeToAnEnd.Set();
+            m_log.Info("[OPENSIM MAIN]: World has come to an end");
+            base.Shutdown();
         }
 
         /// <summary>
@@ -59,16 +70,6 @@ namespace OpenSim
 
             WorldHasComeToAnEnd.WaitOne();
             WorldHasComeToAnEnd.Close();
-        }
-
-        /// <summary>
-        /// Performs any last-minute sanity checking and shuts down the region server
-        /// </summary>
-        public override void Shutdown()
-        {
-            WorldHasComeToAnEnd.Set();
-            m_log.Info("[OPENSIM MAIN]: World has come to an end");
-            base.Shutdown();
         }
     }
 }

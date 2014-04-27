@@ -25,8 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
+using System;
 
 namespace OpenSim.Framework
 {
@@ -38,10 +38,17 @@ namespace OpenSim.Framework
         public UUID GroupID;
         public byte LandingType;
         public byte MediaAutoScale;
+        public string MediaDescription;
+        public int MediaHeight;
         public UUID MediaID;
+        public bool MediaLoop;
+        public string MediaType;
         public string MediaURL;
+        public int MediaWidth;
         public string MusicURL;
         public string Name;
+        public bool ObscureMedia;
+        public bool ObscureMusic;
         public uint ParcelFlags;
         public float PassHours;
         public int PassPrice;
@@ -49,12 +56,5 @@ namespace OpenSim.Framework
         public UUID SnapshotID;
         public Vector3 UserLocation;
         public Vector3 UserLookAt;
-        public string MediaType;
-        public string MediaDescription;
-        public int MediaHeight;
-        public int MediaWidth;
-        public bool MediaLoop;
-        public bool ObscureMusic;
-        public bool ObscureMedia;
     }
 }

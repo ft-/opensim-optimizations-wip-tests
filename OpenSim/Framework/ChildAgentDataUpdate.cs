@@ -25,333 +25,117 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using OpenMetaverse;
+using OpenMetaverse.StructuredData;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
-using log4net;
-using OpenMetaverse;
-using OpenMetaverse.StructuredData;
 
 namespace OpenSim.Framework
 {
-    // Soon to be dismissed
-    [Serializable]
-    public class ChildAgentDataUpdate
-    {
-        public Guid ActiveGroupID;
-        public Guid AgentID;
-        public bool alwaysrun;
-        public float AVHeight;
-        public Vector3 cameraPosition;
-        public float drawdistance;
-        public float godlevel;
-        public uint GroupAccess;
-        public Vector3 Position;
-        public ulong regionHandle;
-        public byte[] throttles;
-        public Vector3 Velocity;
-
-        public ChildAgentDataUpdate()
-        {
-        }
-    }
-
     public interface IAgentData
     {
         UUID AgentID { get; set; }
 
         OSDMap Pack();
+
         void Unpack(OSDMap map, IScene scene);
-    }
-
-    /// <summary>
-    /// Replacement for ChildAgentDataUpdate. Used over RESTComms and LocalComms.
-    /// </summary>
-    public class AgentPosition : IAgentData
-    {
-        private UUID m_id;
-        public UUID AgentID
-        {
-            get { return m_id; }
-            set { m_id = value; }
-        }
-
-        public ulong RegionHandle;
-        public uint CircuitCode;
-        public UUID SessionID;
-
-        public float Far;
-        public Vector3 Position;
-        public Vector3 Velocity;
-        public Vector3 Center;
-        public Vector3 Size;
-        public Vector3 AtAxis;
-        public Vector3 LeftAxis;
-        public Vector3 UpAxis;
-        public bool ChangedGrid;
-
-        // This probably shouldn't be here
-        public byte[] Throttles;
-
-
-        public OSDMap Pack()
-        {
-            OSDMap args = new OSDMap();
-            args["message_type"] = OSD.FromString("AgentPosition");
-
-            args["region_handle"] = OSD.FromString(RegionHandle.ToString());
-            args["circuit_code"] = OSD.FromString(CircuitCode.ToString());
-            args["agent_uuid"] = OSD.FromUUID(AgentID);
-            args["session_uuid"] = OSD.FromUUID(SessionID);
-
-            args["position"] = OSD.FromString(Position.ToString());
-            args["velocity"] = OSD.FromString(Velocity.ToString());
-            args["center"] = OSD.FromString(Center.ToString());
-            args["size"] = OSD.FromString(Size.ToString());
-            args["at_axis"] = OSD.FromString(AtAxis.ToString());
-            args["left_axis"] = OSD.FromString(LeftAxis.ToString());
-            args["up_axis"] = OSD.FromString(UpAxis.ToString());
-
-            args["far"] = OSD.FromReal(Far);
-            args["changed_grid"] = OSD.FromBoolean(ChangedGrid);
-
-            if ((Throttles != null) && (Throttles.Length > 0))
-                args["throttles"] = OSD.FromBinary(Throttles);
-
-            return args;
-        }
-
-        public void Unpack(OSDMap args, IScene scene)
-        {
-            if (args.ContainsKey("region_handle"))
-                UInt64.TryParse(args["region_handle"].AsString(), out RegionHandle);
-
-            if (args["circuit_code"] != null)
-                UInt32.TryParse((string)args["circuit_code"].AsString(), out CircuitCode);
-
-            if (args["agent_uuid"] != null)
-                AgentID = args["agent_uuid"].AsUUID();
-
-            if (args["session_uuid"] != null)
-                SessionID = args["session_uuid"].AsUUID();
-
-            if (args["position"] != null)
-                Vector3.TryParse(args["position"].AsString(), out Position);
-
-            if (args["velocity"] != null)
-                Vector3.TryParse(args["velocity"].AsString(), out Velocity);
-
-            if (args["center"] != null)
-                Vector3.TryParse(args["center"].AsString(), out Center);
-
-            if (args["size"] != null)
-                Vector3.TryParse(args["size"].AsString(), out Size);
-
-            if (args["at_axis"] != null)
-                Vector3.TryParse(args["at_axis"].AsString(), out AtAxis);
-
-            if (args["left_axis"] != null)
-                Vector3.TryParse(args["left_axis"].AsString(), out LeftAxis);
-
-            if (args["up_axis"] != null)
-                Vector3.TryParse(args["up_axis"].AsString(), out UpAxis);
-
-            if (args["changed_grid"] != null)
-                ChangedGrid = args["changed_grid"].AsBoolean();
-
-            if (args["far"] != null)
-                Far = (float)(args["far"].AsReal());
-
-            if (args["throttles"] != null)
-                Throttles = args["throttles"].AsBinary();
-        }
-
-        /// <summary>
-        /// Soon to be decommissioned
-        /// </summary>
-        /// <param name="cAgent"></param>
-        public void CopyFrom(ChildAgentDataUpdate cAgent, UUID sid)
-        {
-            AgentID = new UUID(cAgent.AgentID);
-            SessionID = sid;
-
-            // next: ???
-            Size = new Vector3();
-            Size.Z = cAgent.AVHeight;
-
-            Center = cAgent.cameraPosition;
-            Far = cAgent.drawdistance;
-            Position = cAgent.Position;
-            RegionHandle = cAgent.regionHandle;
-            Throttles = cAgent.throttles;
-            Velocity = cAgent.Velocity;
-        }
-    }
-
-    public class AgentGroupData
-    {
-        public UUID GroupID;
-        public ulong GroupPowers;
-        public bool AcceptNotices;
-
-        public AgentGroupData(UUID id, ulong powers, bool notices)
-        {
-            GroupID = id;
-            GroupPowers = powers;
-            AcceptNotices = notices;
-        }
-
-        public AgentGroupData(OSDMap args)
-        {
-            UnpackUpdateMessage(args);
-        }
-
-        public OSDMap PackUpdateMessage()
-        {
-            OSDMap groupdata = new OSDMap();
-            groupdata["group_id"] = OSD.FromUUID(GroupID);
-            groupdata["group_powers"] = OSD.FromString(GroupPowers.ToString());
-            groupdata["accept_notices"] = OSD.FromBoolean(AcceptNotices);
-
-            return groupdata;
-        }
-
-        public void UnpackUpdateMessage(OSDMap args)
-        {
-            if (args["group_id"] != null)
-                GroupID = args["group_id"].AsUUID();
-            if (args["group_powers"] != null)
-                UInt64.TryParse((string)args["group_powers"].AsString(), out GroupPowers);
-            if (args["accept_notices"] != null)
-                AcceptNotices = args["accept_notices"].AsBoolean();
-        }
-    }
-
-    public class ControllerData
-    {
-        public UUID ObjectID;
-        public UUID ItemID;
-        public uint IgnoreControls;
-        public uint EventControls;
-
-        public ControllerData(UUID obj, UUID item, uint ignore, uint ev)
-        {
-            ObjectID = obj;
-            ItemID = item;
-            IgnoreControls = ignore;
-            EventControls = ev;
-        }
-
-        public ControllerData(OSDMap args)
-        {
-            UnpackUpdateMessage(args);
-        }
-
-        public OSDMap PackUpdateMessage()
-        {
-            OSDMap controldata = new OSDMap();
-            controldata["object"] = OSD.FromUUID(ObjectID);
-            controldata["item"] = OSD.FromUUID(ItemID);
-            controldata["ignore"] = OSD.FromInteger(IgnoreControls);
-            controldata["event"] = OSD.FromInteger(EventControls);
-
-            return controldata;
-        }
-
-
-        public void UnpackUpdateMessage(OSDMap args)
-        {
-            if (args["object"] != null)
-                ObjectID = args["object"].AsUUID();
-            if (args["item"] != null)
-                ItemID = args["item"].AsUUID();
-            if (args["ignore"] != null)
-                IgnoreControls = (uint)args["ignore"].AsInteger();
-            if (args["event"] != null)
-                EventControls = (uint)args["event"].AsInteger();
-        }
     }
 
     public class AgentData : IAgentData
     {
-        private UUID m_id;
-        public UUID AgentID
-        {
-            get { return m_id; }
-            set { m_id = value; }
-        }
-        public UUID RegionID;
-        public uint CircuitCode;
-        public UUID SessionID;
+        public UUID ActiveGroupID;
+        public Byte AgentAccess;
+        public bool AlwaysRun;
+        public Animation[] Anims;
+        public Animation AnimState = null;
+        // Appearance
+        public AvatarAppearance Appearance;
 
-        public Vector3 Position;
-        public Vector3 Velocity;
-        public Vector3 Center;
-        public Vector3 Size;
+        public float Aspect;
         public Vector3 AtAxis;
-        public Vector3 LeftAxis;
-        public Vector3 UpAxis;
+        // These two must have the same Count
+        public List<ISceneObject> AttachmentObjects;
 
+        public List<string> AttachmentObjectStates;
+        public Quaternion BodyRotation;
+        public string CallbackURI;
+        public Vector3 Center;
+        public uint CircuitCode;
+        public uint ControlFlags;
+        // Scripted
+        public ControllerData[] Controllers;
+
+        public Animation DefaultAnim = null;
+        public float EnergyLevel;
+        public float Far;
+        public Byte GodLevel;
+        public UUID GranterID;
+        public AgentGroupData[] Groups;
+        public Quaternion HeadRotation;
+        public Vector3 LeftAxis;
+        public uint LocomotionState;
+        public UUID ParentPart;
+        public Vector3 Position;
+        public UUID PreyAgent;
+        public UUID RegionID;
         /// <summary>
-        /// Signal on a V2 teleport that Scene.IncomingChildAgentDataUpdate(AgentData ad) should wait for the 
+        /// Signal on a V2 teleport that Scene.IncomingChildAgentDataUpdate(AgentData ad) should wait for the
         /// scene presence to become root (triggered when the viewer sends a CompleteAgentMovement UDP packet after
         /// establishing the connection triggered by it's receipt of a TeleportFinish EQ message).
         /// </summary>
         public bool SenderWantsToWaitForRoot;
 
-        public float Far;
-        public float Aspect;
+        public UUID SessionID;
+        public Vector3 SitOffset;
+        public Vector3 Size;
         //public int[] Throttles;
         public byte[] Throttles;
 
-        public uint LocomotionState;
-        public Quaternion HeadRotation;
-        public Quaternion BodyRotation;
-        public uint ControlFlags;
-        public float EnergyLevel;
-        public Byte GodLevel;
-        public bool AlwaysRun;
-        public UUID PreyAgent;
-        public Byte AgentAccess;
-        public UUID ActiveGroupID;
-
-        public AgentGroupData[] Groups;
-        public Animation[] Anims;
-        public Animation DefaultAnim = null;
-        public Animation AnimState = null;
-
-        public UUID GranterID;
-        public UUID ParentPart;
-        public Vector3 SitOffset;
-
-        // Appearance
-        public AvatarAppearance Appearance;
-
-// DEBUG ON
+        public Vector3 UpAxis;
+        public Vector3 Velocity;
+        // DEBUG ON
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
-// DEBUG OFF
 
-/*
-        public byte[] AgentTextures;
-        public byte[] VisualParams;
-        public UUID[] Wearables;
-        public AvatarAttachment[] Attachments;
-*/
-        // Scripted
-        public ControllerData[] Controllers;
+        private UUID m_id;
 
-        public string CallbackURI;
+        public AgentData()
+        {
+        }
 
-        // These two must have the same Count
-        public List<ISceneObject> AttachmentObjects;
-        public List<string> AttachmentObjectStates;
+        public AgentData(Hashtable hash)
+        {
+            //UnpackUpdateMessage(hash);
+        }
+
+        public UUID AgentID
+        {
+            get { return m_id; }
+            set { m_id = value; }
+        }
+        // DEBUG OFF
+
+        /*
+                public byte[] AgentTextures;
+                public byte[] VisualParams;
+                public UUID[] Wearables;
+                public AvatarAttachment[] Attachments;
+        */
+        public void Dump()
+        {
+            System.Console.WriteLine("------------ AgentData ------------");
+            System.Console.WriteLine("UUID: " + AgentID);
+            System.Console.WriteLine("Region: " + RegionID);
+            System.Console.WriteLine("Position: " + Position);
+        }
 
         public virtual OSDMap Pack()
         {
-//            m_log.InfoFormat("[CHILDAGENTDATAUPDATE] Pack data");
+            //            m_log.InfoFormat("[CHILDAGENTDATAUPDATE] Pack data");
 
             OSDMap args = new OSDMap();
             args["message_type"] = OSD.FromString("AgentData");
@@ -390,7 +174,7 @@ namespace OpenSim.Framework
             args["agent_access"] = OSD.FromString(AgentAccess.ToString());
 
             args["active_group_id"] = OSD.FromUUID(ActiveGroupID);
-          
+
             if ((Groups != null) && (Groups.Length > 0))
             {
                 OSDArray groups = new OSDArray(Groups.Length);
@@ -655,7 +439,7 @@ namespace OpenSim.Framework
             if (args["texture_entry"] != null)
             {
                 byte[] rawtextures = args["texture_entry"].AsBinary();
-                Primitive.TextureEntry textures = new Primitive.TextureEntry(rawtextures,0,rawtextures.Length);
+                Primitive.TextureEntry textures = new Primitive.TextureEntry(rawtextures, 0, rawtextures.Length);
                 Appearance.SetTextureEntries(textures);
             }
 
@@ -665,10 +449,10 @@ namespace OpenSim.Framework
             if ((args["wearables"] != null) && (args["wearables"]).Type == OSDType.Array)
             {
                 OSDArray wears = (OSDArray)(args["wearables"]);
-                for (int i = 0; i < wears.Count / 2; i++) 
+                for (int i = 0; i < wears.Count / 2; i++)
                 {
                     AvatarWearable awear = new AvatarWearable((OSDArray)wears[i]);
-                    Appearance.SetWearable(i,awear);
+                    Appearance.SetWearable(i, awear);
                 }
             }
 
@@ -682,7 +466,7 @@ namespace OpenSim.Framework
                         // We know all of these must end up as attachments so we
                         // append rather than replace to ensure multiple attachments
                         // per point continues to work
-//                        m_log.DebugFormat("[CHILDAGENTDATAUPDATE]: Appending attachments for {0}", AgentID);
+                        //                        m_log.DebugFormat("[CHILDAGENTDATAUPDATE]: Appending attachments for {0}", AgentID);
                         Appearance.AppendAttachment(new AvatarAttachment((OSDMap)o));
                     }
                 }
@@ -736,28 +520,191 @@ namespace OpenSim.Framework
             if (args["sit_offset"] != null)
                 Vector3.TryParse(args["sit_offset"].AsString(), out SitOffset);
         }
+    }
 
-        public AgentData()
+    public class AgentGroupData
+    {
+        public bool AcceptNotices;
+        public UUID GroupID;
+        public ulong GroupPowers;
+        public AgentGroupData(UUID id, ulong powers, bool notices)
         {
+            GroupID = id;
+            GroupPowers = powers;
+            AcceptNotices = notices;
         }
 
-        public AgentData(Hashtable hash)
+        public AgentGroupData(OSDMap args)
         {
-            //UnpackUpdateMessage(hash);
+            UnpackUpdateMessage(args);
         }
 
-        public void Dump()
+        public OSDMap PackUpdateMessage()
         {
-            System.Console.WriteLine("------------ AgentData ------------");
-            System.Console.WriteLine("UUID: " + AgentID);
-            System.Console.WriteLine("Region: " + RegionID);
-            System.Console.WriteLine("Position: " + Position);
+            OSDMap groupdata = new OSDMap();
+            groupdata["group_id"] = OSD.FromUUID(GroupID);
+            groupdata["group_powers"] = OSD.FromString(GroupPowers.ToString());
+            groupdata["accept_notices"] = OSD.FromBoolean(AcceptNotices);
+
+            return groupdata;
+        }
+
+        public void UnpackUpdateMessage(OSDMap args)
+        {
+            if (args["group_id"] != null)
+                GroupID = args["group_id"].AsUUID();
+            if (args["group_powers"] != null)
+                UInt64.TryParse((string)args["group_powers"].AsString(), out GroupPowers);
+            if (args["accept_notices"] != null)
+                AcceptNotices = args["accept_notices"].AsBoolean();
         }
     }
 
+    /// <summary>
+    /// Replacement for ChildAgentDataUpdate. Used over RESTComms and LocalComms.
+    /// </summary>
+    public class AgentPosition : IAgentData
+    {
+        public Vector3 AtAxis;
+        public Vector3 Center;
+        public bool ChangedGrid;
+        public uint CircuitCode;
+        public float Far;
+        public Vector3 LeftAxis;
+        public Vector3 Position;
+        public ulong RegionHandle;
+        public UUID SessionID;
+        public Vector3 Size;
+        // This probably shouldn't be here
+        public byte[] Throttles;
+
+        public Vector3 UpAxis;
+        public Vector3 Velocity;
+        private UUID m_id;
+
+        public UUID AgentID
+        {
+            get { return m_id; }
+            set { m_id = value; }
+        }
+        /// <summary>
+        /// Soon to be decommissioned
+        /// </summary>
+        /// <param name="cAgent"></param>
+        public void CopyFrom(ChildAgentDataUpdate cAgent, UUID sid)
+        {
+            AgentID = new UUID(cAgent.AgentID);
+            SessionID = sid;
+
+            // next: ???
+            Size = new Vector3();
+            Size.Z = cAgent.AVHeight;
+
+            Center = cAgent.cameraPosition;
+            Far = cAgent.drawdistance;
+            Position = cAgent.Position;
+            RegionHandle = cAgent.regionHandle;
+            Throttles = cAgent.throttles;
+            Velocity = cAgent.Velocity;
+        }
+
+        public OSDMap Pack()
+        {
+            OSDMap args = new OSDMap();
+            args["message_type"] = OSD.FromString("AgentPosition");
+
+            args["region_handle"] = OSD.FromString(RegionHandle.ToString());
+            args["circuit_code"] = OSD.FromString(CircuitCode.ToString());
+            args["agent_uuid"] = OSD.FromUUID(AgentID);
+            args["session_uuid"] = OSD.FromUUID(SessionID);
+
+            args["position"] = OSD.FromString(Position.ToString());
+            args["velocity"] = OSD.FromString(Velocity.ToString());
+            args["center"] = OSD.FromString(Center.ToString());
+            args["size"] = OSD.FromString(Size.ToString());
+            args["at_axis"] = OSD.FromString(AtAxis.ToString());
+            args["left_axis"] = OSD.FromString(LeftAxis.ToString());
+            args["up_axis"] = OSD.FromString(UpAxis.ToString());
+
+            args["far"] = OSD.FromReal(Far);
+            args["changed_grid"] = OSD.FromBoolean(ChangedGrid);
+
+            if ((Throttles != null) && (Throttles.Length > 0))
+                args["throttles"] = OSD.FromBinary(Throttles);
+
+            return args;
+        }
+
+        public void Unpack(OSDMap args, IScene scene)
+        {
+            if (args.ContainsKey("region_handle"))
+                UInt64.TryParse(args["region_handle"].AsString(), out RegionHandle);
+
+            if (args["circuit_code"] != null)
+                UInt32.TryParse((string)args["circuit_code"].AsString(), out CircuitCode);
+
+            if (args["agent_uuid"] != null)
+                AgentID = args["agent_uuid"].AsUUID();
+
+            if (args["session_uuid"] != null)
+                SessionID = args["session_uuid"].AsUUID();
+
+            if (args["position"] != null)
+                Vector3.TryParse(args["position"].AsString(), out Position);
+
+            if (args["velocity"] != null)
+                Vector3.TryParse(args["velocity"].AsString(), out Velocity);
+
+            if (args["center"] != null)
+                Vector3.TryParse(args["center"].AsString(), out Center);
+
+            if (args["size"] != null)
+                Vector3.TryParse(args["size"].AsString(), out Size);
+
+            if (args["at_axis"] != null)
+                Vector3.TryParse(args["at_axis"].AsString(), out AtAxis);
+
+            if (args["left_axis"] != null)
+                Vector3.TryParse(args["left_axis"].AsString(), out LeftAxis);
+
+            if (args["up_axis"] != null)
+                Vector3.TryParse(args["up_axis"].AsString(), out UpAxis);
+
+            if (args["changed_grid"] != null)
+                ChangedGrid = args["changed_grid"].AsBoolean();
+
+            if (args["far"] != null)
+                Far = (float)(args["far"].AsReal());
+
+            if (args["throttles"] != null)
+                Throttles = args["throttles"].AsBinary();
+        }
+    }
+
+    // Soon to be dismissed
+    [Serializable]
+    public class ChildAgentDataUpdate
+    {
+        public Guid ActiveGroupID;
+        public Guid AgentID;
+        public bool alwaysrun;
+        public float AVHeight;
+        public Vector3 cameraPosition;
+        public float drawdistance;
+        public float godlevel;
+        public uint GroupAccess;
+        public Vector3 Position;
+        public ulong regionHandle;
+        public byte[] throttles;
+        public Vector3 Velocity;
+
+        public ChildAgentDataUpdate()
+        {
+        }
+    }
     public class CompleteAgentData : AgentData
     {
-        public override OSDMap Pack() 
+        public override OSDMap Pack()
         {
             return base.Pack();
         }
@@ -765,6 +712,49 @@ namespace OpenSim.Framework
         public override void Unpack(OSDMap map, IScene scene)
         {
             base.Unpack(map, scene);
+        }
+    }
+
+    public class ControllerData
+    {
+        public uint EventControls;
+        public uint IgnoreControls;
+        public UUID ItemID;
+        public UUID ObjectID;
+        public ControllerData(UUID obj, UUID item, uint ignore, uint ev)
+        {
+            ObjectID = obj;
+            ItemID = item;
+            IgnoreControls = ignore;
+            EventControls = ev;
+        }
+
+        public ControllerData(OSDMap args)
+        {
+            UnpackUpdateMessage(args);
+        }
+
+        public OSDMap PackUpdateMessage()
+        {
+            OSDMap controldata = new OSDMap();
+            controldata["object"] = OSD.FromUUID(ObjectID);
+            controldata["item"] = OSD.FromUUID(ItemID);
+            controldata["ignore"] = OSD.FromInteger(IgnoreControls);
+            controldata["event"] = OSD.FromInteger(EventControls);
+
+            return controldata;
+        }
+
+        public void UnpackUpdateMessage(OSDMap args)
+        {
+            if (args["object"] != null)
+                ObjectID = args["object"].AsUUID();
+            if (args["item"] != null)
+                ItemID = args["item"].AsUUID();
+            if (args["ignore"] != null)
+                IgnoreControls = (uint)args["ignore"].AsInteger();
+            if (args["event"] != null)
+                EventControls = (uint)args["event"].AsInteger();
         }
     }
 }

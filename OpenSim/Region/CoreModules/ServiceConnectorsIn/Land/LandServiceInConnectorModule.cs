@@ -25,21 +25,20 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
-using System.Collections.Generic;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
+using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Framework.Servers;
-using OpenSim.Region.Framework.Scenes;
 using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
 using OpenSim.Server.Base;
 using OpenSim.Server.Handlers.Base;
 using OpenSim.Services.Interfaces;
-using OpenMetaverse;
-
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Land
 {
@@ -55,43 +54,14 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Land
 
         #region Region Module interface
 
-        public void Initialise(IConfigSource config)
-        {
-            m_Config = config;
-
-            IConfig moduleConfig = config.Configs["Modules"];
-            if (moduleConfig != null)
-            {
-                m_Enabled = moduleConfig.GetBoolean("LandServiceInConnector", false);
-                if (m_Enabled)
-                {
-                    m_log.Info("[LAND IN CONNECTOR]: LandServiceInConnector enabled");
-                }
-
-            }
-
-        }
-
-        public void PostInitialise()
-        {
-            if (!m_Enabled)
-                return;
-
-//            m_log.Info("[LAND IN CONNECTOR]: Starting...");
-        }
-
-        public void Close()
-        {
-        }
-
-        public Type ReplaceableInterface 
-        {
-            get { return null; }
-        }
-
         public string Name
         {
             get { return "LandServiceInConnectorModule"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
         }
 
         public void AddRegion(Scene scene)
@@ -107,7 +77,36 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Land
             }
 
             m_Scenes.Add(scene);
+        }
 
+        public void Close()
+        {
+        }
+
+        public void Initialise(IConfigSource config)
+        {
+            m_Config = config;
+
+            IConfig moduleConfig = config.Configs["Modules"];
+            if (moduleConfig != null)
+            {
+                m_Enabled = moduleConfig.GetBoolean("LandServiceInConnector", false);
+                if (m_Enabled)
+                {
+                    m_log.Info("[LAND IN CONNECTOR]: LandServiceInConnector enabled");
+                }
+            }
+        }
+
+        public void PostInitialise()
+        {
+            if (!m_Enabled)
+                return;
+
+            //            m_log.Info("[LAND IN CONNECTOR]: Starting...");
+        }
+        public void RegionLoaded(Scene scene)
+        {
         }
 
         public void RemoveRegion(Scene scene)
@@ -115,12 +114,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Land
             if (m_Enabled && m_Scenes.Contains(scene))
                 m_Scenes.Remove(scene);
         }
-
-        public void RegionLoaded(Scene scene)
-        {
-        }
-
-        #endregion
+        #endregion Region Module interface
 
         #region ILandService
 

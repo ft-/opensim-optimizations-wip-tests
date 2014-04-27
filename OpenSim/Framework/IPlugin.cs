@@ -30,32 +30,21 @@ using System;
 namespace OpenSim.Framework
 {
     /// <summary>
-    /// Exception thrown if Initialise has been called, but failed.
-    /// </summary>
-    public class PluginNotInitialisedException : Exception
-    {
-        public PluginNotInitialisedException () : base() {}
-        public PluginNotInitialisedException (string msg) : base(msg) {}
-        public PluginNotInitialisedException (string msg, Exception e) : base(msg, e) {}
-    }
-
-    /// <summary>
     /// This interface, describes a generic plugin
     /// </summary>
     public interface IPlugin : IDisposable
     {
-        /// <summary>
-        /// Returns the plugin version
-        /// </summary>
-        /// <returns>Plugin version in MAJOR.MINOR.REVISION.BUILD format</returns>
-        string Version { get; }
-
         /// <summary>
         /// Returns the plugin name
         /// </summary>
         /// <returns>Plugin name, eg MySQL User Provider</returns>
         string Name { get; }
 
+        /// <summary>
+        /// Returns the plugin version
+        /// </summary>
+        /// <returns>Plugin version in MAJOR.MINOR.REVISION.BUILD format</returns>
+        string Version { get; }
         /// <summary>
         /// Default-initialises the plugin
         /// </summary>
@@ -71,10 +60,30 @@ namespace OpenSim.Framework
         // this would be a lot simpler if C# supported currying or typedefs
 
         // default initialisation
-        public virtual void Initialise (IPlugin plugin)
+        public virtual void Initialise(IPlugin plugin)
         {
             plugin.Initialise();
         }
     }
 
+    /// <summary>
+    /// Exception thrown if Initialise has been called, but failed.
+    /// </summary>
+    public class PluginNotInitialisedException : Exception
+    {
+        public PluginNotInitialisedException()
+            : base()
+        {
+        }
+
+        public PluginNotInitialisedException(string msg)
+            : base(msg)
+        {
+        }
+
+        public PluginNotInitialisedException(string msg, Exception e)
+            : base(msg, e)
+        {
+        }
+    }
 }

@@ -24,22 +24,26 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-using System;
-using System.Net;
+
 using OpenMetaverse.StructuredData;
 
 namespace OpenSim.Framework.Servers.HttpServer
 {
     public sealed class ErrorCode
     {
-        private ErrorCode() {}
-
-        public const int ParseError = -32700;
-        public const int InvalidRequest = -32600;
-        public const int MethodNotFound = -32601;
-        public const int InvalidParams = -32602;
         public const int InternalError = -32604;
 
+        public const int InvalidParams = -32602;
+
+        public const int InvalidRequest = -32600;
+
+        public const int MethodNotFound = -32601;
+
+        public const int ParseError = -32700;
+
+        private ErrorCode()
+        {
+        }
     }
 
     public class JsonRpcError
@@ -61,6 +65,12 @@ namespace OpenSim.Framework.Servers.HttpServer
             }
         }
 
+        public OSD Data
+        {
+            get;
+            set;
+        }
+
         public string Message
         {
             get
@@ -75,25 +85,21 @@ namespace OpenSim.Framework.Servers.HttpServer
                 Error["message"] = OSD.FromString(value);
             }
         }
-
-        public OSD Data
-        {
-            get; set;
-        }
     }
 
     public class JsonRpcResponse
     {
-        public string JsonRpc
+        public OSDMap Reply = new OSDMap();
+
+        public JsonRpcResponse()
         {
-            get
-            {
-                return Reply["jsonrpc"].AsString();
-            }
-            set
-            {
-                Reply["jsonrpc"] = OSD.FromString(value);
-            }
+            Error = new JsonRpcError();
+        }
+
+        public JsonRpcError Error
+        {
+            get;
+            set;
         }
 
         public string Id
@@ -108,23 +114,22 @@ namespace OpenSim.Framework.Servers.HttpServer
             }
         }
 
+        public string JsonRpc
+        {
+            get
+            {
+                return Reply["jsonrpc"].AsString();
+            }
+            set
+            {
+                Reply["jsonrpc"] = OSD.FromString(value);
+            }
+        }
         public OSD Result
         {
-            get; set;
+            get;
+            set;
         }
-
-        public JsonRpcError Error
-        {
-            get; set;
-        }
-
-        public OSDMap Reply = new OSDMap();
-
-        public JsonRpcResponse()
-        {
-            Error = new JsonRpcError();
-        }
-
         public string Serialize()
         {
             if (Result != null)
@@ -142,9 +147,8 @@ namespace OpenSim.Framework.Servers.HttpServer
             }
             catch
             {
-
             }
-            return result; 
+            return result;
         }
     }
 }

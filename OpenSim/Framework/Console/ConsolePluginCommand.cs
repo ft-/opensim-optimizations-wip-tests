@@ -39,18 +39,19 @@ namespace OpenSim.Framework.Console
     public class ConsolePluginCommand
     {
         /// <summary>
-        /// command delegate used in running
-        /// </summary>
-        private ConsoleCommand m_commandDelegate;
-        /// <summary>
-        /// help text displayed
-        /// </summary>
-        private string m_helpText;
-        /// <summary>
         /// command in the form of "showme new commands"
         /// </summary>
         private string[] m_cmdText;
 
+        /// <summary>
+        /// command delegate used in running
+        /// </summary>
+        private ConsoleCommand m_commandDelegate;
+
+        /// <summary>
+        /// help text displayed
+        /// </summary>
+        private string m_helpText;
         /// <summary>
         /// Construct a new ConsolePluginCommand
         ///
@@ -68,6 +69,15 @@ namespace OpenSim.Framework.Console
         }
 
         /// <summary>
+        /// return true if the ShowHelp(..) method might be helpfull
+        /// </summary>
+        public bool IsHelpfull(string cmdWithParams)
+        {
+            cmdWithParams = cmdWithParams.ToLower();
+            return cmdWithParams.Contains(String.Join(" ", m_cmdText).ToLower()) || m_helpText.ToLower().Contains(cmdWithParams);
+        }
+
+        /// <summary>
         /// Returns the match length this command has upon the 'cmdWithParams'
         /// At least a higher number for "show plugin status" then "show" would return
         /// This is used to have multi length command verbs
@@ -80,7 +90,7 @@ namespace OpenSim.Framework.Console
         {
             // QUESTION: have a case insensitive flag?
             cmdWithParams = cmdWithParams.ToLower().Trim();
-            string matchText = String.Join(" ",m_cmdText).ToLower().Trim();
+            string matchText = String.Join(" ", m_cmdText).ToLower().Trim();
             if (cmdWithParams.StartsWith(matchText))
             {
                 // QUESTION Instead return cmdText.Length; ?
@@ -106,13 +116,13 @@ namespace OpenSim.Framework.Console
                     }
                     currentParam++;
                 }
-
             }
             string[] sendCmdParams = cmdParams;
             if (skipParams > 0)
             {
-                sendCmdParams = new string[cmdParams.Length-skipParams];
-                for (int i=0;i<sendCmdParams.Length;i++) {
+                sendCmdParams = new string[cmdParams.Length - skipParams];
+                for (int i = 0; i < sendCmdParams.Length; i++)
+                {
                     sendCmdParams[i] = cmdParams[skipParams++];
                 }
             }
@@ -125,15 +135,6 @@ namespace OpenSim.Framework.Console
         public void ShowHelp(ConsoleBase console)
         {
             console.Output(String.Join(" ", m_cmdText) + " - " + m_helpText + "\n");
-        }
-
-        /// <summary>
-        /// return true if the ShowHelp(..) method might be helpfull
-        /// </summary>
-        public bool IsHelpfull(string cmdWithParams)
-        {
-            cmdWithParams = cmdWithParams.ToLower();
-            return cmdWithParams.Contains(String.Join(" ", m_cmdText).ToLower()) || m_helpText.ToLower().Contains(cmdWithParams);
         }
     }
 }

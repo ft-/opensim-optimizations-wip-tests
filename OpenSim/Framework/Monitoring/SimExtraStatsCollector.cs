@@ -25,116 +25,171 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
+using OpenMetaverse.StructuredData;
+using OpenSim.Framework.Monitoring.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using OpenMetaverse;
-using OpenMetaverse.StructuredData;
-using OpenSim.Framework.Monitoring.Interfaces;
 
 namespace OpenSim.Framework.Monitoring
 {
+    /// <summary>
+    /// Pull packet queue stats from packet queues and report
+    /// </summary>
+    public class PacketQueueStatsCollector : IStatsCollector
+    {
+        private IPullStatsProvider m_statsProvider;
+
+        public PacketQueueStatsCollector(IPullStatsProvider provider)
+        {
+            m_statsProvider = provider;
+        }
+
+        public OSDMap OReport(string uptime, string version)
+        {
+            OSDMap ret = new OSDMap();
+            return ret;
+        }
+
+        /// <summary>
+        /// Report back collected statistical information.
+        /// </summary>
+        /// <returns></returns>
+        public string Report()
+        {
+            return m_statsProvider.GetStats();
+        }
+
+        public string XReport(string uptime, string version)
+        {
+            return "";
+        }
+    }
+
     /// <summary>
     /// Collects sim statistics which aren't already being collected for the linden viewer's statistics pane
     /// </summary>
     public class SimExtraStatsCollector : BaseStatsCollector
     {
-//        private long assetsInCache;
-//        private long texturesInCache;
-//        private long assetCacheMemoryUsage;
-//        private long textureCacheMemoryUsage;
-//        private TimeSpan assetRequestTimeAfterCacheMiss;
-//        private long blockedMissingTextureRequests;
+        //        private long assetsInCache;
+        //        private long texturesInCache;
+        //        private long assetCacheMemoryUsage;
+        //        private long textureCacheMemoryUsage;
+        //        private TimeSpan assetRequestTimeAfterCacheMiss;
+        //        private long blockedMissingTextureRequests;
 
-//        private long assetServiceRequestFailures;
-//        private long inventoryServiceRetrievalFailures;
+        //        private long assetServiceRequestFailures;
+        //        private long inventoryServiceRetrievalFailures;
 
-        private volatile float timeDilation;
-        private volatile float simFps;
-        private volatile float physicsFps;
-        private volatile float agentUpdates;
-        private volatile float rootAgents;
-        private volatile float childAgents;
-        private volatile float totalPrims;
         private volatile float activePrims;
-        private volatile float totalFrameTime;
-        private volatile float netFrameTime;
-        private volatile float physicsFrameTime;
-        private volatile float otherFrameTime;
+        private volatile float activeScripts;
+        private volatile float agentFrameTime;
+        private volatile float agentUpdates;
+        private volatile float childAgents;
         private volatile float imageFrameTime;
         private volatile float inPacketsPerSecond;
+        private volatile float netFrameTime;
+        private volatile float otherFrameTime;
         private volatile float outPacketsPerSecond;
-        private volatile float unackedBytes;
-        private volatile float agentFrameTime;
+        /// <summary>
+        /// Retain a dictionary of all packet queues stats reporters
+        /// </summary>
+        private IDictionary<UUID, PacketQueueStatsCollector> packetQueueStatsCollectors
+            = new Dictionary<UUID, PacketQueueStatsCollector>();
+
         private volatile float pendingDownloads;
         private volatile float pendingUploads;
-        private volatile float activeScripts;
+        private volatile float physicsFps;
+        private volatile float physicsFrameTime;
+        private volatile float rootAgents;
         private volatile float scriptLinesPerSecond;
+        private volatile float simFps;
+        private volatile float timeDilation;
+        private volatile float totalFrameTime;
+        private volatile float totalPrims;
+        private volatile float unackedBytes;
+        //        /// <summary>
+        //        /// These statistics are being collected by push rather than pull.  Pull would be simpler, but I had the
+        //        /// notion of providing some flow statistics (which pull wouldn't give us).  Though admittedly these
+        //        /// haven't yet been implemented...
+        //        /// </summary>
+        //        public long AssetsInCache { get { return assetsInCache; } }
+        //
+        //        /// <value>
+        //        /// Currently unused
+        //        /// </value>
+        //        public long TexturesInCache { get { return texturesInCache; } }
+        //
+        //        /// <value>
+        //        /// Currently misleading since we can't currently subtract removed asset memory usage without a performance hit
+        //        /// </value>
+        //        public long AssetCacheMemoryUsage { get { return assetCacheMemoryUsage; } }
+        //
+        //        /// <value>
+        //        /// Currently unused
+        //        /// </value>
+        //        public long TextureCacheMemoryUsage { get { return textureCacheMemoryUsage; } }
 
-//        /// <summary>
-//        /// These statistics are being collected by push rather than pull.  Pull would be simpler, but I had the
-//        /// notion of providing some flow statistics (which pull wouldn't give us).  Though admittedly these
-//        /// haven't yet been implemented...
-//        /// </summary>
-//        public long AssetsInCache { get { return assetsInCache; } }
-//        
-//        /// <value>
-//        /// Currently unused
-//        /// </value>
-//        public long TexturesInCache { get { return texturesInCache; } }
-//        
-//        /// <value>
-//        /// Currently misleading since we can't currently subtract removed asset memory usage without a performance hit
-//        /// </value>
-//        public long AssetCacheMemoryUsage { get { return assetCacheMemoryUsage; } }
-//        
-//        /// <value>
-//        /// Currently unused
-//        /// </value>
-//        public long TextureCacheMemoryUsage { get { return textureCacheMemoryUsage; } }
+        public float ActivePrims { get { return activePrims; } }
+
+        public float ActiveScripts { get { return activeScripts; } }
+
+        public float AgentFrameTime { get { return agentFrameTime; } }
+
+        public float AgentUpdates { get { return agentUpdates; } }
+
+        public float ChildAgents { get { return childAgents; } }
+
+        public float ImageFrameTime { get { return imageFrameTime; } }
+
+        public float InPacketsPerSecond { get { return inPacketsPerSecond; } }
+
+        public float NetFrameTime { get { return netFrameTime; } }
+
+        public float OtherFrameTime { get { return otherFrameTime; } }
+
+        public float OutPacketsPerSecond { get { return outPacketsPerSecond; } }
+
+        public float PendingDownloads { get { return pendingDownloads; } }
+
+        public float PendingUploads { get { return pendingUploads; } }
+
+        public float PhysicsFps { get { return physicsFps; } }
+
+        public float PhysicsFrameTime { get { return physicsFrameTime; } }
+
+        public float RootAgents { get { return rootAgents; } }
+
+        public float ScriptLinesPerSecond { get { return scriptLinesPerSecond; } }
+
+        public float SimFps { get { return simFps; } }
 
         public float TimeDilation { get { return timeDilation; } }
-        public float SimFps { get { return simFps; } }
-        public float PhysicsFps { get { return physicsFps; } }
-        public float AgentUpdates { get { return agentUpdates; } }
-        public float RootAgents { get { return rootAgents; } }
-        public float ChildAgents { get { return childAgents; } }
-        public float TotalPrims { get { return totalPrims; } }
-        public float ActivePrims { get { return activePrims; } }
         public float TotalFrameTime { get { return totalFrameTime; } }
-        public float NetFrameTime { get { return netFrameTime; } }
-        public float PhysicsFrameTime { get { return physicsFrameTime; } }
-        public float OtherFrameTime { get { return otherFrameTime; } }
-        public float ImageFrameTime { get { return imageFrameTime; } }
-        public float InPacketsPerSecond { get { return inPacketsPerSecond; } }
-        public float OutPacketsPerSecond { get { return outPacketsPerSecond; } }
+
+        public float TotalPrims { get { return totalPrims; } }
         public float UnackedBytes { get { return unackedBytes; } }
-        public float AgentFrameTime { get { return agentFrameTime; } }
-        public float PendingDownloads { get { return pendingDownloads; } }
-        public float PendingUploads { get { return pendingUploads; } }
-        public float ActiveScripts { get { return activeScripts; } }
-        public float ScriptLinesPerSecond { get { return scriptLinesPerSecond; } }
-        
-//        /// <summary>
-//        /// This is the time it took for the last asset request made in response to a cache miss.
-//        /// </summary>
-//        public TimeSpan AssetRequestTimeAfterCacheMiss { get { return assetRequestTimeAfterCacheMiss; } }
-//
-//        /// <summary>
-//        /// Number of persistent requests for missing textures we have started blocking from clients.  To some extent
-//        /// this is just a temporary statistic to keep this problem in view - the root cause of this lies either
-//        /// in a mishandling of the reply protocol, related to avatar appearance or may even originate in graphics
-//        /// driver bugs on clients (though this seems less likely).
-//        /// </summary>
-//        public long BlockedMissingTextureRequests { get { return blockedMissingTextureRequests; } }
-//
-//        /// <summary>
-//        /// Record the number of times that an asset request has failed.  Failures are effectively exceptions, such as
-//        /// request timeouts.  If an asset service replies that a particular asset cannot be found, this is not counted
-//        /// as a failure
-//        /// </summary>
-//        public long AssetServiceRequestFailures { get { return assetServiceRequestFailures; } }
+        //        /// <summary>
+        //        /// This is the time it took for the last asset request made in response to a cache miss.
+        //        /// </summary>
+        //        public TimeSpan AssetRequestTimeAfterCacheMiss { get { return assetRequestTimeAfterCacheMiss; } }
+        //
+        //        /// <summary>
+        //        /// Number of persistent requests for missing textures we have started blocking from clients.  To some extent
+        //        /// this is just a temporary statistic to keep this problem in view - the root cause of this lies either
+        //        /// in a mishandling of the reply protocol, related to avatar appearance or may even originate in graphics
+        //        /// driver bugs on clients (though this seems less likely).
+        //        /// </summary>
+        //        public long BlockedMissingTextureRequests { get { return blockedMissingTextureRequests; } }
+        //
+        //        /// <summary>
+        //        /// Record the number of times that an asset request has failed.  Failures are effectively exceptions, such as
+        //        /// request timeouts.  If an asset service replies that a particular asset cannot be found, this is not counted
+        //        /// as a failure
+        //        /// </summary>
+        //        public long AssetServiceRequestFailures { get { return assetServiceRequestFailures; } }
 
         /// <summary>
         /// Number of known failures to retrieve avatar inventory from the inventory service.  This does not
@@ -142,7 +197,7 @@ namespace OpenSim.Framework.Monitoring
         /// we do not yet timeout this situation.
         /// </summary>
         /// <remarks>Commented out because we do not cache inventory at this point</remarks>
-//        public long InventoryServiceRetrievalFailures { get { return inventoryServiceRetrievalFailures; } }
+        //        public long InventoryServiceRetrievalFailures { get { return inventoryServiceRetrievalFailures; } }
 
         /// <summary>
         /// Retrieve the total frame time (in ms) of the last frame
@@ -153,65 +208,148 @@ namespace OpenSim.Framework.Monitoring
         /// Retrieve the physics update component (in ms) of the last frame
         /// </summary>
         //public float PhysicsFrameTime { get { return physicsFrameTime; } }
+        //        public void AddAsset(AssetBase asset)
+        //        {
+        //            assetsInCache++;
+        //            //assetCacheMemoryUsage += asset.Data.Length;
+        //        }
+        //
+        //        public void RemoveAsset(UUID uuid)
+        //        {
+        //            assetsInCache--;
+        //        }
+        //
+        //        public void AddTexture(AssetBase image)
+        //        {
+        //            if (image.Data != null)
+        //            {
+        //                texturesInCache++;
+        //
+        //                // This could have been a pull stat, though there was originally a nebulous idea to measure flow rates
+        //                textureCacheMemoryUsage += image.Data.Length;
+        //            }
+        //        }
+        //
+        //        /// <summary>
+        //        /// Signal that the asset cache has been cleared.
+        //        /// </summary>
+        //        public void ClearAssetCacheStatistics()
+        //        {
+        //            assetsInCache = 0;
+        //            assetCacheMemoryUsage = 0;
+        //            texturesInCache = 0;
+        //            textureCacheMemoryUsage = 0;
+        //        }
+        //
+        //        public void AddAssetRequestTimeAfterCacheMiss(TimeSpan ts)
+        //        {
+        //            assetRequestTimeAfterCacheMiss = ts;
+        //        }
+        //
+        //        public void AddBlockedMissingTextureRequest()
+        //        {
+        //            blockedMissingTextureRequests++;
+        //        }
+        //
+        //        public void AddAssetServiceRequestFailure()
+        //        {
+        //            assetServiceRequestFailures++;
+        //        }
+
+        //        public void AddInventoryServiceRetrievalFailure()
+        //        {
+        //            inventoryServiceRetrievalFailures++;
+        //        }
 
         /// <summary>
-        /// Retain a dictionary of all packet queues stats reporters
+        /// Deregister a packet queue stats provider
         /// </summary>
-        private IDictionary<UUID, PacketQueueStatsCollector> packetQueueStatsCollectors
-            = new Dictionary<UUID, PacketQueueStatsCollector>();
+        /// <param name="uuid">An agent UUID</param>
+        public void DeregisterPacketQueueStatsProvider(UUID uuid)
+        {
+            lock (packetQueueStatsCollectors)
+            {
+                packetQueueStatsCollectors.Remove(uuid);
+            }
+        }
 
-//        public void AddAsset(AssetBase asset)
-//        {
-//            assetsInCache++;
-//            //assetCacheMemoryUsage += asset.Data.Length;
-//        }
-//        
-//        public void RemoveAsset(UUID uuid)
-//        {
-//            assetsInCache--;
-//        }
-//
-//        public void AddTexture(AssetBase image)
-//        {
-//            if (image.Data != null)
-//            {
-//                texturesInCache++;
-//
-//                // This could have been a pull stat, though there was originally a nebulous idea to measure flow rates
-//                textureCacheMemoryUsage += image.Data.Length;
-//            }
-//        }
-//
-//        /// <summary>
-//        /// Signal that the asset cache has been cleared.
-//        /// </summary>
-//        public void ClearAssetCacheStatistics()
-//        {
-//            assetsInCache = 0;
-//            assetCacheMemoryUsage = 0;
-//            texturesInCache = 0;
-//            textureCacheMemoryUsage = 0;
-//        }
-//        
-//        public void AddAssetRequestTimeAfterCacheMiss(TimeSpan ts)
-//        {
-//            assetRequestTimeAfterCacheMiss = ts;
-//        }
-//
-//        public void AddBlockedMissingTextureRequest()
-//        {
-//            blockedMissingTextureRequests++;
-//        }
-//
-//        public void AddAssetServiceRequestFailure()
-//        {
-//            assetServiceRequestFailures++;
-//        }
+        /// <summary>
+        /// Report back collected statistical information as an OSDMap
+        /// </summary>
+        /// <returns></returns>
+        public override OSDMap OReport(string uptime, string version)
+        {
+            OSDMap args = new OSDMap(30);
+            //            args["AssetsInCache"] = OSD.FromString (String.Format ("{0:0.##}", AssetsInCache));
+            //            args["TimeAfterCacheMiss"] = OSD.FromString (String.Format ("{0:0.##}",
+            //                    assetRequestTimeAfterCacheMiss.Milliseconds / 1000.0));
+            //            args["BlockedMissingTextureRequests"] = OSD.FromString (String.Format ("{0:0.##}",
+            //                    BlockedMissingTextureRequests));
+            //            args["AssetServiceRequestFailures"] = OSD.FromString (String.Format ("{0:0.##}",
+            //                    AssetServiceRequestFailures));
+            //            args["abnormalClientThreadTerminations"] = OSD.FromString (String.Format ("{0:0.##}",
+            //                    abnormalClientThreadTerminations));
+            //            args["InventoryServiceRetrievalFailures"] = OSD.FromString (String.Format ("{0:0.##}",
+            //                    InventoryServiceRetrievalFailures));
+            args["Dilatn"] = OSD.FromString(String.Format("{0:0.##}", timeDilation));
+            args["SimFPS"] = OSD.FromString(String.Format("{0:0.##}", simFps));
+            args["PhyFPS"] = OSD.FromString(String.Format("{0:0.##}", physicsFps));
+            args["AgntUp"] = OSD.FromString(String.Format("{0:0.##}", agentUpdates));
+            args["RootAg"] = OSD.FromString(String.Format("{0:0.##}", rootAgents));
+            args["ChldAg"] = OSD.FromString(String.Format("{0:0.##}", childAgents));
+            args["Prims"] = OSD.FromString(String.Format("{0:0.##}", totalPrims));
+            args["AtvPrm"] = OSD.FromString(String.Format("{0:0.##}", activePrims));
+            args["AtvScr"] = OSD.FromString(String.Format("{0:0.##}", activeScripts));
+            args["ScrLPS"] = OSD.FromString(String.Format("{0:0.##}", scriptLinesPerSecond));
+            args["PktsIn"] = OSD.FromString(String.Format("{0:0.##}", inPacketsPerSecond));
+            args["PktOut"] = OSD.FromString(String.Format("{0:0.##}", outPacketsPerSecond));
+            args["PendDl"] = OSD.FromString(String.Format("{0:0.##}", pendingDownloads));
+            args["PendUl"] = OSD.FromString(String.Format("{0:0.##}", pendingUploads));
+            args["UnackB"] = OSD.FromString(String.Format("{0:0.##}", unackedBytes));
+            args["TotlFt"] = OSD.FromString(String.Format("{0:0.##}", totalFrameTime));
+            args["NetFt"] = OSD.FromString(String.Format("{0:0.##}", netFrameTime));
+            args["PhysFt"] = OSD.FromString(String.Format("{0:0.##}", physicsFrameTime));
+            args["OthrFt"] = OSD.FromString(String.Format("{0:0.##}", otherFrameTime));
+            args["AgntFt"] = OSD.FromString(String.Format("{0:0.##}", agentFrameTime));
+            args["ImgsFt"] = OSD.FromString(String.Format("{0:0.##}", imageFrameTime));
+            args["Memory"] = OSD.FromString(base.XReport(uptime, version));
+            args["Uptime"] = OSD.FromString(uptime);
+            args["Version"] = OSD.FromString(version);
 
-//        public void AddInventoryServiceRetrievalFailure()
-//        {
-//            inventoryServiceRetrievalFailures++;
-//        }
+            return args;
+        }
+
+        /// <summary>
+        /// This is the method on which the classic sim stats reporter (which collects stats for
+        /// client purposes) sends information to listeners.
+        /// </summary>
+        /// <param name="pack"></param>
+        public void ReceiveClassicSimStatsPacket(SimStats stats)
+        {
+            // FIXME: SimStats shouldn't allow an arbitrary stat packing order (which is inherited from the original
+            // SimStatsPacket that was being used).
+            timeDilation = stats.StatsBlock[0].StatValue;
+            simFps = stats.StatsBlock[1].StatValue;
+            physicsFps = stats.StatsBlock[2].StatValue;
+            agentUpdates = stats.StatsBlock[3].StatValue;
+            rootAgents = stats.StatsBlock[4].StatValue;
+            childAgents = stats.StatsBlock[5].StatValue;
+            totalPrims = stats.StatsBlock[6].StatValue;
+            activePrims = stats.StatsBlock[7].StatValue;
+            totalFrameTime = stats.StatsBlock[8].StatValue;
+            netFrameTime = stats.StatsBlock[9].StatValue;
+            physicsFrameTime = stats.StatsBlock[10].StatValue;
+            otherFrameTime = stats.StatsBlock[11].StatValue;
+            imageFrameTime = stats.StatsBlock[12].StatValue;
+            inPacketsPerSecond = stats.StatsBlock[13].StatValue;
+            outPacketsPerSecond = stats.StatsBlock[14].StatValue;
+            unackedBytes = stats.StatsBlock[15].StatValue;
+            agentFrameTime = stats.StatsBlock[16].StatValue;
+            pendingDownloads = stats.StatsBlock[17].StatValue;
+            pendingUploads = stats.StatsBlock[18].StatValue;
+            activeScripts = stats.StatsBlock[19].StatValue;
+            scriptLinesPerSecond = stats.StatsBlock[20].StatValue;
+        }
 
         /// <summary>
         /// Register as a packet queue stats provider
@@ -227,51 +365,6 @@ namespace OpenSim.Framework.Monitoring
                 packetQueueStatsCollectors[uuid] = new PacketQueueStatsCollector(provider);
             }
         }
-
-        /// <summary>
-        /// Deregister a packet queue stats provider
-        /// </summary>
-        /// <param name="uuid">An agent UUID</param>
-        public void DeregisterPacketQueueStatsProvider(UUID uuid)
-        {
-            lock (packetQueueStatsCollectors)
-            {
-                packetQueueStatsCollectors.Remove(uuid);
-            }
-        }
-
-        /// <summary>
-        /// This is the method on which the classic sim stats reporter (which collects stats for
-        /// client purposes) sends information to listeners.
-        /// </summary>
-        /// <param name="pack"></param>
-        public void ReceiveClassicSimStatsPacket(SimStats stats)
-        {
-            // FIXME: SimStats shouldn't allow an arbitrary stat packing order (which is inherited from the original
-            // SimStatsPacket that was being used).
-            timeDilation            = stats.StatsBlock[0].StatValue;
-            simFps                  = stats.StatsBlock[1].StatValue;
-            physicsFps              = stats.StatsBlock[2].StatValue;
-            agentUpdates            = stats.StatsBlock[3].StatValue;
-            rootAgents              = stats.StatsBlock[4].StatValue;
-            childAgents             = stats.StatsBlock[5].StatValue;
-            totalPrims              = stats.StatsBlock[6].StatValue;
-            activePrims             = stats.StatsBlock[7].StatValue;
-            totalFrameTime          = stats.StatsBlock[8].StatValue;
-            netFrameTime            = stats.StatsBlock[9].StatValue;
-            physicsFrameTime        = stats.StatsBlock[10].StatValue;
-            otherFrameTime          = stats.StatsBlock[11].StatValue;
-            imageFrameTime          = stats.StatsBlock[12].StatValue;
-            inPacketsPerSecond      = stats.StatsBlock[13].StatValue;
-            outPacketsPerSecond     = stats.StatsBlock[14].StatValue;
-            unackedBytes            = stats.StatsBlock[15].StatValue;
-            agentFrameTime          = stats.StatsBlock[16].StatValue;
-            pendingDownloads        = stats.StatsBlock[17].StatValue;
-            pendingUploads          = stats.StatsBlock[18].StatValue;
-            activeScripts           = stats.StatsBlock[19].StatValue;
-            scriptLinesPerSecond    = stats.StatsBlock[20].StatValue;
-        }
-
         /// <summary>
         /// Report back collected statistical information.
         /// </summary>
@@ -279,9 +372,9 @@ namespace OpenSim.Framework.Monitoring
         public override string Report()
         {
             StringBuilder sb = new StringBuilder(Environment.NewLine);
-//            sb.Append("ASSET STATISTICS");
-//            sb.Append(Environment.NewLine);
-                        
+            //            sb.Append("ASSET STATISTICS");
+            //            sb.Append(Environment.NewLine);
+
             /*
             sb.Append(
                 string.Format(
@@ -317,16 +410,16 @@ Asset service request failures: {3}" + Environment.NewLine,
             List<Stat> stats = StatsManager.GetStatsFromEachContainer("clientstack", "ClientLogoutsDueToNoReceives");
 
             sb.AppendFormat(
-                "Client logouts due to no data receive timeout: {0}\n\n", 
+                "Client logouts due to no data receive timeout: {0}\n\n",
                 stats != null ? stats.Sum(s => s.Value).ToString() : "unknown");
 
-//            sb.Append(Environment.NewLine);
-//            sb.Append("INVENTORY STATISTICS");
-//            sb.Append(Environment.NewLine);
-//            sb.Append(
-//                string.Format(
-//                    "Initial inventory caching failures: {0}" + Environment.NewLine,
-//                    InventoryServiceRetrievalFailures));
+            //            sb.Append(Environment.NewLine);
+            //            sb.Append("INVENTORY STATISTICS");
+            //            sb.Append(Environment.NewLine);
+            //            sb.Append(
+            //                string.Format(
+            //                    "Initial inventory caching failures: {0}" + Environment.NewLine,
+            //                    InventoryServiceRetrievalFailures));
 
             sb.Append(Environment.NewLine);
             sb.Append("SAMPLE FRAME STATISTICS");
@@ -399,86 +492,6 @@ Asset service request failures: {3}" + Environment.NewLine,
         public override string XReport(string uptime, string version)
         {
             return OSDParser.SerializeJsonString(OReport(uptime, version));
-        }
-
-        /// <summary>
-        /// Report back collected statistical information as an OSDMap
-        /// </summary>
-        /// <returns></returns>
-        public override OSDMap OReport(string uptime, string version)
-        {
-            OSDMap args = new OSDMap(30);
-//            args["AssetsInCache"] = OSD.FromString (String.Format ("{0:0.##}", AssetsInCache));
-//            args["TimeAfterCacheMiss"] = OSD.FromString (String.Format ("{0:0.##}",
-//                    assetRequestTimeAfterCacheMiss.Milliseconds / 1000.0));
-//            args["BlockedMissingTextureRequests"] = OSD.FromString (String.Format ("{0:0.##}",
-//                    BlockedMissingTextureRequests));
-//            args["AssetServiceRequestFailures"] = OSD.FromString (String.Format ("{0:0.##}",
-//                    AssetServiceRequestFailures));
-//            args["abnormalClientThreadTerminations"] = OSD.FromString (String.Format ("{0:0.##}",
-//                    abnormalClientThreadTerminations));
-//            args["InventoryServiceRetrievalFailures"] = OSD.FromString (String.Format ("{0:0.##}",
-//                    InventoryServiceRetrievalFailures));
-            args["Dilatn"] = OSD.FromString (String.Format ("{0:0.##}", timeDilation));
-            args["SimFPS"] = OSD.FromString (String.Format ("{0:0.##}", simFps));
-            args["PhyFPS"] = OSD.FromString (String.Format ("{0:0.##}", physicsFps));
-            args["AgntUp"] = OSD.FromString (String.Format ("{0:0.##}", agentUpdates));
-            args["RootAg"] = OSD.FromString (String.Format ("{0:0.##}", rootAgents));
-            args["ChldAg"] = OSD.FromString (String.Format ("{0:0.##}", childAgents));
-            args["Prims"] = OSD.FromString (String.Format ("{0:0.##}", totalPrims));
-            args["AtvPrm"] = OSD.FromString (String.Format ("{0:0.##}", activePrims));
-            args["AtvScr"] = OSD.FromString (String.Format ("{0:0.##}", activeScripts));
-            args["ScrLPS"] = OSD.FromString (String.Format ("{0:0.##}", scriptLinesPerSecond));
-            args["PktsIn"] = OSD.FromString (String.Format ("{0:0.##}", inPacketsPerSecond));
-            args["PktOut"] = OSD.FromString (String.Format ("{0:0.##}", outPacketsPerSecond));
-            args["PendDl"] = OSD.FromString (String.Format ("{0:0.##}", pendingDownloads));
-            args["PendUl"] = OSD.FromString (String.Format ("{0:0.##}", pendingUploads));
-            args["UnackB"] = OSD.FromString (String.Format ("{0:0.##}", unackedBytes));
-            args["TotlFt"] = OSD.FromString (String.Format ("{0:0.##}", totalFrameTime));
-            args["NetFt"] = OSD.FromString (String.Format ("{0:0.##}", netFrameTime));
-            args["PhysFt"] = OSD.FromString (String.Format ("{0:0.##}", physicsFrameTime));
-            args["OthrFt"] = OSD.FromString (String.Format ("{0:0.##}", otherFrameTime));
-            args["AgntFt"] = OSD.FromString (String.Format ("{0:0.##}", agentFrameTime));
-            args["ImgsFt"] = OSD.FromString (String.Format ("{0:0.##}", imageFrameTime));
-            args["Memory"] = OSD.FromString (base.XReport (uptime, version));
-            args["Uptime"] = OSD.FromString (uptime);
-            args["Version"] = OSD.FromString (version);
-            
-            return args;
-        }
-    }
-
-
-    /// <summary>
-    /// Pull packet queue stats from packet queues and report
-    /// </summary>
-    public class PacketQueueStatsCollector : IStatsCollector
-    {
-        private IPullStatsProvider m_statsProvider;
-
-        public PacketQueueStatsCollector(IPullStatsProvider provider)
-        {
-            m_statsProvider = provider;
-        }
-
-        /// <summary>
-        /// Report back collected statistical information.
-        /// </summary>
-        /// <returns></returns>
-        public string Report()
-        {
-            return m_statsProvider.GetStats();
-        }
-        
-        public string XReport(string uptime, string version)
-        {
-            return "";
-        }
-        
-        public OSDMap OReport(string uptime, string version)
-        {
-            OSDMap ret = new OSDMap();
-            return ret;
         }
     }
 }

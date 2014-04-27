@@ -51,6 +51,37 @@ namespace OpenSim.Framework
         /// </summary>
         private ushort _version;
 
+        public InventoryFolderBase()
+        {
+        }
+
+        public InventoryFolderBase(UUID id)
+            : this()
+        {
+            ID = id;
+        }
+
+        public InventoryFolderBase(UUID id, UUID owner)
+            : this(id)
+        {
+            Owner = owner;
+        }
+
+        public InventoryFolderBase(UUID id, string name, UUID owner, UUID parent)
+            : this(id, owner)
+        {
+            Name = name;
+            ParentID = parent;
+        }
+
+        public InventoryFolderBase(
+            UUID id, string name, UUID owner, short type, UUID parent, ushort version)
+            : this(id, name, owner, parent)
+        {
+            Type = type;
+            Version = version;
+        }
+
         public virtual UUID ParentID
         {
             get { return _parentID; }
@@ -67,33 +98,6 @@ namespace OpenSim.Framework
         {
             get { return _version; }
             set { _version = value; }
-        }
-
-        public InventoryFolderBase()
-        {
-        }
-
-        public InventoryFolderBase(UUID id) : this()
-        {
-            ID = id;
-        }
-
-        public InventoryFolderBase(UUID id, UUID owner) : this(id)
-        {
-            Owner = owner;
-        }
-
-        public InventoryFolderBase(UUID id, string name, UUID owner, UUID parent) : this(id, owner)
-        {
-            Name = name;
-            ParentID = parent;
-        }
-
-        public InventoryFolderBase(
-            UUID id, string name, UUID owner, short type, UUID parent, ushort version) : this(id, name, owner, parent)
-        {
-            Type = type;
-            Version = version;
         }
     }
 }

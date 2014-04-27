@@ -33,11 +33,6 @@ namespace OpenSim.Framework.Servers.HttpServer
     {
         private GenericHTTPMethod m_dhttpMethod;
 
-        public GenericHTTPMethod Method
-        {
-            get { return m_dhttpMethod; }
-        }
-
         public RestHTTPHandler(string httpMethod, string path, GenericHTTPMethod dhttpMethod)
             : base(httpMethod, path)
         {
@@ -51,6 +46,10 @@ namespace OpenSim.Framework.Servers.HttpServer
             m_dhttpMethod = dhttpMethod;
         }
 
+        public GenericHTTPMethod Method
+        {
+            get { return m_dhttpMethod; }
+        }
         public override Hashtable Handle(string path, Hashtable request)
         {
             string param = GetParam(path);

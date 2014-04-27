@@ -25,27 +25,32 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using Mono.Addins;
 using Nini.Config;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Collections.Generic;
+using System.IO;
 
 namespace OpenSim.Region.CoreModules.Agent.IPBan
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "IPBanModule")]
-    public class IPBanModule : ISharedRegionModule 
+    public class IPBanModule : ISharedRegionModule
     {
         #region Implementation of ISharedRegionModule
 
         private List<string> m_bans = new List<string>();
 
-        public void Initialise(IConfigSource source)
+        public string Name
         {
+            get { return "IPBanModule"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
         }
 
         public void AddRegion(Scene scene)
@@ -64,14 +69,13 @@ namespace OpenSim.Region.CoreModules.Agent.IPBan
             }
         }
 
-        public void RemoveRegion(Scene scene)
+        public void Close()
         {
         }
 
-        public void RegionLoaded(Scene scene)
+        public void Initialise(IConfigSource source)
         {
         }
-
         public void PostInitialise()
         {
             if (File.Exists("bans.txt"))
@@ -84,22 +88,14 @@ namespace OpenSim.Region.CoreModules.Agent.IPBan
             }
         }
 
-        public void Close()
+        public void RegionLoaded(Scene scene)
         {
-            
         }
 
-        public string Name
+        public void RemoveRegion(Scene scene)
         {
-            get { return "IPBanModule"; }
         }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
-        #endregion
+        #endregion Implementation of ISharedRegionModule
 
         /// <summary>
         /// Bans all users from the specified network from connecting.
@@ -107,9 +103,9 @@ namespace OpenSim.Region.CoreModules.Agent.IPBan
         /// matching domain (including "betasomewhere.com", "beta.somewhere.com",
         /// "somewhere.com.beta") - make sure to be reasonably specific in DNS
         /// bans.
-        /// 
+        ///
         /// IP address bans match on first characters, so,
-        /// "127.0.0.1" will ban only that address, 
+        /// "127.0.0.1" will ban only that address,
         /// "127.0.1" will ban "127.0.10.0"
         /// but "127.0.1." will ban only the "127.0.1.*" network
         /// </summary>

@@ -25,10 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
 using System;
 using System.IO;
 using System.Text;
-using log4net;
 
 namespace OpenSim.Region.CoreModules.Framework.Statistics.Logging
 {
@@ -42,21 +42,24 @@ namespace OpenSim.Region.CoreModules.Framework.Statistics.Logging
     /// </summary>
     public class LogWriter : IDisposable
     {
-        public bool Enabled { get; private set; }
-
-        private string m_logDirectory = ".";
-        private int m_logMaxFileTimeMin = 5;    // 5 minutes
-        public String LogFileHeader { get; set; }
-
-        private StreamWriter m_logFile = null;
-        private TimeSpan m_logFileLife;
-        private DateTime m_logFileEndTime;
-        private Object m_logFileWriteLock = new Object();
-        private bool m_flushWrite;
-
         // set externally when debugging. If let 'null', this does not write any error messages.
         public ILog ErrorLogger = null;
+
         private string LogHeader = "[LOG WRITER]";
+
+        private bool m_flushWrite;
+
+        private string m_logDirectory = ".";
+
+        private StreamWriter m_logFile = null;
+
+        private DateTime m_logFileEndTime;
+
+        private TimeSpan m_logFileLife;
+
+        private Object m_logFileWriteLock = new Object();
+
+        private int m_logMaxFileTimeMin = 5;
 
         /// <summary>
         /// Create a log writer that will not write anything. Good for when not enabled
@@ -93,16 +96,17 @@ namespace OpenSim.Region.CoreModules.Framework.Statistics.Logging
 
             Enabled = true;
         }
+
         // Constructor that assumes flushWrite is off.
-        public LogWriter(string dir, string headr, int maxFileTime) : this(dir, headr, maxFileTime, false)
+        public LogWriter(string dir, string headr, int maxFileTime)
+            : this(dir, headr, maxFileTime, false)
         {
         }
 
-        public void Dispose()
-        {
-            this.Close();
-        }
+        public bool Enabled { get; private set; }
+            // 5 minutes
 
+        public String LogFileHeader { get; set; }
         public void Close()
         {
             Enabled = false;
@@ -114,12 +118,10 @@ namespace OpenSim.Region.CoreModules.Framework.Statistics.Logging
             }
         }
 
-        public void Write(string line, params object[] args)
+        public void Dispose()
         {
-            if (!Enabled) return;
-            Write(String.Format(line, args));
+            this.Close();
         }
-
         public void Flush()
         {
             if (!Enabled) return;
@@ -129,6 +131,11 @@ namespace OpenSim.Region.CoreModules.Framework.Statistics.Logging
             }
         }
 
+        public void Write(string line, params object[] args)
+        {
+            if (!Enabled) return;
+            Write(String.Format(line, args));
+        }
         public void Write(string line)
         {
             if (!Enabled) return;

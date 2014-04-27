@@ -25,10 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using OpenMetaverse;
 
 namespace OpenSim.Framework
 {
@@ -36,159 +35,86 @@ namespace OpenSim.Framework
     {
         // private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        public delegate void SaveDelegate(EstateSettings rs);
+        private List<UUID> l_EstateAccess = new List<UUID>();
 
-        public event SaveDelegate OnSave;
+        private List<EstateBan> l_EstateBans = new List<EstateBan>();
+
+        private List<UUID> l_EstateGroups = new List<UUID>();
+
+        // All those lists...
+        //
+        private List<UUID> l_EstateManagers = new List<UUID>();
+
+        private string m_AbuseEmail = String.Empty;
+
+        private bool m_AbuseEmailToEstateOwner = false;
+
+        private bool m_AllowDirectTeleport = true;
+
+        private bool m_AllowLandmark = true;
+
+        private bool m_AllowParcelChanges = true;
+
+        private bool m_AllowSetHome = true;
+
+        private bool m_AllowVoice = true;
+
+        private float m_BillableFactor = 0.0f;
+
+        private bool m_BlockDwell = false;
+
+        private bool m_DenyAnonymous = false;
+
+        private bool m_DenyIdentified = false;
+
+        private bool m_DenyMinors = false;
+
+        private bool m_DenyTransacted = false;
 
         // Only the client uses these
         //
         private uint m_EstateID = 0;
 
-        public uint EstateID
-        {
-            get { return m_EstateID; }
-            set { m_EstateID = value; }
-        }
-
         private string m_EstateName = "My Estate";
 
-        public string EstateName
-        {
-            get { return m_EstateName; }
-            set { m_EstateName = value; }
-        }
+        private UUID m_EstateOwner = UUID.Zero;
 
-        private bool m_AllowLandmark = true;
+        private bool m_EstateSkipScripts = false;
 
-        public bool AllowLandmark
-        {
-            get { return m_AllowLandmark; }
-            set { m_AllowLandmark = value; }
-        }
-
-        private bool m_AllowParcelChanges = true;
-
-        public bool AllowParcelChanges
-        {
-            get { return m_AllowParcelChanges; }
-            set { m_AllowParcelChanges = value; }
-        }
-
-        private bool m_AllowSetHome = true;
-
-        public bool AllowSetHome
-        {
-            get { return m_AllowSetHome; }
-            set { m_AllowSetHome = value; }
-        }
+        private bool m_FixedSun = false;
 
         private uint m_ParentEstateID = 1;
 
-        public uint ParentEstateID
-        {
-            get { return m_ParentEstateID; }
-            set { m_ParentEstateID = value; }
-        }
-
-        private float m_BillableFactor = 0.0f;
-
-        public float BillableFactor
-        {
-            get { return m_BillableFactor; }
-            set { m_BillableFactor = value; }
-        }
-
         private int m_PricePerMeter = 1;
 
-        public int PricePerMeter
-        {
-            get { return m_PricePerMeter; }
-            set { m_PricePerMeter = value; }
-        }
+        private bool m_PublicAccess = true;
 
         private int m_RedirectGridX = 0;
 
-        public int RedirectGridX
-        {
-            get { return m_RedirectGridX; }
-            set { m_RedirectGridX = value; }
-        }
-
         private int m_RedirectGridY = 0;
 
-        public int RedirectGridY
-        {
-            get { return m_RedirectGridY; }
-            set { m_RedirectGridY = value; }
-        }
+        private bool m_ResetHomeOnTeleport = false;
+
+        private double m_SunPosition = 0.0;
+
+        private bool m_TaxFree = false;
 
         // Used by the sim
         //
         private bool m_UseGlobalTime = true;
 
-        public bool UseGlobalTime
+        public EstateSettings()
         {
-            get { return m_UseGlobalTime; }
-            set { m_UseGlobalTime = value; }
         }
 
-        private bool m_FixedSun = false;
+        public delegate void SaveDelegate(EstateSettings rs);
 
-        public bool FixedSun
+        public event SaveDelegate OnSave;
+        public string AbuseEmail
         {
-            get { return m_FixedSun; }
-            set { m_FixedSun = value; }
+            get { return m_AbuseEmail; }
+            set { m_AbuseEmail = value; }
         }
-
-        private double m_SunPosition = 0.0;
-
-        public double SunPosition
-        {
-            get { return m_SunPosition; }
-            set { m_SunPosition = value; }
-        }
-
-        private bool m_AllowVoice = true;
-
-        public bool AllowVoice
-        {
-            get { return m_AllowVoice; }
-            set { m_AllowVoice = value; }
-        }
-
-        private bool m_AllowDirectTeleport = true;
-
-        public bool AllowDirectTeleport
-        {
-            get { return m_AllowDirectTeleport; }
-            set { m_AllowDirectTeleport = value; }
-        }
-
-        private bool m_DenyAnonymous = false;
-
-        public bool DenyAnonymous
-        {
-            get { return m_DenyAnonymous; }
-            set { m_DenyAnonymous = value; }
-        }
-
-        private bool m_DenyIdentified = false;
-
-        public bool DenyIdentified
-        {
-            get { return m_DenyIdentified; }
-            set { m_DenyIdentified = value; }
-        }
-
-        private bool m_DenyTransacted = false;
-
-        public bool DenyTransacted
-        {
-            get { return m_DenyTransacted; }
-            set { m_DenyTransacted = value; }
-        }
-
-        private bool m_AbuseEmailToEstateOwner = false;
 
         public bool AbuseEmailToEstateOwner
         {
@@ -196,7 +122,41 @@ namespace OpenSim.Framework
             set { m_AbuseEmailToEstateOwner = value; }
         }
 
-        private bool m_BlockDwell = false;
+        public bool AllowDirectTeleport
+        {
+            get { return m_AllowDirectTeleport; }
+            set { m_AllowDirectTeleport = value; }
+        }
+
+        public bool AllowLandmark
+        {
+            get { return m_AllowLandmark; }
+            set { m_AllowLandmark = value; }
+        }
+
+        public bool AllowParcelChanges
+        {
+            get { return m_AllowParcelChanges; }
+            set { m_AllowParcelChanges = value; }
+        }
+
+        public bool AllowSetHome
+        {
+            get { return m_AllowSetHome; }
+            set { m_AllowSetHome = value; }
+        }
+
+        public bool AllowVoice
+        {
+            get { return m_AllowVoice; }
+            set { m_AllowVoice = value; }
+        }
+
+        public float BillableFactor
+        {
+            get { return m_BillableFactor; }
+            set { m_BillableFactor = value; }
+        }
 
         public bool BlockDwell
         {
@@ -204,55 +164,17 @@ namespace OpenSim.Framework
             set { m_BlockDwell = value; }
         }
 
-        private bool m_EstateSkipScripts = false;
-
-        public bool EstateSkipScripts
+        public bool DenyAnonymous
         {
-            get { return m_EstateSkipScripts; }
-            set { m_EstateSkipScripts = value; }
+            get { return m_DenyAnonymous; }
+            set { m_DenyAnonymous = value; }
         }
 
-        private bool m_ResetHomeOnTeleport = false;
-
-        public bool ResetHomeOnTeleport
+        public bool DenyIdentified
         {
-            get { return m_ResetHomeOnTeleport; }
-            set { m_ResetHomeOnTeleport = value; }
+            get { return m_DenyIdentified; }
+            set { m_DenyIdentified = value; }
         }
-
-        private bool m_TaxFree = false;
-
-        public bool TaxFree
-        {
-            get { return m_TaxFree; }
-            set { m_TaxFree = value; }
-        }
-
-        private bool m_PublicAccess = true;
-
-        public bool PublicAccess
-        {
-            get { return m_PublicAccess; }
-            set { m_PublicAccess = value; }
-        }
-
-        private string m_AbuseEmail = String.Empty;
-
-        public string AbuseEmail
-        {
-            get { return m_AbuseEmail; }
-            set { m_AbuseEmail= value; }
-        }
-
-        private UUID m_EstateOwner = UUID.Zero;
-
-        public UUID EstateOwner
-        {
-            get { return m_EstateOwner; }
-            set { m_EstateOwner = value; }
-        }
-
-        private bool m_DenyMinors = false;
 
         public bool DenyMinors
         {
@@ -260,25 +182,11 @@ namespace OpenSim.Framework
             set { m_DenyMinors = value; }
         }
 
-        // All those lists...
-        //
-        private List<UUID> l_EstateManagers = new List<UUID>();
-
-        public UUID[] EstateManagers
+        public bool DenyTransacted
         {
-            get { return l_EstateManagers.ToArray(); }
-            set { l_EstateManagers = new List<UUID>(value); }
+            get { return m_DenyTransacted; }
+            set { m_DenyTransacted = value; }
         }
-
-        private List<EstateBan> l_EstateBans = new List<EstateBan>();
-
-        public EstateBan[] EstateBans
-        {
-            get { return l_EstateBans.ToArray(); }
-            set { l_EstateBans = new List<EstateBan>(value); }
-        }
-
-        private List<UUID> l_EstateAccess = new List<UUID>();
 
         public UUID[] EstateAccess
         {
@@ -286,7 +194,11 @@ namespace OpenSim.Framework
             set { l_EstateAccess = new List<UUID>(value); }
         }
 
-        private List<UUID> l_EstateGroups = new List<UUID>();
+        public EstateBan[] EstateBans
+        {
+            get { return l_EstateBans.ToArray(); }
+            set { l_EstateBans = new List<EstateBan>(value); }
+        }
 
         public UUID[] EstateGroups
         {
@@ -294,28 +206,95 @@ namespace OpenSim.Framework
             set { l_EstateGroups = new List<UUID>(value); }
         }
 
-        public EstateSettings()
+        public uint EstateID
         {
+            get { return m_EstateID; }
+            set { m_EstateID = value; }
+        }
+        public UUID[] EstateManagers
+        {
+            get { return l_EstateManagers.ToArray(); }
+            set { l_EstateManagers = new List<UUID>(value); }
         }
 
-        public void Save()
+        public string EstateName
         {
-            if (OnSave != null)
-                OnSave(this);
+            get { return m_EstateName; }
+            set { m_EstateName = value; }
+        }
+        public UUID EstateOwner
+        {
+            get { return m_EstateOwner; }
+            set { m_EstateOwner = value; }
         }
 
-        public void AddEstateUser(UUID avatarID)
+        public bool EstateSkipScripts
         {
-            if (avatarID == UUID.Zero)
+            get { return m_EstateSkipScripts; }
+            set { m_EstateSkipScripts = value; }
+        }
+
+        public bool FixedSun
+        {
+            get { return m_FixedSun; }
+            set { m_FixedSun = value; }
+        }
+
+        public uint ParentEstateID
+        {
+            get { return m_ParentEstateID; }
+            set { m_ParentEstateID = value; }
+        }
+        public int PricePerMeter
+        {
+            get { return m_PricePerMeter; }
+            set { m_PricePerMeter = value; }
+        }
+        public bool PublicAccess
+        {
+            get { return m_PublicAccess; }
+            set { m_PublicAccess = value; }
+        }
+
+        public int RedirectGridX
+        {
+            get { return m_RedirectGridX; }
+            set { m_RedirectGridX = value; }
+        }
+        public int RedirectGridY
+        {
+            get { return m_RedirectGridY; }
+            set { m_RedirectGridY = value; }
+        }
+        public bool ResetHomeOnTeleport
+        {
+            get { return m_ResetHomeOnTeleport; }
+            set { m_ResetHomeOnTeleport = value; }
+        }
+
+        public double SunPosition
+        {
+            get { return m_SunPosition; }
+            set { m_SunPosition = value; }
+        }
+
+        public bool TaxFree
+        {
+            get { return m_TaxFree; }
+            set { m_TaxFree = value; }
+        }
+
+        public bool UseGlobalTime
+        {
+            get { return m_UseGlobalTime; }
+            set { m_UseGlobalTime = value; }
+        }
+        public void AddBan(EstateBan ban)
+        {
+            if (ban == null)
                 return;
-            if (!l_EstateAccess.Contains(avatarID))
-                l_EstateAccess.Add(avatarID);
-        }
-
-        public void RemoveEstateUser(UUID avatarID)
-        {
-            if (l_EstateAccess.Contains(avatarID))
-                l_EstateAccess.Remove(avatarID);
+            if (!IsBanned(ban.BannedUserID))
+                l_EstateBans.Add(ban);
         }
 
         public void AddEstateGroup(UUID avatarID)
@@ -326,12 +305,6 @@ namespace OpenSim.Framework
                 l_EstateGroups.Add(avatarID);
         }
 
-        public void RemoveEstateGroup(UUID avatarID)
-        {
-            if (l_EstateGroups.Contains(avatarID))
-                l_EstateGroups.Remove(avatarID);
-        }
-
         public void AddEstateManager(UUID avatarID)
         {
             if (avatarID == UUID.Zero)
@@ -340,10 +313,38 @@ namespace OpenSim.Framework
                 l_EstateManagers.Add(avatarID);
         }
 
-        public void RemoveEstateManager(UUID avatarID)
+        public void AddEstateUser(UUID avatarID)
         {
-            if (l_EstateManagers.Contains(avatarID))
-                l_EstateManagers.Remove(avatarID);
+            if (avatarID == UUID.Zero)
+                return;
+            if (!l_EstateAccess.Contains(avatarID))
+                l_EstateAccess.Add(avatarID);
+        }
+
+        public void ClearBans()
+        {
+            l_EstateBans.Clear();
+        }
+
+        public bool GroupAccess(UUID groupID)
+        {
+            return l_EstateGroups.Contains(groupID);
+        }
+
+        public bool HasAccess(UUID user)
+        {
+            if (IsEstateManagerOrOwner(user))
+                return true;
+
+            return l_EstateAccess.Contains(user);
+        }
+
+        public bool IsBanned(UUID avatarID)
+        {
+            foreach (EstateBan ban in l_EstateBans)
+                if (ban.BannedUserID == avatarID)
+                    return true;
+            return false;
         }
 
         public bool IsEstateManagerOrOwner(UUID avatarID)
@@ -362,27 +363,6 @@ namespace OpenSim.Framework
             return false;
         }
 
-        public bool IsBanned(UUID avatarID)
-        {
-            foreach (EstateBan ban in l_EstateBans)
-                if (ban.BannedUserID == avatarID)
-                    return true;
-            return false;
-        }
-
-        public void AddBan(EstateBan ban)
-        {
-            if (ban == null)
-                return;
-            if (!IsBanned(ban.BannedUserID))
-                l_EstateBans.Add(ban);
-        }
-
-        public void ClearBans()
-        {
-            l_EstateBans.Clear();
-        }
-
         public void RemoveBan(UUID avatarID)
         {
             foreach (EstateBan ban in new List<EstateBan>(l_EstateBans))
@@ -390,14 +370,29 @@ namespace OpenSim.Framework
                     l_EstateBans.Remove(ban);
         }
 
-        public bool HasAccess(UUID user)
+        public void RemoveEstateGroup(UUID avatarID)
         {
-            if (IsEstateManagerOrOwner(user))
-                return true;
-
-            return l_EstateAccess.Contains(user);
+            if (l_EstateGroups.Contains(avatarID))
+                l_EstateGroups.Remove(avatarID);
         }
 
+        public void RemoveEstateManager(UUID avatarID)
+        {
+            if (l_EstateManagers.Contains(avatarID))
+                l_EstateManagers.Remove(avatarID);
+        }
+
+        public void RemoveEstateUser(UUID avatarID)
+        {
+            if (l_EstateAccess.Contains(avatarID))
+                l_EstateAccess.Remove(avatarID);
+        }
+
+        public void Save()
+        {
+            if (OnSave != null)
+                OnSave(this);
+        }
         public void SetFromFlags(ulong regionFlags)
         {
             ResetHomeOnTeleport = ((regionFlags & (ulong)OpenMetaverse.RegionFlags.ResetHomeOnTeleport) == (ulong)OpenMetaverse.RegionFlags.ResetHomeOnTeleport);
@@ -405,11 +400,6 @@ namespace OpenSim.Framework
             AllowLandmark = ((regionFlags & (ulong)OpenMetaverse.RegionFlags.AllowLandmark) == (ulong)OpenMetaverse.RegionFlags.AllowLandmark);
             AllowParcelChanges = ((regionFlags & (ulong)OpenMetaverse.RegionFlags.AllowParcelChanges) == (ulong)OpenMetaverse.RegionFlags.AllowParcelChanges);
             AllowSetHome = ((regionFlags & (ulong)OpenMetaverse.RegionFlags.AllowSetHome) == (ulong)OpenMetaverse.RegionFlags.AllowSetHome);
-        }
-
-        public bool GroupAccess(UUID groupID)
-        {
-            return l_EstateGroups.Contains(groupID);
         }
     }
 }

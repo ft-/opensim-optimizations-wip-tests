@@ -1,4 +1,13 @@
-﻿/*
+﻿using log4net;
+using Mono.Addins;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
+using OpenSim.Services.Interfaces;
+
+/*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
  *
@@ -24,21 +33,11 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
-
-using OpenMetaverse;
-using log4net;
-using Nini.Config;
-using Mono.Addins;
-
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
 
 namespace OpenSim.Region.CoreModules.Avatar.Profile
 {
@@ -47,28 +46,29 @@ namespace OpenSim.Region.CoreModules.Avatar.Profile
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
+        private bool m_Enabled = false;
+
         //
         // Module vars
         //
         private List<Scene> m_Scenes = new List<Scene>();
-        private bool m_Enabled = false;
-
         #region ISharedRegionModule
 
-        public void Initialise(IConfigSource config)
+        public string Name
         {
-            if(config.Configs["UserProfiles"] != null)
-                return;
+            get { return "BasicProfileModule"; }
+        }
 
-            m_log.DebugFormat("[PROFILE MODULE]: Basic Profile Module enabled");
-            m_Enabled = true;
+        public Type ReplaceableInterface
+        {
+            get { return typeof(IProfileModule); }
         }
 
         public void AddRegion(Scene scene)
         {
             if (!m_Enabled)
                 return;
-            
+
             lock (m_Scenes)
             {
                 if (!m_Scenes.Contains(scene))
@@ -79,6 +79,22 @@ namespace OpenSim.Region.CoreModules.Avatar.Profile
                     scene.RegisterModuleInterface<IProfileModule>(this);
                 }
             }
+        }
+
+        public void Close()
+        {
+        }
+
+        public void Initialise(IConfigSource config)
+        {
+            if (config.Configs["UserProfiles"] != null)
+                return;
+
+            m_log.DebugFormat("[PROFILE MODULE]: Basic Profile Module enabled");
+            m_Enabled = true;
+        }
+        public void PostInitialise()
+        {
         }
 
         public void RegionLoaded(Scene scene)
@@ -97,33 +113,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Profile
                 m_Scenes.Remove(scene);
             }
         }
-
-        public void PostInitialise()
-        {
-        }
-
-        public void Close()
-        {
-        }
-
-        public string Name
-        {
-            get { return "BasicProfileModule"; }
-        }
-
-        public Type ReplaceableInterface
-        {
-            get { return typeof(IProfileModule); }
-        }
-
-        #endregion
-
-        /// New Client Event Handler
-        private void OnNewClient(IClientAPI client)
-        {
-            //Profile
-            client.OnRequestAvatarProperties += RequestAvatarProperties;
-        }
+        #endregion ISharedRegionModule
 
         public void RequestAvatarProperties(IClientAPI remoteClient, UUID avatarID)
         {
@@ -131,7 +121,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Profile
             if (!(s is Scene))
                 return;
 
-//            Scene scene = (Scene)s;
+            //            Scene scene = (Scene)s;
 
             string profileUrl = String.Empty;
             string aboutText = String.Empty;
@@ -175,5 +165,11 @@ namespace OpenSim.Region.CoreModules.Avatar.Profile
                                                     skillsMask, skillsText, languages);
         }
 
+        /// New Client Event Handler
+        private void OnNewClient(IClientAPI client)
+        {
+            //Profile
+            client.OnRequestAvatarProperties += RequestAvatarProperties;
+        }
     }
 }

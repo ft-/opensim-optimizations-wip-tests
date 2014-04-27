@@ -25,19 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Reflection;
-using log4net;
-using Nini.Config;
 using Mono.Addins;
+using Nini.Config;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
-using OpenSim.Framework;
 using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
+using System;
+using System.Collections;
 using Caps = OpenSim.Framework.Capabilities.Caps;
 
 namespace OpenSim.Region.ClientStack.Linden
@@ -48,21 +44,40 @@ namespace OpenSim.Region.ClientStack.Linden
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "MeshUploadFlagModule")]
     public class MeshUploadFlagModule : INonSharedRegionModule
     {
-//        private static readonly ILog m_log =
-//            LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log =
+        //            LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        private Scene m_scene;
 
         /// <summary>
         /// Is this module enabled?
         /// </summary>
         public bool Enabled { get; private set; }
-
-        private Scene m_scene;
-
         #region ISharedRegionModule Members
 
         public MeshUploadFlagModule()
         {
             Enabled = true;
+        }
+
+        public string Name { get { return "MeshUploadFlagModule"; } }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
+        public void AddRegion(Scene s)
+        {
+            if (!Enabled)
+                return;
+
+            m_scene = s;
+            m_scene.EventManager.OnRegisterCaps += RegisterCaps;
+        }
+
+        public void Close()
+        {
         }
 
         public void Initialise(IConfigSource source)
@@ -77,14 +92,12 @@ namespace OpenSim.Region.ClientStack.Linden
                 Enabled = config.GetBoolean("AllowMeshUpload", Enabled);
             }
         }
-
-        public void AddRegion(Scene s)
+        public void PostInitialise()
         {
-            if (!Enabled)
-                return;
+        }
 
-            m_scene = s;
-            m_scene.EventManager.OnRegisterCaps += RegisterCaps;
+        public void RegionLoaded(Scene s)
+        {
         }
 
         public void RemoveRegion(Scene s)
@@ -94,25 +107,7 @@ namespace OpenSim.Region.ClientStack.Linden
 
             m_scene.EventManager.OnRegisterCaps -= RegisterCaps;
         }
-
-        public void RegionLoaded(Scene s)
-        {
-        }
-
-        public void PostInitialise()
-        {
-        }
-
-        public void Close() { }
-
-        public string Name { get { return "MeshUploadFlagModule"; } }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
-        #endregion
+        #endregion ISharedRegionModule Members
 
         public void RegisterCaps(UUID agentID, Caps caps)
         {
@@ -121,27 +116,26 @@ namespace OpenSim.Region.ClientStack.Linden
                     "GET", "/CAPS/" + UUID.Random(), ht => MeshUploadFlag(ht, agentID), "MeshUploadFlag", agentID.ToString());
 
             caps.RegisterHandler("MeshUploadFlag", reqHandler);
-
         }
 
         private Hashtable MeshUploadFlag(Hashtable mDhttpMethod, UUID agentID)
         {
-//            m_log.DebugFormat("[MESH UPLOAD FLAG MODULE]: MeshUploadFlag request");
+            //            m_log.DebugFormat("[MESH UPLOAD FLAG MODULE]: MeshUploadFlag request");
 
             OSDMap data = new OSDMap();
-    	    ScenePresence sp = m_scene.GetScenePresence(agentID);
-    	    data["username"] = sp.Firstname + "." + sp.Lastname;
-    	    data["display_name_next_update"] = new OSDDate(DateTime.Now);
-    	    data["legacy_first_name"] = sp.Firstname;
-    	    data["mesh_upload_status"] = "valid";
-    	    data["display_name"] = sp.Firstname + " " + sp.Lastname;
-    	    data["legacy_last_name"] = sp.Lastname;
-    	    data["id"] = agentID;
-    	    data["is_display_name_default"] = true;
+            ScenePresence sp = m_scene.GetScenePresence(agentID);
+            data["username"] = sp.Firstname + "." + sp.Lastname;
+            data["display_name_next_update"] = new OSDDate(DateTime.Now);
+            data["legacy_first_name"] = sp.Firstname;
+            data["mesh_upload_status"] = "valid";
+            data["display_name"] = sp.Firstname + " " + sp.Lastname;
+            data["legacy_last_name"] = sp.Lastname;
+            data["id"] = agentID;
+            data["is_display_name_default"] = true;
 
             //Send back data
             Hashtable responsedata = new Hashtable();
-            responsedata["int_response_code"] = 200; 
+            responsedata["int_response_code"] = 200;
             responsedata["content_type"] = "text/plain";
             responsedata["keepalive"] = false;
             responsedata["str_response_string"] = OSDParser.SerializeLLSDXmlString(data);

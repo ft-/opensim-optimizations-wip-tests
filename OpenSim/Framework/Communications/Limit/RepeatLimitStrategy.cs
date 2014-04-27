@@ -35,19 +35,14 @@ namespace OpenSim.Framework.Communications.Limit
     public class RepeatLimitStrategy<TId> : IRequestLimitStrategy<TId>
     {
         /// <summary>
-        /// Record each asset request that we're notified about.
-        /// </summary>
-        private readonly Dictionary<TId, int> requestCounts = new Dictionary<TId, int>();
-
-        /// <summary>
         /// The maximum number of requests that can be made before we drop subsequent requests.
         /// </summary>
         private readonly int m_maxRequests;
-        public int MaxRequests
-        {
-            get { return m_maxRequests; }
-        }
 
+        /// <summary>
+        /// Record each asset request that we're notified about.
+        /// </summary>
+        private readonly Dictionary<TId, int> requestCounts = new Dictionary<TId, int>();
         /// <summary></summary>
         /// <param name="maxRequests">The maximum number of requests that may be served before all further
         /// requests are dropped.</param>
@@ -56,6 +51,10 @@ namespace OpenSim.Framework.Communications.Limit
             m_maxRequests = maxRequests;
         }
 
+        public int MaxRequests
+        {
+            get { return m_maxRequests; }
+        }
         /// <summary>
         /// <see cref="IRequestLimitStrategy"/>
         /// </summary>
@@ -90,20 +89,20 @@ namespace OpenSim.Framework.Communications.Limit
         /// <summary>
         /// <see cref="IRequestLimitStrategy"/>
         /// </summary>
+        public bool IsMonitoringRequests(TId id)
+        {
+            return requestCounts.ContainsKey(id);
+        }
+
+        /// <summary>
+        /// <see cref="IRequestLimitStrategy"/>
+        /// </summary>
         public void MonitorRequests(TId id)
         {
             if (!IsMonitoringRequests(id))
             {
                 requestCounts.Add(id, 1);
             }
-        }
-
-        /// <summary>
-        /// <see cref="IRequestLimitStrategy"/>
-        /// </summary>
-        public bool IsMonitoringRequests(TId id)
-        {
-            return requestCounts.ContainsKey(id);
         }
     }
 }

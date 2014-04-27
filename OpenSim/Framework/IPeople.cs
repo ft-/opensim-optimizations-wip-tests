@@ -25,23 +25,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using OpenMetaverse;
+using System.Collections.Generic;
 
 namespace OpenSim.Framework
 {
-    public class UserData
-    {
-        public UUID Id { get; set; }
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string HomeURL { get; set; }
-        public Dictionary<string, object> ServerURLs { get; set; }
-    }
-
     public interface IPeople
     {
         List<UserData> GetUserData(string query, int page_size, int page_number);
+    }
+
+    public class UserData
+    {
+        public string FirstName { get; set; }
+
+        public string HomeURL { get; set; }
+
+        public UUID Id { get; set; }
+        public string LastName { get; set; }
+        public Dictionary<string, object> ServerURLs { get; set; }
     }
 }

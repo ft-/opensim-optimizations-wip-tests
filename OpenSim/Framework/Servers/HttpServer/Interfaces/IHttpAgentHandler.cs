@@ -30,6 +30,7 @@ namespace OpenSim.Framework.Servers.HttpServer
     public interface IHttpAgentHandler
     {
         bool Handle(OSHttpRequest req, OSHttpResponse resp);
+
         bool Match(OSHttpRequest req, OSHttpResponse resp);
     }
 }

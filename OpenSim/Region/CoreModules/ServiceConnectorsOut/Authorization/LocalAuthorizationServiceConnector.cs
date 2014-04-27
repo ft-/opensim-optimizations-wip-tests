@@ -28,15 +28,11 @@
 using log4net;
 using Mono.Addins;
 using Nini.Config;
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using OpenSim.Framework;
-using OpenSim.Server.Base;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
-using OpenMetaverse;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authorization
 {
@@ -47,26 +43,36 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authorization
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
-        private IAuthorizationService m_AuthorizationService;
-        private Scene m_Scene;
         private IConfig m_AuthorizationConfig;
-
+        private IAuthorizationService m_AuthorizationService;
         private bool m_Enabled = false;
-
-        public Type ReplaceableInterface 
-        {
-            get { return null; }
-        }
-
+        private Scene m_Scene;
         public string Name
         {
             get { return "LocalAuthorizationServicesConnector"; }
         }
 
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+        public void AddRegion(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+
+            scene.RegisterModuleInterface<IAuthorizationService>(this);
+            m_Scene = scene;
+        }
+
+        public void Close()
+        {
+        }
+
         public void Initialise(IConfigSource source)
         {
             m_log.Info("[AUTHORIZATION CONNECTOR]: Initialise");
-            
+
             IConfig moduleConfig = source.Configs["Modules"];
             if (moduleConfig != null)
             {
@@ -80,27 +86,19 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authorization
             }
         }
 
+        public bool IsAuthorizedForRegion(
+            string userID, string firstName, string lastName, string regionID, out string message)
+        {
+            message = "";
+            if (!m_Enabled)
+                return true;
+
+            return m_AuthorizationService.IsAuthorizedForRegion(userID, firstName, lastName, regionID, out message);
+        }
+
         public void PostInitialise()
         {
         }
-
-        public void Close()
-        {
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-            scene.RegisterModuleInterface<IAuthorizationService>(this);
-            m_Scene = scene;
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-        }
-
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -113,14 +111,8 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authorization
                 scene.RegionInfo.RegionName);
         }
 
-        public bool IsAuthorizedForRegion(
-            string userID, string firstName, string lastName, string regionID, out string message)
+        public void RemoveRegion(Scene scene)
         {
-            message = "";
-            if (!m_Enabled)
-                return true;
-
-            return m_AuthorizationService.IsAuthorizedForRegion(userID, firstName, lastName, regionID, out message);
         }
     }
 }

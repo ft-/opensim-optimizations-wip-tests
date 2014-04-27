@@ -25,6 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Nini.Config;
+using OpenMetaverse.StructuredData;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -32,52 +35,88 @@ using System.Linq;
 using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading;
-using log4net;
-using Nini.Config;
-using OpenMetaverse.StructuredData;
-using OpenSim.Framework;
 
 namespace OpenSim.Framework.Monitoring
 {
+    public class ServerStatsAggregator : Stat
+    {
+        public ServerStatsAggregator(
+            string shortName,
+            string name,
+            string description,
+            string unitName,
+            string category,
+            string container
+            )
+            : base(
+                shortName,
+                name,
+                description,
+                unitName,
+                category,
+                container,
+                StatType.Push,
+                MeasuresOfInterest.None,
+                null,
+                StatVerbosity.Info)
+        {
+        }
+
+        public override string ToConsoleString()
+        {
+            StringBuilder sb = new StringBuilder();
+
+            return sb.ToString();
+        }
+
+        public override OSDMap ToOSDMap()
+        {
+            OSDMap ret = new OSDMap();
+
+            return ret;
+        }
+    }
+
     public class ServerStatsCollector
     {
-        private readonly ILog m_log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-        private readonly string LogHeader = "[SERVER STATS]";
-
-        public bool Enabled = false;
-        private static Dictionary<string, Stat> RegisteredStats = new Dictionary<string, Stat>();
-
         public readonly string CategoryServer = "server";
-
-        public readonly string ContainerThreadpool = "threadpool";
-        public readonly string ContainerProcessor = "processor";
         public readonly string ContainerMemory = "memory";
         public readonly string ContainerNetwork = "network";
         public readonly string ContainerProcess = "process";
-
+        public readonly string ContainerProcessor = "processor";
+        public readonly string ContainerThreadpool = "threadpool";
+        public bool Enabled = false;
         public string NetworkInterfaceTypes = "Ethernet";
+        private static Dictionary<string, Stat> RegisteredStats = new Dictionary<string, Stat>();
+        private readonly string LogHeader = "[SERVER STATS]";
+        private readonly ILog m_log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        private readonly int performanceCounterSampleInterval = 500;
+        //        int lastperformanceCounterSampleTime = 0;
 
-        readonly int performanceCounterSampleInterval = 500;
-//        int lastperformanceCounterSampleTime = 0;
+        private PerfCounterControl processorPercentPerfCounter = null;
 
-        private class PerfCounterControl
+        // Lookup the nic that goes with this stat and set the value by using a fetch action.
+        // Not sure about closure with delegates inside delegates.
+        private delegate double GetIPv4StatValue(IPv4InterfaceStatistics interfaceStat);
+
+        // Notes on performance counters:
+        //  "How To Read Performance Counters": http://blogs.msdn.com/b/bclteam/archive/2006/06/02/618156.aspx
+        //  "How to get the CPU Usage in C#": http://stackoverflow.com/questions/278071/how-to-get-the-cpu-usage-in-c
+        //  "Mono Performance Counters": http://www.mono-project.com/Mono_Performance_Counters
+        private delegate double PerfCounterNextValue();
+
+        public void Close()
         {
-            public PerformanceCounter perfCounter;
-            public int lastFetch;
-            public string name;
-            public PerfCounterControl(PerformanceCounter pPc)
-                : this(pPc, String.Empty)
+            if (RegisteredStats.Count > 0)
             {
-            }
-            public PerfCounterControl(PerformanceCounter pPc, string pName)
-            {
-                perfCounter = pPc;
-                lastFetch = 0;
-                name = pName;
+                foreach (Stat stat in RegisteredStats.Values)
+                {
+                    StatsManager.DeregisterStat(stat);
+                    stat.Dispose();
+                }
+                RegisteredStats.Clear();
             }
         }
-
-        PerfCounterControl processorPercentPerfCounter = null;
 
         // IRegionModuleBase.Initialize
         public void Initialise(IConfigSource source)
@@ -93,43 +132,9 @@ namespace OpenSim.Framework.Monitoring
             }
         }
 
-        public void Start()
-        {
-            if (RegisteredStats.Count == 0)
-                RegisterServerStats();
-        }
-
-        public void Close()
-        {
-            if (RegisteredStats.Count > 0)
-            {
-                foreach (Stat stat in RegisteredStats.Values)
-                {
-                    StatsManager.DeregisterStat(stat);
-                    stat.Dispose();
-                }
-                RegisteredStats.Clear();
-            }
-        }
-
-        private void MakeStat(string pName, string pDesc, string pUnit, string pContainer, Action<Stat> act)
-        {
-            MakeStat(pName, pDesc, pUnit, pContainer, act, MeasuresOfInterest.None);
-        }
-
-        private void MakeStat(string pName, string pDesc, string pUnit, string pContainer, Action<Stat> act, MeasuresOfInterest moi)
-        {
-            string desc = pDesc;
-            if (desc == null)
-                desc = pName;
-            Stat stat = new Stat(pName, pName, desc, pUnit, CategoryServer, pContainer, StatType.Pull, moi, act, StatVerbosity.Debug);
-            StatsManager.RegisterStat(stat);
-            RegisteredStats.Add(pName, stat);
-        }
-
         public void RegisterServerStats()
         {
-//            lastperformanceCounterSampleTime = Util.EnvironmentTickCount();
+            //            lastperformanceCounterSampleTime = Util.EnvironmentTickCount();
             PerformanceCounter tempPC;
             Stat tempStat;
             string tempName;
@@ -164,18 +169,18 @@ namespace OpenSim.Framework.Monitoring
             }
 
             MakeStat("BuiltinThreadpoolWorkerThreadsAvailable", null, "threads", ContainerThreadpool,
-                s => 
-                { 
-                    int workerThreads, iocpThreads; 
-                    ThreadPool.GetAvailableThreads(out workerThreads, out iocpThreads); 
+                s =>
+                {
+                    int workerThreads, iocpThreads;
+                    ThreadPool.GetAvailableThreads(out workerThreads, out iocpThreads);
                     s.Value = workerThreads;
                 });
 
             MakeStat("BuiltinThreadpoolIOCPThreadsAvailable", null, "threads", ContainerThreadpool,
-                s => 
-                { 
-                    int workerThreads, iocpThreads; 
-                    ThreadPool.GetAvailableThreads(out workerThreads, out iocpThreads); 
+                s =>
+                {
+                    int workerThreads, iocpThreads;
+                    ThreadPool.GetAvailableThreads(out workerThreads, out iocpThreads);
                     s.Value = iocpThreads;
                 });
 
@@ -190,10 +195,10 @@ namespace OpenSim.Framework.Monitoring
             }
 
             MakeStat(
-                "HTTPRequestsMade", 
-                "Number of outbound HTTP requests made", 
-                "requests", 
-                ContainerNetwork, 
+                "HTTPRequestsMade",
+                "Number of outbound HTTP requests made",
+                "requests",
+                ContainerNetwork,
                 s => s.Value = WebUtil.RequestNumber,
                 MeasuresOfInterest.AverageChangeOverTime);
 
@@ -248,15 +253,17 @@ namespace OpenSim.Framework.Monitoring
                                 (s) => { s.Value = Math.Round(MemoryWatchdog.AverageHeapAllocationRate * 1000d / 1024d / 1024d, 3); });
         }
 
-        // Notes on performance counters: 
-        //  "How To Read Performance Counters": http://blogs.msdn.com/b/bclteam/archive/2006/06/02/618156.aspx
-        //  "How to get the CPU Usage in C#": http://stackoverflow.com/questions/278071/how-to-get-the-cpu-usage-in-c
-        //  "Mono Performance Counters": http://www.mono-project.com/Mono_Performance_Counters
-        private delegate double PerfCounterNextValue();
+        public void Start()
+        {
+            if (RegisteredStats.Count == 0)
+                RegisterServerStats();
+        }
+
         private void GetNextValue(Stat stat, PerfCounterControl perfControl)
         {
             GetNextValue(stat, perfControl, 1.0);
         }
+
         private void GetNextValue(Stat stat, PerfCounterControl perfControl, double factor)
         {
             if (Util.EnvironmentTickCountSubtract(perfControl.lastFetch) > performanceCounterSampleInterval)
@@ -280,9 +287,6 @@ namespace OpenSim.Framework.Monitoring
             }
         }
 
-        // Lookup the nic that goes with this stat and set the value by using a fetch action.
-        // Not sure about closure with delegates inside delegates.
-        private delegate double GetIPv4StatValue(IPv4InterfaceStatistics interfaceStat);
         private void LookupNic(Stat stat, GetIPv4StatValue getter, double factor)
         {
             // Get the one nic that has the name of this stat
@@ -307,43 +311,38 @@ namespace OpenSim.Framework.Monitoring
                 m_log.ErrorFormat("{0} Exception fetching stat on interface '{1}'", LogHeader, stat.Description);
             }
         }
-    }
 
-    public class ServerStatsAggregator : Stat
-    {
-        public ServerStatsAggregator(
-            string shortName,
-            string name,
-            string description,
-            string unitName,
-            string category,
-            string container
-            )
-            : base(
-                shortName,
-                name,
-                description,
-                unitName,
-                category,
-                container,
-                StatType.Push,
-                MeasuresOfInterest.None,
-                null,
-                StatVerbosity.Info)
+        private void MakeStat(string pName, string pDesc, string pUnit, string pContainer, Action<Stat> act)
         {
-        }
-        public override string ToConsoleString()
-        {
-            StringBuilder sb = new StringBuilder();
-
-            return sb.ToString();
+            MakeStat(pName, pDesc, pUnit, pContainer, act, MeasuresOfInterest.None);
         }
 
-        public override OSDMap ToOSDMap()
+        private void MakeStat(string pName, string pDesc, string pUnit, string pContainer, Action<Stat> act, MeasuresOfInterest moi)
         {
-            OSDMap ret = new OSDMap();
+            string desc = pDesc;
+            if (desc == null)
+                desc = pName;
+            Stat stat = new Stat(pName, pName, desc, pUnit, CategoryServer, pContainer, StatType.Pull, moi, act, StatVerbosity.Debug);
+            StatsManager.RegisterStat(stat);
+            RegisteredStats.Add(pName, stat);
+        }
 
-            return ret;
+        private class PerfCounterControl
+        {
+            public int lastFetch;
+            public string name;
+            public PerformanceCounter perfCounter;
+            public PerfCounterControl(PerformanceCounter pPc)
+                : this(pPc, String.Empty)
+            {
+            }
+
+            public PerfCounterControl(PerformanceCounter pPc, string pName)
+            {
+                perfCounter = pPc;
+                lastFetch = 0;
+                name = pName;
+            }
         }
     }
 }

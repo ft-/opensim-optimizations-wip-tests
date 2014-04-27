@@ -1,3 +1,12 @@
+using log4net;
+using Mono.Addins;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Framework.Client;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
+
 /*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
@@ -24,17 +33,10 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using log4net;
-using Mono.Addins;
-using Nini.Config;
-using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Framework.Client;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
 
 namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
 {
@@ -44,28 +46,24 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
         private static readonly ILog m_log = LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
+        private readonly List<Scene> m_scenes = new List<Scene>();
+
         /// <value>
         /// Is this module enabled?
         /// </value>
         private bool m_enabled = false;
-        
-        private readonly List<Scene> m_scenes = new List<Scene>();
-
         #region Region Module interface
 
         private IMessageTransferModule m_TransferModule = null;
 
-        public void Initialise(IConfigSource config)
+        public string Name
         {
-            if (config.Configs["Messaging"] != null)
-            {
-                if (config.Configs["Messaging"].GetString(
-                        "InstantMessageModule", "InstantMessageModule") !=
-                        "InstantMessageModule")
-                    return;
-            }
-            
-            m_enabled = true;
+            get { return "InstantMessageModule"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
         }
 
         public void AddRegion(Scene scene)
@@ -82,6 +80,26 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
                     scene.EventManager.OnIncomingInstantMessage += OnGridInstantMessage;
                 }
             }
+        }
+
+        public void Close()
+        {
+        }
+
+        public void Initialise(IConfigSource config)
+        {
+            if (config.Configs["Messaging"] != null)
+            {
+                if (config.Configs["Messaging"].GetString(
+                        "InstantMessageModule", "InstantMessageModule") !=
+                        "InstantMessageModule")
+                    return;
+            }
+
+            m_enabled = true;
+        }
+        public void PostInitialise()
+        {
         }
 
         public void RegionLoaded(Scene scene)
@@ -117,7 +135,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
             }
         }
 
-        void OnClientConnect(IClientCore client)
+        private void OnClientConnect(IClientCore client)
         {
             IClientIM clientIM;
             if (client.TryGet(out clientIM))
@@ -125,26 +143,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
                 clientIM.OnInstantMessage += OnInstantMessage;
             }
         }
-
-        public void PostInitialise()
-        {
-        }
-
-        public void Close()
-        {
-        }
-
-        public string Name
-        {
-            get { return "InstantMessageModule"; }
-        }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
-        #endregion
+        #endregion Region Module interface
 
         public void OnInstantMessage(IClientAPI client, GridInstantMessage im)
         {
@@ -180,7 +179,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
                                     null, new UUID(im.fromAgentID), "System",
                                     new UUID(im.toAgentID),
                                     (byte)InstantMessageDialog.BusyAutoResponse,
-                                    "Unable to send instant message. "+
+                                    "Unable to send instant message. " +
                                     "User is not logged in.", false,
                                     new Vector3()));
                         }

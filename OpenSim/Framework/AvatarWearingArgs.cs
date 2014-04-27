@@ -25,9 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
 using System;
 using System.Collections.Generic;
-using OpenMetaverse;
 
 namespace OpenSim.Framework
 {
@@ -58,6 +58,6 @@ namespace OpenSim.Framework
             }
         }
 
-        #endregion
+        #endregion Nested type: Wearable
     }
 }

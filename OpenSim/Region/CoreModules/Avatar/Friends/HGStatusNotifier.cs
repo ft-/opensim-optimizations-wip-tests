@@ -1,17 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Services.Interfaces;
-using OpenSim.Services.Connectors.Hypergrid;
-using FriendInfo = OpenSim.Services.Interfaces.FriendInfo;
-
+﻿using log4net;
 using OpenMetaverse;
-
-using log4net;
+using OpenSim.Framework;
+using OpenSim.Services.Connectors.Hypergrid;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using FriendInfo = OpenSim.Services.Interfaces.FriendInfo;
 
 namespace OpenSim.Region.CoreModules.Avatar.Friends
 {
@@ -32,7 +26,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
             {
                 if (kvp.Key != "local")
                 {
-                    // For the others, call the user agent service 
+                    // For the others, call the user agent service
                     List<string> ids = new List<string>();
                     foreach (FriendInfo f in kvp.Value)
                         ids.Add(f.Friend);

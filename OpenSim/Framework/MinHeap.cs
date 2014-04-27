@@ -26,10 +26,10 @@
  */
 
 using System;
-using System.Threading;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace OpenSim.Framework
 {
@@ -38,58 +38,41 @@ namespace OpenSim.Framework
     [Serializable, ComVisible(false)]
     public class MinHeap<T> : ICollection<T>, ICollection
     {
-        private class Handle : IHandle
-        {
-            internal int index = -1;
-            internal MinHeap<T> heap = null;
-
-            internal void Clear()
-            {
-                this.index = -1;
-                this.heap = null;
-            }
-        }
-
-        private struct HeapItem
-        {
-            internal T value;
-            internal Handle handle;
-
-            internal HeapItem(T value, Handle handle)
-            {
-                this.value = value;
-                this.handle = handle;
-            }
-
-            internal void Clear()
-            {
-                if (this.handle != null)
-                    this.handle.Clear();
-                ClearRef();
-            }
-
-            internal void ClearRef()
-            {
-                this.value = default(T);
-                this.handle = null;
-            }
-        }
-
         public const int DEFAULT_CAPACITY = 4;
-
-        private HeapItem[] items;
-        private int size;
-        private object sync_root;
-        private int version;
 
         private Comparison<T> comparison;
 
-        public MinHeap() : this(DEFAULT_CAPACITY, Comparer<T>.Default) { }
-        public MinHeap(int capacity) : this(capacity, Comparer<T>.Default) { }
-        public MinHeap(IComparer<T> comparer) : this(DEFAULT_CAPACITY, comparer) { }
+        private HeapItem[] items;
+
+        private int size;
+
+        private object sync_root;
+
+        private int version;
+
+        public MinHeap()
+            : this(DEFAULT_CAPACITY, Comparer<T>.Default)
+        {
+        }
+
+        public MinHeap(int capacity)
+            : this(capacity, Comparer<T>.Default)
+        {
+        }
+
+        public MinHeap(IComparer<T> comparer)
+            : this(DEFAULT_CAPACITY, comparer)
+        {
+        }
+
         public MinHeap(int capacity, IComparer<T> comparer) :
             this(capacity, new Comparison<T>(comparer.Compare)) { }
-        public MinHeap(Comparison<T> comparison) : this(DEFAULT_CAPACITY, comparison) { }
+
+        public MinHeap(Comparison<T> comparison)
+            : this(DEFAULT_CAPACITY, comparison)
+        {
+        }
+
         public MinHeap(int capacity, Comparison<T> comparison)
         {
             this.items = new HeapItem[capacity];
@@ -102,6 +85,16 @@ namespace OpenSim.Framework
         public bool IsReadOnly { get { return false; } }
 
         public bool IsSynchronized { get { return false; } }
+
+        public object SyncRoot
+        {
+            get
+            {
+                if (this.sync_root == null)
+                    Interlocked.CompareExchange<object>(ref this.sync_root, new object(), null);
+                return this.sync_root;
+            }
+        }
 
         public T this[IHandle key]
         {
@@ -118,105 +111,6 @@ namespace OpenSim.Framework
                 if (!BubbleUp(handle.index))
                     BubbleDown(handle.index);
             }
-        }
-
-        public object SyncRoot
-        {
-            get
-            {
-                if (this.sync_root == null)
-                    Interlocked.CompareExchange<object>(ref this.sync_root, new object(), null);
-                return this.sync_root;
-            }
-        }
-
-        private Handle ValidateHandle(IHandle ihandle)
-        {
-            if (ihandle == null)
-                throw new ArgumentNullException("handle");
-            Handle handle = ihandle as Handle;
-            if (handle == null)
-                throw new InvalidOperationException("handle is not valid");
-            return handle;
-        }
-
-        private Handle ValidateThisHandle(IHandle ihandle)
-        {
-            Handle handle = ValidateHandle(ihandle);
-            if (!object.ReferenceEquals(handle.heap, this))
-                throw new InvalidOperationException("handle is not valid for this heap");
-            if (handle.index < 0)
-                throw new InvalidOperationException("handle is not associated to a value");
-            return handle;
-        }
-
-        private void Set(HeapItem item, int index)
-        {
-            this.items[index] = item;
-            if (item.handle != null)
-                item.handle.index = index;
-        }
-
-        private bool BubbleUp(int index)
-        {
-            HeapItem item = this.items[index];
-            int current, parent;
-
-            for (current = index, parent = (current - 1) / 2;
-                (current > 0) && (this.comparison(this.items[parent].value, item.value)) > 0;
-                current = parent, parent = (current - 1) / 2)
-            {
-                Set(this.items[parent], current);
-            }
-
-            if (current != index)
-            {
-                Set(item, current);
-                ++this.version;
-                return true;
-            }
-            return false;
-        }
-
-        private void BubbleDown(int index)
-        {
-            HeapItem item = this.items[index];
-            int current, child;
-
-            for (current = index, child = (2 * current) + 1;
-                current < this.size / 2;
-                current = child, child = (2 * current) + 1)
-            {
-                if ((child < this.size - 1) && this.comparison(this.items[child].value, this.items[child + 1].value) > 0)
-                    ++child;
-                if (this.comparison(this.items[child].value, item.value) >= 0)
-                    break;
-                Set(this.items[child], current);
-            }
-
-            if (current != index)
-            {
-                Set(item, current);
-                ++this.version;
-            }
-        }
-
-        public bool TryGetValue(IHandle key, out T value)
-        {
-            Handle handle = ValidateHandle(key);
-            if (handle.index > -1)
-            {
-                value = this.items[handle.index].value;
-                return true;
-            }
-            value = default(T);
-            return false;
-        }
-
-        public bool ContainsHandle(IHandle ihandle)
-        {
-            Handle handle = ValidateHandle(ihandle);
-            return object.ReferenceEquals(handle.heap, this) && handle.index > -1;
         }
 
         public void Add(T value, ref IHandle handle)
@@ -254,14 +148,6 @@ namespace OpenSim.Framework
             Add(value, null);
         }
 
-        public T Min()
-        {
-            if (this.size == 0)
-                throw new InvalidOperationException("Heap is empty");
-
-            return this.items[0].value;
-        }
-
         public void Clear()
         {
             for (int index = 0; index < this.size; ++index)
@@ -270,75 +156,15 @@ namespace OpenSim.Framework
             ++this.version;
         }
 
-        public void TrimExcess()
-        {
-            int length = (int)(this.items.Length * 0.9);
-            if (this.size < length)
-                Array.Resize<HeapItem>(ref this.items, Math.Min(this.size, DEFAULT_CAPACITY));
-        }
-
-        private void RemoveAt(int index)
-        {
-            if (this.size == 0)
-                throw new InvalidOperationException("Heap is empty");
-            if (index >= this.size)
-                throw new ArgumentOutOfRangeException("index");
-
-            this.items[index].Clear();
-            if (--this.size > 0 && index != this.size)
-            {
-                Set(this.items[this.size], index);
-                this.items[this.size].ClearRef();
-                if (!BubbleUp(index))
-                    BubbleDown(index);
-            }
-        }
-
-        public T RemoveMin()
-        {
-            if (this.size == 0)
-                throw new InvalidOperationException("Heap is empty");
-
-            HeapItem item = this.items[0];
-            RemoveAt(0);
-            return item.value;
-        }
-
-        public T Remove(IHandle ihandle)
-        {
-            Handle handle = ValidateThisHandle(ihandle);
-            HeapItem item = this.items[handle.index];
-            RemoveAt(handle.index);
-            return item.value;
-        }
-
-        private int GetIndex(T value)
-        {
-            EqualityComparer<T> comparer = EqualityComparer<T>.Default;
-            int index;
-
-            for (index = 0; index < this.size; ++index)
-            {
-                if (comparer.Equals(this.items[index].value, value))
-                    return index;
-            }
-            return -1;
-        }
-
         public bool Contains(T value)
         {
             return GetIndex(value) != -1;
         }
 
-        public bool Remove(T value)
+        public bool ContainsHandle(IHandle ihandle)
         {
-            int index = GetIndex(value);
-            if (index != -1)
-            {
-                RemoveAt(index);
-                return true;
-            }
-            return false;
+            Handle handle = ValidateHandle(ihandle);
+            return object.ReferenceEquals(handle.heap, this) && handle.index > -1;
         }
 
         public void CopyTo(T[] array, int index)
@@ -401,6 +227,198 @@ namespace OpenSim.Framework
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+
+        public T Min()
+        {
+            if (this.size == 0)
+                throw new InvalidOperationException("Heap is empty");
+
+            return this.items[0].value;
+        }
+
+        public T Remove(IHandle ihandle)
+        {
+            Handle handle = ValidateThisHandle(ihandle);
+            HeapItem item = this.items[handle.index];
+            RemoveAt(handle.index);
+            return item.value;
+        }
+
+        public bool Remove(T value)
+        {
+            int index = GetIndex(value);
+            if (index != -1)
+            {
+                RemoveAt(index);
+                return true;
+            }
+            return false;
+        }
+
+        public T RemoveMin()
+        {
+            if (this.size == 0)
+                throw new InvalidOperationException("Heap is empty");
+
+            HeapItem item = this.items[0];
+            RemoveAt(0);
+            return item.value;
+        }
+
+        public void TrimExcess()
+        {
+            int length = (int)(this.items.Length * 0.9);
+            if (this.size < length)
+                Array.Resize<HeapItem>(ref this.items, Math.Min(this.size, DEFAULT_CAPACITY));
+        }
+
+        public bool TryGetValue(IHandle key, out T value)
+        {
+            Handle handle = ValidateHandle(key);
+            if (handle.index > -1)
+            {
+                value = this.items[handle.index].value;
+                return true;
+            }
+            value = default(T);
+            return false;
+        }
+
+        private void BubbleDown(int index)
+        {
+            HeapItem item = this.items[index];
+            int current, child;
+
+            for (current = index, child = (2 * current) + 1;
+                current < this.size / 2;
+                current = child, child = (2 * current) + 1)
+            {
+                if ((child < this.size - 1) && this.comparison(this.items[child].value, this.items[child + 1].value) > 0)
+                    ++child;
+                if (this.comparison(this.items[child].value, item.value) >= 0)
+                    break;
+                Set(this.items[child], current);
+            }
+
+            if (current != index)
+            {
+                Set(item, current);
+                ++this.version;
+            }
+        }
+
+        private bool BubbleUp(int index)
+        {
+            HeapItem item = this.items[index];
+            int current, parent;
+
+            for (current = index, parent = (current - 1) / 2;
+                (current > 0) && (this.comparison(this.items[parent].value, item.value)) > 0;
+                current = parent, parent = (current - 1) / 2)
+            {
+                Set(this.items[parent], current);
+            }
+
+            if (current != index)
+            {
+                Set(item, current);
+                ++this.version;
+                return true;
+            }
+            return false;
+        }
+
+        private int GetIndex(T value)
+        {
+            EqualityComparer<T> comparer = EqualityComparer<T>.Default;
+            int index;
+
+            for (index = 0; index < this.size; ++index)
+            {
+                if (comparer.Equals(this.items[index].value, value))
+                    return index;
+            }
+            return -1;
+        }
+
+        private void RemoveAt(int index)
+        {
+            if (this.size == 0)
+                throw new InvalidOperationException("Heap is empty");
+            if (index >= this.size)
+                throw new ArgumentOutOfRangeException("index");
+
+            this.items[index].Clear();
+            if (--this.size > 0 && index != this.size)
+            {
+                Set(this.items[this.size], index);
+                this.items[this.size].ClearRef();
+                if (!BubbleUp(index))
+                    BubbleDown(index);
+            }
+        }
+
+        private void Set(HeapItem item, int index)
+        {
+            this.items[index] = item;
+            if (item.handle != null)
+                item.handle.index = index;
+        }
+
+        private Handle ValidateHandle(IHandle ihandle)
+        {
+            if (ihandle == null)
+                throw new ArgumentNullException("handle");
+            Handle handle = ihandle as Handle;
+            if (handle == null)
+                throw new InvalidOperationException("handle is not valid");
+            return handle;
+        }
+
+        private Handle ValidateThisHandle(IHandle ihandle)
+        {
+            Handle handle = ValidateHandle(ihandle);
+            if (!object.ReferenceEquals(handle.heap, this))
+                throw new InvalidOperationException("handle is not valid for this heap");
+            if (handle.index < 0)
+                throw new InvalidOperationException("handle is not associated to a value");
+            return handle;
+        }
+
+        private struct HeapItem
+        {
+            internal Handle handle;
+            internal T value;
+            internal HeapItem(T value, Handle handle)
+            {
+                this.value = value;
+                this.handle = handle;
+            }
+
+            internal void Clear()
+            {
+                if (this.handle != null)
+                    this.handle.Clear();
+                ClearRef();
+            }
+
+            internal void ClearRef()
+            {
+                this.value = default(T);
+                this.handle = null;
+            }
+        }
+
+        private class Handle : IHandle
+        {
+            internal MinHeap<T> heap = null;
+            internal int index = -1;
+            internal void Clear()
+            {
+                this.index = -1;
+                this.heap = null;
+            }
         }
     }
 }

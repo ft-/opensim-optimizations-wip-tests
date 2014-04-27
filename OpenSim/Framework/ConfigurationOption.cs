@@ -35,7 +35,7 @@ namespace OpenSim.Framework
 
         public delegate bool ConfigurationOptionShouldBeAsked(string configuration_key);
 
-        #endregion
+        #endregion Delegates
 
         #region ConfigurationTypes enum
 
@@ -60,7 +60,7 @@ namespace OpenSim.Framework
             TYPE_DOUBLE
         } ;
 
-        #endregion
+        #endregion ConfigurationTypes enum
 
         public string configurationDefault = String.Empty;
 

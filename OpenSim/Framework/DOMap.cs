@@ -25,16 +25,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using System.Xml;
-using System.Xml.Schema;
-using System.Xml.Serialization;
-using OpenMetaverse;
-using OpenMetaverse.StructuredData;
 
 namespace OpenSim.Framework
 {
@@ -47,7 +38,7 @@ namespace OpenSim.Framework
     public class DOMap
     {
         private IDictionary<string, object> m_map;
-        
+
         public void Add(string ns, string objName, object dynObj)
         {
             DAMap.ValidateNamespace(ns);

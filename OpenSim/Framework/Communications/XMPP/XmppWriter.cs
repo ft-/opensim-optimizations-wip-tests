@@ -32,17 +32,20 @@ using IOStream = System.IO.Stream;
 
 namespace OpenSim.Framework.Communications.XMPP
 {
-    public class XMPPWriter: XmlTextWriter
+    public class XMPPWriter : XmlTextWriter
     {
-        public XMPPWriter(TextWriter textWriter) : base(textWriter)
+        public XMPPWriter(TextWriter textWriter)
+            : base(textWriter)
         {
         }
 
-        public XMPPWriter(IOStream stream) : this(stream, Util.UTF8)
+        public XMPPWriter(IOStream stream)
+            : this(stream, Util.UTF8)
         {
         }
 
-        public XMPPWriter(IOStream stream, Encoding enc) : base(stream, enc)
+        public XMPPWriter(IOStream stream, Encoding enc)
+            : base(stream, enc)
         {
         }
 

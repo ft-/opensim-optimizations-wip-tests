@@ -1,21 +1,22 @@
 ﻿/*
-Copyright (c) 2012, Alex Regueiro 
+Copyright (c) 2012, Alex Regueiro
 All rights reserved.
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the 
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 following conditions are met:
 
 Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer 
+Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer
 in the documentation and/or other materials provided with the distribution.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, 
-BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
-IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, 
-OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, 
-OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
-*/ 
+*/
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -25,15 +26,14 @@ namespace OpenSim.Framework
 {
     public class CircularBuffer<T> : ICollection<T>, IEnumerable<T>, ICollection, IEnumerable
     {
-        private int capacity;
-        private int size;
-        private int head;
-        private int tail;
         private T[] buffer;
-
+        private int capacity;
+        private int head;
+        private int size;
         [NonSerialized()]
         private object syncRoot;
 
+        private int tail;
         public CircularBuffer(int capacity)
             : this(capacity, false)
         {
@@ -42,7 +42,7 @@ namespace OpenSim.Framework
         public CircularBuffer(int capacity, bool allowOverflow)
         {
             if (capacity < 0)
-                throw new ArgumentException("Needs to have at least 1","capacity");
+                throw new ArgumentException("Needs to have at least 1", "capacity");
 
             this.capacity = capacity;
             size = 0;
@@ -67,7 +67,7 @@ namespace OpenSim.Framework
                     return;
 
                 if (value < size)
-                    throw new ArgumentOutOfRangeException("value","Capacity is too small.");
+                    throw new ArgumentOutOfRangeException("value", "Capacity is too small.");
 
                 var dst = new T[value];
                 if (size > 0)
@@ -81,6 +81,13 @@ namespace OpenSim.Framework
         public int Size
         {
             get { return size; }
+        }
+
+        public void Clear()
+        {
+            size = 0;
+            head = 0;
+            tail = 0;
         }
 
         public bool Contains(T item)
@@ -101,51 +108,28 @@ namespace OpenSim.Framework
 
             return false;
         }
-
-        public void Clear()
+        public void CopyTo(T[] array)
         {
-            size = 0;
-            head = 0;
-            tail = 0;
+            CopyTo(array, 0);
         }
 
-        public int Put(T[] src)
+        public void CopyTo(T[] array, int arrayIndex)
         {
-            return Put(src, 0, src.Length);
+            CopyTo(0, array, arrayIndex, size);
         }
 
-        public int Put(T[] src, int offset, int count)
+        public void CopyTo(int index, T[] array, int arrayIndex, int count)
         {
-            if (!AllowOverflow && count > capacity - size)
-                throw new InvalidOperationException("Buffer Overflow");
+            if (count > size)
+                throw new ArgumentOutOfRangeException("count", "Count Too Large");
 
-            int srcIndex = offset;
-            for (int i = 0; i < count; i++, tail++, srcIndex++)
+            int bufferIndex = head;
+            for (int i = 0; i < count; i++, bufferIndex++, arrayIndex++)
             {
-                if (tail == capacity)
-                    tail = 0;
-                buffer[tail] = src[srcIndex];
+                if (bufferIndex == capacity)
+                    bufferIndex = 0;
+                array[arrayIndex] = buffer[bufferIndex];
             }
-            size = Math.Min(size + count, capacity);
-            return count;
-        }
-
-        public void Put(T item)
-        {
-            if (!AllowOverflow && size == capacity)
-                throw new InvalidOperationException("Buffer Overflow");
-
-            buffer[tail] = item;
-            if (++tail == capacity)
-                tail = 0;
-            size++;
-        }
-
-        public void Skip(int count)
-        {
-            head += count;
-            if (head >= capacity)
-                head -= capacity;
         }
 
         public T[] Get(int count)
@@ -186,28 +170,9 @@ namespace OpenSim.Framework
             return item;
         }
 
-        public void CopyTo(T[] array)
+        public T[] GetBuffer()
         {
-            CopyTo(array, 0);
-        }
-
-        public void CopyTo(T[] array, int arrayIndex)
-        {
-            CopyTo(0, array, arrayIndex, size);
-        }
-
-        public void CopyTo(int index, T[] array, int arrayIndex, int count)
-        {
-            if (count > size)
-                throw new ArgumentOutOfRangeException("count", "Count Too Large");
-
-            int bufferIndex = head;
-            for (int i = 0; i < count; i++, bufferIndex++, arrayIndex++)
-            {
-                if (bufferIndex == capacity)
-                    bufferIndex = 0;
-                array[arrayIndex] = buffer[bufferIndex];
-            }
+            return buffer;
         }
 
         public IEnumerator<T> GetEnumerator()
@@ -222,11 +187,44 @@ namespace OpenSim.Framework
             }
         }
 
-        public T[] GetBuffer()
+        public int Put(T[] src)
         {
-            return buffer;
+            return Put(src, 0, src.Length);
         }
 
+        public int Put(T[] src, int offset, int count)
+        {
+            if (!AllowOverflow && count > capacity - size)
+                throw new InvalidOperationException("Buffer Overflow");
+
+            int srcIndex = offset;
+            for (int i = 0; i < count; i++, tail++, srcIndex++)
+            {
+                if (tail == capacity)
+                    tail = 0;
+                buffer[tail] = src[srcIndex];
+            }
+            size = Math.Min(size + count, capacity);
+            return count;
+        }
+
+        public void Put(T item)
+        {
+            if (!AllowOverflow && size == capacity)
+                throw new InvalidOperationException("Buffer Overflow");
+
+            buffer[tail] = item;
+            if (++tail == capacity)
+                tail = 0;
+            size++;
+        }
+
+        public void Skip(int count)
+        {
+            head += count;
+            if (head >= capacity)
+                head -= capacity;
+        }
         public T[] ToArray()
         {
             var dst = new T[size];
@@ -260,7 +258,7 @@ namespace OpenSim.Framework
             return true;
         }
 
-        #endregion
+        #endregion ICollection<T> Members
 
         #region IEnumerable<T> Members
 
@@ -269,7 +267,7 @@ namespace OpenSim.Framework
             return GetEnumerator();
         }
 
-        #endregion
+        #endregion IEnumerable<T> Members
 
         #region ICollection Members
 
@@ -298,7 +296,7 @@ namespace OpenSim.Framework
             CopyTo((T[])array, arrayIndex);
         }
 
-        #endregion
+        #endregion ICollection Members
 
         #region IEnumerable Members
 
@@ -307,6 +305,6 @@ namespace OpenSim.Framework
             return (IEnumerator)GetEnumerator();
         }
 
-        #endregion
+        #endregion IEnumerable Members
     }
 }

@@ -25,11 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using log4net;
 
 namespace OpenSim.Framework.Monitoring
 {
@@ -94,7 +94,7 @@ namespace OpenSim.Framework.Monitoring
                 FirstTick = Environment.TickCount & Int32.MaxValue;
                 LastTick = FirstTick;
 
-                Stat 
+                Stat
                     = new Stat(
                         thread.Name,
                         string.Format("Last update of thread {0}", thread.Name),
@@ -141,7 +141,7 @@ namespace OpenSim.Framework.Monitoring
             get { return m_enabled; }
             set
             {
-//                m_log.DebugFormat("[MEMORY WATCHDOG]: Setting MemoryWatchdog.Enabled to {0}", value);
+                //                m_log.DebugFormat("[MEMORY WATCHDOG]: Setting MemoryWatchdog.Enabled to {0}", value);
 
                 if (value == m_enabled)
                     return;
@@ -157,6 +157,7 @@ namespace OpenSim.Framework.Monitoring
                 m_watchdogTimer.Enabled = m_enabled;
             }
         }
+
         private static bool m_enabled;
 
         private static readonly ILog m_log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
@@ -217,10 +218,9 @@ namespace OpenSim.Framework.Monitoring
             thread.Name = name;
             thread.Priority = priority;
             thread.IsBackground = isBackground;
-            
+
             ThreadWatchdogInfo twi
-                = new ThreadWatchdogInfo(thread, timeout)
-                    { AlarmIfTimeout = alarmIfTimeout, AlarmMethod = alarmMethod };
+                = new ThreadWatchdogInfo(thread, timeout) { AlarmIfTimeout = alarmIfTimeout, AlarmMethod = alarmMethod };
 
             m_log.DebugFormat(
                 "[WATCHDOG]: Started tracking thread {0}, ID {1}", twi.Thread.Name, twi.Thread.ManagedThreadId);
@@ -319,7 +319,7 @@ namespace OpenSim.Framework.Monitoring
             }
             catch { }
         }
-        
+
         /// <summary>
         /// Get currently watched threads for diagnostic purposes
         /// </summary>

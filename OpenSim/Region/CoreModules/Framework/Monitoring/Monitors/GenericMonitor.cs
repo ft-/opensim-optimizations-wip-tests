@@ -25,19 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenSim.Region.Framework.Scenes;
+using System;
 
 namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
 {
-    class GenericMonitor : IMonitor
+    internal class GenericMonitor : IMonitor
     {
-        public Scene Scene { get; private set; }
-        public string Name { get; private set; }
-        public string FriendlyName { get; private set; }
+        private readonly Func<GenericMonitor, string> m_getFriendlyValueAction;
 
         private readonly Func<GenericMonitor, double> m_getValueAction;
-        private readonly Func<GenericMonitor, string> m_getFriendlyValueAction;
 
         public GenericMonitor(
             Scene scene,
@@ -53,16 +50,11 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
             m_getValueAction = getValueAction;
         }
 
-        public double GetValue()
-        {
-            return m_getValueAction(this);
-        }
+        public string FriendlyName { get; private set; }
 
-        public string GetName()
-        {
-            return Name;
-        }
+        public string Name { get; private set; }
 
+        public Scene Scene { get; private set; }
         public string GetFriendlyName()
         {
             return FriendlyName;
@@ -72,9 +64,15 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
         {
             return m_getFriendlyValueAction(this);
         }
+
+        public string GetName()
+        {
+            return Name;
+        }
+
+        public double GetValue()
+        {
+            return m_getValueAction(this);
+        }
     }
 }
-
-
-
-

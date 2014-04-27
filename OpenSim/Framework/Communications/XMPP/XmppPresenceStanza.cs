@@ -34,18 +34,30 @@ namespace OpenSim.Framework.Communications.XMPP
     /// </summary>
     public enum XmppPresenceType
     {
-        [XmlEnum("unavailable")]  unavailable,
-        [XmlEnum("subscribe")]    subscribe,
-        [XmlEnum("subscribed")]   subscribed,
-        [XmlEnum("unsubscribe")]  unsubscribe,
-        [XmlEnum("unsubscribed")] unsubscribed,
-        [XmlEnum("probe")]        probe,
-        [XmlEnum("error")]        error,
+        [XmlEnum("unavailable")]
+        unavailable,
+
+        [XmlEnum("subscribe")]
+        subscribe,
+
+        [XmlEnum("subscribed")]
+        subscribed,
+
+        [XmlEnum("unsubscribe")]
+        unsubscribe,
+
+        [XmlEnum("unsubscribed")]
+        unsubscribed,
+
+        [XmlEnum("probe")]
+        probe,
+
+        [XmlEnum("error")]
+        error,
     }
 
-
     [XmlRoot("message")]
-    public class XmppPresenceStanza: XmppStanza
+    public class XmppPresenceStanza : XmppStanza
     {
         /// <summary>
         /// IQ type: one of set, get, result, error
@@ -56,7 +68,8 @@ namespace OpenSim.Framework.Communications.XMPP
         // [XmlAttribute("error")]
         // public XmppError Error;
 
-        public XmppPresenceStanza() : base()
+        public XmppPresenceStanza()
+            : base()
         {
         }
 

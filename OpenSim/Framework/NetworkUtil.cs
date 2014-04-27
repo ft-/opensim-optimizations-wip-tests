@@ -25,14 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
 using System;
 using System.Collections.Generic;
-using System.Net.Sockets;
 using System.Net;
 using System.Net.NetworkInformation;
+using System.Net.Sockets;
 using System.Reflection;
-using System.Text;
-using log4net;
 
 namespace OpenSim.Framework
 {
@@ -40,7 +39,7 @@ namespace OpenSim.Framework
     /// Handles NAT translation in a 'manner of speaking'
     /// Allows you to return multiple different external
     /// hostnames depending on the requestors network
-    /// 
+    ///
     /// This enables standard port forwarding techniques
     /// to work correctly with OpenSim.
     /// </summary>
@@ -49,16 +48,50 @@ namespace OpenSim.Framework
         // Logger
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
+        // IPv4Address, Subnet
+        private static readonly Dictionary<IPAddress, IPAddress> m_subnets = new Dictionary<IPAddress, IPAddress>();
+
         private static bool m_disabled = true;
+
+        static NetworkUtil()
+        {
+            try
+            {
+                foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    foreach (UnicastIPAddressInformation address in ni.GetIPProperties().UnicastAddresses)
+                    {
+                        if (address.Address.AddressFamily == AddressFamily.InterNetwork)
+                        {
+                            if (address.IPv4Mask != null)
+                            {
+                                m_subnets.Add(address.Address, address.IPv4Mask);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (NotImplementedException)
+            {
+                // Mono Sucks.
+            }
+        }
 
         public static bool Enabled
         {
             set { m_disabled = value; }
             get { return m_disabled; }
         }
-
-        // IPv4Address, Subnet
-        static readonly Dictionary<IPAddress,IPAddress> m_subnets = new Dictionary<IPAddress, IPAddress>();
+        public static string GetHostFor(IPAddress user, string defaultHostname)
+        {
+            if (!m_disabled)
+            {
+                IPAddress rtn = GetExternalIPFor(user, defaultHostname);
+                if (rtn != null)
+                    return rtn.ToString();
+            }
+            return defaultHostname;
+        }
 
         public static IPAddress GetIPFor(IPAddress user, IPAddress simulator)
         {
@@ -110,6 +143,36 @@ namespace OpenSim.Framework
             return simulator;
         }
 
+        public static IPAddress GetIPFor(IPEndPoint user, string defaultHostname)
+        {
+            if (!m_disabled)
+            {
+                // Try subnet matching
+                IPAddress rtn = GetExternalIPFor(user.Address, defaultHostname);
+                if (rtn != null)
+                    return rtn;
+            }
+
+            // Otherwise use the old algorithm
+            IPAddress ia;
+
+            if (IPAddress.TryParse(defaultHostname, out ia))
+                return ia;
+
+            ia = null;
+
+            foreach (IPAddress Adr in Dns.GetHostAddresses(defaultHostname))
+            {
+                if (Adr.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    ia = Adr;
+                    break;
+                }
+            }
+
+            return ia;
+        }
+
         private static IPAddress GetExternalIPFor(IPAddress destination, string defaultHostname)
         {
             // Adds IPv6 Support (Not that any of the major protocols supports it...)
@@ -145,13 +208,13 @@ namespace OpenSim.Framework
                 byte[] subnetBytes = subnet.Value.GetAddressBytes();
                 byte[] localBytes = subnet.Key.GetAddressBytes();
                 byte[] destBytes = destination.GetAddressBytes();
-                
+
                 if (subnetBytes.Length != destBytes.Length || subnetBytes.Length != localBytes.Length)
                     return null;
 
                 bool valid = true;
 
-                for (int i=0;i<subnetBytes.Length;i++)
+                for (int i = 0; i < subnetBytes.Length; i++)
                 {
                     if ((localBytes[i] & subnetBytes[i]) != (destBytes[i] & subnetBytes[i]))
                     {
@@ -180,71 +243,5 @@ namespace OpenSim.Framework
             // Unable to find anything.
             throw new ArgumentException("[NetworkUtil] Unable to resolve defaultHostname to an IPv4 address for an IPv4 client");
         }
-
-        static NetworkUtil()
-        {
-            try
-            {
-                foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
-                {
-                    foreach (UnicastIPAddressInformation address in ni.GetIPProperties().UnicastAddresses)
-                    {
-                        if (address.Address.AddressFamily == AddressFamily.InterNetwork)
-                        {
-                            if (address.IPv4Mask != null)
-                            {
-                                m_subnets.Add(address.Address, address.IPv4Mask);
-                            }
-                        }
-                    }
-                }
-            }
-            catch (NotImplementedException)
-            {
-                // Mono Sucks.
-            }
-        }
-
-        public static IPAddress GetIPFor(IPEndPoint user, string defaultHostname)
-        {
-            if (!m_disabled)
-            {
-                // Try subnet matching
-                IPAddress rtn = GetExternalIPFor(user.Address, defaultHostname);
-                if (rtn != null)
-                    return rtn;
-            }
-
-            // Otherwise use the old algorithm
-            IPAddress ia;
-
-            if (IPAddress.TryParse(defaultHostname, out ia))
-                return ia;
-
-            ia = null;
-
-            foreach (IPAddress Adr in Dns.GetHostAddresses(defaultHostname))
-            {
-                if (Adr.AddressFamily == AddressFamily.InterNetwork)
-                {
-                    ia = Adr;
-                    break;
-                }
-            }
-
-            return ia;
-        }
-
-        public static string GetHostFor(IPAddress user, string defaultHostname)
-        {
-            if (!m_disabled)
-            {
-                IPAddress rtn = GetExternalIPFor(user, defaultHostname);
-                if (rtn != null)
-                    return rtn.ToString();
-            }
-            return defaultHostname;
-        }
-
     }
 }

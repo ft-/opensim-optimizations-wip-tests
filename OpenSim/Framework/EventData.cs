@@ -36,18 +36,18 @@ namespace OpenSim.Framework
 
     public class EventData
     {
-        public uint eventID;
-        public string creator;
-        public string name;
+        public uint amount;
         public string category;
-        public string description;
+        public uint cover;
+        public string creator;
         public string date;
         public uint dateUTC;
+        public string description;
         public uint duration;
-        public uint cover;
-        public uint amount;
-        public string simName;
-        public Vector3 globalPos;
         public uint eventFlags;
+        public uint eventID;
+        public Vector3 globalPos;
+        public string name;
+        public string simName;
     }
 }

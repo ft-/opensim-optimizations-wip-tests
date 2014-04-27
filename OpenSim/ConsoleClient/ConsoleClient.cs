@@ -26,16 +26,13 @@
  */
 
 using Nini.Config;
-using log4net;
-using System.Reflection;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Server.Base;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Xml;
-using System.Collections.Generic;
-using OpenSim.Server.Base;
-using OpenSim.Framework;
-using OpenSim.Framework.Console;
-using OpenMetaverse;
 
 namespace OpenSim.ConsoleClient
 {
@@ -43,68 +40,12 @@ namespace OpenSim.ConsoleClient
     {
         protected static ServicesServerBase m_Server = null;
         private static string m_Host;
-        private static int m_Port;
-        private static string m_User;
         private static string m_Pass;
+        private static int m_Port;
         private static UUID m_SessionID;
-
-        static int Main(string[] args)
+        private static string m_User;
+        public static void CommandReply(string requestUrl, string requestData, string replyData)
         {
-            m_Server = new ServicesServerBase("Client", args);
-
-            IConfig serverConfig = m_Server.Config.Configs["Startup"];
-            if (serverConfig == null)
-            {
-                System.Console.WriteLine("Startup config section missing in .ini file");
-                throw new Exception("Configuration error");
-            }
-
-            ArgvConfigSource argvConfig = new ArgvConfigSource(args);
-
-            argvConfig.AddSwitch("Startup", "host", "h");
-            argvConfig.AddSwitch("Startup", "port", "p");
-            argvConfig.AddSwitch("Startup", "user", "u");
-            argvConfig.AddSwitch("Startup", "pass", "P");
-
-            m_Server.Config.Merge(argvConfig);
-
-            m_User = serverConfig.GetString("user", "Test");
-            m_Host = serverConfig.GetString("host", "localhost");
-            m_Port = serverConfig.GetInt("port", 8003);
-            m_Pass = serverConfig.GetString("pass", "secret");
-
-            Requester.MakeRequest("http://"+m_Host+":"+m_Port.ToString()+"/StartSession/", String.Format("USER={0}&PASS={1}", m_User, m_Pass), LoginReply);
-
-            string pidFile = serverConfig.GetString("PIDFile", String.Empty);
-
-            while (m_Server.Running)
-            {
-                System.Threading.Thread.Sleep(500);
-                // MainConsole.Instance.Prompt();
-            }
-
-            if (pidFile != String.Empty)
-                File.Delete(pidFile);
-
-            Environment.Exit(0);
-
-            return 0;
-        }
-
-        private static void SendCommand(string module, string[] cmd)
-        {
-            string sendCmd = "";
-            string[] cmdlist = new string[cmd.Length - 1];
-
-            sendCmd = cmd[0];
-
-            if (cmd.Length > 1)
-            {
-                Array.Copy(cmd, 1, cmdlist, 0, cmd.Length - 1);
-                sendCmd += " \"" + String.Join("\" \"", cmdlist) + "\"";
-            }
-
-            Requester.MakeRequest("http://"+m_Host+":"+m_Port.ToString()+"/SessionCommand/", String.Format("ID={0}&COMMAND={1}", m_SessionID, sendCmd), CommandReply);
         }
 
         public static void LoginReply(string requestUrl, string requestData, string replyData)
@@ -163,7 +104,7 @@ namespace OpenSim.ConsoleClient
 
             MainConsole.Instance.Commands.FromXml(helpNode, SendCommand);
 
-            Requester.MakeRequest("http://"+m_Host+":"+m_Port.ToString()+"/ReadResponses/"+m_SessionID.ToString()+"/", String.Empty, ReadResponses);
+            Requester.MakeRequest("http://" + m_Host + ":" + m_Port.ToString() + "/ReadResponses/" + m_SessionID.ToString() + "/", String.Empty, ReadResponses);
         }
 
         public static void ReadResponses(string requestUrl, string requestData, string replyData)
@@ -178,7 +119,7 @@ namespace OpenSim.ConsoleClient
                 Requester.MakeRequest(requestUrl, requestData, ReadResponses);
                 return;
             }
-            
+
             List<string> lines = new List<string>();
 
             foreach (XmlNode part in rootNodeL[0].ChildNodes)
@@ -199,16 +140,15 @@ namespace OpenSim.ConsoleClient
 
             foreach (string l in lines)
             {
-                string[] parts = l.Split(new char[] {':'}, 3);
+                string[] parts = l.Split(new char[] { ':' }, 3);
                 if (parts.Length != 3)
                     continue;
-                
+
                 if (parts[2].StartsWith("+++") || parts[2].StartsWith("-++"))
                     prompt = parts[2];
                 else
                     MainConsole.Instance.Output(parts[2].Trim(), parts[1]);
             }
-
 
             Requester.MakeRequest(requestUrl, requestData, ReadResponses);
 
@@ -218,8 +158,63 @@ namespace OpenSim.ConsoleClient
                 SendCommand(String.Empty, new string[] { MainConsole.Instance.ReadLine(prompt.Substring(3), false, true) });
         }
 
-        public static void CommandReply(string requestUrl, string requestData, string replyData)
+        private static int Main(string[] args)
         {
+            m_Server = new ServicesServerBase("Client", args);
+
+            IConfig serverConfig = m_Server.Config.Configs["Startup"];
+            if (serverConfig == null)
+            {
+                System.Console.WriteLine("Startup config section missing in .ini file");
+                throw new Exception("Configuration error");
+            }
+
+            ArgvConfigSource argvConfig = new ArgvConfigSource(args);
+
+            argvConfig.AddSwitch("Startup", "host", "h");
+            argvConfig.AddSwitch("Startup", "port", "p");
+            argvConfig.AddSwitch("Startup", "user", "u");
+            argvConfig.AddSwitch("Startup", "pass", "P");
+
+            m_Server.Config.Merge(argvConfig);
+
+            m_User = serverConfig.GetString("user", "Test");
+            m_Host = serverConfig.GetString("host", "localhost");
+            m_Port = serverConfig.GetInt("port", 8003);
+            m_Pass = serverConfig.GetString("pass", "secret");
+
+            Requester.MakeRequest("http://" + m_Host + ":" + m_Port.ToString() + "/StartSession/", String.Format("USER={0}&PASS={1}", m_User, m_Pass), LoginReply);
+
+            string pidFile = serverConfig.GetString("PIDFile", String.Empty);
+
+            while (m_Server.Running)
+            {
+                System.Threading.Thread.Sleep(500);
+                // MainConsole.Instance.Prompt();
+            }
+
+            if (pidFile != String.Empty)
+                File.Delete(pidFile);
+
+            Environment.Exit(0);
+
+            return 0;
+        }
+
+        private static void SendCommand(string module, string[] cmd)
+        {
+            string sendCmd = "";
+            string[] cmdlist = new string[cmd.Length - 1];
+
+            sendCmd = cmd[0];
+
+            if (cmd.Length > 1)
+            {
+                Array.Copy(cmd, 1, cmdlist, 0, cmd.Length - 1);
+                sendCmd += " \"" + String.Join("\" \"", cmdlist) + "\"";
+            }
+
+            Requester.MakeRequest("http://" + m_Host + ":" + m_Port.ToString() + "/SessionCommand/", String.Format("ID={0}&COMMAND={1}", m_SessionID, sendCmd), CommandReply);
         }
     }
 }

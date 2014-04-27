@@ -25,8 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
+using System;
 
 namespace OpenSim.Framework
 {
@@ -44,7 +44,7 @@ namespace OpenSim.Framework
 
         public Location(ulong regionHandle)
         {
-            m_x =  (uint)(regionHandle >> 32);
+            m_x = (uint)(regionHandle >> 32);
             m_y = (uint)(regionHandle & (ulong)uint.MaxValue);
         }
 
@@ -63,6 +63,21 @@ namespace OpenSim.Framework
             get { return m_y; }
         }
 
+        public static bool operator !=(Location o, object o2)
+        {
+            return !o.Equals(o2);
+        }
+
+        public static bool operator ==(Location o, object o2)
+        {
+            return o.Equals(o2);
+        }
+
+        public object Clone()
+        {
+            return new Location(X, Y);
+        }
+
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(obj, this))
@@ -70,7 +85,7 @@ namespace OpenSim.Framework
 
             if (obj is Location)
             {
-                return Equals((Location) obj);
+                return Equals((Location)obj);
             }
 
             return base.Equals(obj);
@@ -85,25 +100,9 @@ namespace OpenSim.Framework
         {
             return X == x && y == Y;
         }
-
-        public static bool operator ==(Location o, object o2)
-        {
-            return o.Equals(o2);
-        }
-
-        public static bool operator !=(Location o, object o2)
-        {
-            return !o.Equals(o2);
-        }
-
         public override int GetHashCode()
         {
             return X.GetHashCode() ^ Y.GetHashCode();
-        }
-
-        public object Clone()
-        {
-            return new Location(X, Y);
         }
     }
 }

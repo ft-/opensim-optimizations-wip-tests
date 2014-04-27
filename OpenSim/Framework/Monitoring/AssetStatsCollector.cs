@@ -25,10 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse.StructuredData;
 using System;
 using System.Timers;
-
-using OpenMetaverse.StructuredData;
 
 namespace OpenSim.Framework.Monitoring
 {
@@ -38,36 +37,23 @@ namespace OpenSim.Framework.Monitoring
     public class AssetStatsCollector : BaseStatsCollector
     {
         private Timer ageStatsTimer = new Timer(24 * 60 * 60 * 1000);
-        private DateTime startTime = DateTime.Now;
-
-        private long assetRequestsToday;
         private long assetRequestsNotFoundToday;
-        private long assetRequestsYesterday;
         private long assetRequestsNotFoundYesterday;
-
-        public long AssetRequestsToday { get { return assetRequestsToday; } }
-        public long AssetRequestsNotFoundToday { get { return assetRequestsNotFoundToday; } }
-        public long AssetRequestsYesterday { get { return assetRequestsYesterday; } }
-        public long AssetRequestsNotFoundYesterday { get { return assetRequestsNotFoundYesterday; } }
-
+        private long assetRequestsToday;
+        private long assetRequestsYesterday;
+        private DateTime startTime = DateTime.Now;
         public AssetStatsCollector()
         {
             ageStatsTimer.Elapsed += new ElapsedEventHandler(OnAgeing);
             ageStatsTimer.Enabled = true;
         }
 
-        private void OnAgeing(object source, ElapsedEventArgs e)
-        {
-            assetRequestsYesterday = assetRequestsToday;
+        public long AssetRequestsNotFoundToday { get { return assetRequestsNotFoundToday; } }
 
-            // There is a possibility that an asset request could occur between the execution of these
-            // two statements.  But we're better off without the synchronization overhead.
-            assetRequestsToday = 0;
+        public long AssetRequestsNotFoundYesterday { get { return assetRequestsNotFoundYesterday; } }
 
-            assetRequestsNotFoundYesterday = assetRequestsNotFoundToday;
-            assetRequestsNotFoundToday = 0;
-        }
-
+        public long AssetRequestsToday { get { return assetRequestsToday; } }
+        public long AssetRequestsYesterday { get { return assetRequestsYesterday; } }
         /// <summary>
         /// Record that an asset request failed to find an asset
         /// </summary>
@@ -82,6 +68,25 @@ namespace OpenSim.Framework.Monitoring
         public void AddRequest()
         {
             assetRequestsToday++;
+        }
+
+        public override OSDMap OReport(string uptime, string version)
+        {
+            double elapsedHours = (DateTime.Now - startTime).TotalHours;
+            if (elapsedHours <= 0) { elapsedHours = 1; }  // prevent divide by zero
+
+            long assetRequestsTodayPerHour = (long)Math.Round(AssetRequestsToday / elapsedHours);
+            long assetRequestsYesterdayPerHour = (long)Math.Round(AssetRequestsYesterday / 24.0);
+
+            OSDMap ret = new OSDMap();
+            ret.Add("AssetRequestsToday", OSD.FromLong(AssetRequestsToday));
+            ret.Add("AssetRequestsTodayPerHour", OSD.FromLong(assetRequestsTodayPerHour));
+            ret.Add("AssetRequestsNotFoundToday", OSD.FromLong(AssetRequestsNotFoundToday));
+            ret.Add("AssetRequestsYesterday", OSD.FromLong(AssetRequestsYesterday));
+            ret.Add("AssetRequestsYesterdayPerHour", OSD.FromLong(assetRequestsYesterdayPerHour));
+            ret.Add("AssetRequestsNotFoundYesterday", OSD.FromLong(assetRequestsNotFoundYesterday));
+
+            return ret;
         }
 
         /// <summary>
@@ -108,23 +113,16 @@ Asset requests yesterday : {3}  ({4} per hour)  of which {5} were not found",
             return OSDParser.SerializeJsonString(OReport(uptime, version));
         }
 
-        public override OSDMap OReport(string uptime, string version)
+        private void OnAgeing(object source, ElapsedEventArgs e)
         {
-            double elapsedHours = (DateTime.Now - startTime).TotalHours;
-            if (elapsedHours <= 0) { elapsedHours = 1; }  // prevent divide by zero
+            assetRequestsYesterday = assetRequestsToday;
 
-            long assetRequestsTodayPerHour = (long)Math.Round(AssetRequestsToday / elapsedHours);
-            long assetRequestsYesterdayPerHour = (long)Math.Round(AssetRequestsYesterday / 24.0);
+            // There is a possibility that an asset request could occur between the execution of these
+            // two statements.  But we're better off without the synchronization overhead.
+            assetRequestsToday = 0;
 
-            OSDMap ret = new OSDMap();
-            ret.Add("AssetRequestsToday", OSD.FromLong(AssetRequestsToday));
-            ret.Add("AssetRequestsTodayPerHour", OSD.FromLong(assetRequestsTodayPerHour));
-            ret.Add("AssetRequestsNotFoundToday", OSD.FromLong(AssetRequestsNotFoundToday));
-            ret.Add("AssetRequestsYesterday", OSD.FromLong(AssetRequestsYesterday));
-            ret.Add("AssetRequestsYesterdayPerHour", OSD.FromLong(assetRequestsYesterdayPerHour));
-            ret.Add("AssetRequestsNotFoundYesterday", OSD.FromLong(assetRequestsNotFoundYesterday));
-
-            return ret;
+            assetRequestsNotFoundYesterday = assetRequestsNotFoundToday;
+            assetRequestsNotFoundToday = 0;
         }
     }
 }

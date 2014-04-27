@@ -29,12 +29,18 @@ namespace OpenSim.Framework
 {
     public interface IGenericConfig
     {
-        void SetFileName(string fileName);
-        void LoadData();
-        void LoadDataFromString(string data);
-        string GetAttribute(string attributeName);
-        bool SetAttribute(string attributeName, string attributeValue);
-        void Commit();
         void Close();
+
+        void Commit();
+
+        string GetAttribute(string attributeName);
+
+        void LoadData();
+
+        void LoadDataFromString(string data);
+
+        bool SetAttribute(string attributeName, string attributeValue);
+
+        void SetFileName(string fileName);
     }
 }

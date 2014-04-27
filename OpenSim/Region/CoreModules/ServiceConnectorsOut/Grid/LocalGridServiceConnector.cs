@@ -28,17 +28,16 @@
 using log4net;
 using Mono.Addins;
 using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
+using OpenSim.Server.Base;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using OpenSim.Framework;
-using OpenSim.Framework.Console;
-using OpenSim.Server.Base;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
 using GridRegion = OpenSim.Services.Interfaces.GridRegion;
-using OpenMetaverse;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
 {
@@ -48,13 +47,12 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
+
         private static string LogHeader = "[LOCAL GRID SERVICE CONNECTOR]";
 
+        private bool m_Enabled;
         private IGridService m_GridService;
         private Dictionary<UUID, RegionCache> m_LocalCache = new Dictionary<UUID, RegionCache>();
-
-        private bool m_Enabled;
-
         public LocalGridServicesConnector()
         {
             m_log.DebugFormat("{0} LocalGridServicesConnector no parms.", LogHeader);
@@ -68,14 +66,33 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
 
         #region ISharedRegionModule
 
-        public Type ReplaceableInterface 
-        {
-            get { return null; }
-        }
-
         public string Name
         {
             get { return "LocalGridServicesConnector"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+        public void AddRegion(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+
+            scene.RegisterModuleInterface<IGridService>(this);
+
+            lock (m_LocalCache)
+            {
+                if (m_LocalCache.ContainsKey(scene.RegionInfo.RegionID))
+                    m_log.ErrorFormat("[LOCAL GRID SERVICE CONNECTOR]: simulator seems to have more than one region with the same UUID. Please correct this!");
+                else
+                    m_LocalCache.Add(scene.RegionInfo.RegionID, new RegionCache(scene));
+            }
+        }
+
+        public void Close()
+        {
         }
 
         public void Initialise(IConfigSource source)
@@ -89,6 +106,31 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
                     InitialiseService(source);
                     m_log.Info("[LOCAL GRID SERVICE CONNECTOR]: Local grid connector enabled");
                 }
+            }
+        }
+
+        public void PostInitialise()
+        {
+            // FIXME: We will still add this command even if we aren't enabled since RemoteGridServiceConnector
+            // will have instantiated us directly.
+            MainConsole.Instance.Commands.AddCommand("Regions", false, "show neighbours",
+                "show neighbours",
+                "Shows the local regions' neighbours", HandleShowNeighboursCommand);
+        }
+
+        public void RegionLoaded(Scene scene)
+        {
+        }
+
+        public void RemoveRegion(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+
+            lock (m_LocalCache)
+            {
+                m_LocalCache[scene.RegionInfo.RegionID].Clear();
+                m_LocalCache.Remove(scene.RegionInfo.RegionID);
             }
         }
 
@@ -123,74 +165,43 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
 
             m_Enabled = true;
         }
-
-        public void PostInitialise()
-        {
-            // FIXME: We will still add this command even if we aren't enabled since RemoteGridServiceConnector
-            // will have instantiated us directly.
-            MainConsole.Instance.Commands.AddCommand("Regions", false, "show neighbours",
-                "show neighbours",
-                "Shows the local regions' neighbours", HandleShowNeighboursCommand);
-        }
-
-        public void Close()
-        {
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-            scene.RegisterModuleInterface<IGridService>(this);
-
-            lock (m_LocalCache)
-            {
-                if (m_LocalCache.ContainsKey(scene.RegionInfo.RegionID))
-                    m_log.ErrorFormat("[LOCAL GRID SERVICE CONNECTOR]: simulator seems to have more than one region with the same UUID. Please correct this!");
-                else
-                    m_LocalCache.Add(scene.RegionInfo.RegionID, new RegionCache(scene));
-            }
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-            lock (m_LocalCache)
-            {
-                m_LocalCache[scene.RegionInfo.RegionID].Clear();
-                m_LocalCache.Remove(scene.RegionInfo.RegionID);
-            }
-        }
-
-        public void RegionLoaded(Scene scene)
-        {
-        }
-
-        #endregion
+        #endregion ISharedRegionModule
 
         #region IGridService
-
-        public string RegisterRegion(UUID scopeID, GridRegion regionInfo)
-        {
-            return m_GridService.RegisterRegion(scopeID, regionInfo);
-        }
 
         public bool DeregisterRegion(UUID regionID)
         {
             return m_GridService.DeregisterRegion(regionID);
         }
 
-        public List<GridRegion> GetNeighbours(UUID scopeID, UUID regionID)
+        public List<GridRegion> GetDefaultHypergridRegions(UUID scopeID)
         {
-            return m_GridService.GetNeighbours(scopeID, regionID); 
+            return m_GridService.GetDefaultHypergridRegions(scopeID);
         }
 
-        public GridRegion GetRegionByUUID(UUID scopeID, UUID regionID)
+        public List<GridRegion> GetDefaultRegions(UUID scopeID)
         {
-            return m_GridService.GetRegionByUUID(scopeID, regionID);
+            return m_GridService.GetDefaultRegions(scopeID);
+        }
+
+        public List<GridRegion> GetFallbackRegions(UUID scopeID, int x, int y)
+        {
+            return m_GridService.GetFallbackRegions(scopeID, x, y);
+        }
+
+        public List<GridRegion> GetHyperlinks(UUID scopeID)
+        {
+            return m_GridService.GetHyperlinks(scopeID);
+        }
+
+        public List<GridRegion> GetNeighbours(UUID scopeID, UUID regionID)
+        {
+            return m_GridService.GetNeighbours(scopeID, regionID);
+        }
+
+        public GridRegion GetRegionByName(UUID scopeID, string regionName)
+        {
+            return m_GridService.GetRegionByName(scopeID, regionName);
         }
 
         // Get a region given its base coordinates.
@@ -231,14 +242,14 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
             return region;
         }
 
-        public GridRegion GetRegionByName(UUID scopeID, string regionName)
+        public GridRegion GetRegionByUUID(UUID scopeID, UUID regionID)
         {
-            return m_GridService.GetRegionByName(scopeID, regionName);
+            return m_GridService.GetRegionByUUID(scopeID, regionID);
         }
 
-        public List<GridRegion> GetRegionsByName(UUID scopeID, string name, int maxNumber)
+        public int GetRegionFlags(UUID scopeID, UUID regionID)
         {
-            return m_GridService.GetRegionsByName(scopeID, name, maxNumber);
+            return m_GridService.GetRegionFlags(scopeID, regionID);
         }
 
         public List<GridRegion> GetRegionRange(UUID scopeID, int xmin, int xmax, int ymin, int ymax)
@@ -246,32 +257,16 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
             return m_GridService.GetRegionRange(scopeID, xmin, xmax, ymin, ymax);
         }
 
-        public List<GridRegion> GetDefaultRegions(UUID scopeID)
+        public List<GridRegion> GetRegionsByName(UUID scopeID, string name, int maxNumber)
         {
-            return m_GridService.GetDefaultRegions(scopeID);
+            return m_GridService.GetRegionsByName(scopeID, name, maxNumber);
         }
 
-        public List<GridRegion> GetDefaultHypergridRegions(UUID scopeID)
+        public string RegisterRegion(UUID scopeID, GridRegion regionInfo)
         {
-            return m_GridService.GetDefaultHypergridRegions(scopeID);
+            return m_GridService.RegisterRegion(scopeID, regionInfo);
         }
-
-        public List<GridRegion> GetFallbackRegions(UUID scopeID, int x, int y)
-        {
-            return m_GridService.GetFallbackRegions(scopeID, x, y);
-        }
-
-        public List<GridRegion> GetHyperlinks(UUID scopeID)
-        {
-            return m_GridService.GetHyperlinks(scopeID);
-        }
-        
-        public int GetRegionFlags(UUID scopeID, UUID regionID)
-        {
-            return m_GridService.GetRegionFlags(scopeID, regionID);
-        }
-
-        #endregion
+        #endregion IGridService
 
         public void HandleShowNeighboursCommand(string module, string[] cmdparams)
         {

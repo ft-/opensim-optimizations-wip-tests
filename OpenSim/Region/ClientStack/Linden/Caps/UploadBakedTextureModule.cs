@@ -25,61 +25,82 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Reflection;
-using System.IO;
-using System.Web;
 using log4net;
-using Nini.Config;
 using Mono.Addins;
+using Nini.Config;
 using OpenMetaverse;
-using OpenMetaverse.StructuredData;
-using OpenMetaverse.Imaging;
+using OpenSim.Capabilities.Handlers;
 using OpenSim.Framework;
-using OpenSim.Framework.Servers;
 using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
+using System;
+using System.Reflection;
 using Caps = OpenSim.Framework.Capabilities.Caps;
-using OpenSim.Capabilities.Handlers;
 
 namespace OpenSim.Region.ClientStack.Linden
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "UploadBakedTextureModule")]
     public class UploadBakedTextureModule : INonSharedRegionModule
     {
-       private static readonly ILog m_log =
-            LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private static readonly ILog m_log =
+             LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         /// <summary>
         /// For historical reasons this is fixed, but there
         /// </summary>
         private static readonly string m_uploadBakedTexturePath = "0010/";// This is in the LandManagementModule.
 
-        private Scene m_scene;
-        private bool m_persistBakedTextures;
-
         private IBakedTextureModule m_BakedTextureModule;
+        private bool m_persistBakedTextures;
+        private Scene m_scene;
+        public string Name { get { return "UploadBakedTextureModule"; } }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
+        public void AddRegion(Scene s)
+        {
+            m_scene = s;
+        }
+
+        public void Close()
+        {
+        }
 
         public void Initialise(IConfigSource source)
         {
             IConfig appearanceConfig = source.Configs["Appearance"];
             if (appearanceConfig != null)
                 m_persistBakedTextures = appearanceConfig.GetBoolean("PersistBakedTextures", m_persistBakedTextures);
-
-
+        }
+        public void PostInitialise()
+        {
         }
 
-        public void AddRegion(Scene s)
+        public void RegionLoaded(Scene s)
         {
-            m_scene = s;
-           
+            m_scene.EventManager.OnRegisterCaps += RegisterCaps;
+            m_scene.EventManager.OnNewPresence += RegisterNewPresence;
+            m_scene.EventManager.OnRemovePresence += DeRegisterPresence;
+        }
+
+        public void RegisterCaps(UUID agentID, Caps caps)
+        {
+            UploadBakedTextureHandler avatarhandler = new UploadBakedTextureHandler(
+                caps, m_scene.AssetService, m_persistBakedTextures);
+
+            caps.RegisterHandler(
+                "UploadBakedTexture",
+                new RestStreamHandler(
+                    "POST",
+                    "/CAPS/" + caps.CapsObjectPath + m_uploadBakedTexturePath,
+                    avatarhandler.UploadBakedTexture,
+                    "UploadBakedTexture",
+                    agentID.ToString()));
         }
 
         public void RemoveRegion(Scene s)
@@ -90,33 +111,6 @@ namespace OpenSim.Region.ClientStack.Linden
             m_BakedTextureModule = null;
             m_scene = null;
         }
-
-       
-
-        public void RegionLoaded(Scene s)
-        {
-            m_scene.EventManager.OnRegisterCaps += RegisterCaps;
-            m_scene.EventManager.OnNewPresence += RegisterNewPresence;
-            m_scene.EventManager.OnRemovePresence += DeRegisterPresence;
-            
-        }
-
-        private void DeRegisterPresence(UUID agentId)
-        {
-            ScenePresence presence = null;
-            if (m_scene.TryGetScenePresence(agentId, out presence))
-            {
-                presence.ControllingClient.OnSetAppearance -= CaptureAppearanceSettings;
-            }
-
-        }
-
-        private void RegisterNewPresence(ScenePresence presence)
-        {
-           presence.ControllingClient.OnSetAppearance += CaptureAppearanceSettings;
-
-        }
-
         private void CaptureAppearanceSettings(IClientAPI remoteClient, Primitive.TextureEntry textureEntry, byte[] visualParams, Vector3 avSize, WearableCacheItem[] cacheItems)
         {
             int maxCacheitemsLoop = cacheItems.Length;
@@ -135,11 +129,10 @@ namespace OpenSim.Region.ClientStack.Linden
                     m_log.Debug("[Cacheitems] {" + iter + "/" + cacheItems[iter].TextureIndex + "}: c-" + cacheItems[iter].CacheId + ", t-" +
                                       cacheItems[iter].TextureID);
                 }
-               
+
                 ScenePresence p = null;
                 if (m_scene.TryGetScenePresence(remoteClient.AgentId, out p))
                 {
-
                     WearableCacheItem[] existingitems = p.Appearance.WearableCacheItems;
                     if (existingitems == null)
                     {
@@ -154,12 +147,11 @@ namespace OpenSim.Region.ClientStack.Linden
                                     p.Appearance.WearableCacheItems = savedcache;
                                     p.Appearance.WearableCacheItemsDirty = false;
                                 }
-
                             }
                             /*
                              * The following Catch types DO NOT WORK with m_BakedTextureModule.Get
                              * it jumps to the General Packet Exception Handler if you don't catch Exception!
-                             * 
+                             *
                             catch (System.Net.Sockets.SocketException)
                             {
                                 cacheItems = null;
@@ -174,9 +166,8 @@ namespace OpenSim.Region.ClientStack.Linden
                             } */
                             catch (Exception)
                             {
-                               // The service logs a sufficient error message.
+                                // The service logs a sufficient error message.
                             }
-                            
 
                             if (savedcache != null)
                                 existingitems = savedcache;
@@ -185,7 +176,6 @@ namespace OpenSim.Region.ClientStack.Linden
                     // Existing items null means it's a fully new appearance
                     if (existingitems == null)
                     {
-
                         for (int i = 0; i < maxCacheitemsLoop; i++)
                         {
                             if (textureEntry.FaceTextures.Length > cacheItems[i].TextureIndex)
@@ -198,7 +188,7 @@ namespace OpenSim.Region.ClientStack.Linden
                                         AppearanceManager.DEFAULT_AVATAR_TEXTURE;
                                     continue;
                                 }
-                                cacheItems[i].TextureID =face.TextureID;
+                                cacheItems[i].TextureID = face.TextureID;
                                 if (m_scene.AssetService != null)
                                     cacheItems[i].TextureAsset =
                                         m_scene.AssetService.GetCached(cacheItems[i].TextureID.ToString());
@@ -207,13 +197,9 @@ namespace OpenSim.Region.ClientStack.Linden
                             {
                                 m_log.WarnFormat("[CACHEDBAKES]: Invalid Texture Index Provided, Texture doesn't exist or hasn't been uploaded yet {0}, the max is {1}.  Skipping!", cacheItems[i].TextureIndex, textureEntry.FaceTextures.Length);
                             }
-
-
                         }
                     }
                     else
-
-
                     {
                         // for each uploaded baked texture
                         for (int i = 0; i < maxCacheitemsLoop; i++)
@@ -247,56 +233,29 @@ namespace OpenSim.Region.ClientStack.Linden
                         }
                     }
 
-
-
                     p.Appearance.WearableCacheItems = cacheItems;
-                    
-                   
 
                     if (m_BakedTextureModule != null)
                     {
                         m_BakedTextureModule.Store(remoteClient.AgentId, cacheItems);
                         p.Appearance.WearableCacheItemsDirty = true;
-                        
                     }
                 }
             }
         }
 
-        public void PostInitialise()
+        private void DeRegisterPresence(UUID agentId)
         {
+            ScenePresence presence = null;
+            if (m_scene.TryGetScenePresence(agentId, out presence))
+            {
+                presence.ControllingClient.OnSetAppearance -= CaptureAppearanceSettings;
+            }
         }
 
-
-
-        public void Close() { }
-
-        public string Name { get { return "UploadBakedTextureModule"; } }
-
-        public Type ReplaceableInterface
+        private void RegisterNewPresence(ScenePresence presence)
         {
-            get { return null; }
-        }
-
-        public void RegisterCaps(UUID agentID, Caps caps)
-        {
-            UploadBakedTextureHandler avatarhandler = new UploadBakedTextureHandler(
-                caps, m_scene.AssetService, m_persistBakedTextures);
-
-           
-            
-            caps.RegisterHandler(
-                "UploadBakedTexture",
-                new RestStreamHandler(
-                    "POST",
-                    "/CAPS/" + caps.CapsObjectPath + m_uploadBakedTexturePath,
-                    avatarhandler.UploadBakedTexture,
-                    "UploadBakedTexture",
-                    agentID.ToString()));
-
-           
-            
-
+            presence.ControllingClient.OnSetAppearance += CaptureAppearanceSettings;
         }
     }
 }

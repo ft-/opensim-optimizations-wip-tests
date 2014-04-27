@@ -1,3 +1,11 @@
+using log4net;
+using Mono.Addins;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
+
 /*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
@@ -24,19 +32,10 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using log4net;
-using Mono.Addins;
-using Nini.Config;
-using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Framework.Servers;
-using OpenSim.Framework.Client;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
 
 namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
 {
@@ -46,10 +45,36 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private bool enabled = true;
-        private List<Scene> m_SceneList = new List<Scene>();
-        private string m_RestURL = String.Empty;
-        IMessageTransferModule m_TransferModule = null;
         private bool m_ForwardOfflineGroupMessages = true;
+        private string m_RestURL = String.Empty;
+        private List<Scene> m_SceneList = new List<Scene>();
+        private IMessageTransferModule m_TransferModule = null;
+        public string Name
+        {
+            get { return "OfflineMessageModule"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
+        public void AddRegion(Scene scene)
+        {
+            if (!enabled)
+                return;
+
+            lock (m_SceneList)
+            {
+                m_SceneList.Add(scene);
+
+                scene.EventManager.OnNewClient += OnNewClient;
+            }
+        }
+
+        public void Close()
+        {
+        }
 
         public void Initialise(IConfigSource config)
         {
@@ -76,18 +101,12 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
 
             m_ForwardOfflineGroupMessages = cnf.GetBoolean("ForwardOfflineGroupMessages", m_ForwardOfflineGroupMessages);
         }
-
-        public void AddRegion(Scene scene)
+        public void PostInitialise()
         {
             if (!enabled)
                 return;
 
-            lock (m_SceneList)
-            {
-                m_SceneList.Add(scene);
-
-                scene.EventManager.OnNewClient += OnNewClient;
-            }
+            m_log.Debug("[OFFLINE MESSAGING] Offline messages enabled");
         }
 
         public void RegionLoaded(Scene scene)
@@ -121,27 +140,15 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
                 m_SceneList.Remove(scene);
             }
         }
-
-        public void PostInitialise()
+        private IClientAPI FindClient(UUID agentID)
         {
-            if (!enabled)
-                return;
-
-            m_log.Debug("[OFFLINE MESSAGING] Offline messages enabled");
-        }
-
-        public string Name
-        {
-            get { return "OfflineMessageModule"; }
-        }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-        
-        public void Close()
-        {
+            foreach (Scene s in m_SceneList)
+            {
+                ScenePresence presence = s.GetScenePresence(agentID);
+                if (presence != null && !presence.IsChildAgent)
+                    return presence.ControllingClient;
+            }
+            return null;
         }
 
         private Scene FindScene(UUID agentID)
@@ -154,18 +161,6 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
             }
             return null;
         }
-
-        private IClientAPI FindClient(UUID agentID)
-        {
-            foreach (Scene s in m_SceneList)
-            {
-                ScenePresence presence = s.GetScenePresence(agentID);
-                if (presence != null && !presence.IsChildAgent)
-                    return presence.ControllingClient;
-            }
-            return null;
-        }
-
         private void OnNewClient(IClientAPI client)
         {
             client.OnRetrieveInstantMessages += RetrieveInstantMessages;
@@ -231,7 +226,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
                 scene = m_SceneList[0];
 
             bool success = SynchronousRestObjectRequester.MakeRequest<GridInstantMessage, bool>(
-                    "POST", m_RestURL+"/SaveMessage/", im);
+                    "POST", m_RestURL + "/SaveMessage/", im);
 
             if (im.dialog == (byte)InstantMessageDialog.MessageFromAgent)
             {
@@ -243,11 +238,10 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
                         null, new UUID(im.toAgentID),
                         "System", new UUID(im.fromAgentID),
                         (byte)InstantMessageDialog.MessageFromAgent,
-                        "User is not logged in. "+
+                        "User is not logged in. " +
                         (success ? "Message saved." : "Message not saved"),
                         false, new Vector3()));
             }
         }
     }
 }
-
