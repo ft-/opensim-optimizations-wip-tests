@@ -1416,14 +1416,11 @@ namespace OpenSim.Region.ScriptEngine.XEngine
                 m_PrimObjects.Clear();
                 m_Assemblies.Clear();
                 m_DomainScripts.Clear();
+                m_ScriptEngines.Remove(this);
             }
             finally
             {
                 m_ScriptsRwLock.ReleaseReaderLock();
-            }
-            lock (m_ScriptEngines)
-            {
-                m_ScriptEngines.Remove(this);
             }
         }
 
