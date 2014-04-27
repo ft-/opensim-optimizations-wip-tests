@@ -570,7 +570,9 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
         #region Class Members
 
-        protected static Dictionary<PacketType, PacketMethod> PacketHandlers = new Dictionary<PacketType, PacketMethod>();
+        private static Dictionary<PacketType, PacketMethod> PacketHandlers = new Dictionary<PacketType, PacketMethod>();
+
+        private static ReaderWriterLock PacketHandlersRwLock = new ReaderWriterLock();
 
         protected readonly UUID m_agentId;
 
@@ -594,7 +596,8 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         /// </value>
         protected List<ObjectUpdatePacket.ObjectDataBlock> m_fullUpdateDataBlocksBuilder;
 
-        protected Dictionary<string, GenericMessage> m_genericPacketHandlers = new Dictionary<string, GenericMessage>();
+        private Dictionary<string, GenericMessage> m_genericPacketHandlers = new Dictionary<string, GenericMessage>();
+        private ReaderWriterLock m_genericPacketHandlersRwLock = new ReaderWriterLock();
 
         protected Dictionary<UUID, ulong> m_groupPowers = new Dictionary<UUID, ulong>();
 
@@ -861,13 +864,19 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         public static bool AddPacketHandler(PacketType packetType, PacketMethod handler)
         {
             bool result = false;
-            lock (PacketHandlers)
+
+            PacketHandlersRwLock.AcquireWriterLock(-1);
+            try
             {
                 if (!PacketHandlers.ContainsKey(packetType))
                 {
                     PacketHandlers.Add(packetType, handler);
                     result = true;
                 }
+            }
+            finally
+            {
+                PacketHandlersRwLock.ReleaseWriterLock();
             }
             return result;
         }
@@ -877,13 +886,18 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             MethodName = MethodName.ToLower().Trim();
 
             bool result = false;
-            lock (m_genericPacketHandlers)
+            m_genericPacketHandlersRwLock.AcquireWriterLock(-1);
+            try
             {
                 if (!m_genericPacketHandlers.ContainsKey(MethodName))
                 {
                     m_genericPacketHandlers.Add(MethodName, handler);
                     result = true;
                 }
+            }
+            finally
+            {
+                m_genericPacketHandlersRwLock.ReleaseWriterLock();
             }
             return result;
         }
@@ -917,13 +931,18 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         public bool AddLocalPacketHandler(PacketType packetType, PacketMethod handler, bool doAsync)
         {
             bool result = false;
-            lock (m_packetHandlers)
+            PacketHandlersRwLock.AcquireWriterLock(-1);
+            try
             {
                 if (!m_packetHandlers.ContainsKey(packetType))
                 {
                     m_packetHandlers.Add(packetType, new PacketProcessor() { method = handler, Async = doAsync });
                     result = true;
                 }
+            }
+            finally
+            {
+                PacketHandlersRwLock.ReleaseWriterLock();
             }
 
             return result;
@@ -992,9 +1011,14 @@ namespace OpenSim.Region.ClientStack.LindenUDP
                 //there is not a local handler so see if there is a Global handler
                 PacketMethod method = null;
                 bool found;
-                lock (PacketHandlers)
+                PacketHandlersRwLock.AcquireReaderLock(-1);
+                try
                 {
                     found = PacketHandlers.TryGetValue(packet.Type, out method);
+                }
+                finally
+                {
+                    PacketHandlersRwLock.ReleaseReaderLock();
                 }
                 if (found)
                 {

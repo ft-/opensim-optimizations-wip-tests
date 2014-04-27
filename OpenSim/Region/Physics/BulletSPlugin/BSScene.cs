@@ -110,6 +110,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         // Keep track of all the avatars so we can send them a collision event
         //    every tick so OpenSim will update its animation.
         private HashSet<BSPhysObject> m_avatars = new HashSet<BSPhysObject>();
+        private ReaderWriterLock m_avatarsRwLock = new ReaderWriterLock();
 
         // True if initialized and ready to do simulation steps
         private bool m_initialized = false;
@@ -526,8 +527,15 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             // TODO: Remove kludge someday.
             // We must generate a collision for avatars whether they collide or not.
             // This is required by OpenSim to update avatar animations, etc.
-            lock (m_avatars)
+            m_avatarsRwLock.AcquireWriterLock(-1);
+            try
+            {
                 m_avatars.Add(actor);
+            }
+            finally
+            {
+                m_avatarsRwLock.ReleaseReaderLock();
+            }
 
             return actor;
         }
@@ -567,8 +575,15 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                     lock (PhysObjects)
                         PhysObjects.Remove(bsactor.LocalID);
                     // Remove kludge someday
-                    lock (m_avatars)
+                    m_avatarsRwLock.AcquireWriterLock(-1);
+                    try
+                    {
                         m_avatars.Remove(bsactor);
+                    }
+                    finally
+                    {
+                        m_avatarsRwLock.ReleaseWriterLock();
+                    }
                 }
                 catch (Exception e)
                 {
@@ -841,9 +856,17 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                 // The simulator expects collisions for avatars even if there are have been no collisions.
                 //    The event updates avatar animations and stuff.
                 // If you fix avatar animation updates, remove this overhead and let normal collision processing happen.
-                foreach (BSPhysObject bsp in m_avatars)
-                    if (!ObjectsWithCollisions.Contains(bsp))   // don't call avatars twice
-                        bsp.SendCollisions();
+                m_avatarsRwLock.AcquireReaderLock(-1);
+                try
+                {
+                    foreach (BSPhysObject bsp in m_avatars)
+                        if (!ObjectsWithCollisions.Contains(bsp))   // don't call avatars twice
+                            bsp.SendCollisions();
+                }
+                finally
+                {
+                    m_avatarsRwLock.ReleaseReaderLock();
+                }
 
                 // Objects that are done colliding are removed from the ObjectsWithCollisions list.
                 // Not done above because it is inside an iteration of ObjectWithCollisions.

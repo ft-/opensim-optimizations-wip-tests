@@ -27,6 +27,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 using OMV = OpenMetaverse;
 
@@ -43,7 +44,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         // We lock the diddling of linkset classes to prevent any badness.
         // This locks the modification of the instances of this class. Changes
         //    to the physical representation is done via the tainting mechenism.
-        protected object m_linksetActivityLock = new Object();
+        protected ReaderWriterLock m_linksetActivityLock = new ReaderWriterLock();
 
         private static int m_nextLinksetID = 1;
 
@@ -146,12 +147,17 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         // Called at runtime.
         public BSLinkset AddMeToLinkset(BSPrimLinkable child)
         {
-            lock (m_linksetActivityLock)
+            m_linksetActivityLock.AcquireWriterLock(-1);
+            try
             {
                 // Don't add the root to its own linkset
                 if (!IsRoot(child))
                     AddChildToLinkset(child);
                 LinksetMass = ComputeLinksetMass();
+            }
+            finally
+            {
+                m_linksetActivityLock.ReleaseWriterLock();
             }
             return this;
         }
@@ -187,7 +193,8 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         public virtual bool ForEachLinkInfo(ForEachLinkInfoAction action)
         {
             bool ret = false;
-            lock (m_linksetActivityLock)
+            m_linksetActivityLock.AcquireReaderLock(-1);
+            try
             {
                 foreach (BSLinkInfo po in m_children.Values)
                 {
@@ -195,13 +202,18 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                         break;
                 }
             }
+            finally
+            {
+                m_linksetActivityLock.ReleaseReaderLock();
+            }
             return ret;
         }
 
         public virtual bool ForEachMember(ForEachMemberAction action)
         {
             bool ret = false;
-            lock (m_linksetActivityLock)
+            m_linksetActivityLock.AcquireReaderLock(-1);
+            try
             {
                 action(LinksetRoot);
                 foreach (BSPrimLinkable po in m_children.Keys)
@@ -209,6 +221,10 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                     if (action(po))
                         break;
                 }
+            }
+            finally
+            {
+                m_linksetActivityLock.ReleaseReaderLock();
             }
             return ret;
         }
@@ -244,9 +260,14 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         public bool HasChild(BSPrimLinkable child)
         {
             bool ret = false;
-            lock (m_linksetActivityLock)
+            m_linksetActivityLock.AcquireReaderLock(-1);
+            try
             {
                 ret = m_children.ContainsKey(child);
+            }
+            finally
+            {
+                m_linksetActivityLock.ReleaseReaderLock();
             }
             return ret;
         }
@@ -303,7 +324,8 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         // Called at runtime.
         public BSLinkset RemoveMeFromLinkset(BSPrimLinkable child, bool inTaintTime)
         {
-            lock (m_linksetActivityLock)
+            m_linksetActivityLock.AcquireWriterLock(-1);
+            try
             {
                 if (IsRoot(child))
                 {
@@ -312,6 +334,10 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                 }
                 RemoveChildFromLinkset(child, inTaintTime);
                 LinksetMass = ComputeLinksetMass();
+            }
+            finally
+            {
+                m_linksetActivityLock.ReleaseWriterLock();
             }
 
             // The child is down to a linkset of just itself
@@ -383,9 +409,14 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         {
             bool ret = false;
             BSLinkInfo found = null;
-            lock (m_linksetActivityLock)
+            m_linksetActivityLock.AcquireReaderLock(-1);
+            try
             {
                 ret = m_children.TryGetValue(child, out found);
+            }
+            finally
+            {
+                m_linksetActivityLock.ReleaseReaderLock();
             }
             foundInfo = found;
             return ret;
@@ -405,7 +436,8 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         protected virtual OMV.Vector3 ComputeLinksetCenterOfMass()
         {
             OMV.Vector3 com;
-            lock (m_linksetActivityLock)
+            m_linksetActivityLock.AcquireReaderLock(-1);
+            try
             {
                 com = LinksetRoot.Position * LinksetRoot.RawMass;
                 float totalMass = LinksetRoot.RawMass;
@@ -418,6 +450,10 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                 if (totalMass != 0f)
                     com /= totalMass;
             }
+            finally
+            {
+                m_linksetActivityLock.ReleaseReaderLock();
+            }
 
             return com;
         }
@@ -425,7 +461,8 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         protected virtual OMV.Vector3 ComputeLinksetGeometricCenter()
         {
             OMV.Vector3 com;
-            lock (m_linksetActivityLock)
+            m_linksetActivityLock.AcquireReaderLock(-1);
+            try
             {
                 com = LinksetRoot.Position;
 
@@ -434,6 +471,10 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                     com += bp.Position;
                 }
                 com /= (m_children.Count + 1);
+            }
+            finally
+            {
+                m_linksetActivityLock.ReleaseReaderLock();
             }
 
             return com;
@@ -445,12 +486,17 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             float mass = LinksetRoot.RawMass;
             if (HasAnyChildren)
             {
-                lock (m_linksetActivityLock)
+                m_linksetActivityLock.AcquireReaderLock(-1);
+                try
                 {
                     foreach (BSPrimLinkable bp in m_children.Keys)
                     {
                         mass += bp.RawMass;
                     }
+                }
+                finally
+                {
+                    m_linksetActivityLock.ReleaseReaderLock();
                 }
             }
             return mass;

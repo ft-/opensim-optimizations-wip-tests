@@ -26,6 +26,7 @@
  */
 
 using System;
+using System.Threading;
 using System.Collections.Generic;
 
 namespace OpenSim.Region.Physics.BulletSPlugin
@@ -83,6 +84,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
     public class BSActorCollection
     {
         private Dictionary<string, BSActor> m_actors;
+        private ReaderWriterLock m_actorsRwLock = new ReaderWriterLock();
 
         public BSActorCollection(BSScene physicsScene)
         {
@@ -93,21 +95,31 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         private BSScene m_physicsScene { get; set; }
         public void Add(string name, BSActor actor)
         {
-            lock (m_actors)
+            m_actorsRwLock.AcquireWriterLock(-1);
+            try
             {
                 if (!m_actors.ContainsKey(name))
                 {
                     m_actors[name] = actor;
                 }
             }
+            finally
+            {
+                m_actorsRwLock.ReleaseWriterLock();
+            }
         }
 
         public void Clear()
         {
-            lock (m_actors)
+            m_actorsRwLock.AcquireWriterLock(-1);
+            try
             {
                 ForEachActor(a => a.Dispose());
                 m_actors.Clear();
+            }
+            finally
+            {
+                m_actorsRwLock.ReleaseWriterLock();
             }
         }
 
@@ -123,16 +135,29 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
         public void ForEachActor(Action<BSActor> act)
         {
-            lock (m_actors)
+            m_actorsRwLock.AcquireReaderLock(-1);
+            try
             {
                 foreach (KeyValuePair<string, BSActor> kvp in m_actors)
                     act(kvp.Value);
+            }
+            finally
+            {
+                m_actorsRwLock.ReleaseReaderLock();
             }
         }
 
         public bool HasActor(string name)
         {
-            return m_actors.ContainsKey(name);
+            m_actorsRwLock.AcquireReaderLock(-1);
+            try
+            {
+                return m_actors.ContainsKey(name);
+            }
+            finally
+            {
+                m_actorsRwLock.ReleaseReaderLock();
+            }
         }
 
         public void Refresh()
@@ -143,7 +168,8 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         public bool RemoveAndRelease(string name)
         {
             bool ret = false;
-            lock (m_actors)
+            m_actorsRwLock.AcquireWriterLock(-1);
+            try
             {
                 if (m_actors.ContainsKey(name))
                 {
@@ -152,6 +178,10 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                     beingRemoved.Dispose();
                     ret = true;
                 }
+            }
+            finally
+            {
+                m_actorsRwLock.ReleaseWriterLock();
             }
             return ret;
         }
@@ -162,7 +192,15 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
         public bool TryGetActor(string actorName, out BSActor theActor)
         {
-            return m_actors.TryGetValue(actorName, out theActor);
+            m_actorsRwLock.AcquireReaderLock(-1);
+            try
+            {
+                return m_actors.TryGetValue(actorName, out theActor);
+            }
+            finally
+            {
+                m_actorsRwLock.ReleaseReaderLock();
+            }
         }
     }
 }
