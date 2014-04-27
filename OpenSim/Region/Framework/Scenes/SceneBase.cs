@@ -79,7 +79,8 @@ namespace OpenSim.Region.Framework.Scenes
         /// <value>
         /// The module commanders available from this scene
         /// </value>
-        protected Dictionary<string, ICommander> m_moduleCommanders = new Dictionary<string, ICommander>();
+        private Dictionary<string, ICommander> m_moduleCommanders = new Dictionary<string, ICommander>();
+        private ReaderWriterLock m_moduleCommandersRwLock = new ReaderWriterLock();
 
         protected ScenePermissions m_permissions;
 
@@ -408,10 +409,15 @@ namespace OpenSim.Region.Framework.Scenes
         /// <returns>The module commander, null if no module commander with that name was found</returns>
         public ICommander GetCommander(string name)
         {
-            lock (m_moduleCommanders)
+            m_moduleCommandersRwLock.AcquireReaderLock(-1);
+            try
             {
                 if (m_moduleCommanders.ContainsKey(name))
                     return m_moduleCommanders[name];
+            }
+            finally
+            {
+                m_moduleCommandersRwLock.ReleaseReaderLock();
             }
 
             return null;
@@ -428,9 +434,14 @@ namespace OpenSim.Region.Framework.Scenes
         /// <param name="commander"></param>
         public void RegisterModuleCommander(ICommander commander)
         {
-            lock (m_moduleCommanders)
+            m_moduleCommandersRwLock.AcquireWriterLock(-1);
+            try
             {
                 m_moduleCommanders.Add(commander.Name, commander);
+            }
+            finally
+            {
+                m_moduleCommandersRwLock.ReleaseWriterLock();
             }
         }
 
@@ -534,11 +545,16 @@ namespace OpenSim.Region.Framework.Scenes
         /// <param name="name"></param>
         public void UnregisterModuleCommander(string name)
         {
-            lock (m_moduleCommanders)
+            m_moduleCommandersRwLock.AcquireWriterLock(-1);
+            try
             {
                 ICommander commander;
                 if (m_moduleCommanders.TryGetValue(name, out commander))
                     m_moduleCommanders.Remove(name);
+            }
+            finally
+            {
+                m_moduleCommandersRwLock.ReleaseWriterLock();
             }
         }
         public void UnregisterModuleInterface<M>(M mod)

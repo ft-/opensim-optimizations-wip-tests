@@ -145,7 +145,8 @@ namespace OpenSim.Region.Framework.Scenes
 
         protected ILibraryService m_LibraryService;
 
-        protected List<RegionInfo> m_neighbours = new List<RegionInfo>();
+        private List<RegionInfo> m_neighbours = new List<RegionInfo>();
+        private ReaderWriterLock m_neighboursRwLock = new ReaderWriterLock();
 
         protected IPresenceService m_PresenceService;
 
@@ -1114,27 +1115,54 @@ namespace OpenSim.Region.Framework.Scenes
 
         public void AddNeighborRegion(RegionInfo region)
         {
-            lock (m_neighbours)
+            m_neighboursRwLock.AcquireReaderLock(-1);
+            try
             {
                 if (!CheckNeighborRegion(region))
                 {
-                    m_neighbours.Add(region);
+                    LockCookie lc = m_neighboursRwLock.UpgradeToWriterLock(-1);
+                    try
+                    {
+                        /* re check to be sure to only add it once */
+                        if (!CheckNeighborRegionInternal(region))
+                        {
+                            m_neighbours.Add(region);
+                        }
+                    }
+                    finally
+                    {
+                        m_neighboursRwLock.DowngradeFromWriterLock(ref lc);
+                    }
                 }
+            }
+            finally
+            {
+                m_neighboursRwLock.ReleaseReaderLock();
             }
         }
 
         public bool CheckNeighborRegion(RegionInfo region)
         {
-            bool found = false;
-            lock (m_neighbours)
+            m_neighboursRwLock.AcquireReaderLock(-1);
+            try
             {
-                foreach (RegionInfo reg in m_neighbours)
+                return CheckNeighborRegionInternal(region);
+            }
+            finally
+            {
+                m_neighboursRwLock.ReleaseReaderLock();
+            }
+        }
+
+        private bool CheckNeighborRegionInternal(RegionInfo region)
+        {
+            bool found = false;
+            foreach (RegionInfo reg in m_neighbours)
+            {
+                if (reg.RegionHandle == region.RegionHandle)
                 {
-                    if (reg.RegionHandle == region.RegionHandle)
-                    {
-                        found = true;
-                        break;
-                    }
+                    found = true;
+                    break;
                 }
             }
             return found;
