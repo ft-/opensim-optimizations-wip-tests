@@ -1,6 +1,5 @@
 #if !(_WINDOWS_CE)
 
-using System;
 using System.Threading;
 
 namespace Amib.Threading.Internal
@@ -31,6 +30,7 @@ namespace Amib.Threading.Internal
         }
     }
 #else
+
     internal static class STPEventWaitHandle
     {
         public const int WaitTimeout = Timeout.Infinite;
@@ -55,8 +55,8 @@ namespace Amib.Threading.Internal
             return waitHandle.WaitOne(millisecondsTimeout, exitContext);
         }
     }
-#endif
 
+#endif
 }
 
 #endif

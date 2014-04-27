@@ -1,6 +1,6 @@
 using System;
-using System.Threading;
 using System.Diagnostics;
+using System.Threading;
 
 namespace Amib.Threading.Internal
 {
@@ -31,13 +31,16 @@ namespace Amib.Threading.Internal
                 case WorkItemState.InQueue:
                     valid = (WorkItemState.InProgress == nextState) || (WorkItemState.Canceled == nextState);
                     break;
+
                 case WorkItemState.InProgress:
                     valid = (WorkItemState.Completed == nextState) || (WorkItemState.Canceled == nextState);
                     break;
+
                 case WorkItemState.Completed:
                 case WorkItemState.Canceled:
                     // Cannot be changed
                     break;
+
                 default:
                     // Unknown state
                     Debug.Assert(false);
@@ -47,7 +50,7 @@ namespace Amib.Threading.Internal
             return valid;
         }
 
-        #endregion
+        #endregion WorkItemState enum
 
         #region Fields
 
@@ -57,46 +60,9 @@ namespace Amib.Threading.Internal
         private readonly WorkItemCallback _callback;
 
         /// <summary>
-        /// State with which to call the callback delegate.
-        /// </summary>
-        private object _state;
-
-#if !(_WINDOWS_CE) && !(_SILVERLIGHT) && !(WINDOWS_PHONE)
-        /// <summary>
         /// Stores the caller's context
         /// </summary>
         private readonly CallerThreadContext _callerContext;
-#endif
-        /// <summary>
-        /// Holds the result of the mehtod
-        /// </summary>
-        private object _result;
-
-        /// <summary>
-        /// Hold the exception if the method threw it
-        /// </summary>
-        private Exception _exception;
-
-        /// <summary>
-        /// Hold the state of the work item
-        /// </summary>
-        private WorkItemState _workItemState;
-
-        /// <summary>
-        /// A ManualResetEvent to indicate that the result is ready
-        /// </summary>
-        private ManualResetEvent _workItemCompleted;
-
-        /// <summary>
-        /// A reference count to the _workItemCompleted. 
-        /// When it reaches to zero _workItemCompleted is Closed
-        /// </summary>
-        private int _workItemCompletedRefCount;
-
-        /// <summary>
-        /// Represents the result state of the work item
-        /// </summary>
-        private readonly WorkItemResult _workItemResult;
 
         /// <summary>
         /// Work item info
@@ -104,31 +70,31 @@ namespace Amib.Threading.Internal
         private readonly WorkItemInfo _workItemInfo;
 
         /// <summary>
-        /// Called when the WorkItem starts
+        /// Represents the result state of the work item
         /// </summary>
-        private event WorkItemStateCallback _workItemStartedEvent;
-
-        /// <summary>
-        /// Called when the WorkItem completes
-        /// </summary>
-        private event WorkItemStateCallback _workItemCompletedEvent;
-
-        /// <summary>
-        /// A reference to an object that indicates whatever the 
-        /// WorkItemsGroup has been canceled
-        /// </summary>
-        private CanceledWorkItemsGroup _canceledWorkItemsGroup = CanceledWorkItemsGroup.NotCanceledWorkItemsGroup;
-
-        /// <summary>
-        /// A reference to an object that indicates whatever the 
-        /// SmartThreadPool has been canceled
-        /// </summary>
-        private CanceledWorkItemsGroup _canceledSmartThreadPool = CanceledWorkItemsGroup.NotCanceledWorkItemsGroup;
+        private readonly WorkItemResult _workItemResult;
 
         /// <summary>
         /// The work item group this work item belong to.
         /// </summary>
         private readonly IWorkItemsGroup _workItemsGroup;
+
+        /// <summary>
+        /// A reference to an object that indicates whatever the
+        /// SmartThreadPool has been canceled
+        /// </summary>
+        private CanceledWorkItemsGroup _canceledSmartThreadPool = CanceledWorkItemsGroup.NotCanceledWorkItemsGroup;
+
+        /// <summary>
+        /// A reference to an object that indicates whatever the
+        /// WorkItemsGroup has been canceled
+        /// </summary>
+        private CanceledWorkItemsGroup _canceledWorkItemsGroup = CanceledWorkItemsGroup.NotCanceledWorkItemsGroup;
+
+        /// <summary>
+        /// Hold the exception if the method threw it
+        /// </summary>
+        private Exception _exception;
 
         /// <summary>
         /// The thread that executes this workitem.
@@ -141,34 +107,58 @@ namespace Amib.Threading.Internal
         /// </summary>
         private long _expirationTime;
 
-        #region Performance Counter fields
-
-
-
+        /// <summary>
+        /// Holds the result of the mehtod
+        /// </summary>
+        private object _result;
 
         /// <summary>
-        /// Stores how long the work item waited on the stp queue
+        /// State with which to call the callback delegate.
         /// </summary>
-        private Stopwatch _waitingOnQueueStopwatch;
+        private object _state;
+
+#if !(_WINDOWS_CE) && !(_SILVERLIGHT) && !(WINDOWS_PHONE)
+#endif
+        /// <summary>
+        /// A ManualResetEvent to indicate that the result is ready
+        /// </summary>
+        private ManualResetEvent _workItemCompleted;
+
+        /// <summary>
+        /// A reference count to the _workItemCompleted.
+        /// When it reaches to zero _workItemCompleted is Closed
+        /// </summary>
+        private int _workItemCompletedRefCount;
+
+        /// <summary>
+        /// Hold the state of the work item
+        /// </summary>
+        private WorkItemState _workItemState;
+        /// <summary>
+        /// Called when the WorkItem completes
+        /// </summary>
+        private event WorkItemStateCallback _workItemCompletedEvent;
+
+        /// <summary>
+        /// Called when the WorkItem starts
+        /// </summary>
+        private event WorkItemStateCallback _workItemStartedEvent;
+        #region Performance Counter fields
 
         /// <summary>
         /// Stores how much time it took the work item to execute after it went out of the queue
         /// </summary>
         private Stopwatch _processingStopwatch;
 
-        #endregion
+        /// <summary>
+        /// Stores how long the work item waited on the stp queue
+        /// </summary>
+        private Stopwatch _waitingOnQueueStopwatch;
+        #endregion Performance Counter fields
 
-        #endregion
+        #endregion Fields
 
         #region Properties
-
-        public TimeSpan WaitingTime
-        {
-            get
-            {
-                return _waitingOnQueueStopwatch.Elapsed;
-            }
-        }
 
         public TimeSpan ProcessTime
         {
@@ -178,6 +168,13 @@ namespace Amib.Threading.Internal
             }
         }
 
+        public TimeSpan WaitingTime
+        {
+            get
+            {
+                return _waitingOnQueueStopwatch.Elapsed;
+            }
+        }
         internal WorkItemInfo WorkItemInfo
         {
             get
@@ -186,7 +183,7 @@ namespace Amib.Threading.Internal
             }
         }
 
-        #endregion
+        #endregion Properties
 
         #region Construction
 
@@ -197,7 +194,7 @@ namespace Amib.Threading.Internal
         /// <param name="workItemInfo">The WorkItemInfo of te workitem</param>
         /// <param name="callback">Callback delegate for the callback.</param>
         /// <param name="state">State with which to call the callback delegate.</param>
-        /// 
+        ///
         /// We assume that the WorkItem object is created within the thread
         /// that meant to run the callback
         public WorkItem(
@@ -243,21 +240,52 @@ namespace Amib.Threading.Internal
             return (workItemsGroup == _workItemsGroup);
         }
 
-
-        #endregion
+        #endregion Construction
 
         #region Methods
+
+        internal CanceledWorkItemsGroup CanceledSmartThreadPool
+        {
+            get { return _canceledSmartThreadPool; }
+            set { _canceledSmartThreadPool = value; }
+        }
 
         internal CanceledWorkItemsGroup CanceledWorkItemsGroup
         {
             get { return _canceledWorkItemsGroup; }
             set { _canceledWorkItemsGroup = value; }
         }
-
-        internal CanceledWorkItemsGroup CanceledSmartThreadPool
+        /// <summary>
+        /// Execute the work item and the post execute
+        /// </summary>
+        public void Execute()
         {
-            get { return _canceledSmartThreadPool; }
-            set { _canceledSmartThreadPool = value; }
+            CallToPostExecute currentCallToPostExecute = 0;
+
+            // Execute the work item if we are in the correct state
+            switch (GetWorkItemState())
+            {
+                case WorkItemState.InProgress:
+                    currentCallToPostExecute |= CallToPostExecute.WhenWorkItemNotCanceled;
+                    ExecuteWorkItem();
+                    break;
+
+                case WorkItemState.Canceled:
+                    currentCallToPostExecute |= CallToPostExecute.WhenWorkItemCanceled;
+                    break;
+
+                default:
+                    Debug.Assert(false);
+                    throw new NotSupportedException();
+            }
+
+            // Run the post execute as needed
+            if ((currentCallToPostExecute & _workItemInfo.CallToPostExecute) != 0)
+            {
+                PostExecute();
+            }
+
+            _processingStopwatch.Stop();
         }
 
         /// <summary>
@@ -296,182 +324,13 @@ namespace Amib.Threading.Internal
 
             return true;
         }
-
-        /// <summary>
-        /// Execute the work item and the post execute
-        /// </summary>
-        public void Execute()
-        {
-            CallToPostExecute currentCallToPostExecute = 0;
-
-            // Execute the work item if we are in the correct state
-            switch (GetWorkItemState())
-            {
-                case WorkItemState.InProgress:
-                    currentCallToPostExecute |= CallToPostExecute.WhenWorkItemNotCanceled;
-                    ExecuteWorkItem();
-                    break;
-                case WorkItemState.Canceled:
-                    currentCallToPostExecute |= CallToPostExecute.WhenWorkItemCanceled;
-                    break;
-                default:
-                    Debug.Assert(false);
-                    throw new NotSupportedException();
-            }
-
-            // Run the post execute as needed
-            if ((currentCallToPostExecute & _workItemInfo.CallToPostExecute) != 0)
-            {
-                PostExecute();
-            }
-
-            _processingStopwatch.Stop();
-        }
-
-        internal void FireWorkItemCompleted()
-        {
-            try
-            {
-                if (null != _workItemCompletedEvent)
-                {
-                    _workItemCompletedEvent(this);
-                }
-            }
-            catch // Suppress exceptions
-            { }
-        }
-
-        internal void FireWorkItemStarted()
-        {
-            try
-            {
-                if (null != _workItemStartedEvent)
-                {
-                    _workItemStartedEvent(this);
-                }
-            }
-            catch // Suppress exceptions
-            { }
-        }
-
-        /// <summary>
-        /// Execute the work item
-        /// </summary>
-        private void ExecuteWorkItem()
-        {
-
-#if !(_WINDOWS_CE) && !(_SILVERLIGHT) && !(WINDOWS_PHONE)
-            CallerThreadContext ctc = null;
-            if (null != _callerContext)
-            {
-                ctc = CallerThreadContext.Capture(_callerContext.CapturedCallContext, _callerContext.CapturedHttpContext);
-                CallerThreadContext.Apply(_callerContext);
-            }
-#endif
-
-            Exception exception = null;
-            object result = null;
-
-            try
-            {
-                try
-                {
-                    result = _callback(_state);
-                }
-                catch (Exception e)
-                {
-                    // Save the exception so we can rethrow it later
-                    exception = e;
-                }
-
-                // Remove the value of the execution thread, so it will be impossible to cancel the work item,
-                // since it is already completed.
-                // Cancelling a work item that already completed may cause the abortion of the next work item!!!
-                Thread executionThread = Interlocked.CompareExchange(ref _executingThread, null, _executingThread);
-
-                if (null == executionThread)
-                {
-                    // Oops! we are going to be aborted..., Wait here so we can catch the ThreadAbortException
-                    Thread.Sleep(60 * 1000);
-
-                    // If after 1 minute this thread was not aborted then let it continue working.
-                }
-            }
-            // We must treat the ThreadAbortException or else it will be stored in the exception variable
-            catch (ThreadAbortException tae)
-            {
-                tae.GetHashCode();
-                // Check if the work item was cancelled
-                // If we got a ThreadAbortException and the STP is not shutting down, it means the 
-                // work items was cancelled.
-                if (!SmartThreadPool.CurrentThreadEntry.AssociatedSmartThreadPool.IsShuttingdown)
-                {
-#if !(_WINDOWS_CE) && !(_SILVERLIGHT) && !(WINDOWS_PHONE)
-                    Thread.ResetAbort();
-#endif
-                }
-            }
-
-#if !(_WINDOWS_CE) && !(_SILVERLIGHT) && !(WINDOWS_PHONE)
-            if (null != _callerContext)
-            {
-                CallerThreadContext.Apply(ctc);
-            }
-#endif
-
-            if (!SmartThreadPool.IsWorkItemCanceled)
-            {
-                SetResult(result, exception);
-            }
-        }
-
-        /// <summary>
-        /// Runs the post execute callback
-        /// </summary>
-        private void PostExecute()
-        {
-            if (null != _workItemInfo.PostExecuteWorkItemCallback)
-            {
-                try
-                {
-                    _workItemInfo.PostExecuteWorkItemCallback(_workItemResult);
-                }
-                catch (Exception e)
-                {
-                    Debug.Assert(null != e);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Set the result of the work item to return
-        /// </summary>
-        /// <param name="result">The result of the work item</param>
-        /// <param name="exception">The exception that was throw while the workitem executed, null
-        /// if there was no exception.</param>
-        internal void SetResult(object result, Exception exception)
-        {
-            _result = result;
-            _exception = exception;
-            SignalComplete(false);
-        }
-
-        /// <summary>
-        /// Returns the work item result
-        /// </summary>
-        /// <returns>The work item result</returns>
-        internal IWorkItemResult GetWorkItemResult()
-        {
-            return _workItemResult;
-        }
-
         /// <summary>
         /// Wait for all work items to complete
         /// </summary>
         /// <param name="waitableResults">Array of work item result objects</param>
         /// <param name="millisecondsTimeout">The number of milliseconds to wait, or Timeout.Infinite (-1) to wait indefinitely.</param>
         /// <param name="exitContext">
-        /// true to exit the synchronization domain for the context before the wait (if in a synchronized context), and reacquire it; otherwise, false. 
+        /// true to exit the synchronization domain for the context before the wait (if in a synchronized context), and reacquire it; otherwise, false.
         /// </param>
         /// <param name="cancelWaitHandle">A cancel wait handle to interrupt the wait if needed</param>
         /// <returns>
@@ -553,7 +412,7 @@ namespace Amib.Threading.Internal
         /// <param name="waitableResults">Array of work item result objects</param>
         /// <param name="millisecondsTimeout">The number of milliseconds to wait, or Timeout.Infinite (-1) to wait indefinitely.</param>
         /// <param name="exitContext">
-        /// true to exit the synchronization domain for the context before the wait (if in a synchronized context), and reacquire it; otherwise, false. 
+        /// true to exit the synchronization domain for the context before the wait (if in a synchronized context), and reacquire it; otherwise, false.
         /// </param>
         /// <param name="cancelWaitHandle">A cancel wait handle to interrupt the wait if needed</param>
         /// <returns>
@@ -595,6 +454,54 @@ namespace Amib.Threading.Internal
             return result;
         }
 
+        internal void FireWorkItemCompleted()
+        {
+            try
+            {
+                if (null != _workItemCompletedEvent)
+                {
+                    _workItemCompletedEvent(this);
+                }
+            }
+            catch // Suppress exceptions
+            { }
+        }
+
+        internal void FireWorkItemStarted()
+        {
+            try
+            {
+                if (null != _workItemStartedEvent)
+                {
+                    _workItemStartedEvent(this);
+                }
+            }
+            catch // Suppress exceptions
+            { }
+        }
+
+        /// <summary>
+        /// Returns the work item result
+        /// </summary>
+        /// <returns>The work item result</returns>
+        internal IWorkItemResult GetWorkItemResult()
+        {
+            return _workItemResult;
+        }
+
+        /// <summary>
+        /// Set the result of the work item to return
+        /// </summary>
+        /// <param name="result">The result of the work item</param>
+        /// <param name="exception">The exception that was throw while the workitem executed, null
+        /// if there was no exception.</param>
+        internal void SetResult(object result, Exception exception)
+        {
+            _result = result;
+            _exception = exception;
+            SignalComplete(false);
+        }
+
         /// <summary>
         /// Fill an array of wait handles with the work items wait handles.
         /// </summary>
@@ -627,9 +534,101 @@ namespace Amib.Threading.Internal
             }
         }
 
-        #endregion
+        /// <summary>
+        /// Execute the work item
+        /// </summary>
+        private void ExecuteWorkItem()
+        {
+#if !(_WINDOWS_CE) && !(_SILVERLIGHT) && !(WINDOWS_PHONE)
+            CallerThreadContext ctc = null;
+            if (null != _callerContext)
+            {
+                ctc = CallerThreadContext.Capture(_callerContext.CapturedCallContext, _callerContext.CapturedHttpContext);
+                CallerThreadContext.Apply(_callerContext);
+            }
+#endif
+
+            Exception exception = null;
+            object result = null;
+
+            try
+            {
+                try
+                {
+                    result = _callback(_state);
+                }
+                catch (Exception e)
+                {
+                    // Save the exception so we can rethrow it later
+                    exception = e;
+                }
+
+                // Remove the value of the execution thread, so it will be impossible to cancel the work item,
+                // since it is already completed.
+                // Cancelling a work item that already completed may cause the abortion of the next work item!!!
+                Thread executionThread = Interlocked.CompareExchange(ref _executingThread, null, _executingThread);
+
+                if (null == executionThread)
+                {
+                    // Oops! we are going to be aborted..., Wait here so we can catch the ThreadAbortException
+                    Thread.Sleep(60 * 1000);
+
+                    // If after 1 minute this thread was not aborted then let it continue working.
+                }
+            }
+            // We must treat the ThreadAbortException or else it will be stored in the exception variable
+            catch (ThreadAbortException tae)
+            {
+                tae.GetHashCode();
+                // Check if the work item was cancelled
+                // If we got a ThreadAbortException and the STP is not shutting down, it means the
+                // work items was cancelled.
+                if (!SmartThreadPool.CurrentThreadEntry.AssociatedSmartThreadPool.IsShuttingdown)
+                {
+#if !(_WINDOWS_CE) && !(_SILVERLIGHT) && !(WINDOWS_PHONE)
+                    Thread.ResetAbort();
+#endif
+                }
+            }
+
+#if !(_WINDOWS_CE) && !(_SILVERLIGHT) && !(WINDOWS_PHONE)
+            if (null != _callerContext)
+            {
+                CallerThreadContext.Apply(ctc);
+            }
+#endif
+
+            if (!SmartThreadPool.IsWorkItemCanceled)
+            {
+                SetResult(result, exception);
+            }
+        }
+
+        /// <summary>
+        /// Runs the post execute callback
+        /// </summary>
+        private void PostExecute()
+        {
+            if (null != _workItemInfo.PostExecuteWorkItemCallback)
+            {
+                try
+                {
+                    _workItemInfo.PostExecuteWorkItemCallback(_workItemResult);
+                }
+                catch (Exception e)
+                {
+                    Debug.Assert(null != e);
+                }
+            }
+        }
+        #endregion Methods
 
         #region Private Members
+
+        internal void WorkItemIsQueued()
+        {
+            _waitingOnQueueStopwatch.Start();
+        }
 
         private WorkItemState GetWorkItemState()
         {
@@ -660,7 +659,6 @@ namespace Amib.Threading.Internal
                 return _workItemState;
             }
         }
-
 
         /// <summary>
         /// Sets the work item's state
@@ -693,15 +691,39 @@ namespace Amib.Threading.Internal
                 }
             }
         }
-
-        internal void WorkItemIsQueued()
-        {
-            _waitingOnQueueStopwatch.Start();
-        }
-
-        #endregion
+        #endregion Private Members
 
         #region Members exposed by WorkItemResult
+
+        /// <summary>
+        /// Returns true when the work item has canceled
+        /// </summary>
+        public bool IsCanceled
+        {
+            get
+            {
+                lock (this)
+                {
+                    return (GetWorkItemState() == WorkItemState.Canceled);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns true when the work item has completed or canceled
+        /// </summary>
+        private bool IsCompleted
+        {
+            get
+            {
+                lock (this)
+                {
+                    WorkItemState workItemState = GetWorkItemState();
+                    return ((workItemState == WorkItemState.Completed) ||
+                            (workItemState == WorkItemState.Canceled));
+                }
+            }
+        }
 
         /// <summary>
         /// Cancel the work item if it didn't start running yet.
@@ -734,12 +756,14 @@ namespace Amib.Threading.Internal
                                 // so it already signaled its completion.
                                 //signalComplete = true;
                             }
-                        } 
+                        }
                         success = true;
                         break;
+
                     case WorkItemState.Completed:
                         //Debug.WriteLine("Work item cannot be canceled");
                         break;
+
                     case WorkItemState.InProgress:
                         if (abortExecution)
                         {
@@ -767,6 +791,7 @@ namespace Amib.Threading.Internal
                             signalComplete = false;
                         }
                         break;
+
                     case WorkItemState.InQueue:
                         // Signal to the wait for completion that the work
                         // item has been completed (canceled). There is no
@@ -856,16 +881,16 @@ namespace Amib.Threading.Internal
                 {
                     case 0:
                         // The work item signaled
-                        // Note that the signal could be also as a result of canceling the 
+                        // Note that the signal could be also as a result of canceling the
                         // work item (not the get result)
                         break;
+
                     case 1:
                     case STPEventWaitHandle.WaitTimeout:
                         throw new WorkItemTimeoutException("Work item timeout");
                     default:
                         Debug.Assert(false);
                         break;
-
                 }
             }
 
@@ -884,7 +909,7 @@ namespace Amib.Threading.Internal
         }
 
         /// <summary>
-        /// A wait handle to wait for completion, cancel, or timeout 
+        /// A wait handle to wait for completion, cancel, or timeout
         /// </summary>
         private WaitHandle GetWaitHandle()
         {
@@ -914,38 +939,7 @@ namespace Amib.Threading.Internal
                 }
             }
         }
-
-        /// <summary>
-        /// Returns true when the work item has completed or canceled
-        /// </summary>
-        private bool IsCompleted
-        {
-            get
-            {
-                lock (this)
-                {
-                    WorkItemState workItemState = GetWorkItemState();
-                    return ((workItemState == WorkItemState.Completed) ||
-                            (workItemState == WorkItemState.Canceled));
-                }
-            }
-        }
-
-        /// <summary>
-        /// Returns true when the work item has canceled
-        /// </summary>
-        public bool IsCanceled
-        {
-            get
-            {
-                lock (this)
-                {
-                    return (GetWorkItemState() == WorkItemState.Canceled);
-                }
-            }
-        }
-
-        #endregion
+        #endregion Members exposed by WorkItemResult
 
         #region IHasWorkItemPriority Members
 
@@ -960,19 +954,7 @@ namespace Amib.Threading.Internal
             }
         }
 
-        #endregion
-
-        internal event WorkItemStateCallback OnWorkItemStarted
-        {
-            add
-            {
-                _workItemStartedEvent += value;
-            }
-            remove
-            {
-                _workItemStartedEvent -= value;
-            }
-        }
+        #endregion IHasWorkItemPriority Members
 
         internal event WorkItemStateCallback OnWorkItemCompleted
         {
@@ -986,6 +968,17 @@ namespace Amib.Threading.Internal
             }
         }
 
+        internal event WorkItemStateCallback OnWorkItemStarted
+        {
+            add
+            {
+                _workItemStartedEvent += value;
+            }
+            remove
+            {
+                _workItemStartedEvent -= value;
+            }
+        }
         public void DisposeOfState()
         {
             if (_workItemInfo.DisposeOfStateObjects)

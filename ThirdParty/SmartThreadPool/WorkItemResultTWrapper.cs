@@ -16,6 +16,46 @@ namespace Amib.Threading.Internal
 
         #region IWorkItemResult<TResult> Members
 
+        public object Exception
+        {
+            get { return (TResult)_workItemResult.Exception; }
+        }
+
+        public bool IsCanceled
+        {
+            get { return _workItemResult.IsCanceled; }
+        }
+
+        public bool IsCompleted
+        {
+            get { return _workItemResult.IsCompleted; }
+        }
+
+        public TResult Result
+        {
+            get { return (TResult)_workItemResult.Result; }
+        }
+
+        public object State
+        {
+            get { return _workItemResult.State; }
+        }
+
+        public WorkItemPriority WorkItemPriority
+        {
+            get { return _workItemResult.WorkItemPriority; }
+        }
+
+        public bool Cancel()
+        {
+            return _workItemResult.Cancel();
+        }
+
+        public bool Cancel(bool abortExecution)
+        {
+            return _workItemResult.Cancel(abortExecution);
+        }
+
         public TResult GetResult()
         {
             return (TResult)_workItemResult.GetResult();
@@ -65,47 +105,6 @@ namespace Amib.Threading.Internal
         {
             return (TResult)_workItemResult.GetResult(timeout, exitContext, cancelWaitHandle, out e);
         }
-
-        public bool IsCompleted
-        {
-            get { return _workItemResult.IsCompleted; }
-        }
-
-        public bool IsCanceled
-        {
-            get { return _workItemResult.IsCanceled; }
-        }
-
-        public object State
-        {
-            get { return _workItemResult.State; }
-        }
-
-        public bool Cancel()
-        {
-            return _workItemResult.Cancel();
-        }
-
-        public bool Cancel(bool abortExecution)
-        {
-            return _workItemResult.Cancel(abortExecution);
-        }
-
-        public WorkItemPriority WorkItemPriority
-        {
-            get { return _workItemResult.WorkItemPriority; }
-        }
-
-        public TResult Result
-        {
-            get { return (TResult)_workItemResult.Result; }
-        }
-
-        public object Exception
-        {
-            get { return (TResult)_workItemResult.Exception; }
-        }
-
         #region IInternalWorkItemResult Members
 
         public IWorkItemResult GetWorkItemResult()
@@ -118,11 +117,10 @@ namespace Amib.Threading.Internal
             return (IWorkItemResult<TRes>)this;
         }
 
-        #endregion
+        #endregion IInternalWorkItemResult Members
 
-        #endregion
+        #endregion IWorkItemResult<TResult> Members
     }
 
-    #endregion
-
+    #endregion WorkItemResultTWrapper class
 }

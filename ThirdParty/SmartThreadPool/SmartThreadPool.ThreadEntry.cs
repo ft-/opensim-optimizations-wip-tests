@@ -1,6 +1,5 @@
-
-using System;
 using Amib.Threading.Internal;
+using System;
 
 namespace Amib.Threading
 {
@@ -10,6 +9,14 @@ namespace Amib.Threading
 
         internal class ThreadEntry
         {
+            /// <summary>
+            /// A reference from each thread in the thread pool to its SmartThreadPool
+            /// object container.
+            /// With this variable a thread can know whatever it belongs to a
+            /// SmartThreadPool.
+            /// </summary>
+            private readonly SmartThreadPool _associatedSmartThreadPool;
+
             /// <summary>
             /// The thread creation time
             /// The value is stored as UTC value.
@@ -22,21 +29,6 @@ namespace Amib.Threading
             /// The value is stored as UTC value.
             /// </summary>
             private DateTime _lastAliveTime;
-
-            /// <summary>
-            /// A reference from each thread in the thread pool to its SmartThreadPool
-            /// object container.
-            /// With this variable a thread can know whatever it belongs to a 
-            /// SmartThreadPool.
-            /// </summary>
-            private readonly SmartThreadPool _associatedSmartThreadPool;
-
-            /// <summary>
-            /// A reference to the current work item a thread from the thread pool 
-            /// is executing.
-            /// </summary>            
-            public WorkItem CurrentWorkItem { get; set; }
-
             public ThreadEntry(SmartThreadPool stp)
             {
                 _associatedSmartThreadPool = stp;
@@ -49,12 +41,17 @@ namespace Amib.Threading
                 get { return _associatedSmartThreadPool; }
             }
 
+            /// <summary>
+            /// A reference to the current work item a thread from the thread pool
+            /// is executing.
+            /// </summary>
+            public WorkItem CurrentWorkItem { get; set; }
             public void IAmAlive()
             {
                 _lastAliveTime = DateTime.UtcNow;
             }
         }
 
-        #endregion
+        #endregion ThreadEntry class
     }
 }

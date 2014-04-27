@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 
 namespace Amib.Threading.Internal
@@ -28,12 +26,14 @@ namespace Amib.Threading.Internal
 
             #region IWorkItemResult Members
 
-            public bool IsCompleted
+            /// <summary>
+            /// Returns the exception if occured otherwise returns null.
+            /// This value is valid only after the work item completed,
+            /// before that it is always null.
+            /// </summary>
+            public object Exception
             {
-                get
-                {
-                    return _workItem.IsCompleted;
-                }
+                get { return _workItem._exception; }
             }
 
             public bool IsCanceled
@@ -42,6 +42,47 @@ namespace Amib.Threading.Internal
                 {
                     return _workItem.IsCanceled;
                 }
+            }
+
+            public bool IsCompleted
+            {
+                get
+                {
+                    return _workItem.IsCompleted;
+                }
+            }
+            /// <summary>
+            /// Return the result, same as GetResult()
+            /// </summary>
+            public object Result
+            {
+                get { return GetResult(); }
+            }
+
+            public object State
+            {
+                get
+                {
+                    return _workItem._state;
+                }
+            }
+
+            public WorkItemPriority WorkItemPriority
+            {
+                get
+                {
+                    return _workItem._workItemInfo.WorkItemPriority;
+                }
+            }
+
+            public bool Cancel()
+            {
+                return Cancel(false);
+            }
+
+            public bool Cancel(bool abortExecution)
+            {
+                return _workItem.Cancel(abortExecution);
             }
 
             public object GetResult()
@@ -93,67 +134,9 @@ namespace Amib.Threading.Internal
             {
                 return _workItem.GetResult((int)timeout.TotalMilliseconds, exitContext, cancelWaitHandle, out e);
             }
-
-            public bool Cancel()
-            {
-                return Cancel(false);
-            }
-
-            public bool Cancel(bool abortExecution)
-            {
-                return _workItem.Cancel(abortExecution);
-            }
-
-            public object State
-            {
-                get
-                {
-                    return _workItem._state;
-                }
-            }
-
-            public WorkItemPriority WorkItemPriority
-            {
-                get
-                {
-                    return _workItem._workItemInfo.WorkItemPriority;
-                }
-            }
-
-            /// <summary>
-            /// Return the result, same as GetResult()
-            /// </summary>
-            public object Result
-            {
-                get { return GetResult(); }
-            }
-
-            /// <summary>
-            /// Returns the exception if occured otherwise returns null.
-            /// This value is valid only after the work item completed,
-            /// before that it is always null.
-            /// </summary>
-            public object Exception
-            {
-                get { return _workItem._exception; }
-            }
-
-            #endregion
+            #endregion IWorkItemResult Members
 
             #region IInternalWorkItemResult Members
-
-            public event WorkItemStateCallback OnWorkItemStarted
-            {
-                add
-                {
-                    _workItem.OnWorkItemStarted += value;
-                }
-                remove
-                {
-                    _workItem.OnWorkItemStarted -= value;
-                }
-            }
-
 
             public event WorkItemStateCallback OnWorkItemCompleted
             {
@@ -167,7 +150,18 @@ namespace Amib.Threading.Internal
                 }
             }
 
-            #endregion
+            public event WorkItemStateCallback OnWorkItemStarted
+            {
+                add
+                {
+                    _workItem.OnWorkItemStarted += value;
+                }
+                remove
+                {
+                    _workItem.OnWorkItemStarted -= value;
+                }
+            }
+            #endregion IInternalWorkItemResult Members
 
             #region IInternalWorkItemResult Members
 
@@ -181,10 +175,9 @@ namespace Amib.Threading.Internal
                 return new WorkItemResultTWrapper<TResult>(this);
             }
 
-            #endregion
+            #endregion IInternalWorkItemResult Members
         }
 
-        #endregion
-
+        #endregion WorkItemResult class
     }
 }

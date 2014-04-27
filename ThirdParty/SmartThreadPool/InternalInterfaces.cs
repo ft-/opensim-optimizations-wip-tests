@@ -1,4 +1,3 @@
-
 namespace Amib.Threading.Internal
 {
     /// <summary>
@@ -6,22 +5,23 @@ namespace Amib.Threading.Internal
     /// </summary>
     internal delegate void WorkItemStateCallback(WorkItem workItem);
 
-    internal interface IInternalWorkItemResult
+    public interface IHasWorkItemPriority
     {
-        event WorkItemStateCallback OnWorkItemStarted;
-        event WorkItemStateCallback OnWorkItemCompleted;
+        WorkItemPriority WorkItemPriority { get; }
     }
 
     internal interface IInternalWaitableResult
     {
         /// <summary>
         /// This method is intent for internal use.
-        /// </summary>   
+        /// </summary>
         IWorkItemResult GetWorkItemResult();
     }
 
-    public interface IHasWorkItemPriority
+    internal interface IInternalWorkItemResult
     {
-        WorkItemPriority WorkItemPriority { get; }
+        event WorkItemStateCallback OnWorkItemCompleted;
+
+        event WorkItemStateCallback OnWorkItemStarted;
     }
 }

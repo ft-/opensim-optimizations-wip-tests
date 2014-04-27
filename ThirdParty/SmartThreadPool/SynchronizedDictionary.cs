@@ -18,25 +18,31 @@ namespace Amib.Threading.Internal
             get { return _dictionary.Count; }
         }
 
-        public bool Contains(TKey key)
+        public Dictionary<TKey, TValue>.KeyCollection Keys
         {
-            lock (_lock)
+            get
             {
-                return _dictionary.ContainsKey(key);
-            }
-        }
-
-        public void Remove(TKey key)
-        {
-            lock (_lock)
-            {
-                _dictionary.Remove(key);
+                lock (_lock)
+                {
+                    return _dictionary.Keys;
+                }
             }
         }
 
         public object SyncRoot
         {
             get { return _lock; }
+        }
+
+        public Dictionary<TKey, TValue>.ValueCollection Values
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _dictionary.Values;
+                }
+            }
         }
 
         public TValue this[TKey key]
@@ -57,32 +63,27 @@ namespace Amib.Threading.Internal
             }
         }
 
-        public Dictionary<TKey, TValue>.KeyCollection Keys
-        {
-            get
-            {
-                lock (_lock)
-                {
-                    return _dictionary.Keys;
-                }
-            }
-        }
-
-        public Dictionary<TKey, TValue>.ValueCollection Values
-        {
-            get
-            {
-                lock (_lock)
-                {
-                    return _dictionary.Values;
-                }
-            }
-        }
         public void Clear()
         {
             lock (_lock)
             {
                 _dictionary.Clear();
+            }
+        }
+
+        public bool Contains(TKey key)
+        {
+            lock (_lock)
+            {
+                return _dictionary.ContainsKey(key);
+            }
+        }
+
+        public void Remove(TKey key)
+        {
+            lock (_lock)
+            {
+                _dictionary.Remove(key);
             }
         }
     }
