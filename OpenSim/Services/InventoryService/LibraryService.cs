@@ -25,19 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Services.Base;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Xml;
-
-using OpenSim.Framework;
-using OpenSim.Services.Base;
-using OpenSim.Services.Interfaces;
-
-using log4net;
-using Nini.Config;
-using OpenMetaverse;
 using PermissionMask = OpenSim.Framework.PermissionMask;
 
 namespace OpenSim.Services.InventoryService
@@ -48,23 +46,17 @@ namespace OpenSim.Services.InventoryService
     /// </summary>
     public class LibraryService : ServiceBase, ILibraryService
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        private InventoryFolderImpl m_LibraryRootFolder;
-
-        public InventoryFolderImpl LibraryRootFolder
-        {
-            get { return m_LibraryRootFolder; }
-        }
-
-        private UUID libOwner = new UUID("11111111-1111-0000-0000-000100bba000");
-
         /// <summary>
         /// Holds the root library folder and all its descendents.  This is really only used during inventory
         /// setup so that we don't have to repeatedly search the tree of library folders.
         /// </summary>
         protected Dictionary<UUID, InventoryFolderImpl> libraryFolders
             = new Dictionary<UUID, InventoryFolderImpl>();
+
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        private UUID libOwner = new UUID("11111111-1111-0000-0000-000100bba000");
+        private InventoryFolderImpl m_LibraryRootFolder;
 
         public LibraryService(IConfigSource config)
             : base(config)
@@ -94,6 +86,12 @@ namespace OpenSim.Services.InventoryService
             LoadLibraries(pLibrariesLocation);
         }
 
+        private delegate void ConfigAction(IConfig config, string path);
+
+        public InventoryFolderImpl LibraryRootFolder
+        {
+            get { return m_LibraryRootFolder; }
+        }
         public InventoryItemBase CreateItem(UUID inventoryID, UUID assetID, string name, string description,
                                             int assetType, int invType, UUID parentFolderID)
         {
@@ -112,6 +110,24 @@ namespace OpenSim.Services.InventoryService
             item.CurrentPermissions = 0x7FFFFFFF;
             item.NextPermissions = 0x7FFFFFFF;
             return item;
+        }
+
+        /// <summary>
+        /// Looks like a simple getter, but is written like this for some consistency with the other Request
+        /// methods in the superclass
+        /// </summary>
+        /// <returns></returns>
+        public Dictionary<UUID, InventoryFolderImpl> GetAllFolders()
+        {
+            Dictionary<UUID, InventoryFolderImpl> fs = new Dictionary<UUID, InventoryFolderImpl>();
+            fs.Add(m_LibraryRootFolder.ID, m_LibraryRootFolder);
+            List<InventoryFolderImpl> fis = TraverseFolder(m_LibraryRootFolder);
+            foreach (InventoryFolderImpl f in fis)
+            {
+                fs.Add(f.ID, f);
+            }
+            //return libraryFolders;
+            return fs;
         }
 
         /// <summary>
@@ -146,6 +162,36 @@ namespace OpenSim.Services.InventoryService
         }
 
         /// <summary>
+        /// Load the given configuration at a path and perform an action on each Config contained within it
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="fileDescription"></param>
+        /// <param name="action"></param>
+        private static void LoadFromFile(string path, string fileDescription, ConfigAction action)
+        {
+            if (File.Exists(path))
+            {
+                try
+                {
+                    XmlConfigSource source = new XmlConfigSource(path);
+
+                    for (int i = 0; i < source.Configs.Count; i++)
+                    {
+                        action(source.Configs[i], path);
+                    }
+                }
+                catch (XmlException e)
+                {
+                    m_log.ErrorFormat("[LIBRARY INVENTORY]: Error loading {0} : {1}", path, e);
+                }
+            }
+            else
+            {
+                m_log.ErrorFormat("[LIBRARY INVENTORY]: {0} file {1} does not exist!", fileDescription, path);
+            }
+        }
+
+        /// <summary>
         /// Read a library inventory folder from a loaded configuration
         /// </summary>
         /// <param name="source"></param>
@@ -168,7 +214,7 @@ namespace OpenSim.Services.InventoryService
                 libraryFolders.Add(folderInfo.ID, folderInfo);
                 parentFolder.AddChildFolder(folderInfo);
 
-//                 m_log.InfoFormat("[LIBRARY INVENTORY]: Adding folder {0} ({1})", folderInfo.name, folderInfo.folderID);
+                //                 m_log.InfoFormat("[LIBRARY INVENTORY]: Adding folder {0} ({1})", folderInfo.name, folderInfo.folderID);
             }
             else
             {
@@ -220,57 +266,6 @@ namespace OpenSim.Services.InventoryService
                     item.Name, item.ID, item.Folder);
             }
         }
-
-        private delegate void ConfigAction(IConfig config, string path);
-
-        /// <summary>
-        /// Load the given configuration at a path and perform an action on each Config contained within it
-        /// </summary>
-        /// <param name="path"></param>
-        /// <param name="fileDescription"></param>
-        /// <param name="action"></param>
-        private static void LoadFromFile(string path, string fileDescription, ConfigAction action)
-        {
-            if (File.Exists(path))
-            {
-                try
-                {
-                    XmlConfigSource source = new XmlConfigSource(path);
-
-                    for (int i = 0; i < source.Configs.Count; i++)
-                    {
-                        action(source.Configs[i], path);
-                    }
-                }
-                catch (XmlException e)
-                {
-                    m_log.ErrorFormat("[LIBRARY INVENTORY]: Error loading {0} : {1}", path, e);
-                }
-            }
-            else
-            {
-                m_log.ErrorFormat("[LIBRARY INVENTORY]: {0} file {1} does not exist!", fileDescription, path);
-            }
-        }
-
-        /// <summary>
-        /// Looks like a simple getter, but is written like this for some consistency with the other Request
-        /// methods in the superclass
-        /// </summary>
-        /// <returns></returns>
-        public Dictionary<UUID, InventoryFolderImpl> GetAllFolders()
-        {
-            Dictionary<UUID, InventoryFolderImpl> fs = new Dictionary<UUID, InventoryFolderImpl>();
-            fs.Add(m_LibraryRootFolder.ID, m_LibraryRootFolder);
-            List<InventoryFolderImpl> fis = TraverseFolder(m_LibraryRootFolder);
-            foreach (InventoryFolderImpl f in fis)
-            {
-                fs.Add(f.ID, f);
-            }
-            //return libraryFolders;
-            return fs;
-        }
-
         private List<InventoryFolderImpl> TraverseFolder(InventoryFolderImpl node)
         {
             List<InventoryFolderImpl> folders = node.RequestListOfFolderImpls();

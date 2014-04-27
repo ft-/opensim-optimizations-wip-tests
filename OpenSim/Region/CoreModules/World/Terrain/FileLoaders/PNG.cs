@@ -25,10 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenSim.Region.Framework.Interfaces;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using OpenSim.Region.Framework.Interfaces;
 
 namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
 {
@@ -53,15 +53,15 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
             colours.Save(stream, ImageFormat.Png);
         }
 
-        public override string ToString()
-        {
-            return "PNG";
-        }
-
         //Returns true if this extension is supported for terrain save-tile
         public override bool SupportsTileSave()
         {
             return true;
+        }
+
+        public override string ToString()
+        {
+            return "PNG";
         }
     }
 }

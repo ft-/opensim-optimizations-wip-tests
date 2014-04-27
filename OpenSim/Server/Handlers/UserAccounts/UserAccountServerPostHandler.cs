@@ -25,23 +25,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using Nini.Config;
 using log4net;
-using System;
-using System.Reflection;
-using System.IO;
-using System.Net;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Xml;
-using System.Xml.Serialization;
-using System.Collections.Generic;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Server.Base;
 using OpenSim.Services.Interfaces;
 using OpenSim.Services.UserAccountService;
-using OpenSim.Framework;
-using OpenSim.Framework.Servers.HttpServer;
-using OpenMetaverse;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Xml;
 
 namespace OpenSim.Server.Handlers.UserAccounts
 {
@@ -49,15 +45,14 @@ namespace OpenSim.Server.Handlers.UserAccounts
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private IUserAccountService m_UserAccountService;
         private bool m_AllowCreateUser = false;
         private bool m_AllowSetAccount = false;
-
+        private IUserAccountService m_UserAccountService;
         public UserAccountServerPostHandler(IUserAccountService service)
-            : this(service, null) {}
+            : this(service, null) { }
 
         public UserAccountServerPostHandler(IUserAccountService service, IConfig config) :
-                base("POST", "/accounts")
+            base("POST", "/accounts")
         {
             m_UserAccountService = service;
 
@@ -98,10 +93,13 @@ namespace OpenSim.Server.Handlers.UserAccounts
                             return CreateUser(request);
                         else
                             break;
+
                     case "getaccount":
                         return GetAccount(request);
+
                     case "getaccounts":
                         return GetAccounts(request);
+
                     case "setaccount":
                         if (m_AllowSetAccount)
                             return StoreAccount(request);
@@ -119,7 +117,81 @@ namespace OpenSim.Server.Handlers.UserAccounts
             return FailureResult();
         }
 
-        byte[] GetAccount(Dictionary<string, object> request)
+        private byte[] CreateUser(Dictionary<string, object> request)
+        {
+            if (!
+                request.ContainsKey("FirstName")
+                    && request.ContainsKey("LastName")
+                    && request.ContainsKey("Password"))
+                return FailureResult();
+
+            Dictionary<string, object> result = new Dictionary<string, object>();
+
+            UUID scopeID = UUID.Zero;
+            if (request.ContainsKey("ScopeID") && !UUID.TryParse(request["ScopeID"].ToString(), out scopeID))
+                return FailureResult();
+
+            UUID principalID = UUID.Random();
+            if (request.ContainsKey("PrincipalID") && !UUID.TryParse(request["PrincipalID"].ToString(), out principalID))
+                return FailureResult();
+
+            string firstName = request["FirstName"].ToString();
+            string lastName = request["LastName"].ToString();
+            string password = request["Password"].ToString();
+
+            string email = "";
+            if (request.ContainsKey("Email"))
+                email = request["Email"].ToString();
+
+            UserAccount createdUserAccount = null;
+
+            if (m_UserAccountService is UserAccountService)
+                createdUserAccount
+                    = ((UserAccountService)m_UserAccountService).CreateUser(
+                        scopeID, principalID, firstName, lastName, password, email);
+
+            if (createdUserAccount == null)
+                return FailureResult();
+
+            result["result"] = createdUserAccount.ToKeyValuePairs();
+
+            return ResultToBytes(result);
+        }
+
+        private byte[] DocToBytes(XmlDocument doc)
+        {
+            MemoryStream ms = new MemoryStream();
+            XmlTextWriter xw = new XmlTextWriter(ms, null);
+            xw.Formatting = Formatting.Indented;
+            doc.WriteTo(xw);
+            xw.Flush();
+
+            return ms.ToArray();
+        }
+
+        private byte[] FailureResult()
+        {
+            XmlDocument doc = new XmlDocument();
+
+            XmlNode xmlnode = doc.CreateNode(XmlNodeType.XmlDeclaration,
+                    "", "");
+
+            doc.AppendChild(xmlnode);
+
+            XmlElement rootElement = doc.CreateElement("", "ServerResponse",
+                    "");
+
+            doc.AppendChild(rootElement);
+
+            XmlElement result = doc.CreateElement("", "result", "");
+            result.AppendChild(doc.CreateTextNode("Failure"));
+
+            rootElement.AppendChild(result);
+
+            return DocToBytes(doc);
+        }
+
+        private byte[] GetAccount(Dictionary<string, object> request)
         {
             UserAccount account = null;
             UUID scopeID = UUID.Zero;
@@ -165,7 +237,7 @@ namespace OpenSim.Server.Handlers.UserAccounts
             return ResultToBytes(result);
         }
 
-        byte[] GetAccounts(Dictionary<string, object> request)
+        private byte[] GetAccounts(Dictionary<string, object> request)
         {
             if (!request.ContainsKey("query"))
                 return FailureResult();
@@ -200,7 +272,13 @@ namespace OpenSim.Server.Handlers.UserAccounts
             return Util.UTF8NoBomEncoding.GetBytes(xmlString);
         }
 
-        byte[] StoreAccount(Dictionary<string, object> request)
+        private byte[] ResultToBytes(Dictionary<string, object> result)
+        {
+            string xmlString = ServerUtils.BuildXmlResponse(result);
+            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
+        }
+
+        private byte[] StoreAccount(Dictionary<string, object> request)
         {
             UUID principalID = UUID.Zero;
             if (request.ContainsKey("PrincipalID") && !UUID.TryParse(request["PrincipalID"].ToString(), out principalID))
@@ -253,48 +331,6 @@ namespace OpenSim.Server.Handlers.UserAccounts
 
             return ResultToBytes(result);
         }
-
-        byte[] CreateUser(Dictionary<string, object> request)
-        {
-            if (!
-                request.ContainsKey("FirstName")
-                    && request.ContainsKey("LastName")
-                    && request.ContainsKey("Password"))
-                return FailureResult();
-
-            Dictionary<string, object> result = new Dictionary<string, object>();
-
-            UUID scopeID = UUID.Zero;
-            if (request.ContainsKey("ScopeID") && !UUID.TryParse(request["ScopeID"].ToString(), out scopeID))
-                return FailureResult();
-
-            UUID principalID = UUID.Random();
-            if (request.ContainsKey("PrincipalID") && !UUID.TryParse(request["PrincipalID"].ToString(), out principalID))
-                return FailureResult();
-
-            string firstName = request["FirstName"].ToString();
-            string lastName = request["LastName"].ToString();
-            string password = request["Password"].ToString();
-
-            string email = "";
-            if (request.ContainsKey("Email"))
-                email = request["Email"].ToString();
-
-            UserAccount createdUserAccount = null;
-
-            if (m_UserAccountService is UserAccountService)
-                createdUserAccount
-                    = ((UserAccountService)m_UserAccountService).CreateUser(
-                        scopeID, principalID, firstName, lastName, password, email);
-
-            if (createdUserAccount == null)
-                return FailureResult();
-
-            result["result"] = createdUserAccount.ToKeyValuePairs();
-
-            return ResultToBytes(result);
-        }
-
         private byte[] SuccessResult()
         {
             XmlDocument doc = new XmlDocument();
@@ -315,45 +351,6 @@ namespace OpenSim.Server.Handlers.UserAccounts
             rootElement.AppendChild(result);
 
             return DocToBytes(doc);
-        }
-
-        private byte[] FailureResult()
-        {
-            XmlDocument doc = new XmlDocument();
-
-            XmlNode xmlnode = doc.CreateNode(XmlNodeType.XmlDeclaration,
-                    "", "");
-
-            doc.AppendChild(xmlnode);
-
-            XmlElement rootElement = doc.CreateElement("", "ServerResponse",
-                    "");
-
-            doc.AppendChild(rootElement);
-
-            XmlElement result = doc.CreateElement("", "result", "");
-            result.AppendChild(doc.CreateTextNode("Failure"));
-
-            rootElement.AppendChild(result);
-
-            return DocToBytes(doc);
-        }
-
-        private byte[] DocToBytes(XmlDocument doc)
-        {
-            MemoryStream ms = new MemoryStream();
-            XmlTextWriter xw = new XmlTextWriter(ms, null);
-            xw.Formatting = Formatting.Indented;
-            doc.WriteTo(xw);
-            xw.Flush();
-
-            return ms.ToArray();
-        }
-
-        private byte[] ResultToBytes(Dictionary<string, object> result)
-        {
-            string xmlString = ServerUtils.BuildXmlResponse(result);
-            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
         }
     }
 }

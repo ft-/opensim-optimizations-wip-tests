@@ -25,15 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Drawing;
 using OpenMetaverse;
+using System.Drawing;
 
 namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
     public interface IGraphics
     {
-        UUID SaveBitmap(Bitmap data);
-        UUID SaveBitmap(Bitmap data, bool lossless, bool temporary);
         Bitmap LoadBitmap(UUID assetID);
+
+        UUID SaveBitmap(Bitmap data);
+
+        UUID SaveBitmap(Bitmap data, bool lossless, bool temporary);
     }
 }

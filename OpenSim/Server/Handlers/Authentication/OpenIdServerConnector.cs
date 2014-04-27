@@ -25,14 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Nini.Config;
+using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Server.Base;
+using OpenSim.Server.Handlers.Base;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Reflection;
-using Nini.Config;
-using log4net;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
-using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Server.Handlers.Base;
 
 namespace OpenSim.Server.Handlers.Authentication
 {
@@ -41,13 +41,12 @@ namespace OpenSim.Server.Handlers.Authentication
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
- 
-        private IAuthenticationService m_AuthenticationService;
-        private IUserAccountService m_UserAccountService;
-        private string m_ConfigName = "OpenIdService";
 
+        private IAuthenticationService m_AuthenticationService;
+        private string m_ConfigName = "OpenIdService";
+        private IUserAccountService m_UserAccountService;
         public OpenIdServerConnector(IConfigSource config, IHttpServer server, string configName) :
-                base(config, server, configName)
+            base(config, server, configName)
         {
             IConfig serverConfig = config.Configs[m_ConfigName];
             if (serverConfig == null)

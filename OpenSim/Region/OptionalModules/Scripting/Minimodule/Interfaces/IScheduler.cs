@@ -29,34 +29,19 @@ using System;
 
 namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
-    interface IScheduler
+    internal interface IScheduler
     {
         /// <summary>
-        /// Schedule an event callback to occur
-        /// when 'time' is elapsed.
+        /// Fire this only when simulator performance
+        /// is reasonable. (eg sysload <= 1.0)
         /// </summary>
-        /// <param name="time">The period to wait before executing</param>
-        void RunIn(TimeSpan time);
-
-        /// <summary>
-        /// Schedule an event callback to fire
-        /// every "time". Equivilent to a repeating
-        /// timer.
-        /// </summary>
-        /// <param name="time">The period to wait between executions</param>
-        void RunAndRepeat(TimeSpan time);
+        bool IfHealthy { get; set; }
 
         /// <summary>
         /// Fire this scheduler only when the region has
         /// a user in it.
         /// </summary>
         bool IfOccupied { get; set; }
-
-        /// <summary>
-        /// Fire this only when simulator performance
-        /// is reasonable. (eg sysload <= 1.0)
-        /// </summary>
-        bool IfHealthy { get; set; }
 
         /// <summary>
         /// Fire this event only when the region is visible
@@ -75,5 +60,20 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
         /// Default: true
         /// </remarks>
         bool Schedule { get; set; }
+
+        /// <summary>
+        /// Schedule an event callback to fire
+        /// every "time". Equivilent to a repeating
+        /// timer.
+        /// </summary>
+        /// <param name="time">The period to wait between executions</param>
+        void RunAndRepeat(TimeSpan time);
+
+        /// <summary>
+        /// Schedule an event callback to occur
+        /// when 'time' is elapsed.
+        /// </summary>
+        /// <param name="time">The period to wait before executing</param>
+        void RunIn(TimeSpan time);
     }
 }

@@ -25,12 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Net;
-using System.IO;
-using System.Text;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
@@ -40,47 +34,40 @@ using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net;
+using System.Reflection;
+using System.Text;
 
 namespace OpenSim.Region.OptionalModules.Scripting.RegionReady
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "RegionReadyModule")]
     public class RegionReadyModule : IRegionReadyModule, INonSharedRegionModule
     {
-        private static readonly ILog m_log = 
+        private static readonly ILog m_log =
             LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private IConfig m_config = null;
-        private bool m_firstEmptyCompileQueue;
-        private bool m_oarFileLoading;
-        private bool m_lastOarLoadedOk;
         private int m_channelNotify = -1000;
-        private bool m_enabled = false;
+        private IConfig m_config = null;
         private bool m_disable_logins;
+        private bool m_enabled = false;
+        private bool m_firstEmptyCompileQueue;
+        private bool m_lastOarLoadedOk;
+        private bool m_oarFileLoading;
+        private Scene m_scene;
         private string m_uri = string.Empty;
-        
-        Scene m_scene;
-        
         #region INonSharedRegionModule interface
 
-        public Type ReplaceableInterface 
-        { 
-            get { return null; }
-        }
-            
-        public void Initialise(IConfigSource config)
+        public string Name
         {
-            m_config = config.Configs["RegionReady"];
-            if (m_config != null) 
-            {
-                m_enabled = m_config.GetBoolean("enabled", false);
-                
-                if (m_enabled) 
-                {
-                    m_channelNotify = m_config.GetInt("channel_notify", m_channelNotify);
-                    m_disable_logins = m_config.GetBoolean("login_disable", false);
-                    m_uri = m_config.GetString("alert_uri",string.Empty);
-                }
-            }
+            get { return "RegionReadyModule"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
         }
 
         public void AddRegion(Scene scene)
@@ -115,6 +102,29 @@ namespace OpenSim.Region.OptionalModules.Scripting.RegionReady
             }
         }
 
+        public void Close()
+        {
+        }
+
+        public void Initialise(IConfigSource config)
+        {
+            m_config = config.Configs["RegionReady"];
+            if (m_config != null)
+            {
+                m_enabled = m_config.GetBoolean("enabled", false);
+
+                if (m_enabled)
+                {
+                    m_channelNotify = m_config.GetInt("channel_notify", m_channelNotify);
+                    m_disable_logins = m_config.GetBoolean("login_disable", false);
+                    m_uri = m_config.GetString("alert_uri", string.Empty);
+                }
+            }
+        }
+        public void RegionLoaded(Scene scene)
+        {
+        }
+
         public void RemoveRegion(Scene scene)
         {
             if (!m_enabled)
@@ -130,32 +140,123 @@ namespace OpenSim.Region.OptionalModules.Scripting.RegionReady
 
             m_scene = null;
         }
+        #endregion INonSharedRegionModule interface
 
-        public void Close()
+        public void OarLoadingAlert(string msg)
         {
+            // Let's bypass this for now until some better feedback can be established
+            //
+
+            //            if (msg == "load")
+            //            {
+            //                m_scene.EventManager.OnEmptyScriptCompileQueue += OnEmptyScriptCompileQueue;
+            //                m_scene.EventManager.OnOarFileLoaded += OnOarFileLoaded;
+            //                m_scene.EventManager.OnLoginsEnabled += OnLoginsEnabled;
+            //                m_scene.EventManager.OnRezScript  += OnRezScript;
+            //                m_oarFileLoading = true;
+            //                m_firstEmptyCompileQueue = true;
+            //
+            //                m_scene.LoginsDisabled = true;
+            //                m_scene.LoginLock = true;
+            //                if ( m_uri != string.Empty )
+            //                {
+            //                    RRAlert("loading oar");
+            //                    RRAlert("disabled");
+            //                }
+            //            }
         }
 
-        public void RegionLoaded(Scene scene)
+        public void RRAlert(string status)
         {
+            string request_method = "POST";
+            string content_type = "application/json";
+            OSDMap RRAlert = new OSDMap();
+
+            RRAlert["alert"] = "region_ready";
+            RRAlert["login"] = status;
+            RRAlert["region_name"] = m_scene.RegionInfo.RegionName;
+            RRAlert["region_id"] = m_scene.RegionInfo.RegionID;
+
+            string strBuffer = "";
+            byte[] buffer = new byte[1];
+            try
+            {
+                strBuffer = OSDParser.SerializeJsonString(RRAlert);
+                Encoding str = Util.UTF8;
+                buffer = str.GetBytes(strBuffer);
+            }
+            catch (Exception e)
+            {
+                m_log.WarnFormat("[RegionReady]: Exception thrown on alert: {0}", e.Message);
+            }
+
+            WebRequest request = WebRequest.Create(m_uri);
+            request.Method = request_method;
+            request.ContentType = content_type;
+
+            Stream os = null;
+            try
+            {
+                request.ContentLength = buffer.Length;
+                os = request.GetRequestStream();
+                os.Write(buffer, 0, strBuffer.Length);
+            }
+            catch (Exception e)
+            {
+                m_log.WarnFormat("[RegionReady]: Exception thrown sending alert: {0}", e.Message);
+            }
+            finally
+            {
+                if (os != null)
+                    os.Dispose();
+            }
         }
 
-        public string Name
+        /// <summary>
+        /// This will be triggered by Scene directly if it contains no scripts on startup.  Otherwise it is triggered
+        /// when the script compile queue is empty after initial region startup.
+        /// </summary>
+        /// <param name='scene'></param>
+        public void TriggerRegionReady(IScene scene)
         {
-            get { return "RegionReadyModule"; }
+            m_scene.EventManager.OnEmptyScriptCompileQueue -= OnEmptyScriptCompileQueue;
+            m_scene.LoginLock = false;
+
+            if (!m_scene.StartDisabled)
+            {
+                m_scene.LoginsEnabled = true;
+
+                // m_log.InfoFormat("[RegionReady]: Logins enabled for {0}, Oar {1}",
+                //                 m_scene.RegionInfo.RegionName, m_oarFileLoading.ToString());
+
+                // Putting this out to console to make it eye-catching for people who are running OpenSimulator
+                // without info log messages enabled.  Making this a warning is arguably misleading since it isn't a
+                // warning, and monitor scripts looking for warn/error/fatal messages will received false positives.
+                // Arguably, log4net needs a status log level (like Apache).
+                MainConsole.Instance.OutputFormat("INITIALIZATION COMPLETE FOR {0} - LOGINS ENABLED", m_scene.Name);
+            }
+
+            m_scene.SceneGridService.InformNeighborsThatRegionisUp(
+                m_scene.RequestModuleInterface<INeighbourService>(), m_scene.RegionInfo);
+
+            if (m_uri != string.Empty)
+            {
+                RRAlert("enabled");
+            }
+
+            m_scene.Ready = true;
         }
 
-        #endregion
-
-        void OnEmptyScriptCompileQueue(int numScriptsFailed, string message)
+        private void OnEmptyScriptCompileQueue(int numScriptsFailed, string message)
         {
             m_log.DebugFormat("[RegionReady]: Script compile queue empty!");
 
-            if (m_firstEmptyCompileQueue || m_oarFileLoading) 
+            if (m_firstEmptyCompileQueue || m_oarFileLoading)
             {
                 OSChatMessage c = new OSChatMessage();
-                if (m_firstEmptyCompileQueue) 
+                if (m_firstEmptyCompileQueue)
                     c.Message = "server_startup,";
-                else 
+                else
                     c.Message = "oar_file_load,";
                 m_firstEmptyCompileQueue = false;
                 m_oarFileLoading = false;
@@ -163,7 +264,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.RegionReady
                 m_scene.Backup(false);
 
                 c.From = "RegionReady";
-                if (m_lastOarLoadedOk) 
+                if (m_lastOarLoadedOk)
                     c.Message += "1,";
                 else
                     c.Message += "0,";
@@ -187,11 +288,11 @@ namespace OpenSim.Region.OptionalModules.Scripting.RegionReady
             }
         }
 
-        void OnOarFileLoaded(Guid requestId, List<UUID> loadedScenes, string message)
+        private void OnOarFileLoaded(Guid requestId, List<UUID> loadedScenes, string message)
         {
             m_oarFileLoading = true;
 
-            if (message==String.Empty) 
+            if (message == String.Empty)
             {
                 m_lastOarLoadedOk = true;
             }
@@ -199,112 +300,6 @@ namespace OpenSim.Region.OptionalModules.Scripting.RegionReady
             {
                 m_log.WarnFormat("[RegionReady]: Oar file load errors: {0}", message);
                 m_lastOarLoadedOk = false;
-            }
-        }
-
-        /// <summary>
-        /// This will be triggered by Scene directly if it contains no scripts on startup.  Otherwise it is triggered
-        /// when the script compile queue is empty after initial region startup.
-        /// </summary>
-        /// <param name='scene'></param>
-        public void TriggerRegionReady(IScene scene)
-        {
-            m_scene.EventManager.OnEmptyScriptCompileQueue -= OnEmptyScriptCompileQueue;
-            m_scene.LoginLock = false;
-
-            if (!m_scene.StartDisabled)
-            {
-                m_scene.LoginsEnabled = true;
-
-                // m_log.InfoFormat("[RegionReady]: Logins enabled for {0}, Oar {1}",
-                //                 m_scene.RegionInfo.RegionName, m_oarFileLoading.ToString());
-
-                // Putting this out to console to make it eye-catching for people who are running OpenSimulator
-                // without info log messages enabled.  Making this a warning is arguably misleading since it isn't a 
-                // warning, and monitor scripts looking for warn/error/fatal messages will received false positives.
-                // Arguably, log4net needs a status log level (like Apache).
-                MainConsole.Instance.OutputFormat("INITIALIZATION COMPLETE FOR {0} - LOGINS ENABLED", m_scene.Name);
-            }
-
-            m_scene.SceneGridService.InformNeighborsThatRegionisUp(
-                m_scene.RequestModuleInterface<INeighbourService>(), m_scene.RegionInfo);
-
-            if (m_uri != string.Empty)
-            {
-                RRAlert("enabled");
-            }
-
-            m_scene.Ready = true;
-        }
-
-        public void OarLoadingAlert(string msg)
-        {
-            // Let's bypass this for now until some better feedback can be established
-            //
-
-//            if (msg == "load")
-//            {
-//                m_scene.EventManager.OnEmptyScriptCompileQueue += OnEmptyScriptCompileQueue;
-//                m_scene.EventManager.OnOarFileLoaded += OnOarFileLoaded;
-//                m_scene.EventManager.OnLoginsEnabled += OnLoginsEnabled;
-//                m_scene.EventManager.OnRezScript  += OnRezScript;
-//                m_oarFileLoading = true;
-//                m_firstEmptyCompileQueue = true;
-//                
-//                m_scene.LoginsDisabled = true;
-//                m_scene.LoginLock = true;
-//                if ( m_uri != string.Empty )
-//                {
-//                    RRAlert("loading oar");
-//                    RRAlert("disabled");
-//                }
-//            }
-        }
-
-        public void RRAlert(string status)
-        {
-            string request_method = "POST";
-            string content_type = "application/json";
-            OSDMap RRAlert = new OSDMap();
-
-            RRAlert["alert"] = "region_ready";
-            RRAlert["login"] = status;
-            RRAlert["region_name"] = m_scene.RegionInfo.RegionName;
-            RRAlert["region_id"] = m_scene.RegionInfo.RegionID;
-
-            string strBuffer = "";
-            byte[] buffer = new byte[1];
-            try
-            {
-                strBuffer = OSDParser.SerializeJsonString(RRAlert);
-                Encoding str = Util.UTF8;
-                buffer = str.GetBytes(strBuffer);
-
-            }
-            catch (Exception e)
-            {
-                m_log.WarnFormat("[RegionReady]: Exception thrown on alert: {0}", e.Message);
-            }
-
-            WebRequest request = WebRequest.Create(m_uri);
-            request.Method = request_method;
-            request.ContentType = content_type;
-
-            Stream os = null;
-            try
-            {
-                request.ContentLength = buffer.Length;
-                os = request.GetRequestStream();
-                os.Write(buffer, 0, strBuffer.Length);
-            }
-            catch(Exception e)
-            {
-                m_log.WarnFormat("[RegionReady]: Exception thrown sending alert: {0}", e.Message);
-            }
-            finally
-            {
-                if (os != null)
-                    os.Dispose();
             }
         }
     }

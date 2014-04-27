@@ -25,27 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Runtime.Serialization;
-using System.Security.Permissions;
 using OpenMetaverse;
-using OpenSim.Region.Framework.Scenes;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Framework.Scenes.Types
 {
     public class UpdateQueue
     {
-        private Queue<SceneObjectPart> m_queue;
-
         private Dictionary<UUID, bool> m_ids;
-
+        private Queue<SceneObjectPart> m_queue;
         private object m_syncObject = new object();
-
-        public int Count
-        {
-            get { return m_queue.Count; }
-        }
 
         public UpdateQueue()
         {
@@ -53,23 +42,16 @@ namespace OpenSim.Region.Framework.Scenes.Types
             m_ids = new Dictionary<UUID, bool>();
         }
 
+        public int Count
+        {
+            get { return m_queue.Count; }
+        }
         public void Clear()
         {
             lock (m_syncObject)
             {
                 m_ids.Clear();
                 m_queue.Clear();
-            }
-        }
-
-        public void Enqueue(SceneObjectPart part)
-        {
-            lock (m_syncObject)
-            {
-                if (!m_ids.ContainsKey(part.UUID)) {
-                    m_ids.Add(part.UUID, true);
-                    m_queue.Enqueue(part);
-                }
             }
         }
 
@@ -86,6 +68,18 @@ namespace OpenSim.Region.Framework.Scenes.Types
             }
 
             return part;
+        }
+
+        public void Enqueue(SceneObjectPart part)
+        {
+            lock (m_syncObject)
+            {
+                if (!m_ids.ContainsKey(part.UUID))
+                {
+                    m_ids.Add(part.UUID, true);
+                    m_queue.Enqueue(part);
+                }
+            }
         }
     }
 }

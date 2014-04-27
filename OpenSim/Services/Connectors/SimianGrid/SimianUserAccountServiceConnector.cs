@@ -25,24 +25,23 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Reflection;
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
+using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Reflection;
 
 namespace OpenSim.Services.Connectors.SimianGrid
 {
     /// <summary>
-    /// Connects user account data (creating new users, looking up existing 
+    /// Connects user account data (creating new users, looking up existing
     /// users) to the SimianGrid backend
     /// </summary>
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "SimianUserAccountServiceConnector")]
@@ -54,57 +53,45 @@ namespace OpenSim.Services.Connectors.SimianGrid
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
-        private string m_serverUrl = String.Empty;
-        private ExpiringCache<UUID, UserAccount> m_accountCache = new ExpiringCache<UUID,UserAccount>();
+        private ExpiringCache<UUID, UserAccount> m_accountCache = new ExpiringCache<UUID, UserAccount>();
         private bool m_Enabled;
-
+        private string m_serverUrl = String.Empty;
         #region ISharedRegionModule
 
-        public Type ReplaceableInterface { get { return null; } }
-        public void RegionLoaded(Scene scene) { }
-        public void PostInitialise() { }
-        public void Close() { }
+        public SimianUserAccountServiceConnector()
+        {
+        }
 
-        public SimianUserAccountServiceConnector() { }
         public string Name { get { return "SimianUserAccountServiceConnector"; } }
-        public void AddRegion(Scene scene) { if (m_Enabled) { scene.RegisterModuleInterface<IUserAccountService>(this); } }
-        public void RemoveRegion(Scene scene) { if (m_Enabled) { scene.UnregisterModuleInterface<IUserAccountService>(this); } }
+
+        public Type ReplaceableInterface { get { return null; } }
+
+        public void AddRegion(Scene scene)
+        {
+            if (m_Enabled) { scene.RegisterModuleInterface<IUserAccountService>(this); }
+        }
+
+        public void Close()
+        {
+        }
+
+        public void PostInitialise()
+        {
+        }
+
+        public void RegionLoaded(Scene scene)
+        {
+        }
+        public void RemoveRegion(Scene scene)
+        {
+            if (m_Enabled) { scene.UnregisterModuleInterface<IUserAccountService>(this); }
+        }
 
         #endregion ISharedRegionModule
 
         public SimianUserAccountServiceConnector(IConfigSource source)
         {
             CommonInit(source);
-        }
-
-        public void Initialise(IConfigSource source)
-        {
-            IConfig moduleConfig = source.Configs["Modules"];
-            if (moduleConfig != null)
-            {
-                string name = moduleConfig.GetString("UserAccountServices", "");
-                if (name == Name)
-                    CommonInit(source);
-            }
-        }
-
-        private void CommonInit(IConfigSource source)
-        {
-            IConfig gridConfig = source.Configs["UserAccountService"];
-            if (gridConfig != null)
-            {
-                string serviceUrl = gridConfig.GetString("UserAccountServerURI");
-                if (!String.IsNullOrEmpty(serviceUrl))
-                {
-                    if (!serviceUrl.EndsWith("/") && !serviceUrl.EndsWith("="))
-                        serviceUrl = serviceUrl + '/';
-                    m_serverUrl = serviceUrl;
-                    m_Enabled = true;
-                }
-            }
-
-            if (String.IsNullOrEmpty(m_serverUrl))
-                m_log.Info("[SIMIAN ACCOUNT CONNECTOR]: No UserAccountServerURI specified, disabling connector");
         }
 
         public UserAccount GetUserAccount(UUID scopeID, string firstName, string lastName)
@@ -157,7 +144,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
         {
             List<UserAccount> accounts = new List<UserAccount>();
 
-//            m_log.DebugFormat("[SIMIAN ACCOUNT CONNECTOR]: Searching for user accounts with name query " + query);
+            //            m_log.DebugFormat("[SIMIAN ACCOUNT CONNECTOR]: Searching for user accounts with name query " + query);
 
             NameValueCollection requestArgs = new NameValueCollection
             {
@@ -191,6 +178,17 @@ namespace OpenSim.Services.Connectors.SimianGrid
             return accounts;
         }
 
+        public void Initialise(IConfigSource source)
+        {
+            IConfig moduleConfig = source.Configs["Modules"];
+            if (moduleConfig != null)
+            {
+                string name = moduleConfig.GetString("UserAccountServices", "");
+                if (name == Name)
+                    CommonInit(source);
+            }
+        }
+
         public void InvalidateCache(UUID userID)
         {
             m_accountCache.Remove(userID);
@@ -198,7 +196,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
 
         public bool StoreUserAccount(UserAccount data)
         {
-//            m_log.InfoFormat("[SIMIAN ACCOUNT CONNECTOR]: Storing user account for " + data.Name);
+            //            m_log.InfoFormat("[SIMIAN ACCOUNT CONNECTOR]: Storing user account for " + data.Name);
 
             NameValueCollection requestArgs = new NameValueCollection
             {
@@ -210,7 +208,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
             };
 
             OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
-            
+
             if (response["Success"].AsBoolean())
             {
                 m_log.InfoFormat("[SIMIAN ACCOUNT CONNECTOR]: Storing user account data for " + data.Name);
@@ -248,6 +246,54 @@ namespace OpenSim.Services.Connectors.SimianGrid
         }
 
         /// <summary>
+        /// Convert a name with a single space in it to a first and last name
+        /// </summary>
+        /// <param name="name">A full name such as "John Doe"</param>
+        /// <param name="firstName">First name</param>
+        /// <param name="lastName">Last name (surname)</param>
+        private static void GetFirstLastName(string name, out string firstName, out string lastName)
+        {
+            if (String.IsNullOrEmpty(name))
+            {
+                firstName = String.Empty;
+                lastName = String.Empty;
+            }
+            else
+            {
+                string[] names = name.Split(' ');
+
+                if (names.Length == 2)
+                {
+                    firstName = names[0];
+                    lastName = names[1];
+                }
+                else
+                {
+                    firstName = String.Empty;
+                    lastName = name;
+                }
+            }
+        }
+
+        private void CommonInit(IConfigSource source)
+        {
+            IConfig gridConfig = source.Configs["UserAccountService"];
+            if (gridConfig != null)
+            {
+                string serviceUrl = gridConfig.GetString("UserAccountServerURI");
+                if (!String.IsNullOrEmpty(serviceUrl))
+                {
+                    if (!serviceUrl.EndsWith("/") && !serviceUrl.EndsWith("="))
+                        serviceUrl = serviceUrl + '/';
+                    m_serverUrl = serviceUrl;
+                    m_Enabled = true;
+                }
+            }
+
+            if (String.IsNullOrEmpty(m_serverUrl))
+                m_log.Info("[SIMIAN ACCOUNT CONNECTOR]: No UserAccountServerURI specified, disabling connector");
+        }
+        /// <summary>
         /// Helper method for the various ways of retrieving a user account
         /// </summary>
         /// <param name="requestArgs">Service query parameters</param>
@@ -255,7 +301,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
         private UserAccount GetUser(NameValueCollection requestArgs)
         {
             string lookupValue = (requestArgs.Count > 1) ? requestArgs[1] : "(Unknown)";
-//            m_log.DebugFormat("[SIMIAN ACCOUNT CONNECTOR]: Looking up user account with query: " + lookupValue);
+            //            m_log.DebugFormat("[SIMIAN ACCOUNT CONNECTOR]: Looking up user account with query: " + lookupValue);
 
             OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
             if (response["Success"].AsBoolean())
@@ -295,43 +341,13 @@ namespace OpenSim.Services.Connectors.SimianGrid
             account.LocalToGrid = true;
             if (response.ContainsKey("LocalToGrid"))
                 account.LocalToGrid = (response["LocalToGrid"].AsString() == "true" ? true : false);
-                
+
             GetFirstLastName(response["Name"].AsString(), out account.FirstName, out account.LastName);
 
             // Cache the user account info
             m_accountCache.AddOrUpdate(account.PrincipalID, account, CACHE_EXPIRATION_SECONDS);
 
             return account;
-        }
-
-        /// <summary>
-        /// Convert a name with a single space in it to a first and last name
-        /// </summary>
-        /// <param name="name">A full name such as "John Doe"</param>
-        /// <param name="firstName">First name</param>
-        /// <param name="lastName">Last name (surname)</param>
-        private static void GetFirstLastName(string name, out string firstName, out string lastName)
-        {
-            if (String.IsNullOrEmpty(name))
-            {
-                firstName = String.Empty;
-                lastName = String.Empty;
-            }
-            else
-            {
-                string[] names = name.Split(' ');
-
-                if (names.Length == 2)
-                {
-                    firstName = names[0];
-                    lastName = names[1];
-                }
-                else
-                {
-                    firstName = String.Empty;
-                    lastName = name;
-                }
-            }
         }
     }
 }

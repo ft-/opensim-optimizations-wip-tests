@@ -25,11 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using Nini.Config;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
 using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Server.Base;
+using System;
 
 namespace OpenSim.Server.Handlers.Base
 {
@@ -39,12 +38,15 @@ namespace OpenSim.Server.Handlers.Base
 
     public class ServiceConnector : IServiceConnector
     {
-        public virtual string ConfigURL
+        public ServiceConnector()
         {
-            get { return String.Empty; }
         }
 
-        public virtual string ConfigName
+        public ServiceConnector(IConfigSource config, IHttpServer server, string configName)
+        {
+        }
+
+        public virtual IConfigSource Config
         {
             get;
             protected set;
@@ -56,35 +58,31 @@ namespace OpenSim.Server.Handlers.Base
             protected set;
         }
 
-        public virtual IConfigSource Config
+        public virtual string ConfigName
         {
             get;
             protected set;
         }
 
-        public ServiceConnector()
+        public virtual string ConfigURL
         {
+            get { return String.Empty; }
         }
-
-        public ServiceConnector(IConfigSource config, IHttpServer server, string configName)
-        {
-        }
-
         // We call this from our plugin module to get our configuration
         public IConfig GetConfig()
-        { 
+        {
             IConfig config = null;
             config = ServerUtils.GetConfig(ConfigFile, ConfigName);
 
             // Our file is not here? We can get one to bootstrap our plugin module
-            if ( config == null )
+            if (config == null)
             {
                 IConfigSource remotesource = GetConfigSource();
 
                 if (remotesource != null)
                 {
                     IniConfigSource initialconfig = new IniConfigSource();
-                    initialconfig.Merge (remotesource);
+                    initialconfig.Merge(remotesource);
                     initialconfig.Save(ConfigFile);
                 }
 
@@ -96,16 +94,16 @@ namespace OpenSim.Server.Handlers.Base
 
         // We get our remote initial configuration for bootstrapping in case
         // we have no configuration in our main file or in an existing
-        // modular config file. This is the last resort to bootstrap the 
+        // modular config file. This is the last resort to bootstrap the
         // configuration, likely a new plugin loading for the first time.
         private IConfigSource GetConfigSource()
         {
             IConfigSource source = null;
-            
+
             source = ServerUtils.LoadInitialConfig(ConfigURL);
 
             if (source == null)
-                System.Console.WriteLine(String.Format ("Config Url: {0} Not found!", ConfigURL));
+                System.Console.WriteLine(String.Format("Config Url: {0} Not found!", ConfigURL));
 
             return source;
         }

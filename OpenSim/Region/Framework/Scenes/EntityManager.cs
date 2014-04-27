@@ -25,88 +25,23 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
-using log4net;
 using OpenMetaverse;
 using OpenSim.Framework;
+using System;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Framework.Scenes
 {
     public class EntityManager
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        
-        private readonly DoubleDictionaryThreadAbortSafe<UUID, uint, EntityBase> m_entities 
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        private readonly DoubleDictionaryThreadAbortSafe<UUID, uint, EntityBase> m_entities
             = new DoubleDictionaryThreadAbortSafe<UUID, uint, EntityBase>();
 
         public int Count
         {
             get { return m_entities.Count; }
-        }
-
-        public void Add(EntityBase entity)
-        {
-            m_entities.Add(entity.UUID, entity.LocalId, entity);
-        }
-
-        public void Clear()
-        {
-            m_entities.Clear();
-        }
-
-        public bool ContainsKey(UUID id)
-        {
-            return m_entities.ContainsKey(id);
-        }
-
-        public bool ContainsKey(uint localID)
-        {
-            return m_entities.ContainsKey(localID);
-        }
-
-        public bool Remove(uint localID)
-        {
-            return m_entities.Remove(localID);
-        }
-
-        public bool Remove(UUID id)
-        {
-            return m_entities.Remove(id);
-        }
-
-        public EntityBase[] GetAllByType<T>()
-        {
-            List<EntityBase> tmp = new List<EntityBase>();
-
-            ForEach(
-                delegate(EntityBase entity)
-                {
-                    if (entity is T)
-                        tmp.Add(entity);
-                }
-            );
-
-            return tmp.ToArray();
-        }
-
-        public EntityBase[] GetEntities()
-        {
-            List<EntityBase> tmp = new List<EntityBase>(m_entities.Count);
-            ForEach(delegate(EntityBase entity) { tmp.Add(entity); });
-            return tmp.ToArray();
-        }
-
-        public void ForEach(Action<EntityBase> action)
-        {
-            m_entities.ForEach(action);
-        }
-
-        public EntityBase Find(Predicate<EntityBase> predicate)
-        {
-            return m_entities.FindValue(predicate);
         }
 
         public EntityBase this[UUID id]
@@ -137,6 +72,67 @@ namespace OpenSim.Region.Framework.Scenes
             }
         }
 
+        public void Add(EntityBase entity)
+        {
+            m_entities.Add(entity.UUID, entity.LocalId, entity);
+        }
+
+        public void Clear()
+        {
+            m_entities.Clear();
+        }
+
+        public bool ContainsKey(UUID id)
+        {
+            return m_entities.ContainsKey(id);
+        }
+
+        public bool ContainsKey(uint localID)
+        {
+            return m_entities.ContainsKey(localID);
+        }
+
+        public EntityBase Find(Predicate<EntityBase> predicate)
+        {
+            return m_entities.FindValue(predicate);
+        }
+
+        public void ForEach(Action<EntityBase> action)
+        {
+            m_entities.ForEach(action);
+        }
+
+        public EntityBase[] GetAllByType<T>()
+        {
+            List<EntityBase> tmp = new List<EntityBase>();
+
+            ForEach(
+                delegate(EntityBase entity)
+                {
+                    if (entity is T)
+                        tmp.Add(entity);
+                }
+            );
+
+            return tmp.ToArray();
+        }
+
+        public EntityBase[] GetEntities()
+        {
+            List<EntityBase> tmp = new List<EntityBase>(m_entities.Count);
+            ForEach(delegate(EntityBase entity) { tmp.Add(entity); });
+            return tmp.ToArray();
+        }
+
+        public bool Remove(uint localID)
+        {
+            return m_entities.Remove(localID);
+        }
+
+        public bool Remove(UUID id)
+        {
+            return m_entities.Remove(id);
+        }
         public bool TryGetValue(UUID key, out EntityBase obj)
         {
             return m_entities.TryGetValue(key, out obj);

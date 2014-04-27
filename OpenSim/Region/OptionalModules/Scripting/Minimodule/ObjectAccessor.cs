@@ -25,61 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Scenes;
-using IEnumerable=System.Collections.IEnumerable;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using IEnumerable = System.Collections.IEnumerable;
 
 namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
-
-    internal class IObjEnum : System.MarshalByRefObject, IEnumerator<IObject>
-    {
-        private readonly Scene m_scene;
-        private readonly IEnumerator<EntityBase> m_sogEnum;
-        private readonly ISecurityCredential m_security;
-        private readonly List<EntityBase> m_entities;
-
-        public IObjEnum(Scene scene, ISecurityCredential security)
-        {
-            m_scene = scene;
-            m_security = security;
-            m_entities = new List<EntityBase>(m_scene.Entities.GetEntities());
-            m_sogEnum = m_entities.GetEnumerator();
-        }
-
-        public void Dispose()
-        {
-            m_sogEnum.Dispose();
-        }
-
-        public bool MoveNext()
-        {
-            return m_sogEnum.MoveNext();
-        }
-
-        public void Reset()
-        {
-            m_sogEnum.Reset();
-        }
-
-        public IObject Current
-        {
-            get
-            {
-                return new SOPObject(m_scene, m_sogEnum.Current.LocalId, m_security);
-            }
-        }
-
-        object IEnumerator.Current
-        {
-            get { return Current; }
-        }
-    }
-
     public class ObjectAccessor : System.MarshalByRefObject, IObjectAccessor
     {
         private readonly Scene m_scene;
@@ -89,6 +44,16 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
         {
             m_scene = scene;
             m_security = security;
+        }
+
+        public int Count
+        {
+            get { return m_scene.Entities.Count; }
+        }
+
+        public bool IsReadOnly
+        {
+            get { return true; }
         }
 
         public IObject this[int index]
@@ -115,35 +80,6 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             }
         }
 
-        public IObject Create(Vector3 position)
-        {
-            return Create(position, Quaternion.Identity);
-        }
-
-        public IObject Create(Vector3 position, Quaternion rotation)
-        {
-
-            SceneObjectGroup sog = m_scene.AddNewPrim(m_security.owner.GlobalID,
-                                                      UUID.Zero,
-                                                      position,
-                                                      rotation,
-                                                      PrimitiveBaseShape.CreateBox());
-
-            IObject ret = new SOPObject(m_scene, sog.LocalId, m_security);
-
-            return ret;
-        }
-
-        public IEnumerator<IObject> GetEnumerator()
-        {
-            return new IObjEnum(m_scene, m_security);
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
         public void Add(IObject item)
         {
             throw new NotSupportedException("Collection is read-only. This is an API TODO FIX, creation of objects is presently impossible.");
@@ -167,19 +103,81 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             }
         }
 
+        public IObject Create(Vector3 position)
+        {
+            return Create(position, Quaternion.Identity);
+        }
+
+        public IObject Create(Vector3 position, Quaternion rotation)
+        {
+            SceneObjectGroup sog = m_scene.AddNewPrim(m_security.owner.GlobalID,
+                                                      UUID.Zero,
+                                                      position,
+                                                      rotation,
+                                                      PrimitiveBaseShape.CreateBox());
+
+            IObject ret = new SOPObject(m_scene, sog.LocalId, m_security);
+
+            return ret;
+        }
+
+        public IEnumerator<IObject> GetEnumerator()
+        {
+            return new IObjEnum(m_scene, m_security);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
         public bool Remove(IObject item)
         {
             throw new NotSupportedException("Collection is read-only. TODO FIX.");
         }
+    }
 
-        public int Count
+    internal class IObjEnum : System.MarshalByRefObject, IEnumerator<IObject>
+    {
+        private readonly List<EntityBase> m_entities;
+        private readonly Scene m_scene;
+        private readonly ISecurityCredential m_security;
+        private readonly IEnumerator<EntityBase> m_sogEnum;
+
+        public IObjEnum(Scene scene, ISecurityCredential security)
         {
-            get { return m_scene.Entities.Count; }
+            m_scene = scene;
+            m_security = security;
+            m_entities = new List<EntityBase>(m_scene.Entities.GetEntities());
+            m_sogEnum = m_entities.GetEnumerator();
         }
 
-        public bool IsReadOnly
+        public IObject Current
         {
-            get { return true; }
+            get
+            {
+                return new SOPObject(m_scene, m_sogEnum.Current.LocalId, m_security);
+            }
+        }
+
+        object IEnumerator.Current
+        {
+            get { return Current; }
+        }
+
+        public void Dispose()
+        {
+            m_sogEnum.Dispose();
+        }
+
+        public bool MoveNext()
+        {
+            return m_sogEnum.MoveNext();
+        }
+
+        public void Reset()
+        {
+            m_sogEnum.Reset();
         }
     }
 }

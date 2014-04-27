@@ -78,12 +78,6 @@ namespace OpenSim.Region.Framework.Interfaces
                 string message, bool modal);
 
         /// <summary>
-        /// Send an alert message to all users in the scene.
-        /// </summary>
-        /// <param name="message">Message text to send to all users.</param>
-        void SendGeneralAlert(string message);
-
-        /// <summary>
         /// Send a dialog box to a particular user.
         /// </summary>
         /// <param name="avatarID">
@@ -111,28 +105,10 @@ namespace OpenSim.Region.Framework.Interfaces
                 string[] buttonlabels);
 
         /// <summary>
-        /// Send a url to a particular user.
+        /// Send an alert message to all users in the scene.
         /// </summary>
-        /// <param name="avatarID">
-        /// UUID of the avatar representing the user.
-        /// </param>
-        /// <param name="objectName">
-        /// Name of the object sending the dialog.
-        /// </param>
-        /// <param name="objectID">
-        /// UUID of the object sending the dialog.
-        /// </param>
-        /// <param name="ownerID">
-        /// UUID of the user that owns the object.
-        /// </param>
-        /// <param name="groupOwned">
-        /// Flag indicating whether or not the object is group-owned.
-        /// </param>
-        /// <param name="message">Message text to send to the user.</param>
-        /// <param name="url">Url to send to the user.</param>
-        void SendUrlToUser(UUID avatarID, string objectName, UUID objectID,
-                UUID ownerID, bool groupOwned, string message, string url);
-
+        /// <param name="message">Message text to send to all users.</param>
+        void SendGeneralAlert(string message);
         /// <summary>
         /// Send a notification to all users in the scene. This notification
         /// should remain around until the user explicitly dismisses it.
@@ -168,5 +144,28 @@ namespace OpenSim.Region.Framework.Interfaces
         /// </param>
         void SendTextBoxToUser(UUID avatarid, string message, int chatChannel,
                 string name, UUID objectid, UUID ownerid);
+
+        /// <summary>
+        /// Send a url to a particular user.
+        /// </summary>
+        /// <param name="avatarID">
+        /// UUID of the avatar representing the user.
+        /// </param>
+        /// <param name="objectName">
+        /// Name of the object sending the dialog.
+        /// </param>
+        /// <param name="objectID">
+        /// UUID of the object sending the dialog.
+        /// </param>
+        /// <param name="ownerID">
+        /// UUID of the user that owns the object.
+        /// </param>
+        /// <param name="groupOwned">
+        /// Flag indicating whether or not the object is group-owned.
+        /// </param>
+        /// <param name="message">Message text to send to the user.</param>
+        /// <param name="url">Url to send to the user.</param>
+        void SendUrlToUser(UUID avatarID, string objectName, UUID objectID,
+                UUID ownerID, bool groupOwned, string message, string url);
     }
 }

@@ -25,20 +25,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using log4net.Appender;
+using log4net.Repository;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Framework.Console;
+using pCampBot.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
-using OpenMetaverse;
-using log4net;
-using log4net.Appender;
-using log4net.Core;
-using log4net.Repository;
-using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Framework.Console;
-using pCampBot.Interfaces;
 
 namespace pCampBot
 {
@@ -47,60 +46,22 @@ namespace pCampBot
     /// </summary>
     public class BotManager
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
         public const int DefaultLoginDelay = 5000;
-
-        /// <summary>
-        /// Is pCampbot in the process of connecting bots?
-        /// </summary>
-        public bool ConnectingBots { get; private set; }
-
-        /// <summary>
-        /// Is pCampbot in the process of disconnecting bots?
-        /// </summary>
-        public bool DisconnectingBots { get; private set; }
-
-        /// <summary>
-        /// Delay between logins of multiple bots.
-        /// </summary>
-        /// <remarks>TODO: This value needs to be configurable by a command line argument.</remarks>
-        public int LoginDelay { get; set; }
-
-        /// <summary>
-        /// Command console
-        /// </summary>
-        protected CommandConsole m_console;
-
-        /// <summary>
-        /// Controls whether bots start out sending agent updates on connection.
-        /// </summary>
-        public bool InitBotSendAgentUpdates { get; set; }
-
-        /// <summary>
-        /// Controls whether bots request textures for the object information they receive
-        /// </summary>
-        public bool InitBotRequestObjectTextures { get; set; }
-
         /// <summary>
         /// Created bots, whether active or inactive.
         /// </summary>
         protected List<Bot> m_bots;
 
         /// <summary>
-        /// Random number generator.
+        /// Command console
         /// </summary>
-        public Random Rng { get; private set; }
+        protected CommandConsole m_console;
 
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         /// <summary>
-        /// Track the assets we have and have not received so we don't endlessly repeat requests.
+        /// Behaviour switches for bots.
         /// </summary>
-        public Dictionary<UUID, bool> AssetsReceived { get; private set; }
-
-        /// <summary>
-        /// The regions that we know about.
-        /// </summary>
-        public Dictionary<ulong, GridRegion> RegionsKnown { get; private set; }
+        private HashSet<string> m_defaultBehaviourSwitches = new HashSet<string>();
 
         /// <summary>
         /// First name for bots
@@ -108,14 +69,14 @@ namespace pCampBot
         private string m_firstName;
 
         /// <summary>
+        /// Postfix bot number at which bot sequence starts.
+        /// </summary>
+        private int m_fromBotNumber;
+
+        /// <summary>
         /// Last name stem for bots
         /// </summary>
         private string m_lastNameStem;
-
-        /// <summary>
-        /// Password for bots
-        /// </summary>
-        private string m_password;
 
         /// <summary>
         /// Login URI for bots.
@@ -123,24 +84,19 @@ namespace pCampBot
         private string m_loginUri;
 
         /// <summary>
+        /// Password for bots
+        /// </summary>
+        private string m_password;
+
+        /// <summary>
         /// Start location for bots.
         /// </summary>
         private string m_startUri;
 
         /// <summary>
-        /// Postfix bot number at which bot sequence starts.
-        /// </summary>
-        private int m_fromBotNumber;
-
-        /// <summary>
         /// Wear setting for bots.
         /// </summary>
         private string m_wearSetting;
-
-        /// <summary>
-        /// Behaviour switches for bots.
-        /// </summary>
-        private HashSet<string> m_defaultBehaviourSwitches = new HashSet<string>();
 
         /// <summary>
         /// Constructor Creates MainConsole.Instance to take commands and provide the place to write data
@@ -195,14 +151,14 @@ namespace pCampBot
                 HandleDisconnect);
 
             m_console.Commands.AddCommand(
-                "Bots", false, "add behaviour", "add behaviour <abbreviated-name> [<bot-number>]", 
+                "Bots", false, "add behaviour", "add behaviour <abbreviated-name> [<bot-number>]",
                 "Add a behaviour to a bot",
                 "If no bot number is specified then behaviour is added to all bots.\n"
                     + "Can be performed on connected or disconnected bots.",
                 HandleAddBehaviour);
 
             m_console.Commands.AddCommand(
-                "Bots", false, "remove behaviour", "remove behaviour <abbreviated-name> [<bot-number>]", 
+                "Bots", false, "remove behaviour", "remove behaviour <abbreviated-name> [<bot-number>]",
                 "Remove a behaviour from a bot",
                 "If no bot number is specified then behaviour is added to all bots.\n"
                     + "Can be performed on connected or disconnected bots.",
@@ -226,10 +182,89 @@ namespace pCampBot
                 "Bots", false, "show bots", "show bots", "Shows the status of all bots", HandleShowBotsStatus);
 
             m_console.Commands.AddCommand(
-                "Bots", false, "show bot", "show bot <bot-number>", 
+                "Bots", false, "show bot", "show bot <bot-number>",
                 "Shows the detailed status and settings of a particular bot.", HandleShowBotStatus);
 
             m_bots = new List<Bot>();
+        }
+
+        /// <summary>
+        /// Track the assets we have and have not received so we don't endlessly repeat requests.
+        /// </summary>
+        public Dictionary<UUID, bool> AssetsReceived { get; private set; }
+
+        /// <summary>
+        /// Is pCampbot in the process of connecting bots?
+        /// </summary>
+        public bool ConnectingBots { get; private set; }
+
+        /// <summary>
+        /// Is pCampbot in the process of disconnecting bots?
+        /// </summary>
+        public bool DisconnectingBots { get; private set; }
+
+        /// <summary>
+        /// Controls whether bots request textures for the object information they receive
+        /// </summary>
+        public bool InitBotRequestObjectTextures { get; set; }
+
+        /// <summary>
+        /// Controls whether bots start out sending agent updates on connection.
+        /// </summary>
+        public bool InitBotSendAgentUpdates { get; set; }
+
+        /// <summary>
+        /// Delay between logins of multiple bots.
+        /// </summary>
+        /// <remarks>TODO: This value needs to be configurable by a command line argument.</remarks>
+        public int LoginDelay { get; set; }
+        /// <summary>
+        /// The regions that we know about.
+        /// </summary>
+        public Dictionary<ulong, GridRegion> RegionsKnown { get; private set; }
+
+        /// <summary>
+        /// Random number generator.
+        /// </summary>
+        public Random Rng { get; private set; }
+        public void ConnectBots(int botcount)
+        {
+            ConnectingBots = true;
+
+            Thread connectBotThread = new Thread(o => ConnectBotsInternal(botcount));
+
+            connectBotThread.Name = "Bots connection thread";
+            connectBotThread.Start();
+        }
+
+        /// <summary>
+        /// This creates a bot but does not start it.
+        /// </summary>
+        /// <param name="bm"></param>
+        /// <param name="behaviours">Behaviours for this bot to perform.</param>
+        /// <param name="firstName">First name</param>
+        /// <param name="lastName">Last name</param>
+        /// <param name="password">Password</param>
+        /// <param name="loginUri">Login URI</param>
+        /// <param name="startLocation">Location to start the bot.  Can be "last", "home" or a specific sim name.</param>
+        /// <param name="wearSetting"></param>
+        public void CreateBot(
+             BotManager bm, List<IBehaviour> behaviours,
+             string firstName, string lastName, string password, string loginUri, string startLocation, string wearSetting)
+        {
+            MainConsole.Instance.OutputFormat(
+                "[BOT MANAGER]: Creating bot {0} {1}, behaviours are {2}",
+                firstName, lastName, string.Join(",", behaviours.ConvertAll<string>(b => b.Name).ToArray()));
+
+            Bot pb = new Bot(bm, behaviours, firstName, lastName, password, startLocation, loginUri);
+            pb.wear = wearSetting;
+            pb.Client.Settings.SEND_AGENT_UPDATES = InitBotSendAgentUpdates;
+            pb.RequestObjectTextures = InitBotRequestObjectTextures;
+
+            pb.OnConnected += handlebotEvent;
+            pb.OnDisconnected += handlebotEvent;
+
+            m_bots.Add(pb);
         }
 
         /// <summary>
@@ -265,58 +300,32 @@ namespace pCampBot
             }
         }
 
-        private List<IBehaviour> CreateBehavioursFromAbbreviatedNames(HashSet<string> abbreviatedNames)
+        internal void Grid_GridRegion(object o, GridRegionEventArgs args)
         {
-            // We must give each bot its own list of instantiated behaviours since they store state.
-            List<IBehaviour> behaviours = new List<IBehaviour>();
-
-            // Hard-coded for now    
-            foreach (string abName in abbreviatedNames)
+            lock (RegionsKnown)
             {
-                IBehaviour newBehaviour = null;
+                GridRegion newRegion = args.Region;
 
-                if (abName == "c")
-                    newBehaviour = new CrossBehaviour();
-
-                if (abName == "g")
-                    newBehaviour = new GrabbingBehaviour();
-
-                if (abName == "n")
-                    newBehaviour = new NoneBehaviour();
-
-                if (abName == "p")
-                    newBehaviour = new PhysicsBehaviour();
-
-                if (abName == "t")
-                    newBehaviour = new TeleportBehaviour();
-
-                if (abName == "tw")
-                    newBehaviour = new TwitchyBehaviour();
-
-                if (abName == "ph2")
-                    newBehaviour = new PhysicsBehaviour2();
-
-                if (newBehaviour != null)
+                if (RegionsKnown.ContainsKey(newRegion.RegionHandle))
                 {
-                    behaviours.Add(newBehaviour);
+                    return;
                 }
                 else
                 {
-                    MainConsole.Instance.OutputFormat("No behaviour with abbreviated name {0} found", abName);
+                    m_log.DebugFormat(
+                        "[BOT MANAGER]: Adding {0} {1} to known regions", newRegion.Name, newRegion.RegionHandle);
+                    RegionsKnown[newRegion.RegionHandle] = newRegion;
                 }
             }
-
-            return behaviours;
         }
 
-        public void ConnectBots(int botcount)
+        /// <summary>
+        /// Standard CreateConsole routine
+        /// </summary>
+        /// <returns></returns>
+        protected CommandConsole CreateConsole()
         {
-            ConnectingBots = true;
-
-            Thread connectBotThread = new Thread(o => ConnectBotsInternal(botcount));
-
-            connectBotThread.Name = "Bots connection thread";
-            connectBotThread.Start();
+            return new LocalConsole("pCampbot");
         }
 
         private void ConnectBotsInternal(int botCount)
@@ -363,136 +372,69 @@ namespace pCampBot
             ConnectingBots = false;
         }
 
-        /// <summary>
-        /// Parses the command line start location to a start string/uri that the login mechanism will recognize.
-        /// </summary>
-        /// <returns>
-        /// The input start location to URI.
-        /// </returns>
-        /// <param name='startLocation'>
-        /// Start location.
-        /// </param>
-        private string ParseInputStartLocationToUri(string startLocation)
+        private List<IBehaviour> CreateBehavioursFromAbbreviatedNames(HashSet<string> abbreviatedNames)
         {
-            if (startLocation == "home" || startLocation == "last")
-                return startLocation;
+            // We must give each bot its own list of instantiated behaviours since they store state.
+            List<IBehaviour> behaviours = new List<IBehaviour>();
 
-            string regionName;
-
-            // Just a region name or only one (!) extra component.  Like a viewer, we will stick 128/128/0 on the end
-            Vector3 startPos = new Vector3(128, 128, 0);
-
-            string[] startLocationComponents = startLocation.Split('/');
-
-            regionName = startLocationComponents[0];
-
-            if (startLocationComponents.Length >= 2)
+            // Hard-coded for now
+            foreach (string abName in abbreviatedNames)
             {
-                float.TryParse(startLocationComponents[1], out startPos.X);
+                IBehaviour newBehaviour = null;
 
-                if (startLocationComponents.Length >= 3)
+                if (abName == "c")
+                    newBehaviour = new CrossBehaviour();
+
+                if (abName == "g")
+                    newBehaviour = new GrabbingBehaviour();
+
+                if (abName == "n")
+                    newBehaviour = new NoneBehaviour();
+
+                if (abName == "p")
+                    newBehaviour = new PhysicsBehaviour();
+
+                if (abName == "t")
+                    newBehaviour = new TeleportBehaviour();
+
+                if (abName == "tw")
+                    newBehaviour = new TwitchyBehaviour();
+
+                if (abName == "ph2")
+                    newBehaviour = new PhysicsBehaviour2();
+
+                if (newBehaviour != null)
                 {
-                    float.TryParse(startLocationComponents[2], out startPos.Y);
-
-                    if (startLocationComponents.Length >= 4)
-                        float.TryParse(startLocationComponents[3], out startPos.Z);
-                }
-            }
-
-            return string.Format("uri:{0}&{1}&{2}&{3}", regionName, startPos.X, startPos.Y, startPos.Z);
-        }
-
-        /// <summary>
-        /// This creates a bot but does not start it.
-        /// </summary>
-        /// <param name="bm"></param>
-        /// <param name="behaviours">Behaviours for this bot to perform.</param>
-        /// <param name="firstName">First name</param>
-        /// <param name="lastName">Last name</param>
-        /// <param name="password">Password</param>
-        /// <param name="loginUri">Login URI</param>
-        /// <param name="startLocation">Location to start the bot.  Can be "last", "home" or a specific sim name.</param>
-        /// <param name="wearSetting"></param>
-        public void CreateBot(
-             BotManager bm, List<IBehaviour> behaviours,
-             string firstName, string lastName, string password, string loginUri, string startLocation, string wearSetting)
-        {
-            MainConsole.Instance.OutputFormat(
-                "[BOT MANAGER]: Creating bot {0} {1}, behaviours are {2}",
-                firstName, lastName, string.Join(",", behaviours.ConvertAll<string>(b => b.Name).ToArray()));
-
-            Bot pb = new Bot(bm, behaviours, firstName, lastName, password, startLocation, loginUri);
-            pb.wear = wearSetting;
-            pb.Client.Settings.SEND_AGENT_UPDATES = InitBotSendAgentUpdates;
-            pb.RequestObjectTextures = InitBotRequestObjectTextures;
-
-            pb.OnConnected += handlebotEvent;
-            pb.OnDisconnected += handlebotEvent;
-
-            m_bots.Add(pb);
-        }
-
-        /// <summary>
-        /// High level connnected/disconnected events so we can keep track of our threads by proxy
-        /// </summary>
-        /// <param name="callbot"></param>
-        /// <param name="eventt"></param>
-        private void handlebotEvent(Bot callbot, EventType eventt)
-        {
-            switch (eventt)
-            {
-                case EventType.CONNECTED:
-                {
-                    m_log.Info("[" + callbot.FirstName + " " + callbot.LastName + "]: Connected");
-                    break;
-                }
-
-                case EventType.DISCONNECTED:
-                {
-                    m_log.Info("[" + callbot.FirstName + " " + callbot.LastName + "]: Disconnected");
-                    break;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Standard CreateConsole routine
-        /// </summary>
-        /// <returns></returns>
-        protected CommandConsole CreateConsole()
-        {
-            return new LocalConsole("pCampbot");
-        }
-
-        private void HandleConnect(string module, string[] cmd)
-        {
-            if (ConnectingBots)
-            {
-                MainConsole.Instance.Output("Still connecting bots.  Please wait for previous process to complete.");
-                return;
-            }
-
-            lock (m_bots)
-            {
-                int botsToConnect;
-                int disconnectedBots = m_bots.Count(b => b.ConnectionState == ConnectionState.Disconnected);
-
-                if (cmd.Length == 1)
-                {
-                    botsToConnect = disconnectedBots;
+                    behaviours.Add(newBehaviour);
                 }
                 else
                 {
-                    if (!ConsoleUtil.TryParseConsoleNaturalInt(MainConsole.Instance, cmd[1], out botsToConnect))
-                        return;
-
-                    botsToConnect = Math.Min(botsToConnect, disconnectedBots);
+                    MainConsole.Instance.OutputFormat("No behaviour with abbreviated name {0} found", abName);
                 }
-
-                MainConsole.Instance.OutputFormat("Connecting {0} bots", botsToConnect);
-
-                ConnectBots(botsToConnect);
             }
+
+            return behaviours;
+        }
+        private string GenerateBotNameFromNumber(int botNumber)
+        {
+            return string.Format("{0} {1}_{2}", m_firstName, m_lastNameStem, botNumber);
+        }
+
+        /// <summary>
+        /// Get a specific bot from its number.
+        /// </summary>
+        /// <returns>null if no bot was found</returns>
+        /// <param name='botNumber'></param>
+        private Bot GetBotFromNumber(int botNumber)
+        {
+            string name = GenerateBotNameFromNumber(botNumber);
+
+            Bot bot;
+
+            lock (m_bots)
+                bot = m_bots.Find(b => b.Name == name);
+
+            return bot;
         }
 
         private void HandleAddBehaviour(string module, string[] cmd)
@@ -529,7 +471,6 @@ namespace pCampBot
                 botsToEffect.Add(bot);
             }
 
-
             HashSet<string> rawAbbreviatedSwitchesToAdd = new HashSet<string>();
             Array.ForEach<string>(rawBehaviours.Split(new char[] { ',' }), b => rawAbbreviatedSwitchesToAdd.Add(b));
 
@@ -544,8 +485,105 @@ namespace pCampBot
                 }
 
                 MainConsole.Instance.OutputFormat(
-                    "Added behaviours {0} to bot {1}", 
+                    "Added behaviours {0} to bot {1}",
                     string.Join(", ", behavioursAdded.ConvertAll<string>(b => b.Name).ToArray()), bot.Name);
+            }
+        }
+
+        /// <summary>
+        /// High level connnected/disconnected events so we can keep track of our threads by proxy
+        /// </summary>
+        /// <param name="callbot"></param>
+        /// <param name="eventt"></param>
+        private void handlebotEvent(Bot callbot, EventType eventt)
+        {
+            switch (eventt)
+            {
+                case EventType.CONNECTED:
+                    {
+                        m_log.Info("[" + callbot.FirstName + " " + callbot.LastName + "]: Connected");
+                        break;
+                    }
+
+                case EventType.DISCONNECTED:
+                    {
+                        m_log.Info("[" + callbot.FirstName + " " + callbot.LastName + "]: Disconnected");
+                        break;
+                    }
+            }
+        }
+
+        private void HandleConnect(string module, string[] cmd)
+        {
+            if (ConnectingBots)
+            {
+                MainConsole.Instance.Output("Still connecting bots.  Please wait for previous process to complete.");
+                return;
+            }
+
+            lock (m_bots)
+            {
+                int botsToConnect;
+                int disconnectedBots = m_bots.Count(b => b.ConnectionState == ConnectionState.Disconnected);
+
+                if (cmd.Length == 1)
+                {
+                    botsToConnect = disconnectedBots;
+                }
+                else
+                {
+                    if (!ConsoleUtil.TryParseConsoleNaturalInt(MainConsole.Instance, cmd[1], out botsToConnect))
+                        return;
+
+                    botsToConnect = Math.Min(botsToConnect, disconnectedBots);
+                }
+
+                MainConsole.Instance.OutputFormat("Connecting {0} bots", botsToConnect);
+
+                ConnectBots(botsToConnect);
+            }
+        }
+
+        private void HandleDisconnect(string module, string[] cmd)
+        {
+            lock (m_bots)
+            {
+                int botsToDisconnect;
+                int connectedBots = m_bots.Count(b => b.ConnectionState == ConnectionState.Connected);
+
+                if (cmd.Length == 1)
+                {
+                    botsToDisconnect = connectedBots;
+                }
+                else
+                {
+                    if (!ConsoleUtil.TryParseConsoleNaturalInt(MainConsole.Instance, cmd[1], out botsToDisconnect))
+                        return;
+
+                    botsToDisconnect = Math.Min(botsToDisconnect, connectedBots);
+                }
+
+                DisconnectingBots = true;
+
+                MainConsole.Instance.OutputFormat("Disconnecting {0} bots", botsToDisconnect);
+
+                int disconnectedBots = 0;
+
+                for (int i = m_bots.Count - 1; i >= 0; i--)
+                {
+                    if (disconnectedBots >= botsToDisconnect)
+                        break;
+
+                    Bot thisBot = m_bots[i];
+
+                    if (thisBot.ConnectionState == ConnectionState.Connected)
+                    {
+                        Util.FireAndForget(o => thisBot.Disconnect());
+                        disconnectedBots++;
+                    }
+                }
+
+                DisconnectingBots = false;
             }
         }
 
@@ -602,86 +640,9 @@ namespace pCampBot
                 }
 
                 MainConsole.Instance.OutputFormat(
-                    "Removed behaviours {0} to bot {1}", 
+                    "Removed behaviours {0} to bot {1}",
                     string.Join(", ", behavioursRemoved.ConvertAll<string>(b => b.Name).ToArray()), bot.Name);
             }
-        }
-
-        private void HandleDisconnect(string module, string[] cmd)
-        {
-            lock (m_bots)
-            {
-                int botsToDisconnect;
-                int connectedBots = m_bots.Count(b => b.ConnectionState == ConnectionState.Connected);
-
-                if (cmd.Length == 1)
-                {
-                    botsToDisconnect = connectedBots;
-                }
-                else
-                {
-                    if (!ConsoleUtil.TryParseConsoleNaturalInt(MainConsole.Instance, cmd[1], out botsToDisconnect))
-                        return;
-
-                    botsToDisconnect = Math.Min(botsToDisconnect, connectedBots);
-                }
-
-                DisconnectingBots = true;
-
-                MainConsole.Instance.OutputFormat("Disconnecting {0} bots", botsToDisconnect);
-
-                int disconnectedBots = 0;
-
-                for (int i = m_bots.Count - 1; i >= 0; i--)
-                {
-                    if (disconnectedBots >= botsToDisconnect)
-                        break;
-
-                    Bot thisBot = m_bots[i];
-
-                    if (thisBot.ConnectionState == ConnectionState.Connected)
-                    {
-                        Util.FireAndForget(o => thisBot.Disconnect());
-                        disconnectedBots++;
-                    }
-                }
-
-                DisconnectingBots = false;
-            }
-        }
-
-        private void HandleSit(string module, string[] cmd)
-        {
-            lock (m_bots)
-            {
-                m_bots.ForEach(b => b.SitOnGround());
-            }
-        }
-
-        private void HandleStand(string module, string[] cmd)
-        {
-            lock (m_bots)
-            {
-                m_bots.ForEach(b => b.Stand());
-            }
-        }
-
-        private void HandleShutdown(string module, string[] cmd)
-        {
-            lock (m_bots)
-            {
-                int connectedBots = m_bots.Count(b => b.ConnectionState == ConnectionState.Connected);
-
-                if (connectedBots > 0)
-                {
-                    MainConsole.Instance.OutputFormat("Please disconnect {0} connected bots first", connectedBots);
-                    return;
-                }
-            }
-
-            MainConsole.Instance.Output("Shutting down");
-
-            Environment.Exit(0);
         }
 
         private void HandleSetBots(string module, string[] cmd)
@@ -690,7 +651,7 @@ namespace pCampBot
             string rawValue = cmd[3];
 
             if (key == "SEND_AGENT_UPDATES")
-            {   
+            {
                 bool newSendAgentUpdatesSetting;
 
                 if (!ConsoleUtil.TryParseConsoleBool(MainConsole.Instance, rawValue, out newSendAgentUpdatesSetting))
@@ -705,21 +666,6 @@ namespace pCampBot
             else
             {
                 MainConsole.Instance.Output("Error: Only setting currently available is SEND_AGENT_UPDATES");
-            }
-        }
-
-        private void HandleShowRegions(string module, string[] cmd)
-        {
-            string outputFormat = "{0,-30}  {1, -20}  {2, -5}  {3, -5}";
-            MainConsole.Instance.OutputFormat(outputFormat, "Name", "Handle", "X", "Y");
-
-            lock (RegionsKnown)
-            {
-                foreach (GridRegion region in RegionsKnown.Values)
-                {
-                    MainConsole.Instance.OutputFormat(
-                        outputFormat, region.Name, region.RegionHandle, region.X, region.Y);
-                }
             }
         }
 
@@ -744,10 +690,10 @@ namespace pCampBot
                     totals[bot.ConnectionState]++;
 
                     cdt.AddRow(
-                        bot.Name, 
-                        currentSim != null ? currentSim.Name : "(none)", 
-                        bot.ConnectionState, 
-                        bot.SimulatorsCount, 
+                        bot.Name,
+                        currentSim != null ? currentSim.Name : "(none)",
+                        bot.ConnectionState,
+                        bot.SimulatorsCount,
                         string.Join(",", bot.Behaviours.Keys.ToArray()));
                 }
             }
@@ -801,7 +747,7 @@ namespace pCampBot
             ConsoleDisplayList statusCdl = new ConsoleDisplayList();
 
             statusCdl.AddRow(
-                "Behaviours", 
+                "Behaviours",
                 string.Join(", ", bot.Behaviours.Values.ToList().ConvertAll<string>(b => b.Name).ToArray()));
 
             GridClient botClient = bot.Client;
@@ -810,45 +756,92 @@ namespace pCampBot
             MainConsole.Instance.Output(statusCdl.ToString());
         }
 
-        /// <summary>
-        /// Get a specific bot from its number.
-        /// </summary>
-        /// <returns>null if no bot was found</returns>
-        /// <param name='botNumber'></param>
-        private Bot GetBotFromNumber(int botNumber)
+        private void HandleShowRegions(string module, string[] cmd)
         {
-            string name = GenerateBotNameFromNumber(botNumber);
+            string outputFormat = "{0,-30}  {1, -20}  {2, -5}  {3, -5}";
+            MainConsole.Instance.OutputFormat(outputFormat, "Name", "Handle", "X", "Y");
 
-            Bot bot;
-
-            lock (m_bots)
-                bot = m_bots.Find(b => b.Name == name);
-
-            return bot;
-        }
-
-        private string GenerateBotNameFromNumber(int botNumber)
-        {
-            return string.Format("{0} {1}_{2}", m_firstName, m_lastNameStem, botNumber);
-        }
-
-        internal void Grid_GridRegion(object o, GridRegionEventArgs args)
-        {
             lock (RegionsKnown)
             {
-                GridRegion newRegion = args.Region;
-
-                if (RegionsKnown.ContainsKey(newRegion.RegionHandle))
+                foreach (GridRegion region in RegionsKnown.Values)
                 {
-                    return;
-                }
-                else
-                {
-                    m_log.DebugFormat(
-                        "[BOT MANAGER]: Adding {0} {1} to known regions", newRegion.Name, newRegion.RegionHandle);
-                    RegionsKnown[newRegion.RegionHandle] = newRegion;
+                    MainConsole.Instance.OutputFormat(
+                        outputFormat, region.Name, region.RegionHandle, region.X, region.Y);
                 }
             }
+        }
+
+        private void HandleShutdown(string module, string[] cmd)
+        {
+            lock (m_bots)
+            {
+                int connectedBots = m_bots.Count(b => b.ConnectionState == ConnectionState.Connected);
+
+                if (connectedBots > 0)
+                {
+                    MainConsole.Instance.OutputFormat("Please disconnect {0} connected bots first", connectedBots);
+                    return;
+                }
+            }
+
+            MainConsole.Instance.Output("Shutting down");
+
+            Environment.Exit(0);
+        }
+
+        private void HandleSit(string module, string[] cmd)
+        {
+            lock (m_bots)
+            {
+                m_bots.ForEach(b => b.SitOnGround());
+            }
+        }
+
+        private void HandleStand(string module, string[] cmd)
+        {
+            lock (m_bots)
+            {
+                m_bots.ForEach(b => b.Stand());
+            }
+        }
+
+        /// <summary>
+        /// Parses the command line start location to a start string/uri that the login mechanism will recognize.
+        /// </summary>
+        /// <returns>
+        /// The input start location to URI.
+        /// </returns>
+        /// <param name='startLocation'>
+        /// Start location.
+        /// </param>
+        private string ParseInputStartLocationToUri(string startLocation)
+        {
+            if (startLocation == "home" || startLocation == "last")
+                return startLocation;
+
+            string regionName;
+
+            // Just a region name or only one (!) extra component.  Like a viewer, we will stick 128/128/0 on the end
+            Vector3 startPos = new Vector3(128, 128, 0);
+
+            string[] startLocationComponents = startLocation.Split('/');
+
+            regionName = startLocationComponents[0];
+
+            if (startLocationComponents.Length >= 2)
+            {
+                float.TryParse(startLocationComponents[1], out startPos.X);
+
+                if (startLocationComponents.Length >= 3)
+                {
+                    float.TryParse(startLocationComponents[2], out startPos.Y);
+
+                    if (startLocationComponents.Length >= 4)
+                        float.TryParse(startLocationComponents[3], out startPos.Z);
+                }
+            }
+
+            return string.Format("uri:{0}&{1}&{2}&{3}", regionName, startPos.X, startPos.Y, startPos.Z);
         }
     }
 }

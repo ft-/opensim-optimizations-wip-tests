@@ -25,23 +25,35 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
 using Mono.Data.SqliteClient;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Framework.Monitoring;
-
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Text;
 
 namespace OpenSim.Region.UserStatistics
 {
+    public struct stats_default_page_values
+    {
+        public Scene[] all_scenes;
+        public float avg_client_fps;
+        public float avg_client_mem_use;
+        public float avg_client_resends;
+        public float avg_ping;
+        public float avg_sim_fps;
+        public Dictionary<UUID, USimStatsData> sim_stat_data;
+        public Dictionary<string, IStatsController> stats_reports;
+        public float total_kb_in;
+        public float total_kb_out;
+        public int total_num_sessions;
+        public int total_num_users;
+    }
+
     public class Default_Report : IStatsController
     {
-
         public string ReportName
         {
             get { return "Home"; }
@@ -55,31 +67,54 @@ namespace OpenSim.Region.UserStatistics
             List<Scene> m_scene = (List<Scene>)pParams["Scenes"];
 
             stats_default_page_values mData = rep_DefaultReport_data(conn, m_scene);
-            mData.sim_stat_data = (Dictionary<UUID,USimStatsData>)pParams["SimStats"];
-            mData.stats_reports = (Dictionary<string, IStatsController>) pParams["Reports"];
+            mData.sim_stat_data = (Dictionary<UUID, USimStatsData>)pParams["SimStats"];
+            mData.stats_reports = (Dictionary<string, IStatsController>)pParams["Reports"];
 
             Hashtable nh = new Hashtable();
             nh.Add("hdata", mData);
             nh.Add("Reports", pParams["Reports"]);
-            
+
             return nh;
         }
 
         public string RenderView(Hashtable pModelResult)
         {
-            stats_default_page_values mData = (stats_default_page_values) pModelResult["hdata"];
+            stats_default_page_values mData = (stats_default_page_values)pModelResult["hdata"];
             return rep_Default_report_view(mData);
         }
 
-        #endregion
+        #endregion IStatsController Members
+
+        /// <summary>
+        /// Return summar information in the form:
+        /// <pre>
+        /// {"totalUsers": "34",
+        ///  "totalSessions": "233",
+        ///  ...
+        /// }
+        /// </pre>
+        /// </summary>
+        /// <param name="pModelResult"></param>
+        /// <returns></returns>
+        public string RenderJson(Hashtable pModelResult)
+        {
+            stats_default_page_values values = (stats_default_page_values)pModelResult["hdata"];
+
+            OSDMap summaryInfo = new OSDMap();
+            summaryInfo.Add("totalUsers", new OSDString(values.total_num_users.ToString()));
+            summaryInfo.Add("totalSessions", new OSDString(values.total_num_sessions.ToString()));
+            summaryInfo.Add("averageClientFPS", new OSDString(values.avg_client_fps.ToString()));
+            summaryInfo.Add("averageClientMem", new OSDString(values.avg_client_mem_use.ToString()));
+            summaryInfo.Add("averageSimFPS", new OSDString(values.avg_sim_fps.ToString()));
+            summaryInfo.Add("averagePingTime", new OSDString(values.avg_ping.ToString()));
+            summaryInfo.Add("totalKBOut", new OSDString(values.total_kb_out.ToString()));
+            summaryInfo.Add("totalKBIn", new OSDString(values.total_kb_in.ToString()));
+            return summaryInfo.ToString();
+        }
 
         public string rep_Default_report_view(stats_default_page_values values)
         {
-
-            
             StringBuilder output = new StringBuilder();
-
-
 
             const string TableClass = "defaultr";
             const string TRClass = "defaultr";
@@ -105,7 +140,7 @@ TD.align_top { vertical-align: top; }
 </STYLE>
 ";
             HTMLUtil.HtmlHeaders_O(ref output);
-            
+
             HTMLUtil.InsertProtoTypeAJAX(ref output);
             string[] ajaxUpdaterDivs = new string[3];
             int[] ajaxUpdaterSeconds = new int[3];
@@ -124,7 +159,7 @@ TD.align_top { vertical-align: top; }
             ajaxUpdaterReportFragments[2] = "activelogajax.html";
 
             HTMLUtil.InsertPeriodicUpdaters(ref output, ajaxUpdaterDivs, ajaxUpdaterSeconds, ajaxUpdaterReportFragments);
-            
+
             output.Append(STYLESHEET);
             HTMLUtil.HtmlHeaders_C(ref output);
             HTMLUtil.AddReportLinks(ref output, values.stats_reports, "");
@@ -200,16 +235,14 @@ TD.align_top { vertical-align: top; }
             return output.ToString();
         }
 
-       
-
         public stats_default_page_values rep_DefaultReport_data(SqliteConnection db, List<Scene> m_scene)
         {
             stats_default_page_values returnstruct = new stats_default_page_values();
             returnstruct.all_scenes = m_scene.ToArray();
             lock (db)
             {
-                string SQL = @"SELECT COUNT(DISTINCT agent_id) as agents, COUNT(*) as sessions, AVG(avg_fps) as client_fps, 
-                                AVG(avg_sim_fps) as savg_sim_fps, AVG(avg_ping) as sav_ping, SUM(n_out_kb) as num_in_kb, 
+                string SQL = @"SELECT COUNT(DISTINCT agent_id) as agents, COUNT(*) as sessions, AVG(avg_fps) as client_fps,
+                                AVG(avg_sim_fps) as savg_sim_fps, AVG(avg_ping) as sav_ping, SUM(n_out_kb) as num_in_kb,
                                 SUM(n_out_pk) as num_in_packets, SUM(n_in_kb) as num_out_kb, SUM(n_in_pk) as num_out_packets, AVG(mem_use) as sav_mem_use
                                 FROM stats_session_data;";
                 SqliteCommand cmd = new SqliteCommand(SQL, db);
@@ -225,53 +258,9 @@ TD.align_top { vertical-align: top; }
                     returnstruct.total_kb_out = Convert.ToSingle(sdr["num_out_kb"]);
                     returnstruct.total_kb_in = Convert.ToSingle(sdr["num_in_kb"]);
                     returnstruct.avg_client_mem_use = Convert.ToSingle(sdr["sav_mem_use"]);
-
                 }
             }
             return returnstruct;
         }
-
-        /// <summary>
-        /// Return summar information in the form:
-        /// <pre>
-        /// {"totalUsers": "34",
-        ///  "totalSessions": "233",
-        ///  ...
-        /// }
-        /// </pre>
-        /// </summary>
-        /// <param name="pModelResult"></param>
-        /// <returns></returns>
-        public string RenderJson(Hashtable pModelResult) {
-            stats_default_page_values values = (stats_default_page_values) pModelResult["hdata"];
-
-            OSDMap summaryInfo = new OSDMap();
-            summaryInfo.Add("totalUsers", new OSDString(values.total_num_users.ToString()));
-            summaryInfo.Add("totalSessions", new OSDString(values.total_num_sessions.ToString()));
-            summaryInfo.Add("averageClientFPS", new OSDString(values.avg_client_fps.ToString()));
-            summaryInfo.Add("averageClientMem", new OSDString(values.avg_client_mem_use.ToString()));
-            summaryInfo.Add("averageSimFPS", new OSDString(values.avg_sim_fps.ToString()));
-            summaryInfo.Add("averagePingTime", new OSDString(values.avg_ping.ToString()));
-            summaryInfo.Add("totalKBOut", new OSDString(values.total_kb_out.ToString()));
-            summaryInfo.Add("totalKBIn", new OSDString(values.total_kb_in.ToString()));
-            return summaryInfo.ToString();
-        }
     }
-
-    public struct stats_default_page_values
-    {
-        public int total_num_users;
-        public int total_num_sessions;
-        public float avg_client_fps;
-        public float avg_client_mem_use;
-        public float avg_sim_fps;
-        public float avg_ping;
-        public float total_kb_out;
-        public float total_kb_in;
-        public float avg_client_resends;
-        public Scene[] all_scenes;
-        public Dictionary<UUID, USimStatsData> sim_stat_data;
-        public Dictionary<string, IStatsController> stats_reports;
-    }
- 
 }

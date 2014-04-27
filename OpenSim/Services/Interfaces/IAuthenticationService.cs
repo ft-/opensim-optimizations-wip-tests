@@ -25,37 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using OpenMetaverse;
+using System.Collections.Generic;
 
 namespace OpenSim.Services.Interfaces
 {
-    public class AuthInfo
-    {
-        public UUID PrincipalID { get; set; }
-        public string AccountType { get; set; }
-        public string PasswordHash { get; set; }
-        public string PasswordSalt { get; set; }
-        public string WebLoginKey { get; set; }
-
-        public Dictionary<string, object> ToKeyValuePairs()
-        {
-            Dictionary<string, object> result = new Dictionary<string, object>();
-            result["PrincipalID"] = PrincipalID;
-            result["AccountType"] = AccountType;
-            result["PasswordHash"] = PasswordHash;
-            result["PasswordSalt"] = PasswordSalt;
-            result["WebLoginKey"] = WebLoginKey;
-
-            return result;
-        }
-    }
-
     // Generic Authentication service used for identifying
     // and authenticating principals.
     // Principals may be clients acting on users' behalf,
-    // or any other components that need 
+    // or any other components that need
     // verifiable identification.
     //
     public interface IAuthenticationService
@@ -68,15 +46,7 @@ namespace OpenSim.Services.Interfaces
         //
         string Authenticate(UUID principalID, string password, int lifetime);
 
-        //////////////////////////////////////////////////////
-        // Verification
-        //
-        // Allows to verify the authenticity of a token
-        //
-        // Tokens expire after 30 minutes and can be refreshed by
-        // re-verifying.
-        //
-        bool Verify(UUID principalID, string token, int lifetime);
+        AuthInfo GetAuthInfo(UUID principalID);
 
         //////////////////////////////////////////////////////
         // Teardown
@@ -86,6 +56,8 @@ namespace OpenSim.Services.Interfaces
         // or refreshed.
         //
         bool Release(UUID principalID, string token);
+
+        bool SetAuthInfo(AuthInfo info);
 
         //////////////////////////////////////////////////////
         // SetPassword for a principal
@@ -98,10 +70,15 @@ namespace OpenSim.Services.Interfaces
         //
         bool SetPassword(UUID principalID, string passwd);
 
-        AuthInfo GetAuthInfo(UUID principalID);
-
-        bool SetAuthInfo(AuthInfo info);
-
+        //////////////////////////////////////////////////////
+        // Verification
+        //
+        // Allows to verify the authenticity of a token
+        //
+        // Tokens expire after 30 minutes and can be refreshed by
+        // re-verifying.
+        //
+        bool Verify(UUID principalID, string token, int lifetime);
         //////////////////////////////////////////////////////
         // Grid
         //
@@ -120,5 +97,29 @@ namespace OpenSim.Services.Interfaces
         // Session IDs are not handled here. After obtaining
         // a token, the session ID regions use can be
         // obtained from the presence service.
+    }
+
+    public class AuthInfo
+    {
+        public string AccountType { get; set; }
+
+        public string PasswordHash { get; set; }
+
+        public string PasswordSalt { get; set; }
+
+        public UUID PrincipalID { get; set; }
+        public string WebLoginKey { get; set; }
+
+        public Dictionary<string, object> ToKeyValuePairs()
+        {
+            Dictionary<string, object> result = new Dictionary<string, object>();
+            result["PrincipalID"] = PrincipalID;
+            result["AccountType"] = AccountType;
+            result["PasswordHash"] = PasswordHash;
+            result["PasswordSalt"] = PasswordSalt;
+            result["WebLoginKey"] = WebLoginKey;
+
+            return result;
+        }
     }
 }

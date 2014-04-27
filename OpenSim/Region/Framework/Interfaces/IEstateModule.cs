@@ -31,37 +31,42 @@ using OpenSim.Services.Interfaces;
 namespace OpenSim.Region.Framework.Interfaces
 {
     public delegate void ChangeDelegate(UUID regionID);
+
     public delegate void MessageDelegate(UUID regionID, UUID fromID, string fromName, string message);
 
     public interface IEstateModule
     {
-        event ChangeDelegate OnRegionInfoChange;
         event ChangeDelegate OnEstateInfoChange;
+
         event MessageDelegate OnEstateMessage;
 
+        event ChangeDelegate OnRegionInfoChange;
         uint GetRegionFlags();
+
         bool IsManager(UUID avatarID);
 
-        string SetEstateOwner(int estateID, UserAccount account);
-        string SetEstateName(int estateID, string newName);
+        /// <summary>
+        /// Returns whether the transfer ID is being used for a terrain transfer.
+        /// </summary>
+        bool IsTerrainXfer(ulong xferID);
 
         /// <summary>
         /// Tell all clients about the current state of the region (terrain textures, water height, etc.).
         /// </summary>
         void sendRegionHandshakeToAll();
+
+        string SetEstateName(int estateID, string newName);
+
+        string SetEstateOwner(int estateID, UserAccount account);
+        void setEstateTerrainBaseTexture(int level, UUID texture);
+
+        void setEstateTerrainTextureHeights(int corner, float lowValue, float highValue);
+
         void TriggerEstateInfoChange();
 
         /// <summary>
         /// Fires the OnRegionInfoChange event.
         /// </summary>
         void TriggerRegionInfoChange();
-
-        void setEstateTerrainBaseTexture(int level, UUID texture);
-        void setEstateTerrainTextureHeights(int corner, float lowValue, float highValue);
-
-        /// <summary>
-        /// Returns whether the transfer ID is being used for a terrain transfer.
-        /// </summary>
-        bool IsTerrainXfer(ulong xferID);
     }
 }

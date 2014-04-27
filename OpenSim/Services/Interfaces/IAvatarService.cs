@@ -25,13 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-
-using OpenSim.Framework;
-
 using OpenMetaverse;
+using OpenSim.Framework;
+using System;
+using System.Collections.Generic;
 
 namespace OpenSim.Services.Interfaces
 {
@@ -45,27 +42,13 @@ namespace OpenSim.Services.Interfaces
         AvatarAppearance GetAppearance(UUID userID);
 
         /// <summary>
-        /// Called by everyone who can change the avatar data (so, regions)
-        /// </summary>
-        /// <param name="userID"></param>
-        /// <param name="appearance"></param>
-        /// <returns></returns>
-        bool SetAppearance(UUID userID, AvatarAppearance appearance);
-        
-        /// <summary>
         /// Called by the login service
         /// </summary>
         /// <param name="userID"></param>
         /// <returns></returns>
         AvatarData GetAvatar(UUID userID);
 
-        /// <summary>
-        /// Called by everyone who can change the avatar data (so, regions)
-        /// </summary>
-        /// <param name="userID"></param>
-        /// <param name="avatar"></param>
-        /// <returns></returns>
-        bool SetAvatar(UUID userID, AvatarData avatar);
+        bool RemoveItems(UUID userID, string[] names);
 
         /// <summary>
         /// Not sure if it's needed
@@ -75,14 +58,27 @@ namespace OpenSim.Services.Interfaces
         bool ResetAvatar(UUID userID);
 
         /// <summary>
-        /// These methods raison d'etre: 
+        /// Called by everyone who can change the avatar data (so, regions)
+        /// </summary>
+        /// <param name="userID"></param>
+        /// <param name="appearance"></param>
+        /// <returns></returns>
+        bool SetAppearance(UUID userID, AvatarAppearance appearance);
+        /// <summary>
+        /// Called by everyone who can change the avatar data (so, regions)
+        /// </summary>
+        /// <param name="userID"></param>
+        /// <param name="avatar"></param>
+        /// <returns></returns>
+        bool SetAvatar(UUID userID, AvatarData avatar);
+        /// <summary>
+        /// These methods raison d'etre:
         /// No need to send the entire avatar data (SetAvatar) for changing attachments
         /// </summary>
         /// <param name="userID"></param>
         /// <param name="attach"></param>
         /// <returns></returns>
         bool SetItems(UUID userID, string[] names, string[] values);
-        bool RemoveItems(UUID userID, string[] names);
     }
 
     /// <summary>
@@ -105,7 +101,7 @@ namespace OpenSim.Services.Interfaces
         // function. Closed, LL-based  grids will never need URLs here.
 
         public int AvatarType;
-        public Dictionary<string,string> Data;
+        public Dictionary<string, string> Data;
 
         public AvatarData()
         {
@@ -125,22 +121,6 @@ namespace OpenSim.Services.Interfaces
             }
         }
 
-        /// <summary>
-        /// </summary>
-        /// <returns></returns>
-        public Dictionary<string, object> ToKeyValuePairs()
-        {
-            Dictionary<string, object> result = new Dictionary<string, object>();
-
-            result["AvatarType"] = AvatarType.ToString();
-            foreach (KeyValuePair<string, string> _kvp in Data)
-            {
-                if (_kvp.Value != null)
-                    result[_kvp.Key] = _kvp.Value;
-            }
-            return result;
-        }
-
         public AvatarData(AvatarAppearance appearance)
         {
             AvatarType = 1; // SL avatars
@@ -150,9 +130,9 @@ namespace OpenSim.Services.Interfaces
             // Wearables
             Data["AvatarHeight"] = appearance.AvatarHeight.ToString();
 
-            for (int i = 0 ; i < AvatarWearable.MAX_WEARABLES ; i++)
+            for (int i = 0; i < AvatarWearable.MAX_WEARABLES; i++)
             {
-                for (int j = 0 ; j < appearance.Wearables[i].Count ; j++)
+                for (int j = 0; j < appearance.Wearables[i].Count; j++)
                 {
                     string fieldName = String.Format("Wearable {0}:{1}", i, j);
                     Data[fieldName] = String.Format("{0}:{1}",
@@ -165,7 +145,7 @@ namespace OpenSim.Services.Interfaces
             string[] vps = new string[AvatarAppearance.VISUALPARAM_COUNT];
             byte[] binary = appearance.VisualParams;
 
-            for (int i = 0 ; i < AvatarAppearance.VISUALPARAM_COUNT ; i++)
+            for (int i = 0; i < AvatarAppearance.VISUALPARAM_COUNT; i++)
             {
                 vps[i] = binary[i].ToString();
             }
@@ -272,12 +252,12 @@ namespace OpenSim.Services.Interfaces
 
                 if (Data.ContainsKey("VisualParams"))
                 {
-                    string[] vps = Data["VisualParams"].Split(new char[] {','});
+                    string[] vps = Data["VisualParams"].Split(new char[] { ',' });
                     byte[] binary = new byte[AvatarAppearance.VISUALPARAM_COUNT];
 
-                    for (int i = 0 ; i < vps.Length && i < binary.Length ; i++)
+                    for (int i = 0; i < vps.Length && i < binary.Length; i++)
                         binary[i] = (byte)Convert.ToInt32(vps[i]);
-                    
+
                     appearance.VisualParams = binary;
                 }
 
@@ -287,10 +267,10 @@ namespace OpenSim.Services.Interfaces
                     if (_kvp.Key.StartsWith("Wearable "))
                     {
                         string wearIndex = _kvp.Key.Substring(9);
-                        string[] wearIndices = wearIndex.Split(new char[] {':'});
+                        string[] wearIndices = wearIndex.Split(new char[] { ':' });
                         int index = Convert.ToInt32(wearIndices[0]);
 
-                        string[] ids = _kvp.Value.Split(new char[] {':'});
+                        string[] ids = _kvp.Value.Split(new char[] { ':' });
                         UUID itemID = new UUID(ids[0]);
                         UUID assetID = new UUID(ids[1]);
 
@@ -311,7 +291,7 @@ namespace OpenSim.Services.Interfaces
                     if (!Int32.TryParse(pointStr, out point))
                         continue;
 
-                    List<string> idList = new List<string>(_kvp.Value.Split(new char[] {','}));
+                    List<string> idList = new List<string>(_kvp.Value.Split(new char[] { ',' }));
 
                     appearance.SetAttachment(point, UUID.Zero, UUID.Zero);
                     foreach (string id in idList)
@@ -351,6 +331,22 @@ namespace OpenSim.Services.Interfaces
             }
 
             return appearance;
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns></returns>
+        public Dictionary<string, object> ToKeyValuePairs()
+        {
+            Dictionary<string, object> result = new Dictionary<string, object>();
+
+            result["AvatarType"] = AvatarType.ToString();
+            foreach (KeyValuePair<string, string> _kvp in Data)
+            {
+                if (_kvp.Value != null)
+                    result[_kvp.Key] = _kvp.Value;
+            }
+            return result;
         }
     }
 }

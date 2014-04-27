@@ -25,23 +25,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.IO;
 using OpenSim.Region.Framework.Interfaces;
+using System.IO;
 
 namespace OpenSim.Region.CoreModules.World.Terrain
 {
     public interface ITerrainLoader
     {
-        // Returns true if that extension can be used for terrain save-tile
-        // (Look into each file in Region.CoreModules.World.Terrain.FileLoaders) 
-        bool SupportsTileSave();
-
         string FileExtension { get; }
+
         ITerrainChannel LoadFile(string filename);
+
         ITerrainChannel LoadFile(string filename, int fileStartX, int fileStartY, int fileWidth, int fileHeight, int sectionWidth, int sectionHeight);
+
         ITerrainChannel LoadStream(Stream stream);
+
         void SaveFile(string filename, ITerrainChannel map);
-        void SaveStream(Stream stream, ITerrainChannel map);
 
         /// <summary>
         /// Save a number of map tiles to a single big image file.
@@ -58,5 +57,11 @@ namespace OpenSim.Region.CoreModules.World.Terrain
         /// <param name="regionSizeX">The width of a map tile.</param>
         /// <param name="regionSizeY">The height of a map tile.</param>
         void SaveFile(ITerrainChannel map, string filename, int offsetX, int offsetY, int fileWidth, int fileHeight, int regionSizeX, int regionSizeY);
+
+        void SaveStream(Stream stream, ITerrainChannel map);
+
+        // Returns true if that extension can be used for terrain save-tile
+        // (Look into each file in Region.CoreModules.World.Terrain.FileLoaders)
+        bool SupportsTileSave();
     }
 }

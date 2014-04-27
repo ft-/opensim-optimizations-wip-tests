@@ -25,32 +25,27 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using OpenMetaverse;
+using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
+using OpenSim.Server.Base;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Xml;
 
-using OpenSim.Framework;
-using OpenSim.Server.Base;
-using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Region.Framework.Interfaces;
-
-using OpenMetaverse;
-using log4net;
-
 namespace OpenSim.Region.CoreModules.World.Estate
 {
     public class EstateRequestHandler : BaseStreamHandler
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
         protected XEstateModule m_EstateModule;
         protected Object m_RequestLock = new Object();
-
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         public EstateRequestHandler(XEstateModule fmodule)
-                : base("POST", "/estate")
+            : base("POST", "/estate")
         {
             m_EstateModule = fmodule;
         }
@@ -86,12 +81,16 @@ namespace OpenSim.Region.CoreModules.World.Estate
                         {
                             case "update_covenant":
                                 return UpdateCovenant(request);
+
                             case "update_estate":
                                 return UpdateEstate(request);
+
                             case "estate_message":
                                 return EstateMessage(request);
+
                             case "teleport_home_one_user":
                                 return TeleportHomeOneUser(request);
+
                             case "teleport_home_all_users":
                                 return TeleportHomeAllUsers(request);
                         }
@@ -110,68 +109,40 @@ namespace OpenSim.Region.CoreModules.World.Estate
             return FailureResult();
         }
 
-        byte[] TeleportHomeAllUsers(Dictionary<string, object> request)
+        private byte[] BoolResult(bool value)
         {
-            UUID PreyID = UUID.Zero;
-            int EstateID = 0;
+            XmlDocument doc = new XmlDocument();
 
-            if (!request.ContainsKey("EstateID"))
-                return FailureResult();
+            XmlNode xmlnode = doc.CreateNode(XmlNodeType.XmlDeclaration,
+                    "", "");
 
-            if (!Int32.TryParse(request["EstateID"].ToString(), out EstateID))
-                return FailureResult();
+            doc.AppendChild(xmlnode);
 
-            foreach (Scene s in m_EstateModule.Scenes)
-            {
-                if (s.RegionInfo.EstateSettings.EstateID == EstateID)
-                {
-                    s.ForEachScenePresence(delegate(ScenePresence p) {
-                        if (p != null && !p.IsChildAgent)
-                        {
-                            p.ControllingClient.SendTeleportStart(16);
-                            s.TeleportClientHome(p.ControllingClient.AgentId, p.ControllingClient);
-                        }
-                    });
-                }
-            }
+            XmlElement rootElement = doc.CreateElement("", "ServerResponse",
+                    "");
 
-            return SuccessResult();
+            doc.AppendChild(rootElement);
+
+            XmlElement result = doc.CreateElement("", "RESULT", "");
+            result.AppendChild(doc.CreateTextNode(value.ToString()));
+
+            rootElement.AppendChild(result);
+
+            return DocToBytes(doc);
         }
 
-        byte[] TeleportHomeOneUser(Dictionary<string, object> request)
+        private byte[] DocToBytes(XmlDocument doc)
         {
-            UUID PreyID = UUID.Zero;
-            int EstateID = 0;
+            MemoryStream ms = new MemoryStream();
+            XmlTextWriter xw = new XmlTextWriter(ms, null);
+            xw.Formatting = Formatting.Indented;
+            doc.WriteTo(xw);
+            xw.Flush();
 
-            if (!request.ContainsKey("PreyID") ||
-                !request.ContainsKey("EstateID"))
-            {
-                return FailureResult();
-            }
-
-            if (!UUID.TryParse(request["PreyID"].ToString(), out PreyID))
-                return FailureResult();
-
-            if (!Int32.TryParse(request["EstateID"].ToString(), out EstateID))
-                return FailureResult();
-
-            foreach (Scene s in m_EstateModule.Scenes)
-            {
-                if (s.RegionInfo.EstateSettings.EstateID == EstateID)
-                {
-                    ScenePresence p = s.GetScenePresence(PreyID);
-                    if (p != null && !p.IsChildAgent)
-                    {
-                        p.ControllingClient.SendTeleportStart(16);
-                        s.TeleportClientHome(PreyID, p.ControllingClient);
-                    }
-                }
-            }
-
-            return SuccessResult();
+            return ms.ToArray();
         }
 
-        byte[] EstateMessage(Dictionary<string, object> request)
+        private byte[] EstateMessage(Dictionary<string, object> request)
         {
             UUID FromID = UUID.Zero;
             string FromName = String.Empty;
@@ -212,7 +183,78 @@ namespace OpenSim.Region.CoreModules.World.Estate
             return SuccessResult();
         }
 
-        byte[] UpdateCovenant(Dictionary<string, object> request)
+        private byte[] FailureResult()
+        {
+            return BoolResult(false);
+        }
+
+        private byte[] SuccessResult()
+        {
+            return BoolResult(true);
+        }
+
+        private byte[] TeleportHomeAllUsers(Dictionary<string, object> request)
+        {
+            UUID PreyID = UUID.Zero;
+            int EstateID = 0;
+
+            if (!request.ContainsKey("EstateID"))
+                return FailureResult();
+
+            if (!Int32.TryParse(request["EstateID"].ToString(), out EstateID))
+                return FailureResult();
+
+            foreach (Scene s in m_EstateModule.Scenes)
+            {
+                if (s.RegionInfo.EstateSettings.EstateID == EstateID)
+                {
+                    s.ForEachScenePresence(delegate(ScenePresence p)
+                    {
+                        if (p != null && !p.IsChildAgent)
+                        {
+                            p.ControllingClient.SendTeleportStart(16);
+                            s.TeleportClientHome(p.ControllingClient.AgentId, p.ControllingClient);
+                        }
+                    });
+                }
+            }
+
+            return SuccessResult();
+        }
+
+        private byte[] TeleportHomeOneUser(Dictionary<string, object> request)
+        {
+            UUID PreyID = UUID.Zero;
+            int EstateID = 0;
+
+            if (!request.ContainsKey("PreyID") ||
+                !request.ContainsKey("EstateID"))
+            {
+                return FailureResult();
+            }
+
+            if (!UUID.TryParse(request["PreyID"].ToString(), out PreyID))
+                return FailureResult();
+
+            if (!Int32.TryParse(request["EstateID"].ToString(), out EstateID))
+                return FailureResult();
+
+            foreach (Scene s in m_EstateModule.Scenes)
+            {
+                if (s.RegionInfo.EstateSettings.EstateID == EstateID)
+                {
+                    ScenePresence p = s.GetScenePresence(PreyID);
+                    if (p != null && !p.IsChildAgent)
+                    {
+                        p.ControllingClient.SendTeleportStart(16);
+                        s.TeleportClientHome(PreyID, p.ControllingClient);
+                    }
+                }
+            }
+
+            return SuccessResult();
+        }
+        private byte[] UpdateCovenant(Dictionary<string, object> request)
         {
             UUID CovenantID = UUID.Zero;
             int EstateID = 0;
@@ -235,7 +277,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
             return SuccessResult();
         }
 
-        byte[] UpdateEstate(Dictionary<string, object> request)
+        private byte[] UpdateEstate(Dictionary<string, object> request)
         {
             int EstateID = 0;
 
@@ -250,49 +292,6 @@ namespace OpenSim.Region.CoreModules.World.Estate
                     s.ReloadEstateData();
             }
             return SuccessResult();
-        }
-
-        private byte[] FailureResult()
-        {
-            return BoolResult(false);
-        }
-
-        private byte[] SuccessResult()
-        {
-            return BoolResult(true);
-        }
-
-        private byte[] BoolResult(bool value)
-        {
-            XmlDocument doc = new XmlDocument();
-
-            XmlNode xmlnode = doc.CreateNode(XmlNodeType.XmlDeclaration,
-                    "", "");
-
-            doc.AppendChild(xmlnode);
-
-            XmlElement rootElement = doc.CreateElement("", "ServerResponse",
-                    "");
-
-            doc.AppendChild(rootElement);
-
-            XmlElement result = doc.CreateElement("", "RESULT", "");
-            result.AppendChild(doc.CreateTextNode(value.ToString()));
-
-            rootElement.AppendChild(result);
-
-            return DocToBytes(doc);
-        }
-
-        private byte[] DocToBytes(XmlDocument doc)
-        {
-            MemoryStream ms = new MemoryStream();
-            XmlTextWriter xw = new XmlTextWriter(ms, null);
-            xw.Formatting = Formatting.Indented;
-            doc.WriteTo(xw);
-            xw.Flush();
-
-            return ms.ToArray();
         }
     }
 }

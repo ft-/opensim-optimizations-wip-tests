@@ -24,11 +24,6 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-using System;
-using System.Collections.Generic;
-
-using OpenSim.Framework;
-using OpenMetaverse;
 
 namespace OpenSim.Services.Interfaces
 {
@@ -44,5 +39,4 @@ namespace OpenSim.Services.Interfaces
         /// <returns></returns>
         bool IsBanned(string userID, string ip, string id0, string origin);
     }
-
 }

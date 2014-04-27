@@ -121,6 +121,42 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
             return cret;
         }
 
+        public static float computeMeshVolume(List<float3> vertices, List<int> indices)
+        {
+            float volume = 0f;
+
+            for (int i = 0; i < indices.Count / 3; i++)
+            {
+                float3 p1 = vertices[indices[i * 3 + 0]];
+                float3 p2 = vertices[indices[i * 3 + 1]];
+                float3 p3 = vertices[indices[i * 3 + 2]];
+
+                volume += det(p1, p2, p3); // compute the volume of the tetrahedran relative to the origin.
+            }
+
+            volume *= (1.0f / 6.0f);
+            if (volume < 0f)
+                return -volume;
+            return volume;
+        }
+
+        public static float computeMeshVolume2(List<float3> vertices, List<int> indices)
+        {
+            float volume = 0f;
+
+            float3 p0 = vertices[0];
+            for (int i = 0; i < indices.Count / 3; i++)
+            {
+                float3 p1 = vertices[indices[i * 3 + 0]];
+                float3 p2 = vertices[indices[i * 3 + 1]];
+                float3 p3 = vertices[indices[i * 3 + 2]];
+
+                volume += tetVolume(p0, p1, p2, p3); // compute the volume of the tetrahedron relative to the root vertice
+            }
+
+            return volume * (1.0f / 6.0f);
+        }
+
         public static bool featureMatch(CTri m, List<CTri> tris, List<CTri> input_mesh)
         {
             bool ret = false;
@@ -179,43 +215,6 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
         {
             return p1.x * p2.y * p3.z + p2.x * p3.y * p1.z + p3.x * p1.y * p2.z - p1.x * p3.y * p2.z - p2.x * p1.y * p3.z - p3.x * p2.y * p1.z;
         }
-
-        public static float computeMeshVolume(List<float3> vertices, List<int> indices)
-        {
-            float volume = 0f;
-
-            for (int i = 0; i < indices.Count / 3; i++)
-            {
-                float3 p1 = vertices[indices[i * 3 + 0]];
-                float3 p2 = vertices[indices[i * 3 + 1]];
-                float3 p3 = vertices[indices[i * 3 + 2]];
-
-                volume += det(p1, p2, p3); // compute the volume of the tetrahedran relative to the origin.
-            }
-
-            volume *= (1.0f / 6.0f);
-            if (volume < 0f)
-                return -volume;
-            return volume;
-        }
-
-        public static float computeMeshVolume2(List<float3> vertices, List<int> indices)
-        {
-            float volume = 0f;
-
-            float3 p0 = vertices[0];
-            for (int i = 0; i < indices.Count / 3; i++)
-            {
-                float3 p1 = vertices[indices[i * 3 + 0]];
-                float3 p2 = vertices[indices[i * 3 + 1]];
-                float3 p3 = vertices[indices[i * 3 + 2]];
-
-                volume += tetVolume(p0, p1, p2, p3); // compute the volume of the tetrahedron relative to the root vertice
-            }
-
-            return volume * (1.0f / 6.0f);
-        }
-
         private static float tetVolume(float3 p0, float3 p1, float3 p2, float3 p3)
         {
             float3 a = p1 - p0;

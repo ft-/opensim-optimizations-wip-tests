@@ -25,12 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using OpenMetaverse;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using pCampBot.Interfaces;
-
 namespace pCampBot
 {
     /// <summary>
@@ -38,10 +32,10 @@ namespace pCampBot
     /// </summary>
     public class NoneBehaviour : AbstractBehaviour
     {
-        public NoneBehaviour() 
-        { 
+        public NoneBehaviour()
+        {
             AbbreviatedName = "n";
-            Name = "None"; 
+            Name = "None";
         }
     }
 }

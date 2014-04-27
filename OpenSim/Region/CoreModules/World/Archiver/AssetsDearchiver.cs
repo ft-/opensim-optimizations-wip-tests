@@ -25,17 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using System.Text;
-using System.Xml;
 using log4net;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Framework.Serialization;
 using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Xml;
 
 namespace OpenSim.Region.CoreModules.World.Archiver
 {
@@ -44,23 +43,22 @@ namespace OpenSim.Region.CoreModules.World.Archiver
     /// </summary>
     public class AssetsDearchiver
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
         /// <summary>
         /// Store for asset data we received before we get the metadata
         /// </summary>
         protected Dictionary<string, byte[]> m_assetDataAwaitingMetadata = new Dictionary<string, byte[]>();
 
         /// <summary>
-        /// Asset metadata.  Is null if asset metadata isn't yet available.
-        /// </summary>
-        protected Dictionary<string, AssetMetadata> m_metadata;
-
-        /// <summary>
         /// Cache to which dearchived assets will be added
         /// </summary>
         protected IAssetService m_cache;
 
+        /// <summary>
+        /// Asset metadata.  Is null if asset metadata isn't yet available.
+        /// </summary>
+        protected Dictionary<string, AssetMetadata> m_metadata;
+
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         public AssetsDearchiver(IAssetService cache)
         {
             m_cache = cache;
@@ -124,17 +122,6 @@ namespace OpenSim.Region.CoreModules.World.Archiver
         }
 
         /// <summary>
-        /// Resolve asset data that we collected before receiving the metadata
-        /// </summary>
-        protected void ResolvePendingAssetData()
-        {
-            foreach (string filename in m_assetDataAwaitingMetadata.Keys)
-            {
-                ResolveAssetData(filename, m_assetDataAwaitingMetadata[filename]);
-            }
-        }
-
-        /// <summary>
         /// Resolve a new piece of asset data against stored metadata
         /// </summary>
         /// <param name="assetFilename"></param>
@@ -171,13 +158,23 @@ namespace OpenSim.Region.CoreModules.World.Archiver
         }
 
         /// <summary>
+        /// Resolve asset data that we collected before receiving the metadata
+        /// </summary>
+        protected void ResolvePendingAssetData()
+        {
+            foreach (string filename in m_assetDataAwaitingMetadata.Keys)
+            {
+                ResolveAssetData(filename, m_assetDataAwaitingMetadata[filename]);
+            }
+        }
+        /// <summary>
         /// Metadata for an asset
         /// </summary>
         protected struct AssetMetadata
         {
-            public string Name;
-            public string Description;
             public sbyte AssetType;
+            public string Description;
+            public string Name;
         }
     }
 }

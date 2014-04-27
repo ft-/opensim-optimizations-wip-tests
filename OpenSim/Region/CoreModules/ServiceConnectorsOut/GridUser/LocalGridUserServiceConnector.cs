@@ -25,18 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
+using OpenMetaverse;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Server.Base;
 using OpenSim.Services.Interfaces;
-
-using OpenMetaverse;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
 {
@@ -47,22 +45,33 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
-        private IGridUserService m_GridUserService;
-
         private ActivityDetector m_ActivityDetector;
-
         private bool m_Enabled = false;
-
+        private IGridUserService m_GridUserService;
         #region ISharedRegionModule
+
+        public string Name
+        {
+            get { return "LocalGridUserServicesConnector"; }
+        }
 
         public Type ReplaceableInterface
         {
             get { return null; }
         }
-
-        public string Name
+        public void AddRegion(Scene scene)
         {
-            get { return "LocalGridUserServicesConnector"; }
+            if (!m_Enabled)
+                return;
+
+            scene.RegisterModuleInterface<IGridUserService>(m_GridUserService);
+            m_ActivityDetector.AddRegion(scene);
+        }
+
+        public void Close()
+        {
+            if (!m_Enabled)
+                return;
         }
 
         public void Initialise(IConfigSource source)
@@ -112,20 +121,12 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
             if (!m_Enabled)
                 return;
         }
-
-        public void Close()
-        {
-            if (!m_Enabled)
-                return;
-        }
-
-        public void AddRegion(Scene scene)
+        public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
                 return;
 
-            scene.RegisterModuleInterface<IGridUserService>(m_GridUserService);
-            m_ActivityDetector.AddRegion(scene);
+            m_log.InfoFormat("[LOCAL GRID USER SERVICE CONNECTOR]: Enabled local grid user for region {0}", scene.RegionInfo.RegionName);
         }
 
         public void RemoveRegion(Scene scene)
@@ -136,18 +137,19 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
             scene.UnregisterModuleInterface<IGridUserService>(this);
             m_ActivityDetector.RemoveRegion(scene);
         }
-
-        public void RegionLoaded(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-            m_log.InfoFormat("[LOCAL GRID USER SERVICE CONNECTOR]: Enabled local grid user for region {0}", scene.RegionInfo.RegionName);
-        }
-
-        #endregion
+        #endregion ISharedRegionModule
 
         #region IGridUserService
+
+        public GridUserInfo GetGridUserInfo(string userID)
+        {
+            return m_GridUserService.GetGridUserInfo(userID);
+        }
+
+        public GridUserInfo[] GetGridUserInfo(string[] userID)
+        {
+            return m_GridUserService.GetGridUserInfo(userID);
+        }
 
         public GridUserInfo LoggedIn(string userID)
         {
@@ -168,17 +170,6 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
         {
             return m_GridUserService.SetLastPosition(userID, sessionID, regionID, lastPosition, lastLookAt);
         }
-
-        public GridUserInfo GetGridUserInfo(string userID)
-        {
-            return m_GridUserService.GetGridUserInfo(userID);
-        }
-        public GridUserInfo[] GetGridUserInfo(string[] userID)
-        {
-            return m_GridUserService.GetGridUserInfo(userID);
-        }
-
-        #endregion
-
+        #endregion IGridUserService
     }
 }

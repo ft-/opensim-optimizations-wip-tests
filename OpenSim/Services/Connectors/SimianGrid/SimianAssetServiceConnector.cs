@@ -25,21 +25,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.IO;
-using System.Net;
-using System.Reflection;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
+using OpenMetaverse;
+using OpenMetaverse.StructuredData;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
-using OpenMetaverse;
-using OpenMetaverse.StructuredData;
+using System;
+using System.Collections.Specialized;
+using System.Reflection;
 
 namespace OpenSim.Services.Connectors.SimianGrid
 {
@@ -52,15 +49,35 @@ namespace OpenSim.Services.Connectors.SimianGrid
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
+
         private static string ZeroID = UUID.Zero.ToString();
 
-        private string m_serverUrl = String.Empty;
         private IImprovedAssetCache m_cache;
         private bool m_Enabled = false;
-
+        private string m_serverUrl = String.Empty;
         #region ISharedRegionModule
 
+        public SimianAssetServiceConnector()
+        {
+        }
+
+        public string Name { get { return "SimianAssetServiceConnector"; } }
+
         public Type ReplaceableInterface { get { return null; } }
+
+        public void AddRegion(Scene scene)
+        {
+            if (m_Enabled) { scene.RegisterModuleInterface<IAssetService>(this); }
+        }
+
+        public void Close()
+        {
+        }
+
+        public void PostInitialise()
+        {
+        }
+
         public void RegionLoaded(Scene scene)
         {
             if (m_cache == null)
@@ -70,14 +87,11 @@ namespace OpenSim.Services.Connectors.SimianGrid
                     m_cache = cache;
             }
         }
-        public void PostInitialise() { }
-        public void Close() { }
+        public void RemoveRegion(Scene scene)
+        {
+            if (m_Enabled) { scene.UnregisterModuleInterface<IAssetService>(this); }
+        }
 
-        public SimianAssetServiceConnector() { }
-        public string Name { get { return "SimianAssetServiceConnector"; } }
-        public void AddRegion(Scene scene) { if (m_Enabled) { scene.RegisterModuleInterface<IAssetService>(this); } }
-        public void RemoveRegion(Scene scene) { if (m_Enabled) { scene.UnregisterModuleInterface<IAssetService>(this); } }
-        
         #endregion ISharedRegionModule
 
         public SimianAssetServiceConnector(IConfigSource source)
@@ -123,7 +137,46 @@ namespace OpenSim.Services.Connectors.SimianGrid
                 m_Enabled = true;
         }
 
-#region IAssetService
+        #region IAssetService
+
+        public bool[] AssetsExist(string[] ids)
+        {
+            if (String.IsNullOrEmpty(m_serverUrl))
+            {
+                m_log.Error("[SIMIAN ASSET CONNECTOR]: No AssetServerURI configured");
+                throw new InvalidOperationException();
+            }
+
+            bool[] exist = new bool[ids.Length];
+
+            for (int i = 0; i < ids.Length; i++)
+            {
+                AssetMetadata metadata = GetMetadata(ids[i]);
+                if (metadata != null)
+                    exist[i] = true;
+            }
+
+            return exist;
+        }
+
+        /// <summary>
+        /// Delete an asset
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public bool Delete(string id)
+        {
+            if (String.IsNullOrEmpty(m_serverUrl))
+            {
+                m_log.Error("[SIMIAN ASSET CONNECTOR]: No AssetServerURI configured");
+                throw new InvalidOperationException();
+            }
+
+            if (m_cache != null)
+                m_cache.Expire(id);
+
+            return SimianDeleteOperation(id);
+        }
 
         public AssetBase Get(string id)
         {
@@ -142,56 +195,6 @@ namespace OpenSim.Services.Connectors.SimianGrid
             }
 
             return SimianGetOperation(id);
-        }
-        
-
-        public AssetBase GetCached(string id)
-        {
-            if (m_cache != null)
-                return m_cache.Get(id);
-
-            return null;
-        }
-
-        /// <summary>
-        /// Get an asset's metadata
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        public AssetMetadata GetMetadata(string id)
-        {
-            if (String.IsNullOrEmpty(m_serverUrl))
-            {
-                m_log.Error("[SIMIAN ASSET CONNECTOR]: No AssetServerURI configured");
-                throw new InvalidOperationException();
-            }
-
-            // Cache fetch
-            if (m_cache != null)
-            {
-                AssetBase asset = m_cache.Get(id);
-                if (asset != null)
-                    return asset.Metadata;
-            }
-
-            // return GetRemoteMetadata(id);
-            return SimianGetMetadataOperation(id);
-        }
-        
-        public byte[] GetData(string id)
-        {
-            if (String.IsNullOrEmpty(m_serverUrl))
-            {
-                m_log.Error("[SIMIAN ASSET CONNECTOR]: No AssetServerURI configured");
-                throw new InvalidOperationException();
-            }
-
-            AssetBase asset = Get(id);
-
-            if (asset != null)
-                return asset.Data;
-
-            return null;
         }
 
         /// <summary>
@@ -231,7 +234,15 @@ namespace OpenSim.Services.Connectors.SimianGrid
             return true;
         }
 
-        public bool[] AssetsExist(string[] ids)
+        public AssetBase GetCached(string id)
+        {
+            if (m_cache != null)
+                return m_cache.Get(id);
+
+            return null;
+        }
+
+        public byte[] GetData(string id)
         {
             if (String.IsNullOrEmpty(m_serverUrl))
             {
@@ -239,18 +250,38 @@ namespace OpenSim.Services.Connectors.SimianGrid
                 throw new InvalidOperationException();
             }
 
-            bool[] exist = new bool[ids.Length];
+            AssetBase asset = Get(id);
 
-            for (int i = 0; i < ids.Length; i++)
-            {
-                AssetMetadata metadata = GetMetadata(ids[i]);
-                if (metadata != null)
-                    exist[i] = true;
-            }
+            if (asset != null)
+                return asset.Data;
 
-            return exist;
+            return null;
         }
 
+        /// <summary>
+        /// Get an asset's metadata
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public AssetMetadata GetMetadata(string id)
+        {
+            if (String.IsNullOrEmpty(m_serverUrl))
+            {
+                m_log.Error("[SIMIAN ASSET CONNECTOR]: No AssetServerURI configured");
+                throw new InvalidOperationException();
+            }
+
+            // Cache fetch
+            if (m_cache != null)
+            {
+                AssetBase asset = m_cache.Get(id);
+                if (asset != null)
+                    return asset.Metadata;
+            }
+
+            // return GetRemoteMetadata(id);
+            return SimianGetMetadataOperation(id);
+        }
         /// <summary>
         /// Creates a new asset
         /// </summary>
@@ -296,7 +327,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
 
             return SimianStoreOperation(asset);
         }
-        
+
         /// <summary>
         /// Update an asset's content
         /// </summary>
@@ -325,29 +356,10 @@ namespace OpenSim.Services.Connectors.SimianGrid
             string result = Store(asset);
             return !String.IsNullOrEmpty(result);
         }
+        #endregion IAssetService
 
-        /// <summary>
-        /// Delete an asset
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        public bool Delete(string id)
-        {
-            if (String.IsNullOrEmpty(m_serverUrl))
-            {
-                m_log.Error("[SIMIAN ASSET CONNECTOR]: No AssetServerURI configured");
-                throw new InvalidOperationException();
-            }
+        #region SimianOperations
 
-            if (m_cache != null)
-                m_cache.Expire(id);
-
-            return SimianDeleteOperation(id);
-        }
-        
-#endregion IAssetService
-
-#region SimianOperations
         /// <summary>
         /// Invokes the xRemoveAsset operation on the simian server to delete an asset
         /// </summary>
@@ -363,15 +375,14 @@ namespace OpenSim.Services.Connectors.SimianGrid
                             { "AssetID", id }
                     };
 
-                OSDMap response = SimianGrid.PostToService(m_serverUrl,requestArgs);
-                if (! response["Success"].AsBoolean())
+                OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
+                if (!response["Success"].AsBoolean())
                 {
-                    m_log.WarnFormat("[SIMIAN ASSET CONNECTOR]: failed to delete asset; {0}",response["Message"].AsString());
+                    m_log.WarnFormat("[SIMIAN ASSET CONNECTOR]: failed to delete asset; {0}", response["Message"].AsString());
                     return false;
                 }
-                
+
                 return true;
-                
             }
             catch (Exception ex)
             {
@@ -382,41 +393,51 @@ namespace OpenSim.Services.Connectors.SimianGrid
         }
 
         /// <summary>
-        /// Invokes the xAddAsset operation on the simian server to create or update an asset
+        /// Invokes the xGetAssetMetadata operation on the simian server to retrieve metadata for an asset
+        /// This operation is generally used to determine if an asset exists in the database
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        private string SimianStoreOperation(AssetBase asset)
+        private AssetMetadata SimianGetMetadataOperation(string id)
         {
             try
             {
                 NameValueCollection requestArgs = new NameValueCollection
                     {
-                            { "RequestMethod", "xAddAsset" },
-                            { "ContentType", asset.Metadata.ContentType },
-                            { "EncodedData", Convert.ToBase64String(asset.Data) },
-                            { "AssetID", asset.FullID.ToString() },
-                            { "CreatorID", asset.Metadata.CreatorID },
-                            { "Temporary", asset.Temporary ? "1" : "0" },
-                            { "Name", asset.Name }
+                            { "RequestMethod", "xGetAssetMetadata" },
+                            { "ID", id }
                     };
-                
-                OSDMap response = SimianGrid.PostToService(m_serverUrl,requestArgs);
-                if (! response["Success"].AsBoolean())
+
+                OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
+                if (!response["Success"].AsBoolean())
                 {
-                    m_log.WarnFormat("[SIMIAN ASSET CONNECTOR] failed to store asset; {0}",response["Message"].AsString());
+                    // this is not really an error, this call is used to test existence
+                    // m_log.DebugFormat("[SIMIAN ASSET CONNECTOR] Failed to get asset metadata; {0}",response["Message"].AsString());
                     return null;
                 }
 
-                // asset.ID is always set before calling this function
-                return asset.ID;
-                
+                AssetMetadata metadata = new AssetMetadata();
+                metadata.ID = id;
+                metadata.ContentType = response["ContentType"].AsString();
+                metadata.CreatorID = response["CreatorID"].AsString();
+                metadata.Local = false;
+                metadata.Temporary = response["Temporary"];
+
+                string lastModifiedStr = response["Last-Modified"].AsString();
+                if (!String.IsNullOrEmpty(lastModifiedStr))
+                {
+                    DateTime lastModified;
+                    if (DateTime.TryParse(lastModifiedStr, out lastModified))
+                        metadata.CreationDate = lastModified;
+                }
+
+                return metadata;
             }
             catch (Exception ex)
             {
-                m_log.ErrorFormat("[SIMIAN ASSET CONNECTOR] failed to store asset; {0}",ex.Message);
+                m_log.WarnFormat("[SIMIAN ASSET CONNECTOR]: Failed to get asset metadata; {0}", ex.Message);
             }
-            
+
             return null;
         }
 
@@ -427,21 +448,21 @@ namespace OpenSim.Services.Connectors.SimianGrid
         /// <returns></returns>
         private AssetBase SimianGetOperation(string id)
         {
-            try 
+            try
             {
                 NameValueCollection requestArgs = new NameValueCollection
                     {
                             { "RequestMethod", "xGetAsset" },
-                            { "ID", id } 
+                            { "ID", id }
                     };
 
-                OSDMap response = SimianGrid.PostToService(m_serverUrl,requestArgs);
-                if (! response["Success"].AsBoolean())
+                OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
+                if (!response["Success"].AsBoolean())
                 {
-                    m_log.WarnFormat("[SIMIAN ASSET CONNECTOR] Failed to get asset; {0}",response["Message"].AsString());
+                    m_log.WarnFormat("[SIMIAN ASSET CONNECTOR] Failed to get asset; {0}", response["Message"].AsString());
                     return null;
                 }
-            
+
                 AssetBase asset = new AssetBase();
 
                 asset.ID = id;
@@ -463,54 +484,43 @@ namespace OpenSim.Services.Connectors.SimianGrid
         }
 
         /// <summary>
-        /// Invokes the xGetAssetMetadata operation on the simian server to retrieve metadata for an asset
-        /// This operation is generally used to determine if an asset exists in the database
+        /// Invokes the xAddAsset operation on the simian server to create or update an asset
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        private AssetMetadata SimianGetMetadataOperation(string id)
+        private string SimianStoreOperation(AssetBase asset)
         {
             try
             {
                 NameValueCollection requestArgs = new NameValueCollection
                     {
-                            { "RequestMethod", "xGetAssetMetadata" },
-                            { "ID", id } 
+                            { "RequestMethod", "xAddAsset" },
+                            { "ContentType", asset.Metadata.ContentType },
+                            { "EncodedData", Convert.ToBase64String(asset.Data) },
+                            { "AssetID", asset.FullID.ToString() },
+                            { "CreatorID", asset.Metadata.CreatorID },
+                            { "Temporary", asset.Temporary ? "1" : "0" },
+                            { "Name", asset.Name }
                     };
 
-                OSDMap response = SimianGrid.PostToService(m_serverUrl,requestArgs);
-                if (! response["Success"].AsBoolean())
+                OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
+                if (!response["Success"].AsBoolean())
                 {
-                    // this is not really an error, this call is used to test existence
-                    // m_log.DebugFormat("[SIMIAN ASSET CONNECTOR] Failed to get asset metadata; {0}",response["Message"].AsString());
+                    m_log.WarnFormat("[SIMIAN ASSET CONNECTOR] failed to store asset; {0}", response["Message"].AsString());
                     return null;
                 }
-            
-                AssetMetadata metadata = new AssetMetadata();
-                metadata.ID = id;
-                metadata.ContentType = response["ContentType"].AsString();
-                metadata.CreatorID = response["CreatorID"].AsString();
-                metadata.Local = false;
-                metadata.Temporary = response["Temporary"];
 
-                string lastModifiedStr = response["Last-Modified"].AsString();
-                if (! String.IsNullOrEmpty(lastModifiedStr))
-                {
-                    DateTime lastModified;
-                    if (DateTime.TryParse(lastModifiedStr, out lastModified))
-                        metadata.CreationDate = lastModified;
-                }
-
-                return metadata;
+                // asset.ID is always set before calling this function
+                return asset.ID;
             }
             catch (Exception ex)
             {
-                m_log.WarnFormat("[SIMIAN ASSET CONNECTOR]: Failed to get asset metadata; {0}", ex.Message);
+                m_log.ErrorFormat("[SIMIAN ASSET CONNECTOR] failed to store asset; {0}", ex.Message);
             }
 
             return null;
         }
-#endregion
+        #endregion SimianOperations
 
         // private AssetMetadata GetRemoteMetadata(string id)
         // {
@@ -620,7 +630,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
         //     }
 
         //     string errorMessage = null;
-            
+
         //     // Build the remote storage request
         //     List<MultipartForm.Element> postParameters = new List<MultipartForm.Element>()
         //     {

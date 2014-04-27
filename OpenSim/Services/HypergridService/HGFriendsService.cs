@@ -25,22 +25,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Reflection;
-
+using log4net;
+using Nini.Config;
+using OpenMetaverse;
 using OpenSim.Framework;
+using OpenSim.Server.Base;
 using OpenSim.Services.Connectors.Friends;
 using OpenSim.Services.Connectors.Hypergrid;
 using OpenSim.Services.Interfaces;
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
-using OpenSim.Server.Base;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 using FriendInfo = OpenSim.Services.Interfaces.FriendInfo;
-
-using OpenMetaverse;
-using log4net;
-using Nini.Config;
+using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 
 namespace OpenSim.Services.HypergridService
 {
@@ -49,23 +46,30 @@ namespace OpenSim.Services.HypergridService
     /// </summary>
     public class HGFriendsService : IHGFriendsService
     {
+        protected static IFriendsSimConnector m_FriendsLocalSimConnector;
+
+        protected static IFriendsService m_FriendsService;
+
+        // standalone, points to HGFriendsModule
+        protected static FriendsSimConnector m_FriendsSimConnector;
+
+        protected static IGatekeeperService m_GatekeeperService;
+
+        protected static IGridService m_GridService;
+
+        protected static IGridUserService m_GridUserService;
+
+        protected static IPresenceService m_PresenceService;
+
+        protected static IUserAccountService m_UserAccountService;
+
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
-        static bool m_Initialized = false;
-
-        protected static IGridUserService m_GridUserService;
-        protected static IGridService m_GridService;
-        protected static IGatekeeperService m_GatekeeperService;
-        protected static IFriendsService m_FriendsService;
-        protected static IPresenceService m_PresenceService;
-        protected static IUserAccountService m_UserAccountService;
-        protected static IFriendsSimConnector m_FriendsLocalSimConnector; // standalone, points to HGFriendsModule
-        protected static FriendsSimConnector m_FriendsSimConnector; // grid
-
         private static string m_ConfigName = "HGFriendsService";
-
+        private static bool m_Initialized = false;
+ // grid
         public HGFriendsService(IConfigSource config, String configName, IFriendsSimConnector localSimConn)
         {
             if (m_FriendsLocalSimConnector == null)
@@ -107,11 +111,44 @@ namespace OpenSim.Services.HypergridService
                 m_FriendsSimConnector = new FriendsSimConnector();
 
                 m_log.DebugFormat("[HGFRIENDS SERVICE]: Starting...");
-
             }
         }
 
         #region IHGFriendsService
+
+        public bool DeleteFriendship(FriendInfo friend, string secret)
+        {
+            FriendInfo[] finfos = m_FriendsService.GetFriends(friend.PrincipalID);
+            foreach (FriendInfo finfo in finfos)
+            {
+                // We check the secret here. Or if the friendship request was initiated here, and was declined
+                if (finfo.Friend.StartsWith(friend.Friend) && finfo.Friend.EndsWith(secret))
+                {
+                    m_log.DebugFormat("[HGFRIENDS SERVICE]: Delete friendship {0} {1}", friend.PrincipalID, friend.Friend);
+                    m_FriendsService.Delete(friend.PrincipalID, finfo.Friend);
+                    m_FriendsService.Delete(finfo.Friend, friend.PrincipalID.ToString());
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public bool FriendshipOffered(UUID fromID, string fromName, UUID toID, string message)
+        {
+            UserAccount account = m_UserAccountService.GetUserAccount(UUID.Zero, toID);
+            if (account == null)
+                return false;
+
+            // OK, we have that user here.
+            // So let's send back the call, but start a thread to continue
+            // with the verification and the actual action.
+
+            Util.FireAndForget(delegate { ProcessFriendshipOffered(fromID, fromName, toID, message); });
+
+            return true;
+        }
 
         public int GetFriendPerms(UUID userID, UUID friendID)
         {
@@ -168,52 +205,6 @@ namespace OpenSim.Services.HypergridService
             }
             return false;
         }
-
-        public bool DeleteFriendship(FriendInfo friend, string secret)
-        {
-            FriendInfo[] finfos = m_FriendsService.GetFriends(friend.PrincipalID);
-            foreach (FriendInfo finfo in finfos)
-            {
-                // We check the secret here. Or if the friendship request was initiated here, and was declined
-                if (finfo.Friend.StartsWith(friend.Friend) && finfo.Friend.EndsWith(secret))
-                {
-                    m_log.DebugFormat("[HGFRIENDS SERVICE]: Delete friendship {0} {1}", friend.PrincipalID, friend.Friend);
-                    m_FriendsService.Delete(friend.PrincipalID, finfo.Friend);
-                    m_FriendsService.Delete(finfo.Friend, friend.PrincipalID.ToString());
-
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        public bool FriendshipOffered(UUID fromID, string fromName, UUID toID, string message)
-        {
-            UserAccount account = m_UserAccountService.GetUserAccount(UUID.Zero, toID);
-            if (account == null)
-                return false;
-
-            // OK, we have that user here.
-            // So let's send back the call, but start a thread to continue
-            // with the verification and the actual action.
-
-            Util.FireAndForget(delegate { ProcessFriendshipOffered(fromID, fromName, toID, message); });
-
-            return true;
-        }
-
-        public bool ValidateFriendshipOffered(UUID fromID, UUID toID)
-        {
-            FriendInfo[] finfos = m_FriendsService.GetFriends(toID.ToString());
-            foreach (FriendInfo fi in finfos)
-            {
-                if (fi.Friend.StartsWith(fromID.ToString()) && fi.TheirFlags == -1)
-                    return true;
-            }
-            return false;
-        }
-
         public List<UUID> StatusNotification(List<string> friends, UUID foreignUserID, bool online)
         {
             if (m_FriendsService == null || m_PresenceService == null)
@@ -226,7 +217,7 @@ namespace OpenSim.Services.HypergridService
 
             List<UUID> localFriendsOnline = new List<UUID>();
 
-            m_log.DebugFormat("[HGFRIENDS SERVICE]: Status notification: foreign user {0} wants to notify {1} local friends of {2} status", 
+            m_log.DebugFormat("[HGFRIENDS SERVICE]: Status notification: foreign user {0} wants to notify {1} local friends of {2} status",
                 foreignUserID, friends.Count, (online ? "online" : "offline"));
 
             // First, let's double check that the reported friends are, indeed, friends of that user
@@ -272,23 +263,22 @@ namespace OpenSim.Services.HypergridService
                     UUID id;
                     if (UUID.TryParse(friendSession.UserID, out id))
                         localFriendsOnline.Add(id);
-
                 }
             }
 
-//            // Lastly, let's notify the rest who may be online somewhere else
-//            foreach (string user in usersToBeNotified)
-//            {
-//                UUID id = new UUID(user);
-//                //m_UserAgentService.LocateUser(id);
-//                //etc...
-//                //if (m_TravelingAgents.ContainsKey(id) && m_TravelingAgents[id].GridExternalName != m_GridName)
-//                //{
-//                //    string url = m_TravelingAgents[id].GridExternalName;
-//                //    // forward
-//                //}
-//                //m_log.WarnFormat("[HGFRIENDS SERVICE]: User {0} is visiting another grid. HG Status notifications still not implemented.", user);
-//            }
+            //            // Lastly, let's notify the rest who may be online somewhere else
+            //            foreach (string user in usersToBeNotified)
+            //            {
+            //                UUID id = new UUID(user);
+            //                //m_UserAgentService.LocateUser(id);
+            //                //etc...
+            //                //if (m_TravelingAgents.ContainsKey(id) && m_TravelingAgents[id].GridExternalName != m_GridName)
+            //                //{
+            //                //    string url = m_TravelingAgents[id].GridExternalName;
+            //                //    // forward
+            //                //}
+            //                //m_log.WarnFormat("[HGFRIENDS SERVICE]: User {0} is visiting another grid. HG Status notifications still not implemented.", user);
+            //            }
 
             // and finally, let's send the online friends
             if (online)
@@ -299,48 +289,40 @@ namespace OpenSim.Services.HypergridService
                 return new List<UUID>();
         }
 
+        public bool ValidateFriendshipOffered(UUID fromID, UUID toID)
+        {
+            FriendInfo[] finfos = m_FriendsService.GetFriends(toID.ToString());
+            foreach (FriendInfo fi in finfos)
+            {
+                if (fi.Friend.StartsWith(fromID.ToString()) && fi.TheirFlags == -1)
+                    return true;
+            }
+            return false;
+        }
         #endregion IHGFriendsService
 
         #region Aux
 
-        private void ProcessFriendshipOffered(UUID fromID, String fromName, UUID toID, String message)
+        protected void ForwardStatusNotificationToSim(UUID regionID, UUID foreignUserID, string user, bool online)
         {
-            // Great, it's a genuine request. Let's proceed.
-            // But now we need to confirm that the requester is who he says he is
-            // before we act on the friendship request.
-
-            if (!fromName.Contains("@"))
-                return;
-
-            string[] parts = fromName.Split(new char[] {'@'});
-            if (parts.Length != 2)
-                return;
-
-            string uriStr = "http://" + parts[1];
-            try
+            UUID userID;
+            if (UUID.TryParse(user, out userID))
             {
-                new Uri(uriStr);
+                if (m_FriendsLocalSimConnector != null)
+                {
+                    m_log.DebugFormat("[HGFRIENDS SERVICE]: Local Notify, user {0} is {1}", foreignUserID, (online ? "online" : "offline"));
+                    m_FriendsLocalSimConnector.StatusNotify(foreignUserID, userID, online);
+                }
+                else
+                {
+                    GridRegion region = m_GridService.GetRegionByUUID(UUID.Zero /* !!! */, regionID);
+                    if (region != null)
+                    {
+                        m_log.DebugFormat("[HGFRIENDS SERVICE]: Remote Notify to region {0}, user {1} is {2}", region.RegionName, foreignUserID, (online ? "online" : "offline"));
+                        m_FriendsSimConnector.StatusNotify(region, foreignUserID, userID.ToString(), online);
+                    }
+                }
             }
-            catch (UriFormatException)
-            {
-                return;
-            }
-
-            UserAgentServiceConnector uasConn = new UserAgentServiceConnector(uriStr);
-            Dictionary<string, object> servers = uasConn.GetServerURLs(fromID);
-            if (!servers.ContainsKey("FriendsServerURI"))
-                return;
-
-            HGFriendsServicesConnector friendsConn = new HGFriendsServicesConnector(servers["FriendsServerURI"].ToString());
-            if (!friendsConn.ValidateFriendshipOffered(fromID, toID))
-            {
-                m_log.WarnFormat("[HGFRIENDS SERVICE]: Friendship request from {0} to {1} is invalid. Impersonations?", fromID, toID);
-                return;
-            }
-
-            string fromUUI = Util.UniversalIdentifier(fromID, parts[0], "@" + parts[1], uriStr);
-            // OK, we're good!
-            ForwardToSim("FriendshipOffered", fromID, fromName, fromUUI, toID, message);
         }
 
         private bool ForwardToSim(string op, UUID fromID, string name, String fromUUI, UUID toID, string message)
@@ -370,6 +352,7 @@ namespace OpenSim.Services.HypergridService
                     else if (region != null) // grid
                         return m_FriendsSimConnector.FriendshipOffered(region, fromID, toID, message, name);
                     break;
+
                 case "ApproveFriendshipRequest":
                     if (m_FriendsLocalSimConnector != null) // standalone
                         return m_FriendsLocalSimConnector.LocalFriendshipApproved(fromID, name, toID);
@@ -381,28 +364,45 @@ namespace OpenSim.Services.HypergridService
             return false;
         }
 
-        protected void ForwardStatusNotificationToSim(UUID regionID, UUID foreignUserID, string user, bool online)
+        private void ProcessFriendshipOffered(UUID fromID, String fromName, UUID toID, String message)
         {
-            UUID userID;
-            if (UUID.TryParse(user, out userID))
-            {
-                if (m_FriendsLocalSimConnector != null)
-                {
-                    m_log.DebugFormat("[HGFRIENDS SERVICE]: Local Notify, user {0} is {1}", foreignUserID, (online ? "online" : "offline"));
-                    m_FriendsLocalSimConnector.StatusNotify(foreignUserID, userID, online);
-                }
-                else
-                {
-                    GridRegion region = m_GridService.GetRegionByUUID(UUID.Zero /* !!! */, regionID);
-                    if (region != null)
-                    {
-                        m_log.DebugFormat("[HGFRIENDS SERVICE]: Remote Notify to region {0}, user {1} is {2}", region.RegionName, foreignUserID, (online ? "online" : "offline"));
-                        m_FriendsSimConnector.StatusNotify(region, foreignUserID, userID.ToString(), online);
-                    }
-                }
-            }
-        }
+            // Great, it's a genuine request. Let's proceed.
+            // But now we need to confirm that the requester is who he says he is
+            // before we act on the friendship request.
 
+            if (!fromName.Contains("@"))
+                return;
+
+            string[] parts = fromName.Split(new char[] { '@' });
+            if (parts.Length != 2)
+                return;
+
+            string uriStr = "http://" + parts[1];
+            try
+            {
+                new Uri(uriStr);
+            }
+            catch (UriFormatException)
+            {
+                return;
+            }
+
+            UserAgentServiceConnector uasConn = new UserAgentServiceConnector(uriStr);
+            Dictionary<string, object> servers = uasConn.GetServerURLs(fromID);
+            if (!servers.ContainsKey("FriendsServerURI"))
+                return;
+
+            HGFriendsServicesConnector friendsConn = new HGFriendsServicesConnector(servers["FriendsServerURI"].ToString());
+            if (!friendsConn.ValidateFriendshipOffered(fromID, toID))
+            {
+                m_log.WarnFormat("[HGFRIENDS SERVICE]: Friendship request from {0} to {1} is invalid. Impersonations?", fromID, toID);
+                return;
+            }
+
+            string fromUUI = Util.UniversalIdentifier(fromID, parts[0], "@" + parts[1], uriStr);
+            // OK, we're good!
+            ForwardToSim("FriendshipOffered", fromID, fromName, fromUUI, toID, message);
+        }
         #endregion Aux
     }
 }

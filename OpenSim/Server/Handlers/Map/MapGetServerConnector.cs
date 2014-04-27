@@ -25,29 +25,23 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using Nini.Config;
+using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Server.Base;
+using OpenSim.Server.Handlers.Base;
+using OpenSim.Services.Interfaces;
 using System;
 using System.IO;
 using System.Net;
-using System.Reflection;
-
-using Nini.Config;
-using log4net;
-
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
-using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Server.Handlers.Base;
 
 namespace OpenSim.Server.Handlers.MapImage
 {
     public class MapGetServiceConnector : ServiceConnector
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        private IMapImageService m_MapService;
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private string m_ConfigName = "MapImageService";
-
+        private IMapImageService m_MapService;
         public MapGetServiceConnector(IConfigSource config, IHttpServer server, string configName) :
             base(config, server, configName)
         {
@@ -68,14 +62,14 @@ namespace OpenSim.Server.Handlers.MapImage
         }
     }
 
-    class MapServerGetHandler : BaseStreamHandler
+    internal class MapServerGetHandler : BaseStreamHandler
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private IMapImageService m_MapService;
 
         public MapServerGetHandler(IMapImageService service) :
-                base("GET", "/map")
+            base("GET", "/map")
         {
             m_MapService = service;
         }
@@ -102,6 +96,5 @@ namespace OpenSim.Server.Handlers.MapImage
 
             return result;
         }
-
     }
 }

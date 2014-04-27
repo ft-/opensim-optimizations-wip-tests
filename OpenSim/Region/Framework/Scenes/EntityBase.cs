@@ -25,54 +25,36 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
-using System.Runtime.Serialization;
-using System.Security.Permissions;
-using log4net;
-using OpenSim.Framework;
 using OpenMetaverse;
+using OpenSim.Framework;
 
 namespace OpenSim.Region.Framework.Scenes
 {
     public abstract class EntityBase : ISceneEntity
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        /// <summary>
-        /// The scene to which this entity belongs
-        /// </summary>
-        public Scene Scene
-        {
-            get { return m_scene; }
-        }
+        protected uint m_localId;
+
+        protected string m_name;
+
+        protected Vector3 m_pos;
+
+        protected Vector3 m_rotationalvelocity;
+
         protected Scene m_scene;
 
         protected UUID m_uuid;
 
-        public virtual UUID UUID
-        {
-            get { return m_uuid; }
-            set { m_uuid = value; }
-        }
-
-        protected string m_name;
+        protected Vector3 m_velocity;
 
         /// <summary>
-        /// The name of this entity
+        /// Creates a new Entity (should not occur on it's own)
         /// </summary>
-        public virtual string Name
+        public EntityBase()
         {
-            get { return m_name; }
-            set { m_name = value; }
+            m_name = "(basic entity)";
         }
-
-        /// <summary>
-        /// Signals whether this entity was in a scene but has since been removed from it.
-        /// </summary>
-        public bool IsDeleted { get; protected internal set; }
-
-        protected Vector3 m_pos;
 
         /// <summary>
         /// Absolute position of this entity in a scene.
@@ -86,9 +68,42 @@ namespace OpenSim.Region.Framework.Scenes
             }
         }
 
-        protected Vector3 m_velocity;
-        protected Vector3 m_rotationalvelocity;
+        /// <summary>
+        /// Signals whether this entity was in a scene but has since been removed from it.
+        /// </summary>
+        public bool IsDeleted { get; protected internal set; }
 
+        public virtual uint LocalId
+        {
+            get { return m_localId; }
+            set
+            {
+                m_localId = value;
+                //                m_log.DebugFormat("[ENTITY BASE]: Set part {0} to local id {1}", Name, m_localId);
+            }
+        }
+
+        /// <summary>
+        /// The name of this entity
+        /// </summary>
+        public virtual string Name
+        {
+            get { return m_name; }
+            set { m_name = value; }
+        }
+
+        /// <summary>
+        /// The scene to which this entity belongs
+        /// </summary>
+        public Scene Scene
+        {
+            get { return m_scene; }
+        }
+        public virtual UUID UUID
+        {
+            get { return m_uuid; }
+            set { m_uuid = value; }
+        }
         /// <summary>
         /// Current velocity of the entity.
         /// </summary>
@@ -97,25 +112,13 @@ namespace OpenSim.Region.Framework.Scenes
             get { return m_velocity; }
             set { m_velocity = value; }
         }
-
-        protected uint m_localId;
-
-        public virtual uint LocalId
-        {
-            get { return m_localId; }
-            set
-            {
-                m_localId = value;
-//                m_log.DebugFormat("[ENTITY BASE]: Set part {0} to local id {1}", Name, m_localId);
-            }
-        }
-
         /// <summary>
-        /// Creates a new Entity (should not occur on it's own)
+        /// Copies the entity
         /// </summary>
-        public EntityBase()
+        /// <returns></returns>
+        public virtual EntityBase Copy()
         {
-            m_name = "(basic entity)";
+            return (EntityBase)MemberwiseClone();
         }
 
         /// <summary>
@@ -123,28 +126,18 @@ namespace OpenSim.Region.Framework.Scenes
         /// These included scheduled updates and updates that occur due to physics processing.
         /// </summary>
         public abstract void Update();
-
-        /// <summary>
-        /// Copies the entity
-        /// </summary>
-        /// <returns></returns>
-        public virtual EntityBase Copy()
-        {
-            return (EntityBase) MemberwiseClone();
-        }
     }
 
     //Nested Classes
     public class EntityIntersection
     {
-        public Vector3 ipoint = new Vector3(0, 0, 0);
-        public Vector3 normal = new Vector3(0, 0, 0);
         public Vector3 AAfaceNormal = new Vector3(0, 0, 0);
+        public float distance = 0;
         public int face = -1;
         public bool HitTF = false;
+        public Vector3 ipoint = new Vector3(0, 0, 0);
+        public Vector3 normal = new Vector3(0, 0, 0);
         public SceneObjectPart obj;
-        public float distance = 0;
-
         public EntityIntersection()
         {
         }

@@ -25,10 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using OpenSim.Framework;
 using OpenMetaverse;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Physics.Manager
 {
@@ -40,16 +38,33 @@ namespace OpenSim.Region.Physics.Manager
 
     public class PhysicsJoint
     {
-        public virtual bool IsInPhysicsEngine { get { return false; } } // set internally to indicate if this joint has already been passed to the physics engine or is still pending
-        public PhysicsJointType Type;
-        public string RawParams;
+        public const int maxErrorMessages = 100;
+
         public List<string> BodyNames = new List<string>();
-        public Vector3 Position; // global coords
-        public Quaternion Rotation; // global coords
-        public string ObjectNameInScene; // proxy object in scene that represents the joint position/orientation
-        public string TrackedBodyName; // body name that this joint is attached to (ObjectNameInScene will follow TrackedBodyName)
-        public Quaternion LocalRotation; // joint orientation relative to one of the involved bodies, the tracked body
-        public int ErrorMessageCount; // total # of error messages printed for this joint since its creation. if too many, further error messages are suppressed to prevent flooding.
-        public const int maxErrorMessages = 100; // no more than this # of error messages will be printed for each joint
+
+        public int ErrorMessageCount;
+
+        public Quaternion LocalRotation;
+
+        public string ObjectNameInScene;
+
+        public Vector3 Position;
+
+        public string RawParams;
+
+        // global coords
+        public Quaternion Rotation;
+
+        // global coords
+        // proxy object in scene that represents the joint position/orientation
+        public string TrackedBodyName;
+
+        public PhysicsJointType Type;
+
+        public virtual bool IsInPhysicsEngine { get { return false; } } // set internally to indicate if this joint has already been passed to the physics engine or is still pending
+ // body name that this joint is attached to (ObjectNameInScene will follow TrackedBodyName)
+         // joint orientation relative to one of the involved bodies, the tracked body
+         // total # of error messages printed for this joint since its creation. if too many, further error messages are suppressed to prevent flooding.
+         // no more than this # of error messages will be printed for each joint
     }
 }

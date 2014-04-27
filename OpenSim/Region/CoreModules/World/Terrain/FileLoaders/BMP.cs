@@ -25,10 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenSim.Region.Framework.Interfaces;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using OpenSim.Region.Framework.Interfaces;
 
 namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
 {
@@ -64,6 +64,12 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
             colours.Save(stream, ImageFormat.Png);
         }
 
+        //Returns true if this extension is supported for terrain save-tile
+        public override bool SupportsTileSave()
+        {
+            return false;
+        }
+
         /// <summary>
         /// The human readable version of the file format(s) this loader handles
         /// </summary>
@@ -71,12 +77,6 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
         public override string ToString()
         {
             return "BMP";
-        }
-
-        //Returns true if this extension is supported for terrain save-tile
-        public override bool SupportsTileSave()
-        {
-            return false;
         }
     }
 }

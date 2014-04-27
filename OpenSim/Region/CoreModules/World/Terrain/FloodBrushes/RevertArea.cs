@@ -62,6 +62,6 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FloodBrushes
             }
         }
 
-        #endregion
+        #endregion ITerrainFloodEffect Members
     }
 }

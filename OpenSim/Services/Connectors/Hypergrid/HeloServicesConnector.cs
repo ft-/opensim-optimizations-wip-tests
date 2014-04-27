@@ -29,11 +29,10 @@ using log4net;
 using System;
 using System.Net;
 using System.Reflection;
-using Nini.Config;
 
 namespace OpenSim.Services.Connectors
 {
-    public class HeloServicesConnector 
+    public class HeloServicesConnector
     {
         private static readonly ILog m_log =
                 LogManager.GetLogger(
@@ -72,7 +71,6 @@ namespace OpenSim.Services.Connectors
                         m_ServerURI = m_ServerURI.TrimEnd('/') + "/helo/";
                     }
                 }
-
             }
             catch (UriFormatException)
             {

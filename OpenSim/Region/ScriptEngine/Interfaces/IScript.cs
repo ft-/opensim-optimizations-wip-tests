@@ -25,23 +25,27 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenSim.Region.ScriptEngine.Interfaces;
 using System;
 using System.Collections.Generic;
-using OpenSim.Region.ScriptEngine.Interfaces;
 
 namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
 {
     public interface IScript
     {
+        void Close();
+
+        void ExecuteEvent(string state, string FunctionName, object[] args);
+
         string[] GetApis();
-        void InitApi(string name, IScriptApi data);
 
         int GetStateEventFlags(string state);
-        void ExecuteEvent(string state, string FunctionName, object[] args);
-        Dictionary<string,Object> GetVars();
-        void SetVars(Dictionary<string,Object> vars);
+
+        Dictionary<string, Object> GetVars();
+
+        void InitApi(string name, IScriptApi data);
         void ResetVars();
 
-        void Close();
+        void SetVars(Dictionary<string, Object> vars);
     }
 }

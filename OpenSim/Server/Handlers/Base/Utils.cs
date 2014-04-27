@@ -25,19 +25,37 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Net;
-
-using OpenSim.Framework;
-using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Services.Interfaces;
 using OpenMetaverse;
+using OpenSim.Framework.Servers.HttpServer;
+using System;
 
 namespace OpenSim.Server.Handlers.Base
 {
     public class RestHandlerUtils
     {
+        public static bool GetAuthentication(IOSHttpRequest httpRequest, out string authority, out string authKey)
+        {
+            authority = string.Empty;
+            authKey = string.Empty;
+
+            Uri authUri;
+
+            string auth = httpRequest.Headers["authentication"];
+            // Authentication keys look like this:
+            // http://orgrid.org:8002/<uuid>
+            if ((auth != null) && (!string.Empty.Equals(auth)) && auth != "None")
+            {
+                if (Uri.TryCreate(auth, UriKind.Absolute, out authUri))
+                {
+                    authority = authUri.Authority;
+                    authKey = authUri.PathAndQuery.Trim('/');
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Extract the param from an uri.
         /// </summary>
@@ -69,29 +87,5 @@ namespace OpenSim.Server.Handlers.Base
                 return true;
             }
         }
-
-        public static bool GetAuthentication(IOSHttpRequest httpRequest, out string authority, out string authKey)
-        {
-            authority = string.Empty;
-            authKey = string.Empty;
-
-            Uri authUri;
-
-            string auth = httpRequest.Headers["authentication"];
-            // Authentication keys look like this:
-            // http://orgrid.org:8002/<uuid>
-            if ((auth != null) && (!string.Empty.Equals(auth)) && auth != "None")
-            {
-                if (Uri.TryCreate(auth, UriKind.Absolute, out authUri))
-                {
-                    authority = authUri.Authority;
-                    authKey = authUri.PathAndQuery.Trim('/');
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
     }
 }

@@ -1,3 +1,8 @@
+using log4net;
+using OpenSim.Region.CoreModules.World.Terrain.PaintBrushes;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
+
 /*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
@@ -24,11 +29,8 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 using System;
-using OpenSim.Region.CoreModules.World.Terrain.PaintBrushes;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
-using log4net;
 using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.World.Terrain.Effects
@@ -43,10 +45,10 @@ namespace OpenSim.Region.CoreModules.World.Terrain.Effects
         {
             ITerrainPaintableEffect eroder = new WeatherSphere();
 
-            bool[,] cliffMask = new bool[map.Width,map.Height];
-            bool[,] channelMask = new bool[map.Width,map.Height];
-            bool[,] smoothMask = new bool[map.Width,map.Height];
-            bool[,] allowMask = new bool[map.Width,map.Height];
+            bool[,] cliffMask = new bool[map.Width, map.Height];
+            bool[,] channelMask = new bool[map.Width, map.Height];
+            bool[,] smoothMask = new bool[map.Width, map.Height];
+            bool[,] allowMask = new bool[map.Width, map.Height];
 
             m_log.Info("S1");
 
@@ -58,7 +60,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.Effects
                 {
                     m_log.Info(".");
                     smoothMask[x, y] = true;
-                    allowMask[x,y] = true;
+                    allowMask[x, y] = true;
 
                     // Start underwater
                     map[x, y] = TerrainUtil.PerlinNoise2D(x, y, 3, 0.25) * 5;
@@ -101,7 +103,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.Effects
             //smooth.FloodEffect(map, smoothMask, 4.0);
         }
 
-        #endregion
+        #endregion ITerrainEffect Members
 
         private static void SetLowerChannel(ITerrainChannel map, bool[,] cliffMask, bool[,] channelMask, int x, int y, int numChannels, int channelWidth,
                                             int mapSize, int rp)

@@ -25,30 +25,28 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using Nini.Config;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
 using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Server.Base;
 using OpenSim.Server.Handlers.Base;
+using OpenSim.Services.Interfaces;
+using System;
 
 namespace OpenSim.Server.Handlers.Hypergrid
 {
     public class HGFriendsServerConnector : ServiceConnector
     {
-        private IUserAgentService m_UserAgentService;
-        private IHGFriendsService m_TheService;
         private string m_ConfigName = "HGFriendsService";
-
+        private IHGFriendsService m_TheService;
+        private IUserAgentService m_UserAgentService;
         // Called from Robust
         public HGFriendsServerConnector(IConfigSource config, IHttpServer server, string configName) :
-                this(config, server, configName, null)
+            this(config, server, configName, null)
         {
-
         }
 
         // Called from standalone configurations
-        public HGFriendsServerConnector(IConfigSource config, IHttpServer server, string configName, IFriendsSimConnector localConn) 
+        public HGFriendsServerConnector(IConfigSource config, IHttpServer server, string configName, IFriendsSimConnector localConn)
             : base(config, server, configName)
         {
             if (configName != string.Empty)

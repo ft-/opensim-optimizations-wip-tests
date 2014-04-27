@@ -25,19 +25,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
-using OpenMetaverse.Assets;
 
 namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
-{    
+{
     /// <summary>
     /// This implements the methods needed to operate on individual inventory items.
     /// </summary>
     public interface IInventoryItem
     {
-        int Type { get; }
         UUID AssetID { get; }
+
+        int Type { get; }
         T RetrieveAsset<T>() where T : OpenMetaverse.Assets.Asset, new();
     }
 }

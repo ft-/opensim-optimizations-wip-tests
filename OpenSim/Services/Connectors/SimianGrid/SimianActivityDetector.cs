@@ -25,13 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
+using log4net;
+using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
-using OpenMetaverse;
-using log4net;
+using System.Reflection;
 
 namespace OpenSim.Services.Connectors.SimianGrid
 {
@@ -56,11 +55,15 @@ namespace OpenSim.Services.Connectors.SimianGrid
             scene.EventManager.OnAvatarEnteringNewParcel += OnEnteringNewParcel;
         }
 
-        public void RemoveRegion(Scene scene)
+        public void OnConnectionClose(IClientAPI client)
         {
-            scene.EventManager.OnMakeRootAgent -= OnMakeRootAgent;
-            scene.EventManager.OnNewClient -= OnNewClient;
-            scene.EventManager.OnAvatarEnteringNewParcel -= OnEnteringNewParcel;
+            if (client.SceneAgent.IsChildAgent)
+                return;
+
+            //            m_log.DebugFormat("[ACTIVITY DETECTOR]: Detected client logout {0} in {1}", client.AgentId, client.Scene.RegionInfo.RegionName);
+            m_GridUserService.LoggedOut(
+                client.AgentId.ToString(), client.SessionId, client.Scene.RegionInfo.RegionID,
+                client.SceneAgent.AbsolutePosition, client.SceneAgent.Lookat);
         }
 
         public void OnMakeRootAgent(ScenePresence sp)
@@ -77,18 +80,13 @@ namespace OpenSim.Services.Connectors.SimianGrid
             client.OnConnectionClosed += OnConnectionClose;
         }
 
-        public void OnConnectionClose(IClientAPI client)
+        public void RemoveRegion(Scene scene)
         {
-            if (client.SceneAgent.IsChildAgent)
-                return;
-
-//            m_log.DebugFormat("[ACTIVITY DETECTOR]: Detected client logout {0} in {1}", client.AgentId, client.Scene.RegionInfo.RegionName);
-            m_GridUserService.LoggedOut(
-                client.AgentId.ToString(), client.SessionId, client.Scene.RegionInfo.RegionID,
-                client.SceneAgent.AbsolutePosition, client.SceneAgent.Lookat);
+            scene.EventManager.OnMakeRootAgent -= OnMakeRootAgent;
+            scene.EventManager.OnNewClient -= OnNewClient;
+            scene.EventManager.OnAvatarEnteringNewParcel -= OnEnteringNewParcel;
         }
-
-        void OnEnteringNewParcel(ScenePresence sp, int localLandID, UUID regionID)
+        private void OnEnteringNewParcel(ScenePresence sp, int localLandID, UUID regionID)
         {
             // Asynchronously update the position stored in the session table for this agent
             Util.FireAndForget(delegate(object o)

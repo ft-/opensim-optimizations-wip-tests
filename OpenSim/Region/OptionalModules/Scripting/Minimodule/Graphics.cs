@@ -25,21 +25,31 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Drawing;
 using OpenMetaverse;
 using OpenMetaverse.Imaging;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Scenes;
+using System.Drawing;
 
 namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
-    class Graphics : System.MarshalByRefObject, IGraphics
+    internal class Graphics : System.MarshalByRefObject, IGraphics
     {
         private readonly Scene m_scene;
 
         public Graphics(Scene m_scene)
         {
             this.m_scene = m_scene;
+        }
+
+        public Bitmap LoadBitmap(UUID assetID)
+        {
+            AssetBase bmp = m_scene.AssetService.Get(assetID.ToString());
+            ManagedImage outimg;
+            Image img;
+            OpenJPEG.DecodeToImage(bmp.Data, out outimg, out img);
+
+            return new Bitmap(img);
         }
 
         public UUID SaveBitmap(Bitmap data)
@@ -57,16 +67,6 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             m_scene.AssetService.Store(asset);
 
             return asset.FullID;
-        }
-
-        public Bitmap LoadBitmap(UUID assetID)
-        {
-            AssetBase bmp = m_scene.AssetService.Get(assetID.ToString());
-            ManagedImage outimg;
-            Image img;
-            OpenJPEG.DecodeToImage(bmp.Data, out outimg, out img);
-
-            return new Bitmap(img);
         }
     }
 }

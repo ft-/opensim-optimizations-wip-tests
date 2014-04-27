@@ -25,28 +25,26 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
 using System;
 using System.Drawing;
-using OpenMetaverse;
 
 namespace OpenSim.Region.CoreModules.World.Warp3DMap
 {
     public class Viewport
     {
+        public float FarPlaneDistance;
+        public float FieldOfView;
+        public int Height;
+        public Vector3 LookDirection;
+        public float NearPlaneDistance;
+        public bool Orthographic;
+        public float OrthoWindowHeight;
+        public float OrthoWindowWidth;
+        public Vector3 Position;
+        public int Width;
         private const float DEG_TO_RAD = (float)Math.PI / 180f;
         private static readonly Vector3 UP_DIRECTION = Vector3.UnitZ;
-
-        public Vector3 Position;
-        public Vector3 LookDirection;
-        public float FieldOfView;
-        public float NearPlaneDistance;
-        public float FarPlaneDistance;
-        public int Width;
-        public int Height;
-        public bool Orthographic;
-        public float OrthoWindowWidth;
-        public float OrthoWindowHeight;
-
         public Viewport(Vector3 position, Vector3 lookDirection, float fieldOfView, float farPlaneDist, float nearPlaneDist, int width, int height)
         {
             // Perspective projection mode
@@ -73,20 +71,41 @@ namespace OpenSim.Region.CoreModules.World.Warp3DMap
             Orthographic = true;
         }
 
-        public Point VectorToScreen(Vector3 v)
+        public Matrix4 GetOrthographicProjectionMatrix(float aspectRatio)
         {
-            Matrix4 m = GetWorldToViewportMatrix();
-            Vector3 screenPoint = v * m;
-            return new Point((int)screenPoint.X, (int)screenPoint.Y);
+            float w = Width;
+            float h = Height;
+            float zn = NearPlaneDistance;
+            float zf = FarPlaneDistance;
+
+            float m33 = 1 / (zn - zf);
+            float m43 = zn * m33;
+
+            return new Matrix4(
+                2f / w, 0f, 0f, 0f,
+                0f, 2f / h, 0f, 0f,
+                0f, 0f, m33, 0f,
+                0f, 0f, m43, 1f);
         }
 
-        public Matrix4 GetWorldToViewportMatrix()
+        public Matrix4 GetPerspectiveProjectionMatrix()
         {
-            Matrix4 result = GetViewMatrix();
-            result *= GetPerspectiveProjectionMatrix();
-            result *= GetViewportMatrix();
+            float aspectRatio = (float)Width / (float)Height;
 
-            return result;
+            float hFoV = FieldOfView * DEG_TO_RAD;
+            float zn = NearPlaneDistance;
+            float zf = FarPlaneDistance;
+
+            float xScale = 1f / (float)Math.Tan(hFoV / 2f);
+            float yScale = aspectRatio * xScale;
+            float m33 = (zf == double.PositiveInfinity) ? -1 : (zf / (zn - zf));
+            float m43 = zn * m33;
+
+            return new Matrix4(
+                xScale, 0f, 0f, 0f,
+                0f, yScale, 0f, 0f,
+                0f, 0f, m33, -1f,
+                0f, 0f, m43, 0f);
         }
 
         public Matrix4 GetViewMatrix()
@@ -111,43 +130,6 @@ namespace OpenSim.Region.CoreModules.World.Warp3DMap
                 offsetX, offsetY, offsetZ, 1f);
         }
 
-        public Matrix4 GetPerspectiveProjectionMatrix()
-        {
-            float aspectRatio = (float)Width / (float)Height;
-
-            float hFoV = FieldOfView * DEG_TO_RAD;
-            float zn = NearPlaneDistance;
-            float zf = FarPlaneDistance;
-
-            float xScale = 1f / (float)Math.Tan(hFoV / 2f);
-            float yScale = aspectRatio * xScale;
-            float m33 = (zf == double.PositiveInfinity) ? -1 : (zf / (zn - zf));
-            float m43 = zn * m33;
-
-            return new Matrix4(
-                xScale, 0f, 0f, 0f,
-                0f, yScale, 0f, 0f,
-                0f, 0f, m33, -1f,
-                0f, 0f, m43, 0f);
-        }
-
-        public Matrix4 GetOrthographicProjectionMatrix(float aspectRatio)
-        {
-            float w = Width;
-            float h = Height;
-            float zn = NearPlaneDistance;
-            float zf = FarPlaneDistance;
-
-            float m33 = 1 / (zn - zf);
-            float m43 = zn * m33;
-
-            return new Matrix4(
-                2f / w, 0f, 0f, 0f,
-                0f, 2f / h, 0f, 0f,
-                0f, 0f, m33, 0f,
-                0f, 0f, m43, 1f);
-        }
-
         public Matrix4 GetViewportMatrix()
         {
             float scaleX = (float)Width * 0.5f;
@@ -160,6 +142,22 @@ namespace OpenSim.Region.CoreModules.World.Warp3DMap
                 0f, -scaleY, 0f, 0f,
                 0f, 0f, 1f, 0f,
                 offsetX, offsetY, 0f, 1f);
+        }
+
+        public Matrix4 GetWorldToViewportMatrix()
+        {
+            Matrix4 result = GetViewMatrix();
+            result *= GetPerspectiveProjectionMatrix();
+            result *= GetViewportMatrix();
+
+            return result;
+        }
+
+        public Point VectorToScreen(Vector3 v)
+        {
+            Matrix4 m = GetWorldToViewportMatrix();
+            Vector3 screenPoint = v * m;
+            return new Point((int)screenPoint.X, (int)screenPoint.Y);
         }
     }
 }

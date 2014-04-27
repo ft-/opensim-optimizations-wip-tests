@@ -25,33 +25,64 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
 using System;
 using System.Collections.Generic;
-using OpenMetaverse;
 
 namespace OpenSim.Services.Interfaces
 {
+    public interface IGridUserService
+    {
+        GridUserInfo GetGridUserInfo(string userID);
+
+        GridUserInfo[] GetGridUserInfo(string[] userID);
+
+        GridUserInfo LoggedIn(string userID);
+
+        /// <summary>
+        /// Informs the grid that a user is logged out and to remove any session data for them
+        /// </summary>
+        /// <param name="userID">Ignore if your connector does not use userID for logouts</param>
+        /// <param name="sessionID">Ignore if your connector does not use sessionID for logouts</param>
+        /// <param name="regionID">RegionID where the user was last located</param>
+        /// <param name="lastPosition">Last region-relative position of the user</param>
+        /// <param name="lastLookAt">Last normalized look direction for the user</param>
+        /// <returns>True if the logout request was successfully processed, otherwise false</returns>
+        bool LoggedOut(string userID, UUID sessionID, UUID regionID, Vector3 lastPosition, Vector3 lastLookAt);
+
+        bool SetHome(string userID, UUID homeID, Vector3 homePosition, Vector3 homeLookAt);
+
+        /// <summary>
+        /// Stores the last known user position at the grid level
+        /// </summary>
+        /// <param name="userID">Ignore if your connector does not use userID for position updates</param>
+        /// <param name="sessionID">Ignore if your connector does not use sessionID for position updates</param>
+        /// <param name="regionID">RegionID where the user is currently located</param>
+        /// <param name="lastPosition">Region-relative position</param>
+        /// <param name="lastLookAt">Normalized look direction</param>
+        /// <returns>True if the user's last position was successfully updated, otherwise false</returns>
+        bool SetLastPosition(string userID, UUID sessionID, UUID regionID, Vector3 lastPosition, Vector3 lastLookAt);
+    }
+
     /// <summary>
     /// Records user information specific to a grid but which is not part of a user's account.
     /// </summary>
     public class GridUserInfo
     {
-        public string UserID;
-        
-        public UUID HomeRegionID;
-        public Vector3 HomePosition;
         public Vector3 HomeLookAt;
-
-        public UUID LastRegionID;
-        public Vector3 LastPosition;
+        public Vector3 HomePosition;
+        public UUID HomeRegionID;
         public Vector3 LastLookAt;
-        
-        public bool Online;
+        public Vector3 LastPosition;
+        public UUID LastRegionID;
         public DateTime Login;
         public DateTime Logout;
+        public bool Online;
+        public string UserID;
+        public GridUserInfo()
+        {
+        }
 
-        public GridUserInfo() {}
-        
         public GridUserInfo(Dictionary<string, object> kvp)
         {
             if (kvp.ContainsKey("UserID"))
@@ -77,7 +108,6 @@ namespace OpenSim.Services.Interfaces
                 DateTime.TryParse(kvp["Logout"].ToString(), out Logout);
             if (kvp.ContainsKey("Online"))
                 Boolean.TryParse(kvp["Online"].ToString(), out Online);
-
         }
 
         public virtual Dictionary<string, object> ToKeyValuePairs()
@@ -96,40 +126,8 @@ namespace OpenSim.Services.Interfaces
             result["Online"] = Online.ToString();
             result["Login"] = Login.ToString();
             result["Logout"] = Logout.ToString();
-            
+
             return result;
         }
-    }
-    
-    public interface IGridUserService
-    {
-        GridUserInfo LoggedIn(string userID);
-
-        /// <summary>
-        /// Informs the grid that a user is logged out and to remove any session data for them
-        /// </summary>
-        /// <param name="userID">Ignore if your connector does not use userID for logouts</param>
-        /// <param name="sessionID">Ignore if your connector does not use sessionID for logouts</param>
-        /// <param name="regionID">RegionID where the user was last located</param>
-        /// <param name="lastPosition">Last region-relative position of the user</param>
-        /// <param name="lastLookAt">Last normalized look direction for the user</param>
-        /// <returns>True if the logout request was successfully processed, otherwise false</returns>
-        bool LoggedOut(string userID, UUID sessionID, UUID regionID, Vector3 lastPosition, Vector3 lastLookAt);
-        
-        bool SetHome(string userID, UUID homeID, Vector3 homePosition, Vector3 homeLookAt);
-
-        /// <summary>
-        /// Stores the last known user position at the grid level
-        /// </summary>
-        /// <param name="userID">Ignore if your connector does not use userID for position updates</param>
-        /// <param name="sessionID">Ignore if your connector does not use sessionID for position updates</param>
-        /// <param name="regionID">RegionID where the user is currently located</param>
-        /// <param name="lastPosition">Region-relative position</param>
-        /// <param name="lastLookAt">Normalized look direction</param>
-        /// <returns>True if the user's last position was successfully updated, otherwise false</returns>
-        bool SetLastPosition(string userID, UUID sessionID, UUID regionID, Vector3 lastPosition, Vector3 lastLookAt);
-        
-        GridUserInfo GetGridUserInfo(string userID);
-        GridUserInfo[] GetGridUserInfo(string[] userID);
     }
 }

@@ -25,13 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
 using Nini.Config;
-using OpenSim.Framework;
 using OpenSim.Data;
-using OpenSim.Services.Interfaces;
 using OpenSim.Services.Base;
+using System;
 
 namespace OpenSim.Services.UserAccountService
 {
@@ -39,7 +36,8 @@ namespace OpenSim.Services.UserAccountService
     {
         protected IGridUserData m_Database = null;
 
-        public GridUserServiceBase(IConfigSource config) : base(config)
+        public GridUserServiceBase(IConfigSource config)
+            : base(config)
         {
             string dllName = String.Empty;
             string connString = String.Empty;
@@ -67,7 +65,7 @@ namespace OpenSim.Services.UserAccountService
                 connString = presenceConfig.GetString("ConnectionString", connString);
                 realm = presenceConfig.GetString("Realm", realm);
             }
-            
+
             //
             // We tried, but this doesn't exist. We can't proceed.
             //

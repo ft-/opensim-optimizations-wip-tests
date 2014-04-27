@@ -25,8 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-
 namespace OpenSim.Region.Physics.Manager
 {
     /*public class PhysicsVector
@@ -49,7 +47,7 @@ namespace OpenSim.Region.Physics.Manager
         public Vector3(Vector3 pv) : this(pv.X, pv.Y, pv.Z)
         {
         }
-        
+
         public void setValues(float x, float y, float z)
         {
             X = x;
@@ -181,6 +179,5 @@ namespace OpenSim.Region.Physics.Manager
 
             return false;
         }
-
     }*/
 }

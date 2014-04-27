@@ -25,103 +25,42 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
-using System.Collections.Generic;
 using OpenMetaverse;
 using OpenSim.Framework;
-using log4net;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Region.ScriptEngine.Shared;
-using OpenSim.Region.ScriptEngine.Shared.Api;
+using System;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.ScriptEngine.Shared.Api.Plugins
 {
     public class SensorRepeat
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        /// <summary>
-        /// Used by one-off and repeated sensors
-        /// </summary>
-        public class SensorInfo
-        {
-            public uint localID;
-            public UUID itemID;
-            public double interval;
-            public DateTime next;
-
-            public string name;
-            public UUID keyID;
-            public int type;
-            public double range;
-            public double arc;
-            public SceneObjectPart host;
-
-            public SensorInfo Clone()
-            {
-                return (SensorInfo)this.MemberwiseClone();
-            }
-        }
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         public AsyncCommandManager m_CmdManager;
 
-        /// <summary>
-        /// Number of sensors active.
-        /// </summary>
-        public int SensorsCount
-        {
-            get
-            {
-                return SenseRepeaters.Count;
-            }
-        }
+        private const int ACTIVE = 2;
 
-        public SensorRepeat(AsyncCommandManager CmdManager)
-        {
-            m_CmdManager = CmdManager;
-            maximumRange = CmdManager.m_ScriptEngine.Config.GetDouble("SensorMaxRange", 96.0d);
-            maximumToReturn = CmdManager.m_ScriptEngine.Config.GetInt("SensorMaxResults", 16);
-            m_npcModule = m_CmdManager.m_ScriptEngine.World.RequestModuleInterface<INPCModule>();
-        }
+        private const int AGENT = 1;
+
+        private const int AGENT_BY_USERNAME = 0x10;
+
+        private const int NPC = 0x20;
+
+        private const int OS_NPC = 0x01000000;
+
+        private const int PASSIVE = 4;
+
+        private const int SCRIPTED = 8;
 
         private INPCModule m_npcModule;
 
-        private Object SenseLock = new Object();
-
-        private const int AGENT = 1;
-        private const int AGENT_BY_USERNAME = 0x10;
-        private const int NPC = 0x20;
-        private const int OS_NPC = 0x01000000;
-        private const int ACTIVE = 2;
-        private const int PASSIVE = 4;
-        private const int SCRIPTED = 8;
-
         private double maximumRange = 96.0;
+
         private int maximumToReturn = 16;
 
-        //
-        // Sensed entity
-        //
-        private class SensedEntity : IComparable
-        {
-            public SensedEntity(double detectedDistance, UUID detectedID)
-            {
-                distance = detectedDistance;
-                itemID = detectedID;
-            }
-            public int CompareTo(object obj)
-            {
-                if (!(obj is SensedEntity)) throw new InvalidOperationException();
-                SensedEntity ent = (SensedEntity)obj;
-                if (ent == null || ent.distance < distance) return 1;
-                if (ent.distance > distance) return -1;
-                return 0;
-            }
-            public UUID itemID;
-            public double distance;
-        }
+        private Object SenseLock = new Object();
 
         /// <summary>
         /// Sensors to process.
@@ -134,11 +73,136 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api.Plugins
         /// Always lock SenseRepeatListLock when updating this list.
         /// </remarks>
         private List<SensorInfo> SenseRepeaters = new List<SensorInfo>();
+
         private object SenseRepeatListLock = new object();
 
+        public SensorRepeat(AsyncCommandManager CmdManager)
+        {
+            m_CmdManager = CmdManager;
+            maximumRange = CmdManager.m_ScriptEngine.Config.GetDouble("SensorMaxRange", 96.0d);
+            maximumToReturn = CmdManager.m_ScriptEngine.Config.GetInt("SensorMaxResults", 16);
+            m_npcModule = m_CmdManager.m_ScriptEngine.World.RequestModuleInterface<INPCModule>();
+        }
+
+        /// <summary>
+        /// Number of sensors active.
+        /// </summary>
+        public int SensorsCount
+        {
+            get
+            {
+                return SenseRepeaters.Count;
+            }
+        }
+
+        public void CheckSenseRepeaterEvents()
+        {
+            // Go through all timers
+            foreach (SensorInfo ts in SenseRepeaters)
+            {
+                // Time has passed?
+                if (ts.next.ToUniversalTime() < DateTime.Now.ToUniversalTime())
+                {
+                    SensorSweep(ts);
+                    // set next interval
+                    ts.next = DateTime.Now.ToUniversalTime().AddSeconds(ts.interval);
+                }
+            }
+        }
+
+        public void CreateFromData(uint localID, UUID itemID, UUID objectID,
+                                           Object[] data)
+        {
+            SceneObjectPart part =
+                m_CmdManager.m_ScriptEngine.World.GetSceneObjectPart(
+                    objectID);
+
+            if (part == null)
+                return;
+
+            int idx = 0;
+
+            while (idx < data.Length)
+            {
+                SensorInfo ts = new SensorInfo();
+
+                ts.localID = localID;
+                ts.itemID = itemID;
+
+                ts.interval = (double)data[idx];
+                ts.name = (string)data[idx + 1];
+                ts.keyID = (UUID)data[idx + 2];
+                ts.type = (int)data[idx + 3];
+                ts.range = (double)data[idx + 4];
+                ts.arc = (double)data[idx + 5];
+                ts.host = part;
+
+                ts.next =
+                    DateTime.Now.ToUniversalTime().AddSeconds(ts.interval);
+
+                AddSenseRepeater(ts);
+
+                idx += 6;
+            }
+        }
+
+        public List<SensorInfo> GetSensorInfo()
+        {
+            List<SensorInfo> retList = new List<SensorInfo>();
+
+            lock (SenseRepeatListLock)
+            {
+                foreach (SensorInfo i in SenseRepeaters)
+                    retList.Add(i.Clone());
+            }
+
+            return retList;
+        }
+
+        public Object[] GetSerializationData(UUID itemID)
+        {
+            List<Object> data = new List<Object>();
+
+            foreach (SensorInfo ts in SenseRepeaters)
+            {
+                if (ts.itemID == itemID)
+                {
+                    data.Add(ts.interval);
+                    data.Add(ts.name);
+                    data.Add(ts.keyID);
+                    data.Add(ts.type);
+                    data.Add(ts.range);
+                    data.Add(ts.arc);
+                }
+            }
+
+            return data.ToArray();
+        }
+
+        public void SenseOnce(uint m_localID, UUID m_itemID,
+                                      string name, UUID keyID, int type,
+                                      double range, double arc, SceneObjectPart host)
+        {
+            // Add to timer
+            SensorInfo ts = new SensorInfo();
+            ts.localID = m_localID;
+            ts.itemID = m_itemID;
+            ts.interval = 0;
+            ts.name = name;
+            ts.keyID = keyID;
+            ts.type = type;
+            if (range > maximumRange)
+                ts.range = maximumRange;
+            else
+                ts.range = range;
+            ts.arc = arc;
+            ts.host = host;
+            SensorSweep(ts);
+        }
+
         public void SetSenseRepeatEvent(uint m_localID, UUID m_itemID,
-                                        string name, UUID keyID, int type, double range,
-                                        double arc, double sec, SceneObjectPart host)
+                                                string name, UUID keyID, int type, double range,
+                                                double arc, double sec, SceneObjectPart host)
         {
             // Always remove first, in case this is a re-set
             UnSetSenseRepeaterEvents(m_localID, m_itemID);
@@ -166,16 +230,6 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api.Plugins
             AddSenseRepeater(ts);
         }
 
-        private void AddSenseRepeater(SensorInfo senseRepeater)
-        {
-            lock (SenseRepeatListLock)
-            {
-                List<SensorInfo> newSenseRepeaters = new List<SensorInfo>(SenseRepeaters);
-                newSenseRepeaters.Add(senseRepeater);
-                SenseRepeaters = newSenseRepeaters;
-            }
-        }
-
         public void UnSetSenseRepeaterEvents(uint m_localID, UUID m_itemID)
         {
             // Remove from timer
@@ -194,116 +248,191 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api.Plugins
             }
         }
 
-        public void CheckSenseRepeaterEvents()
+        private void AddSenseRepeater(SensorInfo senseRepeater)
         {
-            // Go through all timers
-            foreach (SensorInfo ts in SenseRepeaters)
+            lock (SenseRepeatListLock)
             {
-                // Time has passed?
-                if (ts.next.ToUniversalTime() < DateTime.Now.ToUniversalTime())
-                {
-                    SensorSweep(ts);
-                    // set next interval
-                    ts.next = DateTime.Now.ToUniversalTime().AddSeconds(ts.interval);
-                }
+                List<SensorInfo> newSenseRepeaters = new List<SensorInfo>(SenseRepeaters);
+                newSenseRepeaters.Add(senseRepeater);
+                SenseRepeaters = newSenseRepeaters;
             }
         }
 
-        public void SenseOnce(uint m_localID, UUID m_itemID,
-                              string name, UUID keyID, int type,
-                              double range, double arc, SceneObjectPart host)
+        private List<SensedEntity> doAgentSensor(SensorInfo ts)
         {
-            // Add to timer
-            SensorInfo ts = new SensorInfo();
-            ts.localID = m_localID;
-            ts.itemID = m_itemID;
-            ts.interval = 0;
-            ts.name = name;
-            ts.keyID = keyID;
-            ts.type = type;
-            if (range > maximumRange)
-                ts.range = maximumRange;
-            else
-                ts.range = range;
-            ts.arc = arc;
-            ts.host = host;
-            SensorSweep(ts);
-        }
-
-        private void SensorSweep(SensorInfo ts)
-        {
-            if (ts.host == null)
-            {
-                return;
-            }
-
             List<SensedEntity> sensedEntities = new List<SensedEntity>();
 
-            // Is the sensor type is AGENT and not SCRIPTED then include agents
-            if ((ts.type & (AGENT | AGENT_BY_USERNAME | NPC | OS_NPC)) != 0 && (ts.type & SCRIPTED) == 0)
+            // If nobody about quit fast
+            if (m_CmdManager.m_ScriptEngine.World.GetRootAgentCount() == 0)
+                return sensedEntities;
+
+            SceneObjectPart SensePoint = ts.host;
+            Vector3 fromRegionPos = SensePoint.GetWorldPosition();
+
+            Quaternion q = SensePoint.GetWorldRotation();
+            if (SensePoint.ParentGroup.IsAttachment)
             {
-                sensedEntities.AddRange(doAgentSensor(ts));
+                // In attachments, rotate the sensor cone with the
+                // avatar rotation. This may include a nonzero elevation if
+                // in mouselook.
+                // This will not include the rotation and position of the
+                // attachment point (e.g. your head when a sensor is in your
+                // hair attached to your scull. Your hair  will turn with
+                // your head but the sensor will stay with your (global)
+                // avatar rotation and position.
+                // Position of a sensor in a child prim attached to an avatar
+                // will be still wrong.
+                ScenePresence avatar = m_CmdManager.m_ScriptEngine.World.GetScenePresence(SensePoint.ParentGroup.AttachedAvatar);
+
+                // Don't proceed if the avatar for this attachment has since been removed from the scene.
+                if (avatar == null)
+                    return sensedEntities;
+
+                q = avatar.GetWorldRotation() * q;
             }
 
-            // If SCRIPTED or PASSIVE or ACTIVE check objects
-            if ((ts.type & SCRIPTED) != 0 || (ts.type & PASSIVE) != 0 || (ts.type & ACTIVE) != 0)
-            {
-                sensedEntities.AddRange(doObjectSensor(ts));
-            }
+            LSL_Types.Quaternion r = new LSL_Types.Quaternion(q);
+            LSL_Types.Vector3 forward_dir = (new LSL_Types.Vector3(1, 0, 0) * r);
+            double mag_fwd = LSL_Types.Vector3.Mag(forward_dir);
+            bool attached = (SensePoint.ParentGroup.AttachmentPoint != 0);
+            Vector3 toRegionPos;
+            double dis;
 
-            lock (SenseLock)
+            Action<ScenePresence> senseEntity = new Action<ScenePresence>(presence =>
             {
-                if (sensedEntities.Count == 0)
+                //                m_log.DebugFormat(
+                //                    "[SENSOR REPEAT]: Inspecting scene presence {0}, type {1} on sensor sweep for {2}, type {3}",
+                //                    presence.Name, presence.PresenceType, ts.name, ts.type);
+
+                if ((ts.type & NPC) == 0 && (ts.type & OS_NPC) == 0 && presence.PresenceType == PresenceType.Npc)
                 {
-                    // send a "no_sensor"
-                    // Add it to queue
-                    m_CmdManager.m_ScriptEngine.PostScriptEvent(ts.itemID,
-                            new EventParams("no_sensor", new Object[0],
-                            new DetectParams[0]));
-                }
-                else
-                {
-                    // Sort the list to get everything ordered by distance
-                    sensedEntities.Sort();
-                    int count = sensedEntities.Count;
-                    int idx;
-                    List<DetectParams> detected = new List<DetectParams>();
-                    for (idx = 0; idx < count; idx++)
+                    INPC npcData = m_npcModule.GetNPC(presence.UUID, presence.Scene);
+                    if (npcData == null || !npcData.SenseAsAgent)
                     {
-                        try
-                        {
-                            DetectParams detect = new DetectParams();
-                            detect.Key = sensedEntities[idx].itemID;
-                            detect.Populate(m_CmdManager.m_ScriptEngine.World);
-                            detected.Add(detect);
-                        }
-                        catch (Exception)
-                        {
-                            // Ignore errors, the object has been deleted or the avatar has gone and
-                            // there was a problem in detect.Populate so nothing added to the list
-                        }
-                        if (detected.Count == maximumToReturn)
-                            break;
+                        //                        m_log.DebugFormat(
+                        //                            "[SENSOR REPEAT]: Discarding NPC {0} from agent sense sweep for script item id {1}",
+                        //                            presence.Name, ts.itemID);
+                        return;
                     }
+                }
 
-                    if (detected.Count == 0)
+                if ((ts.type & AGENT) == 0)
+                {
+                    if (presence.PresenceType == PresenceType.User)
                     {
-                        // To get here with zero in the list there must have been some sort of problem
-                        // like the object being deleted or the avatar leaving to have caused some
-                        // difficulty during the Populate above so fire a no_sensor event
-                        m_CmdManager.m_ScriptEngine.PostScriptEvent(ts.itemID,
-                                new EventParams("no_sensor", new Object[0],
-                                new DetectParams[0]));
+                        return;
                     }
                     else
                     {
-                        m_CmdManager.m_ScriptEngine.PostScriptEvent(ts.itemID,
-                                new EventParams("sensor",
-                                new Object[] {new LSL_Types.LSLInteger(detected.Count) },
-                                detected.ToArray()));
+                        INPC npcData = m_npcModule.GetNPC(presence.UUID, presence.Scene);
+                        if (npcData != null && npcData.SenseAsAgent)
+                        {
+                            //                            m_log.DebugFormat(
+                            //                                "[SENSOR REPEAT]: Discarding NPC {0} from non-agent sense sweep for script item id {1}",
+                            //                                presence.Name, ts.itemID);
+                            return;
+                        }
                     }
                 }
+
+                if (presence.IsDeleted || presence.IsChildAgent || presence.GodLevel > 0.0)
+                    return;
+
+                // if the object the script is in is attached and the avatar is the owner
+                // then this one is not wanted
+                if (attached && presence.UUID == SensePoint.OwnerID)
+                    return;
+
+                toRegionPos = presence.AbsolutePosition;
+                dis = Math.Abs(Util.GetDistanceTo(toRegionPos, fromRegionPos));
+
+                // Disabled for now since all osNpc* methods check for appropriate ownership permission.
+                // Perhaps could be re-enabled as an NPC setting at some point since being able to make NPCs not
+                // sensed might be useful.
+                //                if (presence.PresenceType == PresenceType.Npc && npcModule != null)
+                //                {
+                //                    UUID npcOwner = npcModule.GetOwner(presence.UUID);
+                //                    if (npcOwner != UUID.Zero && npcOwner != SensePoint.OwnerID)
+                //                        return;
+                //                }
+
+                // are they in range
+                if (dis <= ts.range)
+                {
+                    // Are they in the required angle of view
+                    if (ts.arc < Math.PI)
+                    {
+                        // not omni-directional. Can you see it ?
+                        // vec forward_dir = llRot2Fwd(llGetRot())
+                        // vec obj_dir = toRegionPos-fromRegionPos
+                        // dot=dot(forward_dir,obj_dir)
+                        // mag_fwd = mag(forward_dir)
+                        // mag_obj = mag(obj_dir)
+                        // ang = acos(dot /(mag_fwd*mag_obj))
+                        double ang_obj = 0;
+                        try
+                        {
+                            LSL_Types.Vector3 obj_dir = new LSL_Types.Vector3(
+                                toRegionPos - fromRegionPos);
+                            double dot = LSL_Types.Vector3.Dot(forward_dir, obj_dir);
+                            double mag_obj = LSL_Types.Vector3.Mag(obj_dir);
+                            ang_obj = Math.Acos(dot / (mag_fwd * mag_obj));
+                        }
+                        catch
+                        {
+                        }
+                        if (ang_obj <= ts.arc)
+                        {
+                            sensedEntities.Add(new SensedEntity(dis, presence.UUID));
+                        }
+                    }
+                    else
+                    {
+                        sensedEntities.Add(new SensedEntity(dis, presence.UUID));
+                    }
+                }
+            });
+
+            // If this is an avatar sense by key try to get them directly
+            // rather than getting a list to scan through
+            if (ts.keyID != UUID.Zero)
+            {
+                ScenePresence sp;
+                // Try direct lookup by UUID
+                if (!m_CmdManager.m_ScriptEngine.World.TryGetScenePresence(ts.keyID, out sp))
+                    return sensedEntities;
+                senseEntity(sp);
             }
+            else if (!string.IsNullOrEmpty(ts.name))
+            {
+                ScenePresence sp;
+                // Try lookup by name will return if/when found
+                if (((ts.type & AGENT) != 0) && m_CmdManager.m_ScriptEngine.World.TryGetAvatarByName(ts.name, out sp))
+                    senseEntity(sp);
+                if ((ts.type & AGENT_BY_USERNAME) != 0)
+                {
+                    m_CmdManager.m_ScriptEngine.World.ForEachRootScenePresence(
+                        delegate(ScenePresence ssp)
+                        {
+                            if (ssp.Lastname == "Resident")
+                            {
+                                if (ssp.Firstname.ToLower() == ts.name)
+                                    senseEntity(ssp);
+                                return;
+                            }
+                            if (ssp.Name.Replace(" ", ".").ToLower() == ts.name)
+                                senseEntity(ssp);
+                        }
+                    );
+                }
+
+                return sensedEntities;
+            }
+            else
+            {
+                m_CmdManager.m_ScriptEngine.World.ForEachRootScenePresence(senseEntity);
+            }
+            return sensedEntities;
         }
 
         private List<SensedEntity> doObjectSensor(SensorInfo ts)
@@ -351,7 +480,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api.Plugins
                 // your head but the sensor will stay with your (global)
                 // avatar rotation and position.
                 // Position of a sensor in a child prim attached to an avatar
-                // will be still wrong. 
+                // will be still wrong.
                 ScenePresence avatar = m_CmdManager.m_ScriptEngine.World.GetScenePresence(SensePoint.ParentGroup.AttachedAvatar);
 
                 // Don't proceed if the avatar for this attachment has since been removed from the scene.
@@ -460,250 +589,125 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api.Plugins
             return sensedEntities;
         }
 
-        private List<SensedEntity> doAgentSensor(SensorInfo ts)
+        private void SensorSweep(SensorInfo ts)
         {
+            if (ts.host == null)
+            {
+                return;
+            }
+
             List<SensedEntity> sensedEntities = new List<SensedEntity>();
 
-            // If nobody about quit fast
-            if (m_CmdManager.m_ScriptEngine.World.GetRootAgentCount() == 0)
-                return sensedEntities;
-
-            SceneObjectPart SensePoint = ts.host;
-            Vector3 fromRegionPos = SensePoint.GetWorldPosition();
-            
-            Quaternion q = SensePoint.GetWorldRotation();
-            if (SensePoint.ParentGroup.IsAttachment)
+            // Is the sensor type is AGENT and not SCRIPTED then include agents
+            if ((ts.type & (AGENT | AGENT_BY_USERNAME | NPC | OS_NPC)) != 0 && (ts.type & SCRIPTED) == 0)
             {
-                // In attachments, rotate the sensor cone with the
-                // avatar rotation. This may include a nonzero elevation if
-                // in mouselook.
-                // This will not include the rotation and position of the
-                // attachment point (e.g. your head when a sensor is in your
-                // hair attached to your scull. Your hair  will turn with
-                // your head but the sensor will stay with your (global)
-                // avatar rotation and position.
-                // Position of a sensor in a child prim attached to an avatar
-                // will be still wrong. 
-                ScenePresence avatar = m_CmdManager.m_ScriptEngine.World.GetScenePresence(SensePoint.ParentGroup.AttachedAvatar);
-
-                // Don't proceed if the avatar for this attachment has since been removed from the scene.
-                if (avatar == null)
-                    return sensedEntities;
-
-                q = avatar.GetWorldRotation() * q;
+                sensedEntities.AddRange(doAgentSensor(ts));
             }
 
-            LSL_Types.Quaternion r = new LSL_Types.Quaternion(q);
-            LSL_Types.Vector3 forward_dir = (new LSL_Types.Vector3(1, 0, 0) * r);
-            double mag_fwd = LSL_Types.Vector3.Mag(forward_dir);
-            bool attached = (SensePoint.ParentGroup.AttachmentPoint != 0);
-            Vector3 toRegionPos;
-            double dis;
-            
-            Action<ScenePresence> senseEntity = new Action<ScenePresence>(presence =>
+            // If SCRIPTED or PASSIVE or ACTIVE check objects
+            if ((ts.type & SCRIPTED) != 0 || (ts.type & PASSIVE) != 0 || (ts.type & ACTIVE) != 0)
             {
-//                m_log.DebugFormat(
-//                    "[SENSOR REPEAT]: Inspecting scene presence {0}, type {1} on sensor sweep for {2}, type {3}",
-//                    presence.Name, presence.PresenceType, ts.name, ts.type);
+                sensedEntities.AddRange(doObjectSensor(ts));
+            }
 
-                if ((ts.type & NPC) == 0 && (ts.type & OS_NPC) == 0 && presence.PresenceType == PresenceType.Npc)
+            lock (SenseLock)
+            {
+                if (sensedEntities.Count == 0)
                 {
-                    INPC npcData = m_npcModule.GetNPC(presence.UUID, presence.Scene);
-                    if (npcData == null || !npcData.SenseAsAgent)
-                    {
-//                        m_log.DebugFormat(
-//                            "[SENSOR REPEAT]: Discarding NPC {0} from agent sense sweep for script item id {1}",
-//                            presence.Name, ts.itemID);
-                        return;
-                    }
+                    // send a "no_sensor"
+                    // Add it to queue
+                    m_CmdManager.m_ScriptEngine.PostScriptEvent(ts.itemID,
+                            new EventParams("no_sensor", new Object[0],
+                            new DetectParams[0]));
                 }
-
-                if ((ts.type & AGENT) == 0)
+                else
                 {
-                    if (presence.PresenceType == PresenceType.User)
+                    // Sort the list to get everything ordered by distance
+                    sensedEntities.Sort();
+                    int count = sensedEntities.Count;
+                    int idx;
+                    List<DetectParams> detected = new List<DetectParams>();
+                    for (idx = 0; idx < count; idx++)
                     {
-                        return;
-                    }
-                    else
-                    {
-                        INPC npcData = m_npcModule.GetNPC(presence.UUID, presence.Scene);
-                        if (npcData != null && npcData.SenseAsAgent)
-                        {
-//                            m_log.DebugFormat(
-//                                "[SENSOR REPEAT]: Discarding NPC {0} from non-agent sense sweep for script item id {1}",
-//                                presence.Name, ts.itemID);
-                            return;
-                        }
-                    }
-                }
-
-                if (presence.IsDeleted || presence.IsChildAgent || presence.GodLevel > 0.0)
-                    return;
-                
-                // if the object the script is in is attached and the avatar is the owner
-                // then this one is not wanted
-                if (attached && presence.UUID == SensePoint.OwnerID)
-                    return;
-
-                toRegionPos = presence.AbsolutePosition;
-                dis = Math.Abs(Util.GetDistanceTo(toRegionPos, fromRegionPos));
-
-                // Disabled for now since all osNpc* methods check for appropriate ownership permission.
-                // Perhaps could be re-enabled as an NPC setting at some point since being able to make NPCs not
-                // sensed might be useful.
-//                if (presence.PresenceType == PresenceType.Npc && npcModule != null)
-//                {
-//                    UUID npcOwner = npcModule.GetOwner(presence.UUID);
-//                    if (npcOwner != UUID.Zero && npcOwner != SensePoint.OwnerID)
-//                        return;
-//                }
-
-                // are they in range
-                if (dis <= ts.range)
-                {
-                    // Are they in the required angle of view
-                    if (ts.arc < Math.PI)
-                    {
-                        // not omni-directional. Can you see it ?
-                        // vec forward_dir = llRot2Fwd(llGetRot())
-                        // vec obj_dir = toRegionPos-fromRegionPos
-                        // dot=dot(forward_dir,obj_dir)
-                        // mag_fwd = mag(forward_dir)
-                        // mag_obj = mag(obj_dir)
-                        // ang = acos(dot /(mag_fwd*mag_obj))
-                        double ang_obj = 0;
                         try
                         {
-                            LSL_Types.Vector3 obj_dir = new LSL_Types.Vector3(
-                                toRegionPos - fromRegionPos);
-                            double dot = LSL_Types.Vector3.Dot(forward_dir, obj_dir);
-                            double mag_obj = LSL_Types.Vector3.Mag(obj_dir);
-                            ang_obj = Math.Acos(dot / (mag_fwd * mag_obj));
+                            DetectParams detect = new DetectParams();
+                            detect.Key = sensedEntities[idx].itemID;
+                            detect.Populate(m_CmdManager.m_ScriptEngine.World);
+                            detected.Add(detect);
                         }
-                        catch
+                        catch (Exception)
                         {
+                            // Ignore errors, the object has been deleted or the avatar has gone and
+                            // there was a problem in detect.Populate so nothing added to the list
                         }
-                        if (ang_obj <= ts.arc)
-                        {
-                            sensedEntities.Add(new SensedEntity(dis, presence.UUID));
-                        }
+                        if (detected.Count == maximumToReturn)
+                            break;
+                    }
+
+                    if (detected.Count == 0)
+                    {
+                        // To get here with zero in the list there must have been some sort of problem
+                        // like the object being deleted or the avatar leaving to have caused some
+                        // difficulty during the Populate above so fire a no_sensor event
+                        m_CmdManager.m_ScriptEngine.PostScriptEvent(ts.itemID,
+                                new EventParams("no_sensor", new Object[0],
+                                new DetectParams[0]));
                     }
                     else
                     {
-                        sensedEntities.Add(new SensedEntity(dis, presence.UUID));
+                        m_CmdManager.m_ScriptEngine.PostScriptEvent(ts.itemID,
+                                new EventParams("sensor",
+                                new Object[] { new LSL_Types.LSLInteger(detected.Count) },
+                                detected.ToArray()));
                     }
                 }
-            });
-
-            // If this is an avatar sense by key try to get them directly
-            // rather than getting a list to scan through
-            if (ts.keyID != UUID.Zero)
-            {
-                ScenePresence sp;
-                // Try direct lookup by UUID
-                if (!m_CmdManager.m_ScriptEngine.World.TryGetScenePresence(ts.keyID, out sp))
-                    return sensedEntities;
-                senseEntity(sp);
-            }
-            else if (!string.IsNullOrEmpty(ts.name))
-            {
-                ScenePresence sp;
-                // Try lookup by name will return if/when found
-                if (((ts.type & AGENT) != 0) && m_CmdManager.m_ScriptEngine.World.TryGetAvatarByName(ts.name, out sp))
-                    senseEntity(sp);
-                if ((ts.type & AGENT_BY_USERNAME) != 0)
-                {
-                    m_CmdManager.m_ScriptEngine.World.ForEachRootScenePresence(
-                        delegate (ScenePresence ssp)
-                        {
-                            if (ssp.Lastname == "Resident")
-                            {
-                                if (ssp.Firstname.ToLower() == ts.name)
-                                    senseEntity(ssp);
-                                return;
-                            }
-                            if (ssp.Name.Replace(" ", ".").ToLower() == ts.name)
-                                senseEntity(ssp);
-                        }
-                    );
-                }
-
-                return sensedEntities;
-            }
-            else
-            {
-                m_CmdManager.m_ScriptEngine.World.ForEachRootScenePresence(senseEntity);
-            }
-            return sensedEntities;
-        }
-
-        public Object[] GetSerializationData(UUID itemID)
-        {
-            List<Object> data = new List<Object>();
-
-            foreach (SensorInfo ts in SenseRepeaters)
-            {
-                if (ts.itemID == itemID)
-                {
-                    data.Add(ts.interval);
-                    data.Add(ts.name);
-                    data.Add(ts.keyID);
-                    data.Add(ts.type);
-                    data.Add(ts.range);
-                    data.Add(ts.arc);
-                }
-            }
-
-            return data.ToArray();
-        }
-
-        public void CreateFromData(uint localID, UUID itemID, UUID objectID,
-                                   Object[] data)
-        {
-            SceneObjectPart part =
-                m_CmdManager.m_ScriptEngine.World.GetSceneObjectPart(
-                    objectID);
-
-            if (part == null)
-                return;
-
-            int idx = 0;
-
-            while (idx < data.Length)
-            {
-                SensorInfo ts = new SensorInfo();
-
-                ts.localID = localID;
-                ts.itemID = itemID;
-
-                ts.interval = (double)data[idx];
-                ts.name = (string)data[idx+1];
-                ts.keyID = (UUID)data[idx+2];
-                ts.type = (int)data[idx+3];
-                ts.range = (double)data[idx+4];
-                ts.arc = (double)data[idx+5];
-                ts.host = part;
-
-                ts.next =
-                    DateTime.Now.ToUniversalTime().AddSeconds(ts.interval);
-
-                AddSenseRepeater(ts);
-                
-                idx += 6;
             }
         }
 
-        public List<SensorInfo> GetSensorInfo()
+        /// <summary>
+        /// Used by one-off and repeated sensors
+        /// </summary>
+        public class SensorInfo
         {
-            List<SensorInfo> retList = new List<SensorInfo>();
-
-            lock (SenseRepeatListLock)
+            public double arc;
+            public SceneObjectPart host;
+            public double interval;
+            public UUID itemID;
+            public UUID keyID;
+            public uint localID;
+            public string name;
+            public DateTime next;
+            public double range;
+            public int type;
+            public SensorInfo Clone()
             {
-                foreach (SensorInfo i in SenseRepeaters)
-                    retList.Add(i.Clone());
+                return (SensorInfo)this.MemberwiseClone();
+            }
+        }
+        //
+        // Sensed entity
+        //
+        private class SensedEntity : IComparable
+        {
+            public double distance;
+
+            public UUID itemID;
+
+            public SensedEntity(double detectedDistance, UUID detectedID)
+            {
+                distance = detectedDistance;
+                itemID = detectedID;
             }
 
-            return retList;
-        }           
+            public int CompareTo(object obj)
+            {
+                if (!(obj is SensedEntity)) throw new InvalidOperationException();
+                SensedEntity ent = (SensedEntity)obj;
+                if (ent == null || ent.distance < distance) return 1;
+                if (ent.distance > distance) return -1;
+                return 0;
+            }
+        }
     }
 }

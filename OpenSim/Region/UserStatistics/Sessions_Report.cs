@@ -25,13 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using Mono.Data.SqliteClient;
+using OpenMetaverse;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using Mono.Data.SqliteClient;
-using OpenMetaverse;
-using OpenSim.Framework;
 
 namespace OpenSim.Region.UserStatistics
 {
@@ -51,8 +50,7 @@ namespace OpenSim.Region.UserStatistics
             modeldata.Add("Reports", pParams["Reports"]);
             SqliteConnection dbConn = (SqliteConnection)pParams["DatabaseConnection"];
             List<SessionList> lstSessions = new List<SessionList>();
-            Hashtable requestvars = (Hashtable) pParams["RequestVars"];
-            
+            Hashtable requestvars = (Hashtable)pParams["RequestVars"];
 
             string puserUUID = string.Empty;
             string clientVersionString = string.Empty;
@@ -66,7 +64,6 @@ namespace OpenSim.Region.UserStatistics
                     if (UUID.TryParse(requestvars["UserID"].ToString(), out testUUID))
                     {
                         puserUUID = requestvars["UserID"].ToString();
-
                     }
                 }
 
@@ -113,13 +110,13 @@ namespace OpenSim.Region.UserStatistics
                     cmd.Parameters.Add(new SqliteParameter(":client_version", clientVersionString));
 
                 SqliteDataReader sdr = cmd.ExecuteReader();
-                
+
                 if (sdr.HasRows)
                 {
                     UUID userUUID = UUID.Zero;
 
                     SessionList activeSessionList = new SessionList();
-                    activeSessionList.user_id=UUID.Random();
+                    activeSessionList.user_id = UUID.Random();
                     while (sdr.Read())
                     {
                         UUID readUUID = UUID.Parse(sdr["agent_id"].ToString());
@@ -134,7 +131,7 @@ namespace OpenSim.Region.UserStatistics
                         }
 
                         ShortSessionData ssd = new ShortSessionData();
-                        
+
                         ssd.last_update = Utils.UnixTimeToDateTime((uint)Convert.ToInt32(sdr["last_updated"]));
                         ssd.start_time = Utils.UnixTimeToDateTime((uint)Convert.ToInt32(sdr["start_time"]));
                         ssd.session_id = UUID.Parse(sdr["session_id"].ToString());
@@ -146,15 +143,19 @@ namespace OpenSim.Region.UserStatistics
                 }
                 sdr.Close();
                 sdr.Dispose();
-                
             }
             modeldata["SessionData"] = lstSessions;
             return modeldata;
         }
 
+        public string RenderJson(Hashtable pModelResult)
+        {
+            return "{}";
+        }
+
         public string RenderView(Hashtable pModelResult)
         {
-            List<SessionList> lstSession = (List<SessionList>) pModelResult["SessionData"];
+            List<SessionList> lstSession = (List<SessionList>)pModelResult["SessionData"];
             Dictionary<string, IStatsController> reports = (Dictionary<string, IStatsController>)pModelResult["Reports"];
 
             const string STYLESHEET =
@@ -249,7 +250,6 @@ TD.align_top { vertical-align: top; }
                     output.Append(sesdata.client_version);
                     HTMLUtil.TD_C(ref output);
                     HTMLUtil.TR_C(ref output);
-                    
                 }
                 HTMLUtil.TR_O(ref output, "");
                 HTMLUtil.TD_O(ref output, "align_top", 1, 5);
@@ -262,27 +262,21 @@ TD.align_top { vertical-align: top; }
             return output.ToString();
         }
 
+        public struct ShortSessionData
+        {
+            public string client_version;
+            public DateTime last_update;
+            public UUID session_id;
+            public DateTime start_time;
+        }
+
         public class SessionList
         {
             public string firstname;
             public string lastname;
-            public UUID user_id;
             public List<ShortSessionData> sessions;
+            public UUID user_id;
         }
-
-        public struct ShortSessionData
-        {
-            public UUID session_id;
-            public string client_version;
-            public DateTime last_update;
-            public DateTime start_time;
-        }
-
-        public string RenderJson(Hashtable pModelResult)
-        {
-            return "{}";
-        }
-        #endregion
+        #endregion IStatsController Members
     }
-
 }

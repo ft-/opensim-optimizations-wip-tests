@@ -25,12 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
+using OpenSim.Framework;
 using System;
 using System.IO;
 using System.Threading;
-using OpenMetaverse;
-using OpenSim.Framework;
-using pCampBot.Interfaces;
 
 namespace pCampBot
 {
@@ -54,7 +53,7 @@ namespace pCampBot
         public override void Action()
         {
             int walkorrun = Bot.Random.Next(4); // Randomize between walking and running. The greater this number,
-                                                // the greater the bot's chances to walk instead of run.
+            // the greater the bot's chances to walk instead of run.
             Bot.Client.Self.Jump(false);
             if (walkorrun == 0)
             {

@@ -25,25 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.IO;
-using System.Reflection;
-using System.Net;
-using System.Text;
-
-using OpenSim.Server.Base;
-using OpenSim.Server.Handlers.Base;
-using OpenSim.Services.Interfaces;
-using OpenSim.Framework;
-using OpenSim.Framework.Servers.HttpServer;
-
+using log4net;
+using Nwc.XmlRpc;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
-using Nwc.XmlRpc;
-using Nini.Config;
-using log4net;
-
+using OpenSim.Framework;
+using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Services.Interfaces;
+using System;
+using System.Collections;
+using System.Net;
+using System.Reflection;
 
 namespace OpenSim.Server.Handlers.Login
 {
@@ -53,12 +45,92 @@ namespace OpenSim.Server.Handlers.Login
 
         private ILoginService m_LocalService;
         private bool m_Proxy;
-        
 
         public LLLoginHandlers(ILoginService service, bool hasProxy)
         {
             m_LocalService = service;
             m_Proxy = hasProxy;
+        }
+
+        public OSD HandleLLSDLogin(OSD request, IPEndPoint remoteClient)
+        {
+            if (request.Type == OSDType.Map)
+            {
+                OSDMap map = (OSDMap)request;
+
+                if (map.ContainsKey("first") && map.ContainsKey("last") && map.ContainsKey("passwd"))
+                {
+                    string startLocation = string.Empty;
+
+                    if (map.ContainsKey("start"))
+                        startLocation = map["start"].AsString();
+
+                    UUID scopeID = UUID.Zero;
+
+                    if (map.ContainsKey("scope_id"))
+                        scopeID = new UUID(map["scope_id"].AsString());
+
+                    m_log.Info("[LOGIN]: LLSD Login Requested for: '" + map["first"].AsString() + "' '" + map["last"].AsString() + "' / " + startLocation);
+
+                    LoginResponse reply = null;
+                    reply = m_LocalService.Login(map["first"].AsString(), map["last"].AsString(), map["passwd"].AsString(), startLocation, scopeID,
+                        map["version"].AsString(), map["channel"].AsString(), map["mac"].AsString(), map["id0"].AsString(), remoteClient);
+                    return reply.ToOSDMap();
+                }
+            }
+
+            return FailedOSDResponse();
+        }
+
+        public void HandleWebSocketLoginEvents(string path, WebSocketHttpServerHandler sock)
+        {
+            sock.MaxPayloadSize = 16384; //16 kb payload
+            sock.InitialMsgTimeout = 5000; //5 second first message to trigger at least one of these events
+            sock.NoDelay_TCP_Nagle = true;
+            sock.OnData += delegate(object sender, WebsocketDataEventArgs data) { sock.Close("fail"); };
+            sock.OnPing += delegate(object sender, PingEventArgs pingdata) { sock.Close("fail"); };
+            sock.OnPong += delegate(object sender, PongEventArgs pongdata) { sock.Close("fail"); };
+            sock.OnText += delegate(object sender, WebsocketTextEventArgs text)
+                               {
+                                   OSD request = null;
+                                   try
+                                   {
+                                       request = OSDParser.DeserializeJson(text.Data);
+                                       if (!(request is OSDMap))
+                                       {
+                                           sock.SendMessage(OSDParser.SerializeJsonString(FailedOSDResponse()));
+                                       }
+                                       else
+                                       {
+                                           OSDMap req = request as OSDMap;
+                                           string first = req["firstname"].AsString();
+                                           string last = req["lastname"].AsString();
+                                           string passwd = req["passwd"].AsString();
+                                           string start = req["startlocation"].AsString();
+                                           string version = req["version"].AsString();
+                                           string channel = req["channel"].AsString();
+                                           string mac = req["mac"].AsString();
+                                           string id0 = req["id0"].AsString();
+                                           UUID scope = UUID.Zero;
+                                           IPEndPoint endPoint =
+                                               (sender as WebSocketHttpServerHandler).GetRemoteIPEndpoint();
+                                           LoginResponse reply = null;
+                                           reply = m_LocalService.Login(first, last, passwd, start, scope, version,
+                                                                        channel, mac, id0, endPoint);
+                                           sock.SendMessage(OSDParser.SerializeJsonString(reply.ToOSDMap()));
+                                       }
+                                   }
+                                   catch (Exception)
+                                   {
+                                       sock.SendMessage(OSDParser.SerializeJsonString(FailedOSDResponse()));
+                                   }
+                                   finally
+                                   {
+                                       sock.Close("success");
+                                   }
+                               };
+
+            sock.HandshakeAndUpgrade();
         }
 
         public XmlRpcResponse HandleXMLRPCLogin(XmlRpcRequest request, IPEndPoint remoteClient)
@@ -76,17 +148,17 @@ namespace OpenSim.Server.Handlers.Login
             {
                 // Debug code to show exactly what login parameters the viewer is sending us.
                 // TODO: Extract into a method that can be generally applied if one doesn't already exist.
-//                foreach (string key in requestData.Keys)
-//                {
-//                    object value = requestData[key];
-//                    Console.WriteLine("{0}:{1}", key, value);
-//                    if (value is ArrayList)
-//                    {
-//                        ICollection col = value as ICollection;
-//                        foreach (object item in col)
-//                            Console.WriteLine("  {0}", item);
-//                    }
-//                }
+                //                foreach (string key in requestData.Keys)
+                //                {
+                //                    object value = requestData[key];
+                //                    Console.WriteLine("{0}:{1}", key, value);
+                //                    if (value is ArrayList)
+                //                    {
+                //                        ICollection col = value as ICollection;
+                //                        foreach (object item in col)
+                //                            Console.WriteLine("  {0}", item);
+                //                    }
+                //                }
 
                 if (requestData.ContainsKey("first") && requestData["first"] != null &&
                     requestData.ContainsKey("last") && requestData["last"] != null && (
@@ -138,13 +210,12 @@ namespace OpenSim.Server.Handlers.Login
                     XmlRpcResponse response = new XmlRpcResponse();
                     response.Value = reply.ToHashtable();
                     return response;
-
                 }
             }
 
             return FailedXMLRPCResponse();
-
         }
+
         public XmlRpcResponse HandleXMLRPCLoginBlocked(XmlRpcRequest request, IPEndPoint client)
         {
             XmlRpcResponse response = new XmlRpcResponse();
@@ -181,7 +252,6 @@ namespace OpenSim.Server.Handlers.Login
                     response.Value = reply;
 
                     return response;
-
                 }
             }
 
@@ -191,94 +261,17 @@ namespace OpenSim.Server.Handlers.Login
             failResponse.Value = failHash;
 
             return failResponse;
-
         }
-
-        public OSD HandleLLSDLogin(OSD request, IPEndPoint remoteClient)
+        private OSD FailedOSDResponse()
         {
-            if (request.Type == OSDType.Map)
-            {
-                OSDMap map = (OSDMap)request;
+            OSDMap map = new OSDMap();
 
-                if (map.ContainsKey("first") && map.ContainsKey("last") && map.ContainsKey("passwd"))
-                {
-                    string startLocation = string.Empty;
+            map["reason"] = OSD.FromString("key");
+            map["message"] = OSD.FromString("Invalid login credentials. Check your username and passwd.");
+            map["login"] = OSD.FromString("false");
 
-                    if (map.ContainsKey("start"))
-                        startLocation = map["start"].AsString();
-
-                    UUID scopeID = UUID.Zero;
-
-                    if (map.ContainsKey("scope_id"))
-                        scopeID = new UUID(map["scope_id"].AsString());
-
-                    m_log.Info("[LOGIN]: LLSD Login Requested for: '" + map["first"].AsString() + "' '" + map["last"].AsString() + "' / " + startLocation);
-
-                    LoginResponse reply = null;
-                    reply = m_LocalService.Login(map["first"].AsString(), map["last"].AsString(), map["passwd"].AsString(), startLocation, scopeID,
-                        map["version"].AsString(), map["channel"].AsString(), map["mac"].AsString(), map["id0"].AsString(), remoteClient);
-                    return reply.ToOSDMap();
-
-                }
-            }
-
-            return FailedOSDResponse();
+            return map;
         }
-
-        public void HandleWebSocketLoginEvents(string path, WebSocketHttpServerHandler sock)
-        {
-            sock.MaxPayloadSize = 16384; //16 kb payload
-            sock.InitialMsgTimeout = 5000; //5 second first message to trigger at least one of these events
-            sock.NoDelay_TCP_Nagle = true;
-            sock.OnData += delegate(object sender, WebsocketDataEventArgs data) { sock.Close("fail"); };
-            sock.OnPing += delegate(object sender, PingEventArgs pingdata) { sock.Close("fail"); };
-            sock.OnPong += delegate(object sender, PongEventArgs pongdata) { sock.Close("fail"); };
-            sock.OnText += delegate(object sender, WebsocketTextEventArgs text)
-                               {
-                                   OSD request = null;
-                                   try
-                                   {
-                                       request = OSDParser.DeserializeJson(text.Data);
-                                       if (!(request is OSDMap))
-                                       {
-                                           sock.SendMessage(OSDParser.SerializeJsonString(FailedOSDResponse()));
-                                       }
-                                       else
-                                       {
-                                           OSDMap req = request as OSDMap;
-                                           string first = req["firstname"].AsString();
-                                           string last = req["lastname"].AsString();
-                                           string passwd = req["passwd"].AsString();
-                                           string start = req["startlocation"].AsString();
-                                           string version = req["version"].AsString();
-                                           string channel = req["channel"].AsString();
-                                           string mac = req["mac"].AsString();
-                                           string id0 = req["id0"].AsString();
-                                           UUID scope = UUID.Zero;
-                                           IPEndPoint endPoint =
-                                               (sender as WebSocketHttpServerHandler).GetRemoteIPEndpoint();
-                                           LoginResponse reply = null;
-                                           reply = m_LocalService.Login(first, last, passwd, start, scope, version,
-                                                                        channel, mac, id0, endPoint);
-                                           sock.SendMessage(OSDParser.SerializeJsonString(reply.ToOSDMap()));
-
-                                       }
-
-                                   }
-                                   catch (Exception)
-                                   {
-                                       sock.SendMessage(OSDParser.SerializeJsonString(FailedOSDResponse()));
-                                   }
-                                   finally
-                                   {
-                                       sock.Close("success");
-                                   }
-                               };
-            
-            sock.HandshakeAndUpgrade();
-
-        }
-        
 
         private XmlRpcResponse FailedXMLRPCResponse()
         {
@@ -292,18 +285,5 @@ namespace OpenSim.Server.Handlers.Login
 
             return response;
         }
-
-        private OSD FailedOSDResponse()
-        {
-            OSDMap map = new OSDMap();
-
-            map["reason"] = OSD.FromString("key");
-            map["message"] = OSD.FromString("Invalid login credentials. Check your username and passwd.");
-            map["login"] = OSD.FromString("false");
-
-            return map;
-        }
-
     }
-
 }

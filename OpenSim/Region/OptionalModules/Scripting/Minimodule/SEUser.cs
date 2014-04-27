@@ -25,18 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
 using OpenMetaverse;
 
 namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
-    class SEUser : System.MarshalByRefObject, ISocialEntity
+    internal class SEUser : System.MarshalByRefObject, ISocialEntity
     {
-        private readonly UUID m_uuid;
         private readonly string m_name;
-
+        private readonly UUID m_uuid;
         public SEUser(UUID uuid, string name)
         {
             m_uuid = uuid;
@@ -48,14 +44,14 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             get { return m_uuid; }
         }
 
-        public string Name
-        {
-            get { return m_name; }
-        }
-
         public bool IsUser
         {
             get { return true; }
+        }
+
+        public string Name
+        {
+            get { return m_name; }
         }
     }
 }

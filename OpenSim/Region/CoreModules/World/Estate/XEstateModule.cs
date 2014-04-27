@@ -25,46 +25,59 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
 using log4net;
+using Mono.Addins;
 using Nini.Config;
-using Nwc.XmlRpc;
 using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
-using OpenSim.Server.Base;
 using OpenSim.Framework.Servers;
 using OpenSim.Framework.Servers.HttpServer;
-using Mono.Addins;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.World.Estate
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "XEstate")]
     public class XEstateModule : ISharedRegionModule
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        protected List<Scene> m_Scenes = new List<Scene>();
+        protected EstateConnector m_EstateConnector;
         protected bool m_InInfoUpdate = false;
-
+        protected List<Scene> m_Scenes = new List<Scene>();
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         public bool InInfoUpdate
         {
             get { return m_InInfoUpdate; }
             set { m_InInfoUpdate = value; }
         }
 
+        public string Name
+        {
+            get { return "EstateModule"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
         public List<Scene> Scenes
         {
             get { return m_Scenes; }
         }
+        public void AddRegion(Scene scene)
+        {
+            lock (m_Scenes)
+                m_Scenes.Add(scene);
 
-        protected EstateConnector m_EstateConnector;
+            scene.EventManager.OnNewClient += OnNewClient;
+        }
+
+        public void Close()
+        {
+        }
 
         public void Initialise(IConfigSource config)
         {
@@ -86,19 +99,6 @@ namespace OpenSim.Region.CoreModules.World.Estate
         public void PostInitialise()
         {
         }
-
-        public void Close()
-        {
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            lock (m_Scenes)
-                m_Scenes.Add(scene);
-
-            scene.EventManager.OnNewClient += OnNewClient;
-        }
-
         public void RegionLoaded(Scene scene)
         {
             IEstateModule em = scene.RequestModuleInterface<IEstateModule>();
@@ -115,17 +115,6 @@ namespace OpenSim.Region.CoreModules.World.Estate
             lock (m_Scenes)
                 m_Scenes.Remove(scene);
         }
-
-        public string Name
-        {
-            get { return "EstateModule"; }
-        }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
         private Scene FindScene(UUID RegionID)
         {
             foreach (Scene s in Scenes)
@@ -135,16 +124,6 @@ namespace OpenSim.Region.CoreModules.World.Estate
             }
 
             return null;
-        }
-
-        private void OnRegionInfoChange(UUID RegionID)
-        {
-            Scene s = FindScene(RegionID);
-            if (s == null)
-                return;
-
-            if (!m_InInfoUpdate)
-                m_EstateConnector.SendUpdateCovenant(s.RegionInfo.EstateSettings.EstateID, s.RegionInfo.RegionSettings.Covenant);
         }
 
         private void OnEstateInfoChange(UUID RegionID)
@@ -182,11 +161,36 @@ namespace OpenSim.Region.CoreModules.World.Estate
                 m_EstateConnector.SendEstateMessage(estateID, FromID, FromName, Message);
         }
 
-        private void OnNewClient(IClientAPI client)
+        private void OnEstateTeleportAllUsersHomeRequest(IClientAPI client, UUID invoice, UUID senderID)
         {
-            client.OnEstateTeleportOneUserHomeRequest += OnEstateTeleportOneUserHomeRequest;
-            client.OnEstateTeleportAllUsersHomeRequest += OnEstateTeleportAllUsersHomeRequest;
+            if (!(client.Scene is Scene))
+                return;
 
+            Scene scene = (Scene)client.Scene;
+
+            uint estateID = scene.RegionInfo.EstateSettings.EstateID;
+
+            if (!scene.Permissions.CanIssueEstateCommand(client.AgentId, false))
+                return;
+
+            foreach (Scene s in Scenes)
+            {
+                if (s == scene)
+                    continue; // Already handles by estate module
+                if (s.RegionInfo.EstateSettings.EstateID != estateID)
+                    continue;
+
+                scene.ForEachScenePresence(delegate(ScenePresence p)
+                {
+                    if (p != null && !p.IsChildAgent)
+                    {
+                        p.ControllingClient.SendTeleportStart(16);
+                        scene.TeleportClientHome(p.ControllingClient.AgentId, p.ControllingClient);
+                    }
+                });
+            }
+
+            m_EstateConnector.SendTeleportHomeAllUsers(estateID);
         }
 
         private void OnEstateTeleportOneUserHomeRequest(IClientAPI client, UUID invoice, UUID senderID, UUID prey)
@@ -222,35 +226,20 @@ namespace OpenSim.Region.CoreModules.World.Estate
             m_EstateConnector.SendTeleportHomeOneUser(estateID, prey);
         }
 
-        private void OnEstateTeleportAllUsersHomeRequest(IClientAPI client, UUID invoice, UUID senderID)
+        private void OnNewClient(IClientAPI client)
         {
-            if (!(client.Scene is Scene))
+            client.OnEstateTeleportOneUserHomeRequest += OnEstateTeleportOneUserHomeRequest;
+            client.OnEstateTeleportAllUsersHomeRequest += OnEstateTeleportAllUsersHomeRequest;
+        }
+
+        private void OnRegionInfoChange(UUID RegionID)
+        {
+            Scene s = FindScene(RegionID);
+            if (s == null)
                 return;
 
-            Scene scene = (Scene)client.Scene;
-
-            uint estateID = scene.RegionInfo.EstateSettings.EstateID;
-
-            if (!scene.Permissions.CanIssueEstateCommand(client.AgentId, false))
-                return;
-
-            foreach (Scene s in Scenes)
-            {
-                if (s == scene)
-                    continue; // Already handles by estate module
-                if (s.RegionInfo.EstateSettings.EstateID != estateID)
-                    continue;
-
-                scene.ForEachScenePresence(delegate(ScenePresence p) {
-                    if (p != null && !p.IsChildAgent)
-                    {
-                        p.ControllingClient.SendTeleportStart(16);
-                        scene.TeleportClientHome(p.ControllingClient.AgentId, p.ControllingClient);
-                    }
-                });
-            }
-
-            m_EstateConnector.SendTeleportHomeAllUsers(estateID);
+            if (!m_InInfoUpdate)
+                m_EstateConnector.SendUpdateCovenant(s.RegionInfo.EstateSettings.EstateID, s.RegionInfo.RegionSettings.Covenant);
         }
     }
 }

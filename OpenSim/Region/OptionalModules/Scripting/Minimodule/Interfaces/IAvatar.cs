@@ -25,24 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using OpenMetaverse;
-
 namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
     public interface IAvatar : IEntity
     {
+        IAvatarAttachment[] Attachments { get; }
 
         bool IsChildAgent { get; }
 
         //// <value>
         /// Array of worn attachments, empty but not null, if no attachments are worn
         /// </value>
-
-        IAvatarAttachment[] Attachments { get; }
-
         /// <summary>
         /// Request to open an url clientside
         /// </summary>

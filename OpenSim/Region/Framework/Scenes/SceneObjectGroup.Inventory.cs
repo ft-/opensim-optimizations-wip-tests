@@ -25,14 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.IO;
-using System.Reflection;
-using OpenMetaverse;
 using log4net;
+using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
+using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Xml;
 using PermissionMask = OpenSim.Framework.PermissionMask;
 
@@ -43,13 +42,107 @@ namespace OpenSim.Region.Framework.Scenes
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         /// <summary>
-        /// Force all task inventories of prims in the scene object to persist
+        /// Add an inventory item from a user's inventory to a prim in this scene object.
         /// </summary>
-        public void ForceInventoryPersistence()
+        /// <param name="agentID">The agent adding the item.</param>
+        /// <param name="localID">The local ID of the part receiving the add.</param>
+        /// <param name="item">The user inventory item being added.</param>
+        /// <param name="copyItemID">The item UUID that should be used by the new item.</param>
+        /// <returns></returns>
+        public bool AddInventoryItem(UUID agentID, uint localID, InventoryItemBase item, UUID copyItemID)
         {
+            //            m_log.DebugFormat(
+            //                "[PRIM INVENTORY]: Adding inventory item {0} from {1} to part with local ID {2}",
+            //                item.Name, remoteClient.Name, localID);
+
+            UUID newItemId = (copyItemID != UUID.Zero) ? copyItemID : item.ID;
+
+            SceneObjectPart part = GetPart(localID);
+            if (part != null)
+            {
+                TaskInventoryItem taskItem = new TaskInventoryItem();
+
+                taskItem.ItemID = newItemId;
+                taskItem.AssetID = item.AssetID;
+                taskItem.Name = item.Name;
+                taskItem.Description = item.Description;
+                taskItem.OwnerID = part.OwnerID; // Transfer ownership
+                taskItem.CreatorID = item.CreatorIdAsUuid;
+                taskItem.Type = item.AssetType;
+                taskItem.InvType = item.InvType;
+
+                if (agentID != part.OwnerID && m_scene.Permissions.PropagatePermissions())
+                {
+                    taskItem.BasePermissions = item.BasePermissions &
+                            item.NextPermissions;
+                    taskItem.CurrentPermissions = item.CurrentPermissions &
+                            item.NextPermissions;
+                    taskItem.EveryonePermissions = item.EveryOnePermissions &
+                            item.NextPermissions;
+                    taskItem.GroupPermissions = item.GroupPermissions &
+                            item.NextPermissions;
+                    taskItem.NextPermissions = item.NextPermissions;
+                    // We're adding this to a prim we don't own. Force
+                    // owner change
+                    taskItem.Flags |= (uint)InventoryItemFlags.ObjectSlamPerm;
+                }
+                else
+                {
+                    taskItem.BasePermissions = item.BasePermissions;
+                    taskItem.CurrentPermissions = item.CurrentPermissions;
+                    taskItem.EveryonePermissions = item.EveryOnePermissions;
+                    taskItem.GroupPermissions = item.GroupPermissions;
+                    taskItem.NextPermissions = item.NextPermissions;
+                }
+
+                taskItem.Flags = item.Flags;
+
+                //                m_log.DebugFormat(
+                //                    "[PRIM INVENTORY]: Flags are 0x{0:X} for item {1} added to part {2} by {3}",
+                //                    taskItem.Flags, taskItem.Name, localID, remoteClient.Name);
+
+                // TODO: These are pending addition of those fields to TaskInventoryItem
+                //                taskItem.SalePrice = item.SalePrice;
+                //                taskItem.SaleType = item.SaleType;
+                taskItem.CreationDate = (uint)item.CreationDate;
+
+                bool addFromAllowedDrop = agentID != part.OwnerID;
+
+                part.Inventory.AddInventoryItem(taskItem, addFromAllowedDrop);
+
+                return true;
+            }
+            else
+            {
+                m_log.ErrorFormat(
+                    "[PRIM INVENTORY]: " +
+                    "Couldn't find prim local ID {0} in group {1}, {2} to add inventory item ID {3}",
+                    localID, Name, UUID, newItemId);
+            }
+
+            return false;
+        }
+
+        public void ApplyNextOwnerPermissions()
+        {
+            //            m_log.DebugFormat("[PRIM INVENTORY]: Applying next owner permissions to {0} {1}", Name, UUID);
+
             SceneObjectPart[] parts = m_parts.GetArray();
             for (int i = 0; i < parts.Length; i++)
-                parts[i].Inventory.ForceInventoryPersistence();
+                parts[i].ApplyNextOwnerPermissions();
+        }
+
+        /// <summary>
+        /// Returns true if any part in the scene object contains scripts, false otherwise.
+        /// </summary>
+        /// <returns></returns>
+        public bool ContainsScripts()
+        {
+            foreach (SceneObjectPart part in Parts)
+                if (part.Inventory.ContainsScripts())
+                    return true;
+
+            return false;
         }
 
         /// <summary>
@@ -86,107 +179,50 @@ namespace OpenSim.Region.Framework.Scenes
         }
 
         /// <summary>
-        /// Stop and remove the scripts contained in all the prims in this group
+        /// Force all task inventories of prims in the scene object to persist
         /// </summary>
-        /// <param name="sceneObjectBeingDeleted">
-        /// Should be true if these scripts are being removed because the scene
-        /// object is being deleted.  This will prevent spurious updates to the client.
-        /// </param>
-        public void RemoveScriptInstances(bool sceneObjectBeingDeleted)
+        public void ForceInventoryPersistence()
         {
             SceneObjectPart[] parts = m_parts.GetArray();
             for (int i = 0; i < parts.Length; i++)
-                parts[i].Inventory.RemoveScriptInstances(sceneObjectBeingDeleted);
+                parts[i].Inventory.ForceInventoryPersistence();
         }
-
-        /// <summary>
-        /// Stop the scripts contained in all the prims in this group
-        /// </summary>
-        public void StopScriptInstances()
+        public uint GetEffectivePermissions()
         {
-            Array.ForEach<SceneObjectPart>(m_parts.GetArray(), p => p.Inventory.StopScriptInstances());
-        }
+            uint perms = (uint)(PermissionMask.Modify |
+                              PermissionMask.Copy |
+                              PermissionMask.Move |
+                              PermissionMask.Transfer) | 7;
 
-        /// <summary>
-        /// Add an inventory item from a user's inventory to a prim in this scene object.
-        /// </summary>
-        /// <param name="agentID">The agent adding the item.</param>
-        /// <param name="localID">The local ID of the part receiving the add.</param>
-        /// <param name="item">The user inventory item being added.</param>
-        /// <param name="copyItemID">The item UUID that should be used by the new item.</param>
-        /// <returns></returns>
-        public bool AddInventoryItem(UUID agentID, uint localID, InventoryItemBase item, UUID copyItemID)
-        {
-//            m_log.DebugFormat(
-//                "[PRIM INVENTORY]: Adding inventory item {0} from {1} to part with local ID {2}", 
-//                item.Name, remoteClient.Name, localID);
-            
-            UUID newItemId = (copyItemID != UUID.Zero) ? copyItemID : item.ID;
+            uint ownerMask = 0x7fffffff;
 
-            SceneObjectPart part = GetPart(localID);
-            if (part != null)
+            SceneObjectPart[] parts = m_parts.GetArray();
+            for (int i = 0; i < parts.Length; i++)
             {
-                TaskInventoryItem taskItem = new TaskInventoryItem();
-
-                taskItem.ItemID = newItemId;
-                taskItem.AssetID = item.AssetID;
-                taskItem.Name = item.Name;
-                taskItem.Description = item.Description;
-                taskItem.OwnerID = part.OwnerID; // Transfer ownership
-                taskItem.CreatorID = item.CreatorIdAsUuid;
-                taskItem.Type = item.AssetType;
-                taskItem.InvType = item.InvType;
-
-                if (agentID != part.OwnerID && m_scene.Permissions.PropagatePermissions())
-                {
-                    taskItem.BasePermissions = item.BasePermissions &
-                            item.NextPermissions;
-                    taskItem.CurrentPermissions = item.CurrentPermissions &
-                            item.NextPermissions;
-                    taskItem.EveryonePermissions = item.EveryOnePermissions &
-                            item.NextPermissions;
-                    taskItem.GroupPermissions = item.GroupPermissions &
-                            item.NextPermissions;
-                    taskItem.NextPermissions = item.NextPermissions;
-                    // We're adding this to a prim we don't own. Force
-                    // owner change
-                    taskItem.Flags |= (uint)InventoryItemFlags.ObjectSlamPerm;
-                } 
-                else 
-                {
-                    taskItem.BasePermissions = item.BasePermissions;
-                    taskItem.CurrentPermissions = item.CurrentPermissions;
-                    taskItem.EveryonePermissions = item.EveryOnePermissions;
-                    taskItem.GroupPermissions = item.GroupPermissions;
-                    taskItem.NextPermissions = item.NextPermissions;
-                }
-                          
-                taskItem.Flags = item.Flags;
-
-//                m_log.DebugFormat(
-//                    "[PRIM INVENTORY]: Flags are 0x{0:X} for item {1} added to part {2} by {3}", 
-//                    taskItem.Flags, taskItem.Name, localID, remoteClient.Name);                      
-                
-                // TODO: These are pending addition of those fields to TaskInventoryItem
-//                taskItem.SalePrice = item.SalePrice;
-//                taskItem.SaleType = item.SaleType;
-                taskItem.CreationDate = (uint)item.CreationDate;
-
-                bool addFromAllowedDrop = agentID != part.OwnerID;
-
-                part.Inventory.AddInventoryItem(taskItem, addFromAllowedDrop);
-
-                return true;
-            }
-            else
-            {
-                m_log.ErrorFormat(
-                    "[PRIM INVENTORY]: " +
-                    "Couldn't find prim local ID {0} in group {1}, {2} to add inventory item ID {3}",
-                    localID, Name, UUID, newItemId);
+                SceneObjectPart part = parts[i];
+                ownerMask &= part.OwnerMask;
+                perms &= part.Inventory.MaskEffectivePermissions();
             }
 
-            return false;
+            if ((ownerMask & (uint)PermissionMask.Modify) == 0)
+                perms &= ~(uint)PermissionMask.Modify;
+            if ((ownerMask & (uint)PermissionMask.Copy) == 0)
+                perms &= ~(uint)PermissionMask.Copy;
+            if ((ownerMask & (uint)PermissionMask.Transfer) == 0)
+                perms &= ~(uint)PermissionMask.Transfer;
+
+            // If root prim permissions are applied here, this would screw
+            // with in-inventory manipulation of the next owner perms
+            // in a major way. So, let's move this to the give itself.
+            // Yes. I know. Evil.
+            //            if ((ownerMask & RootPart.NextOwnerMask & (uint)PermissionMask.Modify) == 0)
+            //                perms &= ~((uint)PermissionMask.Modify >> 13);
+            //            if ((ownerMask & RootPart.NextOwnerMask & (uint)PermissionMask.Copy) == 0)
+            //                perms &= ~((uint)PermissionMask.Copy >> 13);
+            //            if ((ownerMask & RootPart.NextOwnerMask & (uint)PermissionMask.Transfer) == 0)
+            //                perms &= ~((uint)PermissionMask.Transfer >> 13);
+
+            return perms;
         }
 
         /// <summary>
@@ -213,92 +249,6 @@ namespace OpenSim.Region.Framework.Scenes
             return null;
         }
 
-        /// <summary>
-        /// Update an existing inventory item.
-        /// </summary>
-        /// <param name="item">The updated item.  An item with the same id must already exist
-        /// in this prim's inventory</param>
-        /// <returns>false if the item did not exist, true if the update occurred succesfully</returns>
-        public bool UpdateInventoryItem(TaskInventoryItem item)
-        {
-            SceneObjectPart part = GetPart(item.ParentPartID);
-            if (part != null)
-            {
-                part.Inventory.UpdateInventoryItem(item);
-
-                return true;
-            }
-            else
-            {
-                m_log.ErrorFormat(
-                    "[PRIM INVENTORY]: " +
-                    "Couldn't find prim ID {0} to update item {1}, {2}",
-                    item.ParentPartID, item.Name, item.ItemID);
-            }
-
-            return false;
-        }
-
-        public int RemoveInventoryItem(uint localID, UUID itemID)
-        {
-            SceneObjectPart part = GetPart(localID);
-            if (part != null)
-            {
-                int type = part.Inventory.RemoveInventoryItem(itemID);
-
-                return type;
-            }
-
-            return -1;
-        }
-
-        public uint GetEffectivePermissions()
-        {
-            uint perms=(uint)(PermissionMask.Modify |
-                              PermissionMask.Copy |
-                              PermissionMask.Move |
-                              PermissionMask.Transfer) | 7;
-
-            uint ownerMask = 0x7fffffff;
-
-            SceneObjectPart[] parts = m_parts.GetArray();
-            for (int i = 0; i < parts.Length; i++)
-            {
-                SceneObjectPart part = parts[i];
-                ownerMask &= part.OwnerMask;
-                perms &= part.Inventory.MaskEffectivePermissions();
-            }
-
-            if ((ownerMask & (uint)PermissionMask.Modify) == 0)
-                perms &= ~(uint)PermissionMask.Modify;
-            if ((ownerMask & (uint)PermissionMask.Copy) == 0)
-                perms &= ~(uint)PermissionMask.Copy;
-            if ((ownerMask & (uint)PermissionMask.Transfer) == 0)
-                perms &= ~(uint)PermissionMask.Transfer;
-
-            // If root prim permissions are applied here, this would screw
-            // with in-inventory manipulation of the next owner perms
-            // in a major way. So, let's move this to the give itself.
-            // Yes. I know. Evil.
-//            if ((ownerMask & RootPart.NextOwnerMask & (uint)PermissionMask.Modify) == 0)
-//                perms &= ~((uint)PermissionMask.Modify >> 13);
-//            if ((ownerMask & RootPart.NextOwnerMask & (uint)PermissionMask.Copy) == 0)
-//                perms &= ~((uint)PermissionMask.Copy >> 13);
-//            if ((ownerMask & RootPart.NextOwnerMask & (uint)PermissionMask.Transfer) == 0)
-//                perms &= ~((uint)PermissionMask.Transfer >> 13);
-
-            return perms;
-        }
-
-        public void ApplyNextOwnerPermissions()
-        {
-//            m_log.DebugFormat("[PRIM INVENTORY]: Applying next owner permissions to {0} {1}", Name, UUID);
-
-            SceneObjectPart[] parts = m_parts.GetArray();
-            for (int i = 0; i < parts.Length; i++)
-                parts[i].ApplyNextOwnerPermissions();
-        }
-
         public string GetStateSnapshot()
         {
             Dictionary<UUID, string> states = new Dictionary<UUID, string>();
@@ -322,13 +272,12 @@ namespace OpenSim.Region.Framework.Scenes
             xmldoc.AppendChild(xmlnode);
             XmlElement rootElement = xmldoc.CreateElement("", "ScriptData",
                     String.Empty);
-            
+
             xmldoc.AppendChild(rootElement);
 
-            
             XmlElement wrapper = xmldoc.CreateElement("", "ScriptStates",
                     String.Empty);
-            
+
             rootElement.AppendChild(wrapper);
 
             foreach (KeyValuePair<UUID, string> state in states)
@@ -345,6 +294,40 @@ namespace OpenSim.Region.Framework.Scenes
             return xmldoc.InnerXml;
         }
 
+        public int RemoveInventoryItem(uint localID, UUID itemID)
+        {
+            SceneObjectPart part = GetPart(localID);
+            if (part != null)
+            {
+                int type = part.Inventory.RemoveInventoryItem(itemID);
+
+                return type;
+            }
+
+            return -1;
+        }
+
+        /// <summary>
+        /// Stop and remove the scripts contained in all the prims in this group
+        /// </summary>
+        /// <param name="sceneObjectBeingDeleted">
+        /// Should be true if these scripts are being removed because the scene
+        /// object is being deleted.  This will prevent spurious updates to the client.
+        /// </param>
+        public void RemoveScriptInstances(bool sceneObjectBeingDeleted)
+        {
+            SceneObjectPart[] parts = m_parts.GetArray();
+            for (int i = 0; i < parts.Length; i++)
+                parts[i].Inventory.RemoveScriptInstances(sceneObjectBeingDeleted);
+        }
+
+        public void ResumeScripts()
+        {
+            SceneObjectPart[] parts = m_parts.GetArray();
+            for (int i = 0; i < parts.Length; i++)
+                parts[i].Inventory.ResumeScripts();
+        }
+
         public void SetState(string objXMLData, IScene ins)
         {
             if (!(ins is Scene))
@@ -356,7 +339,7 @@ namespace OpenSim.Region.Framework.Scenes
                 return;
 
             IScriptModule scriptModule = null;
-            
+
             foreach (IScriptModule sm in s.RequestModuleInterfaces<IScriptModule>())
             {
                 if (sm.ScriptEngineName == s.DefaultScriptEngine)
@@ -395,7 +378,7 @@ namespace OpenSim.Region.Framework.Scenes
                 return;
 
             XmlElement dataE = (XmlElement)dataL[0];
-            
+
             foreach (XmlNode n in dataE.ChildNodes)
             {
                 XmlElement stateE = (XmlElement)n;
@@ -405,22 +388,35 @@ namespace OpenSim.Region.Framework.Scenes
             }
         }
 
-        public void ResumeScripts()
-        {
-            SceneObjectPart[] parts = m_parts.GetArray();
-            for (int i = 0; i < parts.Length; i++)
-                parts[i].Inventory.ResumeScripts();
-        }
-
         /// <summary>
-        /// Returns true if any part in the scene object contains scripts, false otherwise.
+        /// Stop the scripts contained in all the prims in this group
         /// </summary>
-        /// <returns></returns>
-        public bool ContainsScripts()
+        public void StopScriptInstances()
         {
-            foreach (SceneObjectPart part in Parts)
-                if (part.Inventory.ContainsScripts())
-                    return true;
+            Array.ForEach<SceneObjectPart>(m_parts.GetArray(), p => p.Inventory.StopScriptInstances());
+        }
+        /// <summary>
+        /// Update an existing inventory item.
+        /// </summary>
+        /// <param name="item">The updated item.  An item with the same id must already exist
+        /// in this prim's inventory</param>
+        /// <returns>false if the item did not exist, true if the update occurred succesfully</returns>
+        public bool UpdateInventoryItem(TaskInventoryItem item)
+        {
+            SceneObjectPart part = GetPart(item.ParentPartID);
+            if (part != null)
+            {
+                part.Inventory.UpdateInventoryItem(item);
+
+                return true;
+            }
+            else
+            {
+                m_log.ErrorFormat(
+                    "[PRIM INVENTORY]: " +
+                    "Couldn't find prim ID {0} to update item {1}, {2}",
+                    item.ParentPartID, item.Name, item.ItemID);
+            }
 
             return false;
         }

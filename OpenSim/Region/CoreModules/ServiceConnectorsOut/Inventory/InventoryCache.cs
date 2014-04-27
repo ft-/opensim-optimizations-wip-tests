@@ -25,11 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using OpenSim.Framework;
 using OpenMetaverse;
+using OpenSim.Framework;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
 {
@@ -40,22 +38,12 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
     {
         private const double CACHE_EXPIRATION_SECONDS = 3600.0; // 1 hour
 
-        private static ExpiringCache<UUID, InventoryFolderBase> m_RootFolders = new ExpiringCache<UUID, InventoryFolderBase>();
         private static ExpiringCache<UUID, Dictionary<AssetType, InventoryFolderBase>> m_FolderTypes = new ExpiringCache<UUID, Dictionary<AssetType, InventoryFolderBase>>();
         private static ExpiringCache<UUID, InventoryCollection> m_Inventories = new ExpiringCache<UUID, InventoryCollection>();
-
+        private static ExpiringCache<UUID, InventoryFolderBase> m_RootFolders = new ExpiringCache<UUID, InventoryFolderBase>();
         public void Cache(UUID userID, InventoryFolderBase root)
         {
             m_RootFolders.AddOrUpdate(userID, root, CACHE_EXPIRATION_SECONDS);
-        }
-
-        public InventoryFolderBase GetRootFolder(UUID userID)
-        {
-            InventoryFolderBase root = null;
-            if (m_RootFolders.TryGetValue(userID, out root))
-                return root;
-
-            return null;
         }
 
         public void Cache(UUID userID, AssetType type, InventoryFolderBase folder)
@@ -75,23 +63,6 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
                 if (!ff.ContainsKey(type))
                     ff.Add(type, folder);
             }
-        }
-
-        public InventoryFolderBase GetFolderForType(UUID userID, AssetType type)
-        {
-            Dictionary<AssetType, InventoryFolderBase> ff = null;
-            if (m_FolderTypes.TryGetValue(userID, out ff))
-            {
-                InventoryFolderBase f = null;
-
-                lock (ff)
-                {
-                    if (ff.TryGetValue(type, out f))
-                        return f;
-                }
-            }
-
-            return null;
         }
 
         public void Cache(UUID userID, InventoryCollection inv)
@@ -121,6 +92,23 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
             return null;
         }
 
+        public InventoryFolderBase GetFolderForType(UUID userID, AssetType type)
+        {
+            Dictionary<AssetType, InventoryFolderBase> ff = null;
+            if (m_FolderTypes.TryGetValue(userID, out ff))
+            {
+                InventoryFolderBase f = null;
+
+                lock (ff)
+                {
+                    if (ff.TryGetValue(type, out f))
+                        return f;
+                }
+            }
+
+            return null;
+        }
+
         public List<InventoryItemBase> GetFolderItems(UUID userID, UUID folderID)
         {
             InventoryCollection inv = null;
@@ -132,6 +120,15 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
                 });
                 return items;
             }
+            return null;
+        }
+
+        public InventoryFolderBase GetRootFolder(UUID userID)
+        {
+            InventoryFolderBase root = null;
+            if (m_RootFolders.TryGetValue(userID, out root))
+                return root;
+
             return null;
         }
     }

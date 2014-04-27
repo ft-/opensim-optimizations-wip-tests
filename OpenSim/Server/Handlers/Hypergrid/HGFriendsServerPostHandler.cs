@@ -25,24 +25,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using Nini.Config;
 using log4net;
-using System;
-using System.Reflection;
-using System.IO;
-using System.Net;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Xml;
-using System.Xml.Serialization;
-using System.Collections.Generic;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
-using FriendInfo = OpenSim.Services.Interfaces.FriendInfo;
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
+using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Framework.Servers.HttpServer;
-using OpenMetaverse;
+using OpenSim.Server.Base;
+using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Xml;
+using FriendInfo = OpenSim.Services.Interfaces.FriendInfo;
 
 namespace OpenSim.Server.Handlers.Hypergrid
 {
@@ -50,18 +44,17 @@ namespace OpenSim.Server.Handlers.Hypergrid
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private IUserAgentService m_UserAgentService;
         private IFriendsSimConnector m_FriendsLocalSimConnector;
         private IHGFriendsService m_TheService;
-
+        private IUserAgentService m_UserAgentService;
         public HGFriendsServerPostHandler(IHGFriendsService service, IUserAgentService uas, IFriendsSimConnector friendsConn) :
-                base("POST", "/hgfriends")
+            base("POST", "/hgfriends")
         {
             m_TheService = service;
             m_UserAgentService = uas;
             m_FriendsLocalSimConnector = friendsConn;
 
-            m_log.DebugFormat("[HGFRIENDS HANDLER]: HGFriendsServerPostHandler is On ({0})", 
+            m_log.DebugFormat("[HGFRIENDS HANDLER]: HGFriendsServerPostHandler is On ({0})",
                 (m_FriendsLocalSimConnector == null ? "robust" : "standalone"));
 
             if (m_TheService == null)
@@ -99,30 +92,30 @@ namespace OpenSim.Server.Handlers.Hypergrid
                     case "deletefriendship":
                         return DeleteFriendship(request);
 
-                        /* Same as inter-sim */
+                    /* Same as inter-sim */
                     case "friendship_offered":
                         return FriendshipOffered(request);
 
                     case "validate_friendship_offered":
                         return ValidateFriendshipOffered(request);
-                        
+
                     case "statusnotification":
                         return StatusNotification(request);
                     /*
                     case "friendship_approved":
                         return FriendshipApproved(request);
-                    
+
                     case "friendship_denied":
                         return FriendshipDenied(request);
-                    
+
                     case "friendship_terminated":
                         return FriendshipTerminated(request);
-                    
+
                     case "grant_rights":
                         return GrantRights(request);
                         */
                 }
-                
+
                 m_log.DebugFormat("[HGFRIENDS HANDLER]: unknown method {0}", method);
             }
             catch (Exception e)
@@ -135,7 +128,48 @@ namespace OpenSim.Server.Handlers.Hypergrid
 
         #region Method-specific handlers
 
-        byte[] GetFriendPerms(Dictionary<string, object> request)
+        private byte[] DeleteFriendship(Dictionary<string, object> request)
+        {
+            FriendInfo friend = new FriendInfo(request);
+            string secret = string.Empty;
+            if (request.ContainsKey("SECRET"))
+                secret = request["SECRET"].ToString();
+
+            if (secret == string.Empty)
+                return BoolResult(false);
+
+            bool success = m_TheService.DeleteFriendship(friend, secret);
+
+            return BoolResult(success);
+        }
+
+        private byte[] FriendshipOffered(Dictionary<string, object> request)
+        {
+            UUID fromID = UUID.Zero;
+            UUID toID = UUID.Zero;
+            string message = string.Empty;
+            string name = string.Empty;
+
+            if (!request.ContainsKey("FromID") || !request.ContainsKey("ToID"))
+                return BoolResult(false);
+
+            if (!UUID.TryParse(request["ToID"].ToString(), out toID))
+                return BoolResult(false);
+
+            message = request["Message"].ToString();
+
+            if (!UUID.TryParse(request["FromID"].ToString(), out fromID))
+                return BoolResult(false);
+
+            if (request.ContainsKey("FromName"))
+                name = request["FromName"].ToString();
+
+            bool success = m_TheService.FriendshipOffered(fromID, name, toID, message);
+
+            return BoolResult(success);
+        }
+
+        private byte[] GetFriendPerms(Dictionary<string, object> request)
         {
             if (!VerifyServiceKey(request))
                 return FailureResult();
@@ -165,7 +199,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
             return SuccessResult(perms.ToString());
         }
 
-        byte[] NewFriendship(Dictionary<string, object> request)
+        private byte[] NewFriendship(Dictionary<string, object> request)
         {
             bool verified = VerifyServiceKey(request);
 
@@ -178,61 +212,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
             else
                 return FailureResult();
         }
-
-        byte[] DeleteFriendship(Dictionary<string, object> request)
-        {
-            FriendInfo friend = new FriendInfo(request);
-            string secret = string.Empty;
-            if (request.ContainsKey("SECRET"))
-                secret = request["SECRET"].ToString();
-
-            if (secret == string.Empty)
-                return BoolResult(false);
-
-            bool success = m_TheService.DeleteFriendship(friend, secret);
-
-            return BoolResult(success);
-        }
-
-        byte[] FriendshipOffered(Dictionary<string, object> request)
-        {
-            UUID fromID = UUID.Zero;
-            UUID toID = UUID.Zero;
-            string message = string.Empty;
-            string name = string.Empty;
-
-            if (!request.ContainsKey("FromID") || !request.ContainsKey("ToID"))
-                return BoolResult(false);
-
-            if (!UUID.TryParse(request["ToID"].ToString(), out toID))
-                return BoolResult(false);
-
-            message = request["Message"].ToString();
-
-            if (!UUID.TryParse(request["FromID"].ToString(), out fromID))
-                return BoolResult(false);
-
-            if (request.ContainsKey("FromName"))
-                name = request["FromName"].ToString();
-
-            bool success = m_TheService.FriendshipOffered(fromID, name, toID, message);
-
-            return BoolResult(success);
-        }
-
-        byte[] ValidateFriendshipOffered(Dictionary<string, object> request)
-        {
-            FriendInfo friend = new FriendInfo(request);
-            UUID friendID = UUID.Zero;
-            if (!UUID.TryParse(friend.Friend, out friendID))
-                return BoolResult(false);
-
-            bool success = m_TheService.ValidateFriendshipOffered(friend.PrincipalID, friendID);
-
-            return BoolResult(success);
-        }
-
-        byte[] StatusNotification(Dictionary<string, object> request)
+        private byte[] StatusNotification(Dictionary<string, object> request)
         {
             UUID principalID = UUID.Zero;
             if (request.ContainsKey("userID"))
@@ -284,36 +264,84 @@ namespace OpenSim.Server.Handlers.Hypergrid
             return Util.UTF8NoBomEncoding.GetBytes(xmlString);
         }
 
-        #endregion
+        private byte[] ValidateFriendshipOffered(Dictionary<string, object> request)
+        {
+            FriendInfo friend = new FriendInfo(request);
+            UUID friendID = UUID.Zero;
+            if (!UUID.TryParse(friend.Friend, out friendID))
+                return BoolResult(false);
+
+            bool success = m_TheService.ValidateFriendshipOffered(friend.PrincipalID, friendID);
+
+            return BoolResult(success);
+        }
+        #endregion Method-specific handlers
 
         #region Misc
 
-        private bool VerifyServiceKey(Dictionary<string, object> request)
+        private byte[] BoolResult(bool value)
         {
-            if (!request.ContainsKey("KEY") || !request.ContainsKey("SESSIONID"))
-            {
-                m_log.WarnFormat("[HGFRIENDS HANDLER]: ignoring request without Key or SessionID");
-                return false;
-            }
+            XmlDocument doc = new XmlDocument();
 
-            if (request["KEY"] == null || request["SESSIONID"] == null)
-                return false;
+            XmlNode xmlnode = doc.CreateNode(XmlNodeType.XmlDeclaration,
+                    "", "");
 
-            string serviceKey = request["KEY"].ToString();
-            string sessionStr = request["SESSIONID"].ToString();
+            doc.AppendChild(xmlnode);
 
-            UUID sessionID;
-            if (!UUID.TryParse(sessionStr, out sessionID) || serviceKey == string.Empty)
-                return false;
+            XmlElement rootElement = doc.CreateElement("", "ServerResponse",
+                    "");
 
-            if (!m_UserAgentService.VerifyAgent(sessionID, serviceKey))
-            {
-                m_log.WarnFormat("[HGFRIENDS HANDLER]: Key {0} for session {1} did not match existing key. Ignoring request", serviceKey, sessionID);
-                return false;
-            }
+            doc.AppendChild(rootElement);
 
-            m_log.DebugFormat("[HGFRIENDS HANDLER]: Verification ok");
-            return true;
+            XmlElement result = doc.CreateElement("", "RESULT", "");
+            result.AppendChild(doc.CreateTextNode(value.ToString()));
+
+            rootElement.AppendChild(result);
+
+            return DocToBytes(doc);
+        }
+
+        private byte[] DocToBytes(XmlDocument doc)
+        {
+            MemoryStream ms = new MemoryStream();
+            XmlTextWriter xw = new XmlTextWriter(ms, null);
+            xw.Formatting = Formatting.Indented;
+            doc.WriteTo(xw);
+            xw.Flush();
+
+            return ms.ToArray();
+        }
+
+        private byte[] FailureResult()
+        {
+            return FailureResult(String.Empty);
+        }
+
+        private byte[] FailureResult(string msg)
+        {
+            XmlDocument doc = new XmlDocument();
+
+            XmlNode xmlnode = doc.CreateNode(XmlNodeType.XmlDeclaration,
+                    "", "");
+
+            doc.AppendChild(xmlnode);
+
+            XmlElement rootElement = doc.CreateElement("", "ServerResponse",
+                    "");
+
+            doc.AppendChild(rootElement);
+
+            XmlElement result = doc.CreateElement("", "RESULT", "");
+            result.AppendChild(doc.CreateTextNode("Failure"));
+
+            rootElement.AppendChild(result);
+
+            XmlElement message = doc.CreateElement("", "Message", "");
+            message.AppendChild(doc.CreateTextNode(msg));
+
+            rootElement.AppendChild(message);
+
+            return DocToBytes(doc);
         }
 
         private byte[] SuccessResult()
@@ -365,73 +393,33 @@ namespace OpenSim.Server.Handlers.Hypergrid
             return DocToBytes(doc);
         }
 
-
-        private byte[] FailureResult()
+        private bool VerifyServiceKey(Dictionary<string, object> request)
         {
-            return FailureResult(String.Empty);
+            if (!request.ContainsKey("KEY") || !request.ContainsKey("SESSIONID"))
+            {
+                m_log.WarnFormat("[HGFRIENDS HANDLER]: ignoring request without Key or SessionID");
+                return false;
+            }
+
+            if (request["KEY"] == null || request["SESSIONID"] == null)
+                return false;
+
+            string serviceKey = request["KEY"].ToString();
+            string sessionStr = request["SESSIONID"].ToString();
+
+            UUID sessionID;
+            if (!UUID.TryParse(sessionStr, out sessionID) || serviceKey == string.Empty)
+                return false;
+
+            if (!m_UserAgentService.VerifyAgent(sessionID, serviceKey))
+            {
+                m_log.WarnFormat("[HGFRIENDS HANDLER]: Key {0} for session {1} did not match existing key. Ignoring request", serviceKey, sessionID);
+                return false;
+            }
+
+            m_log.DebugFormat("[HGFRIENDS HANDLER]: Verification ok");
+            return true;
         }
-
-        private byte[] FailureResult(string msg)
-        {
-            XmlDocument doc = new XmlDocument();
-
-            XmlNode xmlnode = doc.CreateNode(XmlNodeType.XmlDeclaration,
-                    "", "");
-
-            doc.AppendChild(xmlnode);
-
-            XmlElement rootElement = doc.CreateElement("", "ServerResponse",
-                    "");
-
-            doc.AppendChild(rootElement);
-
-            XmlElement result = doc.CreateElement("", "RESULT", "");
-            result.AppendChild(doc.CreateTextNode("Failure"));
-
-            rootElement.AppendChild(result);
-
-            XmlElement message = doc.CreateElement("", "Message", "");
-            message.AppendChild(doc.CreateTextNode(msg));
-
-            rootElement.AppendChild(message);
-
-            return DocToBytes(doc);
-        }
-
-        private byte[] BoolResult(bool value)
-        {
-            XmlDocument doc = new XmlDocument();
-
-            XmlNode xmlnode = doc.CreateNode(XmlNodeType.XmlDeclaration,
-                    "", "");
-
-            doc.AppendChild(xmlnode);
-
-            XmlElement rootElement = doc.CreateElement("", "ServerResponse",
-                    "");
-
-            doc.AppendChild(rootElement);
-
-            XmlElement result = doc.CreateElement("", "RESULT", "");
-            result.AppendChild(doc.CreateTextNode(value.ToString()));
-
-            rootElement.AppendChild(result);
-
-            return DocToBytes(doc);
-        }
-
-        private byte[] DocToBytes(XmlDocument doc)
-        {
-            MemoryStream ms = new MemoryStream();
-            XmlTextWriter xw = new XmlTextWriter(ms, null);
-            xw.Formatting = Formatting.Indented;
-            doc.WriteTo(xw);
-            xw.Flush();
-
-            return ms.ToArray();
-        }
-
-
-        #endregion
+        #endregion Misc
     }
 }

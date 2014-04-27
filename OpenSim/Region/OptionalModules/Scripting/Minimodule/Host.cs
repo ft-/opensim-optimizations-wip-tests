@@ -25,19 +25,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Reflection;
 using log4net;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Region.OptionalModules.Scripting.Minimodule.Interfaces;
+using System.Reflection;
 
 namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
-    class Host : System.MarshalByRefObject, IHost
+    internal class Host : System.MarshalByRefObject, IHost
     {
-        private readonly IObject m_obj;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        private readonly IGraphics m_graphics;
         private readonly IExtension m_extend;
+        private readonly IGraphics m_graphics;
+        private readonly IObject m_obj;
         private readonly IMicrothreader m_threader;
         //private Scene m_scene;
 
@@ -51,19 +51,9 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             m_graphics = new Graphics(m_scene);
         }
 
-        public IObject Object
-        {
-            get { return m_obj; }
-        }
-
         public ILog Console
         {
             get { return m_log; }
-        }
-
-        public IGraphics Graphics
-        {
-            get { return m_graphics; }
         }
 
         public IExtension Extensions
@@ -71,9 +61,19 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             get { return m_extend; }
         }
 
+        public IGraphics Graphics
+        {
+            get { return m_graphics; }
+        }
+
         public IMicrothreader Microthreads
         {
             get { return m_threader; }
+        }
+
+        public IObject Object
+        {
+            get { return m_obj; }
         }
     }
 }

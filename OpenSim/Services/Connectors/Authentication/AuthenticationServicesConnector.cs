@@ -26,16 +26,14 @@
  */
 
 using log4net;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Server.Base;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
-using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Services.Interfaces;
-using OpenSim.Server.Base;
-using OpenMetaverse;
 
 namespace OpenSim.Services.Connectors
 {
@@ -61,26 +59,6 @@ namespace OpenSim.Services.Connectors
             Initialise(source);
         }
 
-        public virtual void Initialise(IConfigSource source)
-        {
-            IConfig assetConfig = source.Configs["AuthenticationService"];
-            if (assetConfig == null)
-            {
-                m_log.Error("[AUTH CONNECTOR]: AuthenticationService missing from OpenSim.ini");
-                throw new Exception("Authentication connector init error");
-            }
-
-            string serviceURI = assetConfig.GetString("AuthenticationServerURI",
-                    String.Empty);
-
-            if (serviceURI == String.Empty)
-            {
-                m_log.Error("[AUTH CONNECTOR]: No Server URI named in section AuthenticationService");
-                throw new Exception("Authentication connector init error");
-            }
-            m_ServerURI = serviceURI;
-        }
-
         public string Authenticate(UUID principalID, string password, int lifetime)
         {
             Dictionary<string, object> sendData = new Dictionary<string, object>();
@@ -103,28 +81,31 @@ namespace OpenSim.Services.Connectors
             return replyData["Token"].ToString();
         }
 
-        public bool Verify(UUID principalID, string token, int lifetime)
+        public AuthInfo GetAuthInfo(UUID principalID)
         {
-            Dictionary<string, object> sendData = new Dictionary<string, object>();
-            sendData["LIFETIME"] = lifetime.ToString();
-            sendData["PRINCIPAL"] = principalID.ToString();
-            sendData["TOKEN"] = token;
-
-            sendData["METHOD"] = "verify";
-
-            string reply = SynchronousRestFormsRequester.MakeRequest("POST",
-                    m_ServerURI + "/auth/plain",
-                    ServerUtils.BuildQueryString(sendData));
-
-            Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(
-                    reply);
-
-            if (replyData["Result"].ToString() != "Success")
-                return false;
-
-            return true;
+            // not done from remote simulators
+            return null;
         }
 
+        public virtual void Initialise(IConfigSource source)
+        {
+            IConfig assetConfig = source.Configs["AuthenticationService"];
+            if (assetConfig == null)
+            {
+                m_log.Error("[AUTH CONNECTOR]: AuthenticationService missing from OpenSim.ini");
+                throw new Exception("Authentication connector init error");
+            }
+
+            string serviceURI = assetConfig.GetString("AuthenticationServerURI",
+                    String.Empty);
+
+            if (serviceURI == String.Empty)
+            {
+                m_log.Error("[AUTH CONNECTOR]: No Server URI named in section AuthenticationService");
+                throw new Exception("Authentication connector init error");
+            }
+            m_ServerURI = serviceURI;
+        }
         public bool Release(UUID principalID, string token)
         {
             Dictionary<string, object> sendData = new Dictionary<string, object>();
@@ -146,22 +127,38 @@ namespace OpenSim.Services.Connectors
             return true;
         }
 
+        public bool SetAuthInfo(AuthInfo info)
+        {
+            // not done from remote simulators
+            return false;
+        }
+
         public bool SetPassword(UUID principalID, string passwd)
         {
             // nope, we don't do this
             return false;
         }
 
-        public AuthInfo GetAuthInfo(UUID principalID)
+        public bool Verify(UUID principalID, string token, int lifetime)
         {
-            // not done from remote simulators
-            return null;
-        }
+            Dictionary<string, object> sendData = new Dictionary<string, object>();
+            sendData["LIFETIME"] = lifetime.ToString();
+            sendData["PRINCIPAL"] = principalID.ToString();
+            sendData["TOKEN"] = token;
 
-        public bool SetAuthInfo(AuthInfo info)
-        {
-            // not done from remote simulators
-            return false;
+            sendData["METHOD"] = "verify";
+
+            string reply = SynchronousRestFormsRequester.MakeRequest("POST",
+                    m_ServerURI + "/auth/plain",
+                    ServerUtils.BuildQueryString(sendData));
+
+            Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(
+                    reply);
+
+            if (replyData["Result"].ToString() != "Success")
+                return false;
+
+            return true;
         }
     }
 }

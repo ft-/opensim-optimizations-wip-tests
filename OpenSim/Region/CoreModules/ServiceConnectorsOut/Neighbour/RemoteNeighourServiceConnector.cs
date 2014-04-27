@@ -27,16 +27,14 @@
 
 using log4net;
 using Mono.Addins;
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using Nini.Config;
 using OpenSim.Framework;
-using OpenSim.Services.Connectors;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using OpenSim.Services.Connectors;
 using OpenSim.Services.Interfaces;
-using OpenSim.Server.Base;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Neighbour
 {
@@ -53,14 +51,26 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Neighbour
         //private string serviceDll;
         //private List<Scene> m_Scenes = new List<Scene>();
 
-        public Type ReplaceableInterface 
-        {
-            get { return null; }
-        }
-
         public string Name
         {
             get { return "RemoteNeighbourServicesConnector"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+        public void AddRegion(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+
+            m_LocalService.AddRegion(scene);
+            scene.RegisterModuleInterface<INeighbourService>(this);
+        }
+
+        public void Close()
+        {
         }
 
         public void Initialise(IConfigSource source)
@@ -110,26 +120,6 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Neighbour
             //    }
             //}
         }
-
-        public void Close()
-        {
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-            m_LocalService.AddRegion(scene);
-            scene.RegisterModuleInterface<INeighbourService>(this);
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-            if (m_Enabled)
-                m_LocalService.RemoveRegion(scene);
-        }
-
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -138,9 +128,13 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Neighbour
             m_GridService = scene.GridService;
 
             m_log.InfoFormat("[NEIGHBOUR CONNECTOR]: Enabled remote neighbours for region {0}", scene.RegionInfo.RegionName);
-
         }
 
+        public void RemoveRegion(Scene scene)
+        {
+            if (m_Enabled)
+                m_LocalService.RemoveRegion(scene);
+        }
         #region INeighbourService
 
         public override GridRegion HelloNeighbour(ulong regionHandle, RegionInfo thisRegion)

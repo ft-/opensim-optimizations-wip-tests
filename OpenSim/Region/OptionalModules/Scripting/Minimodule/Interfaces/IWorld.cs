@@ -25,37 +25,40 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenSim.Region.OptionalModules.Scripting.Minimodule.WorldX;
+using System;
 
 namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
-    public class NewUserEventArgs : EventArgs
-    {
-        public IAvatar Avatar;
-    }
+    public delegate void OnChatDelegate(IWorld sender, ChatEventArgs e);
 
     public delegate void OnNewUserDelegate(IWorld sender, NewUserEventArgs e);
 
-    public class ChatEventArgs : EventArgs
-    {
-        public string Text;
-        public IEntity Sender;
-        public int Channel;
-    }
-
-    public delegate void OnChatDelegate(IWorld sender, ChatEventArgs e);
-
     public interface IWorld
     {
-        IObjectAccessor Objects { get; }
-        IAvatar[] Avatars { get; }
-        IParcel[] Parcels { get; }
-        IHeightmap Terrain { get; }
+        event OnChatDelegate OnChat;
+
+        event OnNewUserDelegate OnNewUser;
+
         IWorldAudio Audio { get; }
 
+        IAvatar[] Avatars { get; }
 
-        event OnChatDelegate OnChat;
-        event OnNewUserDelegate OnNewUser;
+        IObjectAccessor Objects { get; }
+        IParcel[] Parcels { get; }
+
+        IHeightmap Terrain { get; }
+    }
+
+    public class ChatEventArgs : EventArgs
+    {
+        public int Channel;
+        public IEntity Sender;
+        public string Text;
+    }
+
+    public class NewUserEventArgs : EventArgs
+    {
+        public IAvatar Avatar;
     }
 }

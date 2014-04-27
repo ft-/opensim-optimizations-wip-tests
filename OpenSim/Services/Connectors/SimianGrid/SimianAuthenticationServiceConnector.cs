@@ -25,18 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Specialized;
-using System.Reflection;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
-using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Specialized;
+using System.Reflection;
 
 namespace OpenSim.Services.Connectors.SimianGrid
 {
@@ -50,56 +49,44 @@ namespace OpenSim.Services.Connectors.SimianGrid
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
-        private string m_serverUrl = String.Empty;
         private bool m_Enabled = false;
-
+        private string m_serverUrl = String.Empty;
         #region ISharedRegionModule
 
-        public Type ReplaceableInterface { get { return null; } }
-        public void RegionLoaded(Scene scene) { }
-        public void PostInitialise() { }
-        public void Close() { }
+        public SimianAuthenticationServiceConnector()
+        {
+        }
 
-        public SimianAuthenticationServiceConnector() { }
         public string Name { get { return "SimianAuthenticationServiceConnector"; } }
-        public void AddRegion(Scene scene) { if (m_Enabled) { scene.RegisterModuleInterface<IAuthenticationService>(this); } }
-        public void RemoveRegion(Scene scene) { if (m_Enabled) { scene.UnregisterModuleInterface<IAuthenticationService>(this); } }
+
+        public Type ReplaceableInterface { get { return null; } }
+
+        public void AddRegion(Scene scene)
+        {
+            if (m_Enabled) { scene.RegisterModuleInterface<IAuthenticationService>(this); }
+        }
+
+        public void Close()
+        {
+        }
+
+        public void PostInitialise()
+        {
+        }
+
+        public void RegionLoaded(Scene scene)
+        {
+        }
+        public void RemoveRegion(Scene scene)
+        {
+            if (m_Enabled) { scene.UnregisterModuleInterface<IAuthenticationService>(this); }
+        }
 
         #endregion ISharedRegionModule
 
         public SimianAuthenticationServiceConnector(IConfigSource source)
         {
             CommonInit(source);
-        }
-
-        public void Initialise(IConfigSource source)
-        {
-            IConfig moduleConfig = source.Configs["Modules"];
-            if (moduleConfig != null)
-            {
-                string name = moduleConfig.GetString("AuthenticationServices", "");
-                if (name == Name)
-                    CommonInit(source);
-            }
-        }
-
-        private void CommonInit(IConfigSource source)
-        {
-            IConfig gridConfig = source.Configs["AuthenticationService"];
-            if (gridConfig != null)
-            {
-                string serviceUrl = gridConfig.GetString("AuthenticationServerURI");
-                if (!String.IsNullOrEmpty(serviceUrl))
-                {
-                    if (!serviceUrl.EndsWith("/") && !serviceUrl.EndsWith("="))
-                        serviceUrl = serviceUrl + '/';
-                    m_serverUrl = serviceUrl;
-                    m_Enabled = true;
-                }
-            }
-
-            if (String.IsNullOrEmpty(m_serverUrl))
-                m_log.Info("[SIMIAN AUTH CONNECTOR]: No AuthenticationServerURI specified, disabling connector");
         }
 
         public string Authenticate(UUID principalID, string password, int lifetime)
@@ -138,33 +125,27 @@ namespace OpenSim.Services.Connectors.SimianGrid
             }
             else
             {
-                m_log.Warn("[SIMIAN AUTH CONNECTOR]: Failed to retrieve identities for " + principalID + ": "  +
+                m_log.Warn("[SIMIAN AUTH CONNECTOR]: Failed to retrieve identities for " + principalID + ": " +
                     response["Message"].AsString());
             }
 
             return String.Empty;
         }
 
-        public bool Verify(UUID principalID, string token, int lifetime)
+        public AuthInfo GetAuthInfo(UUID principalID)
         {
-            NameValueCollection requestArgs = new NameValueCollection
-            {
-                { "RequestMethod", "GetSession" },
-                { "SessionID", token }
-            };
+            throw new NotImplementedException();
+        }
 
-            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
-            if (response["Success"].AsBoolean())
+        public void Initialise(IConfigSource source)
+        {
+            IConfig moduleConfig = source.Configs["Modules"];
+            if (moduleConfig != null)
             {
-                return true;
+                string name = moduleConfig.GetString("AuthenticationServices", "");
+                if (name == Name)
+                    CommonInit(source);
             }
-            else
-            {
-                m_log.Warn("[SIMIAN AUTH CONNECTOR]: Could not verify session for " + principalID + ": " +
-                    response["Message"].AsString());
-            }
-
-            return false;
         }
 
         public bool Release(UUID principalID, string token)
@@ -187,6 +168,11 @@ namespace OpenSim.Services.Connectors.SimianGrid
             }
 
             return false;
+        }
+
+        public bool SetAuthInfo(AuthInfo info)
+        {
+            throw new NotImplementedException();
         }
 
         public bool SetPassword(UUID principalID, string passwd)
@@ -236,14 +222,41 @@ namespace OpenSim.Services.Connectors.SimianGrid
             return false;
         }
 
-        public AuthInfo GetAuthInfo(UUID principalID)
+        public bool Verify(UUID principalID, string token, int lifetime)
         {
-            throw new NotImplementedException();
+            NameValueCollection requestArgs = new NameValueCollection
+            {
+                { "RequestMethod", "GetSession" },
+                { "SessionID", token }
+            };
+
+            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
+            if (response["Success"].AsBoolean())
+            {
+                return true;
+            }
+            else
+            {
+                m_log.Warn("[SIMIAN AUTH CONNECTOR]: Could not verify session for " + principalID + ": " +
+                    response["Message"].AsString());
+            }
+
+            return false;
         }
 
-        public bool SetAuthInfo(AuthInfo info)
+        private string Authorize(UUID userID)
         {
-            throw new NotImplementedException();
+            NameValueCollection requestArgs = new NameValueCollection
+            {
+                { "RequestMethod", "AddSession" },
+                { "UserID", userID.ToString() }
+            };
+
+            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
+            if (response["Success"].AsBoolean())
+                return response["SessionID"].AsUUID().ToString();
+            else
+                return String.Empty;
         }
 
         private bool CheckPassword(UUID userID, string password, string simianGridCredential, out string authorizeResult)
@@ -289,19 +302,23 @@ namespace OpenSim.Services.Connectors.SimianGrid
             return false;
         }
 
-        private string Authorize(UUID userID)
+        private void CommonInit(IConfigSource source)
         {
-            NameValueCollection requestArgs = new NameValueCollection
+            IConfig gridConfig = source.Configs["AuthenticationService"];
+            if (gridConfig != null)
             {
-                { "RequestMethod", "AddSession" },
-                { "UserID", userID.ToString() }
-            };
+                string serviceUrl = gridConfig.GetString("AuthenticationServerURI");
+                if (!String.IsNullOrEmpty(serviceUrl))
+                {
+                    if (!serviceUrl.EndsWith("/") && !serviceUrl.EndsWith("="))
+                        serviceUrl = serviceUrl + '/';
+                    m_serverUrl = serviceUrl;
+                    m_Enabled = true;
+                }
+            }
 
-            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
-            if (response["Success"].AsBoolean())
-                return response["SessionID"].AsUUID().ToString();
-            else
-                return String.Empty;
+            if (String.IsNullOrEmpty(m_serverUrl))
+                m_log.Info("[SIMIAN AUTH CONNECTOR]: No AuthenticationServerURI specified, disabling connector");
         }
     }
 }

@@ -25,22 +25,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using Nini.Config;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Physics.Manager;
+using System;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Physics.POSPlugin
 {
     public class POSScene : PhysicsScene
     {
-        private List<POSCharacter> _characters = new List<POSCharacter>();
-        private List<POSPrim> _prims = new List<POSPrim>();
-        private float[] _heightMap;
         private const float gravity = -9.8f;
-
+        private List<POSCharacter> _characters = new List<POSCharacter>();
+        private float[] _heightMap;
+        private List<POSPrim> _prims = new List<POSPrim>();
         //protected internal string sceneIdentifier;
 
         public POSScene(string engineType, String _sceneIdentifier)
@@ -50,12 +49,10 @@ namespace OpenSim.Region.Physics.POSPlugin
             //sceneIdentifier = _sceneIdentifier;
         }
 
-        public override void Initialise(IMesher meshmerizer, IConfigSource config)
+        public override bool IsThreaded
         {
-        }
-
-        public override void Dispose()
-        {
+            // for now we won't be multithreaded
+            get { return (false); }
         }
 
         public override PhysicsActor AddAvatar(string avName, Vector3 position, Vector3 size, bool isFlying)
@@ -67,30 +64,9 @@ namespace OpenSim.Region.Physics.POSPlugin
             return act;
         }
 
-        public override void RemovePrim(PhysicsActor prim)
+        public override void AddPhysicsActorTaint(PhysicsActor prim)
         {
-            POSPrim p = (POSPrim) prim;
-            if (_prims.Contains(p))
-            {
-                _prims.Remove(p);
-            }
         }
-
-        public override void RemoveAvatar(PhysicsActor character)
-        {
-            POSCharacter act = (POSCharacter) character;
-            if (_characters.Contains(act))
-            {
-                _characters.Remove(act);
-            }
-        }
-
-/*
-        public override PhysicsActor AddPrim(Vector3 position, Vector3 size, Quaternion rotation)
-        {
-            return null;
-        }
-*/
 
         public override PhysicsActor AddPrimShape(string primName, PrimitiveBaseShape pbs, Vector3 position,
                                                   Vector3 size, Quaternion rotation, bool isPhysical, uint localid)
@@ -103,31 +79,56 @@ namespace OpenSim.Region.Physics.POSPlugin
             return prim;
         }
 
-        private bool isColliding(POSCharacter c, POSPrim p)
+        public override void DeleteTerrain()
         {
-            Vector3 rotatedPos = new Vector3(c.Position.X - p.Position.X, c.Position.Y - p.Position.Y,
-                                             c.Position.Z - p.Position.Z) * Quaternion.Inverse(p.Orientation);
-            Vector3 avatarSize = new Vector3(c.Size.X, c.Size.Y, c.Size.Z) * Quaternion.Inverse(p.Orientation);
-
-            return (Math.Abs(rotatedPos.X) < (p.Size.X*0.5 + Math.Abs(avatarSize.X)) &&
-                    Math.Abs(rotatedPos.Y) < (p.Size.Y*0.5 + Math.Abs(avatarSize.Y)) &&
-                    Math.Abs(rotatedPos.Z) < (p.Size.Z*0.5 + Math.Abs(avatarSize.Z)));
         }
 
-        private bool isCollidingWithPrim(POSCharacter c)
+        public override void Dispose()
         {
-            foreach (POSPrim p in _prims)
+        }
+
+        public override void GetResults()
+        {
+        }
+
+        public override Dictionary<uint, float> GetTopColliders()
+        {
+            Dictionary<uint, float> returncolliders = new Dictionary<uint, float>();
+            return returncolliders;
+        }
+
+        public override void Initialise(IMesher meshmerizer, IConfigSource config)
+        {
+        }
+        public override void RemoveAvatar(PhysicsActor character)
+        {
+            POSCharacter act = (POSCharacter)character;
+            if (_characters.Contains(act))
             {
-                if (isColliding(c, p))
-                {
-                    return true;
-                }
+                _characters.Remove(act);
             }
-
-            return false;
         }
 
-        public override void AddPhysicsActorTaint(PhysicsActor prim)
+        public override void RemovePrim(PhysicsActor prim)
+        {
+            POSPrim p = (POSPrim)prim;
+            if (_prims.Contains(p))
+            {
+                _prims.Remove(p);
+            }
+        }
+        /*
+                public override PhysicsActor AddPrim(Vector3 position, Vector3 size, Quaternion rotation)
+                {
+                    return null;
+                }
+        */
+        public override void SetTerrain(float[] heightMap)
+        {
+            _heightMap = heightMap;
+        }
+
+        public override void SetWaterLevel(float baseheight)
         {
         }
 
@@ -166,7 +167,7 @@ namespace OpenSim.Region.Physics.POSPlugin
                 }
                 else
                 {
-                    characterPosition.Z += character._target_velocity.Z*timeStep;
+                    characterPosition.Z += character._target_velocity.Z * timeStep;
                 }
 
                 /// this is it -- the magic you've all been waiting for!  Ladies and gentlemen --
@@ -221,8 +222,8 @@ namespace OpenSim.Region.Physics.POSPlugin
 
                 character.Position = characterPosition;
 
-                character._velocity.X = (character.Position.X - oldposX)/timeStep;
-                character._velocity.Y = (character.Position.Y - oldposY)/timeStep;
+                character._velocity.X = (character.Position.X - oldposX) / timeStep;
+                character._velocity.Y = (character.Position.Y - oldposY) / timeStep;
 
                 if (forcedZ)
                 {
@@ -234,39 +235,34 @@ namespace OpenSim.Region.Physics.POSPlugin
                 else
                 {
                     ((PhysicsActor)character).IsColliding = false;
-                    character._velocity.Z = (character.Position.Z - oldposZ)/timeStep;
+                    character._velocity.Z = (character.Position.Z - oldposZ) / timeStep;
                 }
             }
             return fps;
         }
 
-        public override void GetResults()
+        private bool isColliding(POSCharacter c, POSPrim p)
         {
+            Vector3 rotatedPos = new Vector3(c.Position.X - p.Position.X, c.Position.Y - p.Position.Y,
+                                             c.Position.Z - p.Position.Z) * Quaternion.Inverse(p.Orientation);
+            Vector3 avatarSize = new Vector3(c.Size.X, c.Size.Y, c.Size.Z) * Quaternion.Inverse(p.Orientation);
+
+            return (Math.Abs(rotatedPos.X) < (p.Size.X * 0.5 + Math.Abs(avatarSize.X)) &&
+                    Math.Abs(rotatedPos.Y) < (p.Size.Y * 0.5 + Math.Abs(avatarSize.Y)) &&
+                    Math.Abs(rotatedPos.Z) < (p.Size.Z * 0.5 + Math.Abs(avatarSize.Z)));
         }
 
-        public override bool IsThreaded
+        private bool isCollidingWithPrim(POSCharacter c)
         {
-            // for now we won't be multithreaded
-            get { return (false); }
-        }
+            foreach (POSPrim p in _prims)
+            {
+                if (isColliding(c, p))
+                {
+                    return true;
+                }
+            }
 
-        public override void SetTerrain(float[] heightMap)
-        {
-            _heightMap = heightMap;
-        }
-
-        public override void DeleteTerrain()
-        {
-        }
-
-        public override void SetWaterLevel(float baseheight)
-        {
-        }
-
-        public override Dictionary<uint, float> GetTopColliders()
-        {
-            Dictionary<uint, float> returncolliders = new Dictionary<uint, float>();
-            return returncolliders;
+            return false;
         }
     }
 }

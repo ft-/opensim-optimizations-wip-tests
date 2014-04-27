@@ -25,17 +25,34 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Nini.Config;
+using OpenMetaverse;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using Nini.Config;
-using log4net;
-using OpenSim.Framework;
-using OpenMetaverse;
 
 namespace OpenSim.Region.Physics.Manager
 {
+    public interface IMeshingPlugin
+    {
+        IMesher GetMesher(IConfigSource config);
+
+        string GetName();
+    }
+
+    public interface IPhysicsPlugin
+    {
+        void Dispose();
+
+        string GetName();
+
+        PhysicsScene GetScene(String sceneIdentifier);
+
+        bool Init();
+    }
+
     /// <summary>
     /// Description of MyClass.
     /// </summary>
@@ -43,21 +60,33 @@ namespace OpenSim.Region.Physics.Manager
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private Dictionary<string, IPhysicsPlugin> _PhysPlugins = new Dictionary<string, IPhysicsPlugin>();
         private Dictionary<string, IMeshingPlugin> _MeshPlugins = new Dictionary<string, IMeshingPlugin>();
-
+        private Dictionary<string, IPhysicsPlugin> _PhysPlugins = new Dictionary<string, IPhysicsPlugin>();
         /// <summary>
         /// Constructor.
         /// </summary>
         public PhysicsPluginManager()
         {
-            // Load "plugins", that are hard coded and not existing in form of an external lib, and hence always 
+            // Load "plugins", that are hard coded and not existing in form of an external lib, and hence always
             // available
             IMeshingPlugin plugHard;
             plugHard = new ZeroMesherPlugin();
             _MeshPlugins.Add(plugHard.GetName(), plugHard);
-            
+
             m_log.Info("[PHYSICS]: Added meshing engine: " + plugHard.GetName());
+        }
+
+        //---
+        public static void PhysicsPluginMessage(string message, bool isWarning)
+        {
+            if (isWarning)
+            {
+                m_log.Warn("[PHYSICS]: " + message);
+            }
+            else
+            {
+                m_log.Info("[PHYSICS]: " + message);
+            }
         }
 
         /// <summary>
@@ -209,34 +238,6 @@ namespace OpenSim.Region.Physics.Manager
 
             pluginAssembly = null;
         }
-
         //---
-        public static void PhysicsPluginMessage(string message, bool isWarning)
-        {
-            if (isWarning)
-            {
-                m_log.Warn("[PHYSICS]: " + message);
-            }
-            else
-            {
-                m_log.Info("[PHYSICS]: " + message);
-            }
-        }
-
-        //---
-    }
-
-    public interface IPhysicsPlugin
-    {
-        bool Init();
-        PhysicsScene GetScene(String sceneIdentifier);
-        string GetName();
-        void Dispose();
-    }
-
-    public interface IMeshingPlugin
-    {
-        string GetName();
-        IMesher GetMesher(IConfigSource config);
     }
 }

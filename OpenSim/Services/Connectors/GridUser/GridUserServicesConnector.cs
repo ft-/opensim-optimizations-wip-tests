@@ -26,17 +26,14 @@
  */
 
 using log4net;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Server.Base;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
-using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Services.Interfaces;
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
-using OpenSim.Server.Base;
-using OpenMetaverse;
 
 namespace OpenSim.Services.Connectors
 {
@@ -60,169 +57,6 @@ namespace OpenSim.Services.Connectors
         public GridUserServicesConnector(IConfigSource source)
         {
             Initialise(source);
-        }
-
-        public virtual void Initialise(IConfigSource source)
-        {
-            IConfig gridConfig = source.Configs["GridUserService"];
-            if (gridConfig == null)
-            {
-                m_log.Error("[GRID USER CONNECTOR]: GridUserService missing from OpenSim.ini");
-                throw new Exception("GridUser connector init error");
-            }
-
-            string serviceURI = gridConfig.GetString("GridUserServerURI",
-                    String.Empty);
-
-            if (serviceURI == String.Empty)
-            {
-                m_log.Error("[GRID USER CONNECTOR]: No Server URI named in section GridUserService");
-                throw new Exception("GridUser connector init error");
-            }
-            m_ServerURI = serviceURI;
-        }
-
-
-        #region IGridUserService
-
-
-        public GridUserInfo LoggedIn(string userID)
-        {
-            Dictionary<string, object> sendData = new Dictionary<string, object>();
-            //sendData["SCOPEID"] = scopeID.ToString();
-            sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
-            sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
-            sendData["METHOD"] = "loggedin";
-
-            sendData["UserID"] = userID;
-
-            return Get(sendData);
-
-        }
-
-        public bool LoggedOut(string userID, UUID sessionID, UUID region, Vector3 position, Vector3 lookat)
-        {
-            Dictionary<string, object> sendData = new Dictionary<string, object>();
-            //sendData["SCOPEID"] = scopeID.ToString();
-            sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
-            sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
-            sendData["METHOD"] = "loggedout";
-
-            return Set(sendData, userID, region, position, lookat);
-        }
-
-        public bool SetHome(string userID, UUID regionID, Vector3 position, Vector3 lookAt)
-        {
-            Dictionary<string, object> sendData = new Dictionary<string, object>();
-            //sendData["SCOPEID"] = scopeID.ToString();
-            sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
-            sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
-            sendData["METHOD"] = "sethome";
-
-            return Set(sendData, userID, regionID, position, lookAt);
-        }
-
-        public bool SetLastPosition(string userID, UUID sessionID, UUID regionID, Vector3 position, Vector3 lookAt)
-        {
-            Dictionary<string, object> sendData = new Dictionary<string, object>();
-            //sendData["SCOPEID"] = scopeID.ToString();
-            sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
-            sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
-            sendData["METHOD"] = "setposition";
-
-            return Set(sendData, userID, regionID, position, lookAt);
-        }
-
-        public GridUserInfo GetGridUserInfo(string userID)
-        {
-            Dictionary<string, object> sendData = new Dictionary<string, object>();
-            //sendData["SCOPEID"] = scopeID.ToString();
-            sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
-            sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
-            sendData["METHOD"] = "getgriduserinfo";
-
-            sendData["UserID"] = userID;
-
-            return Get(sendData);
-        }
-
-        #endregion
-
-        protected bool Set(Dictionary<string, object> sendData, string userID, UUID regionID, Vector3 position, Vector3 lookAt)
-        {
-            sendData["UserID"] = userID;
-            sendData["RegionID"] = regionID.ToString();
-            sendData["Position"] = position.ToString();
-            sendData["LookAt"] = lookAt.ToString();
-
-            string reqString = ServerUtils.BuildQueryString(sendData);
-            string uri = m_ServerURI + "/griduser";
-            // m_log.DebugFormat("[GRID USER CONNECTOR]: queryString = {0}", reqString);
-            try
-            {
-                string reply = SynchronousRestFormsRequester.MakeRequest("POST",
-                        uri,
-                        reqString);
-                if (reply != string.Empty)
-                {
-                    Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
-
-                    if (replyData.ContainsKey("result"))
-                    {
-                        if (replyData["result"].ToString().ToLower() == "success")
-                            return true;
-                        else
-                            return false;
-                    }
-                    else
-                        m_log.DebugFormat("[GRID USER CONNECTOR]: SetPosition reply data does not contain result field");
-
-                }
-                else
-                    m_log.DebugFormat("[GRID USER CONNECTOR]: SetPosition received empty reply");
-            }
-            catch (Exception e)
-            {
-                m_log.DebugFormat("[GRID USER CONNECTOR]: Exception when contacting grid user server at {0}: {1}", uri, e.Message);
-            }
-
-            return false;
-        }
-
-        protected GridUserInfo Get(Dictionary<string, object> sendData)
-        {
-            string reqString = ServerUtils.BuildQueryString(sendData);
-            string uri = m_ServerURI + "/griduser";
-            // m_log.DebugFormat("[GRID USER CONNECTOR]: queryString = {0}", reqString);
-            try
-            {
-                string reply = SynchronousRestFormsRequester.MakeRequest("POST",
-                        uri,
-                        reqString);
-                if (reply != string.Empty)
-                {
-                    Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
-                    GridUserInfo guinfo = null;
-
-                    if ((replyData != null) && replyData.ContainsKey("result") && (replyData["result"] != null))
-                    {
-                        if (replyData["result"] is Dictionary<string, object>)
-                            guinfo = Create((Dictionary<string, object>)replyData["result"]);
-                    }
-
-                    return guinfo;
-
-                }
-                else
-                    m_log.DebugFormat("[GRID USER CONNECTOR]: Get received empty reply");
-            }
-            catch (Exception e)
-            {
-                m_log.DebugFormat("[GRID USER CONNECTOR]: Exception when contacting grid user server at {0}: {1}", uri, e.Message);
-            }
-
-            return null;
-
         }
 
         public GridUserInfo[] GetGridUserInfo(string[] userIDs)
@@ -287,9 +121,165 @@ namespace OpenSim.Services.Connectors
             return rinfos.ToArray();
         }
 
+        public virtual void Initialise(IConfigSource source)
+        {
+            IConfig gridConfig = source.Configs["GridUserService"];
+            if (gridConfig == null)
+            {
+                m_log.Error("[GRID USER CONNECTOR]: GridUserService missing from OpenSim.ini");
+                throw new Exception("GridUser connector init error");
+            }
+
+            string serviceURI = gridConfig.GetString("GridUserServerURI",
+                    String.Empty);
+
+            if (serviceURI == String.Empty)
+            {
+                m_log.Error("[GRID USER CONNECTOR]: No Server URI named in section GridUserService");
+                throw new Exception("GridUser connector init error");
+            }
+            m_ServerURI = serviceURI;
+        }
+
+        #region IGridUserService
+
+        public GridUserInfo GetGridUserInfo(string userID)
+        {
+            Dictionary<string, object> sendData = new Dictionary<string, object>();
+            //sendData["SCOPEID"] = scopeID.ToString();
+            sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
+            sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
+            sendData["METHOD"] = "getgriduserinfo";
+
+            sendData["UserID"] = userID;
+
+            return Get(sendData);
+        }
+
+        public GridUserInfo LoggedIn(string userID)
+        {
+            Dictionary<string, object> sendData = new Dictionary<string, object>();
+            //sendData["SCOPEID"] = scopeID.ToString();
+            sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
+            sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
+            sendData["METHOD"] = "loggedin";
+
+            sendData["UserID"] = userID;
+
+            return Get(sendData);
+        }
+
+        public bool LoggedOut(string userID, UUID sessionID, UUID region, Vector3 position, Vector3 lookat)
+        {
+            Dictionary<string, object> sendData = new Dictionary<string, object>();
+            //sendData["SCOPEID"] = scopeID.ToString();
+            sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
+            sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
+            sendData["METHOD"] = "loggedout";
+
+            return Set(sendData, userID, region, position, lookat);
+        }
+
+        public bool SetHome(string userID, UUID regionID, Vector3 position, Vector3 lookAt)
+        {
+            Dictionary<string, object> sendData = new Dictionary<string, object>();
+            //sendData["SCOPEID"] = scopeID.ToString();
+            sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
+            sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
+            sendData["METHOD"] = "sethome";
+
+            return Set(sendData, userID, regionID, position, lookAt);
+        }
+
+        public bool SetLastPosition(string userID, UUID sessionID, UUID regionID, Vector3 position, Vector3 lookAt)
+        {
+            Dictionary<string, object> sendData = new Dictionary<string, object>();
+            //sendData["SCOPEID"] = scopeID.ToString();
+            sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
+            sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
+            sendData["METHOD"] = "setposition";
+
+            return Set(sendData, userID, regionID, position, lookAt);
+        }
+        #endregion IGridUserService
+
         protected virtual GridUserInfo Create(Dictionary<string, object> griduser)
         {
             return new GridUserInfo(griduser);
+        }
+
+        protected GridUserInfo Get(Dictionary<string, object> sendData)
+        {
+            string reqString = ServerUtils.BuildQueryString(sendData);
+            string uri = m_ServerURI + "/griduser";
+            // m_log.DebugFormat("[GRID USER CONNECTOR]: queryString = {0}", reqString);
+            try
+            {
+                string reply = SynchronousRestFormsRequester.MakeRequest("POST",
+                        uri,
+                        reqString);
+                if (reply != string.Empty)
+                {
+                    Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
+                    GridUserInfo guinfo = null;
+
+                    if ((replyData != null) && replyData.ContainsKey("result") && (replyData["result"] != null))
+                    {
+                        if (replyData["result"] is Dictionary<string, object>)
+                            guinfo = Create((Dictionary<string, object>)replyData["result"]);
+                    }
+
+                    return guinfo;
+                }
+                else
+                    m_log.DebugFormat("[GRID USER CONNECTOR]: Get received empty reply");
+            }
+            catch (Exception e)
+            {
+                m_log.DebugFormat("[GRID USER CONNECTOR]: Exception when contacting grid user server at {0}: {1}", uri, e.Message);
+            }
+
+            return null;
+        }
+
+        protected bool Set(Dictionary<string, object> sendData, string userID, UUID regionID, Vector3 position, Vector3 lookAt)
+        {
+            sendData["UserID"] = userID;
+            sendData["RegionID"] = regionID.ToString();
+            sendData["Position"] = position.ToString();
+            sendData["LookAt"] = lookAt.ToString();
+
+            string reqString = ServerUtils.BuildQueryString(sendData);
+            string uri = m_ServerURI + "/griduser";
+            // m_log.DebugFormat("[GRID USER CONNECTOR]: queryString = {0}", reqString);
+            try
+            {
+                string reply = SynchronousRestFormsRequester.MakeRequest("POST",
+                        uri,
+                        reqString);
+                if (reply != string.Empty)
+                {
+                    Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
+
+                    if (replyData.ContainsKey("result"))
+                    {
+                        if (replyData["result"].ToString().ToLower() == "success")
+                            return true;
+                        else
+                            return false;
+                    }
+                    else
+                        m_log.DebugFormat("[GRID USER CONNECTOR]: SetPosition reply data does not contain result field");
+                }
+                else
+                    m_log.DebugFormat("[GRID USER CONNECTOR]: SetPosition received empty reply");
+            }
+            catch (Exception e)
+            {
+                m_log.DebugFormat("[GRID USER CONNECTOR]: Exception when contacting grid user server at {0}: {1}", uri, e.Message);
+            }
+
+            return false;
         }
     }
 }

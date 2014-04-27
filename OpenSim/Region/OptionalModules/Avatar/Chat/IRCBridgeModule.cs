@@ -25,73 +25,42 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Mono.Addins;
+using Nini.Config;
+using Nwc.XmlRpc;
+using OpenSim.Framework.Servers;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using System.Reflection;
-using log4net;
-using Mono.Addins;
-using Nini.Config;
-using Nwc.XmlRpc;
-using OpenSim.Framework;
-using OpenSim.Framework.Servers;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
 
 namespace OpenSim.Region.OptionalModules.Avatar.Chat
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "IRCBridgeModule")]
     public class IRCBridgeModule : INonSharedRegionModule
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
         internal static bool Enabled = false;
-        internal static IConfig m_config = null;
-
         internal static List<ChannelState> m_channels = new List<ChannelState>();
-        internal static List<RegionState> m_regions = new List<RegionState>();
-
+        internal static IConfig m_config = null;
         internal static string m_password = String.Empty;
+        internal static List<RegionState> m_regions = new List<RegionState>();
         internal RegionState m_region = null;
-
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         #region INonSharedRegionModule Members
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
 
         public string Name
         {
             get { return "IRCBridgeModule"; }
         }
 
-        public void Initialise(IConfigSource config)
+        public Type ReplaceableInterface
         {
-            m_config = config.Configs["IRC"];
-            if (m_config == null)
-            {
-                //                m_log.InfoFormat("[IRC-Bridge] module not configured");
-                return;
-            }
-
-            if (!m_config.GetBoolean("enabled", false))
-            {
-                //                m_log.InfoFormat("[IRC-Bridge] module disabled in configuration");
-                return;
-            }
-
-            if (config.Configs["RemoteAdmin"] != null)
-            {
-                m_password = config.Configs["RemoteAdmin"].GetString("access_password", m_password);
-            }
-
-            Enabled = true;
-
-            m_log.InfoFormat("[IRC-Bridge]: Module is enabled");
+            get { return null; }
         }
-
         public void AddRegion(Scene scene)
         {
             if (Enabled)
@@ -119,7 +88,34 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
             }
         }
 
+        public void Close()
+        {
+        }
 
+        public void Initialise(IConfigSource config)
+        {
+            m_config = config.Configs["IRC"];
+            if (m_config == null)
+            {
+                //                m_log.InfoFormat("[IRC-Bridge] module not configured");
+                return;
+            }
+
+            if (!m_config.GetBoolean("enabled", false))
+            {
+                //                m_log.InfoFormat("[IRC-Bridge] module disabled in configuration");
+                return;
+            }
+
+            if (config.Configs["RemoteAdmin"] != null)
+            {
+                m_password = config.Configs["RemoteAdmin"].GetString("access_password", m_password);
+            }
+
+            Enabled = true;
+
+            m_log.InfoFormat("[IRC-Bridge]: Module is enabled");
+        }
         public void RegionLoaded(Scene scene)
         {
         }
@@ -142,11 +138,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
                 lock (m_regions) m_regions.Remove(m_region);
             }
         }
-
-        public void Close()
-        {
-        }
-        #endregion
+        #endregion INonSharedRegionModule Members
 
         public static XmlRpcResponse XmlRpcAdminMethod(XmlRpcRequest request, IPEndPoint remoteClient)
         {

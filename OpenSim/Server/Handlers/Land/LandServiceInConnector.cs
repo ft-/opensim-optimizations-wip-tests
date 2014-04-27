@@ -25,16 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using log4net;
 using Nini.Config;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
 using OpenSim.Framework;
 using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Server.Handlers.Base;
+using OpenSim.Services.Interfaces;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Server.Handlers.Land
 {
@@ -46,7 +44,7 @@ namespace OpenSim.Server.Handlers.Land
         // TODO : private IAuthenticationService m_AuthenticationService;
 
         public LandServiceInConnector(IConfigSource source, IHttpServer server, ILandService service, IScene scene) :
-                base(source, server, String.Empty)
+            base(source, server, String.Empty)
         {
             m_LandService = service;
             if (m_LandService == null)
@@ -54,7 +52,7 @@ namespace OpenSim.Server.Handlers.Land
                 m_log.Error("[LAND IN CONNECTOR]: Land service was not provided");
                 return;
             }
-            
+
             //bool authentication = neighbourConfig.GetBoolean("RequireAuthentication", false);
             //if (authentication)
             //    m_AuthenticationService = scene.RequestModuleInterface<IAuthenticationService>();

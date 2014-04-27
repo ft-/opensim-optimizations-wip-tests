@@ -25,25 +25,23 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.IO.Compression;
-using System.Net;
-using System.Reflection;
-using System.Text;
-using System.Xml;
 using log4net;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Framework.Serialization;
 using OpenSim.Framework.Serialization.External;
-using OpenSim.Region.CoreModules.World.Terrain;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Region.Framework.Scenes.Serialization;
 using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Reflection;
+using System.Text;
 using System.Threading;
+using System.Xml;
 
 namespace OpenSim.Region.CoreModules.World.Archiver
 {
@@ -52,74 +50,39 @@ namespace OpenSim.Region.CoreModules.World.Archiver
     /// </summary>
     public class ArchiveReadRequest
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        /// <summary>
-        /// Contains data used while dearchiving a single scene.
-        /// </summary>
-        private class DearchiveContext
-        {
-            public Scene Scene { get; set; }
-
-            public List<string> SerialisedSceneObjects { get; set; }
-
-            public List<string> SerialisedParcels { get; set; }
-
-            public List<SceneObjectGroup> SceneObjects { get; set; }
-
-            public DearchiveContext(Scene scene)
-            {
-                Scene = scene;
-                SerialisedSceneObjects = new List<string>();
-                SerialisedParcels = new List<string>();
-                SceneObjects = new List<SceneObjectGroup>();
-            }
-        }
-        
-
         /// <summary>
         /// The maximum major version of OAR that we can read.  Minor versions shouldn't need a max number since version
         /// bumps here should be compatible.
         /// </summary>
         public static int MAX_MAJOR_VERSION = 1;
-        
-        /// <summary>
-        /// Has the control file been loaded for this archive?
-        /// </summary>
-        public bool ControlFileLoaded { get; private set; }
-
-        protected string m_loadPath;
-        protected Scene m_rootScene;
-        protected Stream m_loadStream;
-        protected Guid m_requestId;
-        protected string m_errorMessage;
-
-        /// <value>
-        /// Should the archive being loaded be merged with what is already on the region?
-        /// Merging usually suppresses terrain and parcel loading
-        /// </value>
-        protected bool m_merge;
-
-        /// <value>
-        /// If true, force the loading of terrain from the oar file
-        /// </value>
-        protected bool m_forceTerrain;
-
-        /// <value>
-        /// If true, force the loading of parcels from the oar file
-        /// </value>
-        protected bool m_forceParcels;
-
-        /// <value>
-        /// Should we ignore any assets when reloading the archive?
-        /// </value>
-        protected bool m_skipAssets;
 
         /// <value>
         /// Displacement added to each object as it is added to the world
         /// </value>
         protected Vector3 m_displacement = Vector3.Zero;
 
+        protected string m_errorMessage;
+        /// <value>
+        /// If true, force the loading of parcels from the oar file
+        /// </value>
+        protected bool m_forceParcels;
+
+        /// <value>
+        /// If true, force the loading of terrain from the oar file
+        /// </value>
+        protected bool m_forceTerrain;
+
+        protected string m_loadPath;
+        protected Stream m_loadStream;
+        /// <value>
+        /// Should the archive being loaded be merged with what is already on the region?
+        /// Merging usually suppresses terrain and parcel loading
+        /// </value>
+        protected bool m_merge;
+
+        protected bool m_noObjects = false;
+        protected Guid m_requestId;
+        protected Scene m_rootScene;
         /// <value>
         /// Rotation (in radians) to apply to the objects as they are loaded.
         /// </value>
@@ -130,37 +93,30 @@ namespace OpenSim.Region.CoreModules.World.Archiver
         /// </value>
         protected Vector3 m_rotationCenter = new Vector3(Constants.RegionSize / 2f, Constants.RegionSize / 2f, 0f);
 
-        protected bool m_noObjects = false;
+        /// <value>
+        /// Should we ignore any assets when reloading the archive?
+        /// </value>
+        protected bool m_skipAssets;
 
-        /// <summary>
-        /// Used to cache lookups for valid uuids.
-        /// </summary>
-        private IDictionary<UUID, bool> m_validUserUuids = new Dictionary<UUID, bool>();
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        private IAssetService m_assetService = null;
+
+        private IGroupsModule m_groupsModule;
 
         private IUserManagement m_UserMan;
-        private IUserManagement UserManager
-        {
-            get
-            {
-                if (m_UserMan == null)
-                {
-                    m_UserMan = m_rootScene.RequestModuleInterface<IUserManagement>();
-                }
-                return m_UserMan;
-            }
-        }
 
         /// <summary>
         /// Used to cache lookups for valid groups.
         /// </summary>
         private IDictionary<UUID, bool> m_validGroupUuids = new Dictionary<UUID, bool>();
 
-        private IGroupsModule m_groupsModule;
+        /// <summary>
+        /// Used to cache lookups for valid uuids.
+        /// </summary>
+        private IDictionary<UUID, bool> m_validUserUuids = new Dictionary<UUID, bool>();
 
-        private IAssetService m_assetService = null;
-
-
-        public ArchiveReadRequest(Scene scene, string loadPath, Guid requestId, Dictionary<string,object>options)
+        public ArchiveReadRequest(Scene scene, string loadPath, Guid requestId, Dictionary<string, object> options)
         {
             m_rootScene = scene;
 
@@ -176,7 +132,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
                         + "If you've manually installed Mono, have you appropriately updated zlib1g as well?");
                 m_log.Error(e);
             }
-        
+
             m_errorMessage = String.Empty;
             m_merge = options.ContainsKey("merge");
             m_forceTerrain = options.ContainsKey("force-terrain");
@@ -186,7 +142,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
             m_requestId = requestId;
             m_displacement = options.ContainsKey("displacement") ? (Vector3)options["displacement"] : Vector3.Zero;
             m_rotation = options.ContainsKey("rotation") ? (float)options["rotation"] : 0f;
-            m_rotationCenter = options.ContainsKey("rotation-center") ? (Vector3)options["rotation-center"] 
+            m_rotationCenter = options.ContainsKey("rotation-center") ? (Vector3)options["rotation-center"]
                                 : new Vector3(scene.RegionInfo.RegionSizeX / 2f, scene.RegionInfo.RegionSizeY / 2f, 0f);
 
             // Zero can never be a valid user or group id
@@ -197,7 +153,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
             m_assetService = m_rootScene.AssetService;
         }
 
-        public ArchiveReadRequest(Scene scene, Stream loadStream, Guid requestId, Dictionary<string, object>options)
+        public ArchiveReadRequest(Scene scene, Stream loadStream, Guid requestId, Dictionary<string, object> options)
         {
             m_rootScene = scene;
             m_loadPath = null;
@@ -211,6 +167,23 @@ namespace OpenSim.Region.CoreModules.World.Archiver
 
             m_groupsModule = m_rootScene.RequestModuleInterface<IGroupsModule>();
             m_assetService = m_rootScene.AssetService;
+        }
+
+        /// <summary>
+        /// Has the control file been loaded for this archive?
+        /// </summary>
+        public bool ControlFileLoaded { get; private set; }
+
+        private IUserManagement UserManager
+        {
+            get
+            {
+                if (m_UserMan == null)
+                {
+                    m_UserMan = m_rootScene.RequestModuleInterface<IUserManagement>();
+                }
+                return m_UserMan;
+            }
         }
 
         /// <summary>
@@ -240,10 +213,9 @@ namespace OpenSim.Region.CoreModules.World.Archiver
                 {
                     //m_log.DebugFormat(
                     //    "[ARCHIVER]: Successfully read {0} ({1} bytes)", filePath, data.Length);
-                    
+
                     if (TarArchiveReader.TarEntryType.TYPE_DIRECTORY == entryType)
                         continue;
-
 
                     // Find the scene that this file belongs to
 
@@ -261,7 +233,6 @@ namespace OpenSim.Region.CoreModules.World.Archiver
                             sceneContexts.Add(scene.RegionInfo.RegionID, sceneContext);
                         }
                     }
-
 
                     // Process the file
 
@@ -286,11 +257,11 @@ namespace OpenSim.Region.CoreModules.World.Archiver
                     else if (!m_merge && filePath.StartsWith(ArchiveConstants.SETTINGS_PATH))
                     {
                         LoadRegionSettings(scene, filePath, data, dearchivedScenes);
-                    } 
+                    }
                     else if (filePath.StartsWith(ArchiveConstants.LANDDATA_PATH) && (!m_merge || m_forceParcels))
                     {
                         sceneContext.SerialisedParcels.Add(Encoding.UTF8.GetString(data));
-                    } 
+                    }
                     else if (filePath == ArchiveConstants.CONTROL_FILE_PATH)
                     {
                         // Ignore, because we already read the control file
@@ -338,7 +309,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
                 {
                     LoadParcels(sceneContext.Scene, sceneContext.SerialisedParcels);
                     LoadObjects(sceneContext.Scene, sceneContext.SerialisedSceneObjects, sceneContext.SceneObjects);
-                    
+
                     // Inform any interested parties that the region has changed. We waited until now so that all
                     // of the region's objects will be loaded when we send this notification.
                     IEstateModule estateModule = sceneContext.Scene.RequestModuleInterface<IEstateModule>();
@@ -380,6 +351,257 @@ namespace OpenSim.Region.CoreModules.World.Archiver
         }
 
         /// <summary>
+        /// Load oar control file
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="data"></param>
+        /// <param name="dearchivedScenes"></param>
+        public DearchiveScenesInfo LoadControlFile(string path, byte[] data, DearchiveScenesInfo dearchivedScenes)
+        {
+            XmlNamespaceManager nsmgr = new XmlNamespaceManager(new NameTable());
+            XmlParserContext context = new XmlParserContext(null, nsmgr, null, XmlSpace.None);
+            XmlTextReader xtr = new XmlTextReader(Encoding.ASCII.GetString(data), XmlNodeType.Document, context);
+
+            // Loaded metadata will be empty if no information exists in the archive
+            dearchivedScenes.LoadedCreationDateTime = 0;
+            dearchivedScenes.DefaultOriginalID = "";
+
+            bool multiRegion = false;
+
+            while (xtr.Read())
+            {
+                if (xtr.NodeType == XmlNodeType.Element)
+                {
+                    if (xtr.Name.ToString() == "archive")
+                    {
+                        int majorVersion = int.Parse(xtr["major_version"]);
+                        int minorVersion = int.Parse(xtr["minor_version"]);
+                        string version = string.Format("{0}.{1}", majorVersion, minorVersion);
+
+                        if (majorVersion > MAX_MAJOR_VERSION)
+                        {
+                            throw new Exception(
+                                string.Format(
+                                    "The OAR you are trying to load has major version number of {0} but this version of OpenSim can only load OARs with major version number {1} and below",
+                                    majorVersion, MAX_MAJOR_VERSION));
+                        }
+
+                        m_log.InfoFormat("[ARCHIVER]: Loading OAR with version {0}", version);
+                    }
+                    if (xtr.Name.ToString() == "datetime")
+                    {
+                        int value;
+                        if (Int32.TryParse(xtr.ReadElementContentAsString(), out value))
+                            dearchivedScenes.LoadedCreationDateTime = value;
+                    }
+                    else if (xtr.Name.ToString() == "row")
+                    {
+                        multiRegion = true;
+                        dearchivedScenes.StartRow();
+                    }
+                    else if (xtr.Name.ToString() == "region")
+                    {
+                        dearchivedScenes.StartRegion();
+                    }
+                    else if (xtr.Name.ToString() == "id")
+                    {
+                        string id = xtr.ReadElementContentAsString();
+                        dearchivedScenes.DefaultOriginalID = id;
+                        if (multiRegion)
+                            dearchivedScenes.SetRegionOriginalID(id);
+                    }
+                    else if (xtr.Name.ToString() == "dir")
+                    {
+                        dearchivedScenes.SetRegionDirectory(xtr.ReadElementContentAsString());
+                    }
+                }
+            }
+
+            dearchivedScenes.MultiRegionFormat = multiRegion;
+            if (!multiRegion)
+            {
+                // Add the single scene
+                dearchivedScenes.StartRow();
+                dearchivedScenes.StartRegion();
+                dearchivedScenes.SetRegionOriginalID(dearchivedScenes.DefaultOriginalID);
+                dearchivedScenes.SetRegionDirectory("");
+            }
+
+            ControlFileLoaded = true;
+
+            return dearchivedScenes;
+        }
+
+        /// <summary>
+        /// Load serialized scene objects.
+        /// </summary>
+        protected void LoadObjects(Scene scene, List<string> serialisedSceneObjects, List<SceneObjectGroup> sceneObjects)
+        {
+            // Reload serialized prims
+            m_log.InfoFormat("[ARCHIVER]: Loading {0} scene objects.  Please wait.", serialisedSceneObjects.Count);
+
+            OpenMetaverse.Quaternion rot = OpenMetaverse.Quaternion.CreateFromAxisAngle(0, 0, 1, m_rotation);
+
+            UUID oldTelehubUUID = scene.RegionInfo.RegionSettings.TelehubObject;
+
+            IRegionSerialiserModule serialiser = scene.RequestModuleInterface<IRegionSerialiserModule>();
+            int sceneObjectsLoadedCount = 0;
+
+            foreach (string serialisedSceneObject in serialisedSceneObjects)
+            {
+                /*
+                m_log.DebugFormat("[ARCHIVER]: Loading xml with raw size {0}", serialisedSceneObject.Length);
+
+                // Really large xml files (multi megabyte) appear to cause
+                // memory problems
+                // when loading the xml.  But don't enable this check yet
+
+                if (serialisedSceneObject.Length > 5000000)
+                {
+                    m_log.Error("[ARCHIVER]: Ignoring xml since size > 5000000);");
+                    continue;
+                }
+                */
+
+                SceneObjectGroup sceneObject = serialiser.DeserializeGroupFromXml2(serialisedSceneObject);
+
+                // Happily this does not do much to the object since it hasn't been added to the scene yet
+                if (!sceneObject.IsAttachment)
+                {
+                    if (m_displacement != Vector3.Zero || m_rotation != 0f)
+                    {
+                        Vector3 pos = sceneObject.AbsolutePosition;
+                        if (m_rotation != 0f)
+                        {
+                            // Rotate the object
+                            sceneObject.RootPart.RotationOffset = rot * sceneObject.GroupRotation;
+                            // Get object position relative to rotation axis
+                            Vector3 offset = pos - m_rotationCenter;
+                            // Rotate the object position
+                            offset *= rot;
+                            // Restore the object position back to relative to the region
+                            pos = m_rotationCenter + offset;
+                        }
+                        if (m_displacement != Vector3.Zero)
+                        {
+                            pos += m_displacement;
+                        }
+                        sceneObject.AbsolutePosition = pos;
+                    }
+                }
+
+                bool isTelehub = (sceneObject.UUID == oldTelehubUUID) && (oldTelehubUUID != UUID.Zero);
+
+                // For now, give all incoming scene objects new uuids.  This will allow scenes to be cloned
+                // on the same region server and multiple examples a single object archive to be imported
+                // to the same scene (when this is possible).
+                sceneObject.ResetIDs();
+
+                if (isTelehub)
+                {
+                    // Change the Telehub Object to the new UUID
+                    scene.RegionInfo.RegionSettings.TelehubObject = sceneObject.UUID;
+                    scene.RegionInfo.RegionSettings.Save();
+                    oldTelehubUUID = UUID.Zero;
+                }
+
+                ModifySceneObject(scene, sceneObject);
+
+                if (scene.AddRestoredSceneObject(sceneObject, true, false))
+                {
+                    sceneObjectsLoadedCount++;
+                    sceneObject.CreateScriptInstances(0, false, scene.DefaultScriptEngine, 0);
+                    sceneObject.ResumeScripts();
+                }
+            }
+
+            m_log.InfoFormat("[ARCHIVER]: Restored {0} scene objects to the scene", sceneObjectsLoadedCount);
+
+            int ignoredObjects = serialisedSceneObjects.Count - sceneObjectsLoadedCount;
+
+            if (ignoredObjects > 0)
+                m_log.WarnFormat("[ARCHIVER]: Ignored {0} scene objects that already existed in the scene", ignoredObjects);
+
+            if (oldTelehubUUID != UUID.Zero)
+            {
+                m_log.WarnFormat("Telehub object not found: {0}", oldTelehubUUID);
+                scene.RegionInfo.RegionSettings.TelehubObject = UUID.Zero;
+                scene.RegionInfo.RegionSettings.ClearSpawnPoints();
+            }
+        }
+
+        /// <summary>
+        /// Load serialized parcels.
+        /// </summary>
+        /// <param name="scene"></param>
+        /// <param name="serialisedParcels"></param>
+        protected void LoadParcels(Scene scene, List<string> serialisedParcels)
+        {
+            // Reload serialized parcels
+            m_log.InfoFormat("[ARCHIVER]: Loading {0} parcels.  Please wait.", serialisedParcels.Count);
+            List<LandData> landData = new List<LandData>();
+            foreach (string serialisedParcel in serialisedParcels)
+            {
+                LandData parcel = LandDataSerializer.Deserialize(serialisedParcel);
+
+                if (m_displacement != Vector3.Zero)
+                {
+                    Vector3 parcelDisp = new Vector3(m_displacement.X, m_displacement.Y, 0f);
+                    parcel.AABBMin += parcelDisp;
+                    parcel.AABBMax += parcelDisp;
+                }
+
+                // Validate User and Group UUID's
+
+                if (!ResolveGroupUuid(parcel.GroupID))
+                    parcel.GroupID = UUID.Zero;
+
+                if (parcel.IsGroupOwned)
+                {
+                    if (parcel.GroupID != UUID.Zero)
+                    {
+                        // In group-owned parcels, OwnerID=GroupID. This should already be the case, but let's make sure.
+                        parcel.OwnerID = parcel.GroupID;
+                    }
+                    else
+                    {
+                        parcel.OwnerID = m_rootScene.RegionInfo.EstateSettings.EstateOwner;
+                        parcel.IsGroupOwned = false;
+                    }
+                }
+                else
+                {
+                    if (!ResolveUserUuid(scene, parcel.OwnerID))
+                        parcel.OwnerID = m_rootScene.RegionInfo.EstateSettings.EstateOwner;
+                }
+
+                List<LandAccessEntry> accessList = new List<LandAccessEntry>();
+                foreach (LandAccessEntry entry in parcel.ParcelAccessList)
+                {
+                    if (ResolveUserUuid(scene, entry.AgentID))
+                        accessList.Add(entry);
+                    // else, drop this access rule
+                }
+                parcel.ParcelAccessList = accessList;
+
+                //                m_log.DebugFormat(
+                //                    "[ARCHIVER]: Adding parcel {0}, local id {1}, owner {2}, group {3}, isGroupOwned {4}, area {5}",
+                //                    parcel.Name, parcel.LocalID, parcel.OwnerID, parcel.GroupID, parcel.IsGroupOwned, parcel.Area);
+
+                landData.Add(parcel);
+            }
+
+            if (!m_merge)
+            {
+                bool setupDefaultParcel = (landData.Count == 0);
+                scene.LandChannel.Clear(setupDefaultParcel);
+            }
+
+            scene.EventManager.TriggerIncomingLandDataFromStorage(landData);
+            m_log.InfoFormat("[ARCHIVER]: Restored {0} parcels.", landData.Count);
+        }
+
+        /// <summary>
         /// Searches through the files in the archive for the control file, and reads it.
         /// We must read the control file first, in order to know which regions are available.
         /// </summary>
@@ -403,7 +625,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
             {
                 if (TarArchiveReader.TarEntryType.TYPE_DIRECTORY == entryType)
                     continue;
-                    
+
                 if (filePath == ArchiveConstants.CONTROL_FILE_PATH)
                 {
                     LoadControlFile(filePath, data, dearchivedScenes);
@@ -448,288 +670,6 @@ namespace OpenSim.Region.CoreModules.World.Archiver
             }
 
             throw new Exception("Control file not found");
-        }
-        
-        /// <summary>
-        /// Load serialized scene objects.
-        /// </summary>
-        protected void LoadObjects(Scene scene, List<string> serialisedSceneObjects, List<SceneObjectGroup> sceneObjects)
-        {
-            // Reload serialized prims
-            m_log.InfoFormat("[ARCHIVER]: Loading {0} scene objects.  Please wait.", serialisedSceneObjects.Count);
-
-            OpenMetaverse.Quaternion rot = OpenMetaverse.Quaternion.CreateFromAxisAngle(0, 0, 1, m_rotation);
-
-            UUID oldTelehubUUID = scene.RegionInfo.RegionSettings.TelehubObject;
-
-            IRegionSerialiserModule serialiser = scene.RequestModuleInterface<IRegionSerialiserModule>();
-            int sceneObjectsLoadedCount = 0;
-
-            foreach (string serialisedSceneObject in serialisedSceneObjects)
-            {
-                /*
-                m_log.DebugFormat("[ARCHIVER]: Loading xml with raw size {0}", serialisedSceneObject.Length);
-
-                // Really large xml files (multi megabyte) appear to cause
-                // memory problems
-                // when loading the xml.  But don't enable this check yet
-                
-                if (serialisedSceneObject.Length > 5000000)
-                {
-                    m_log.Error("[ARCHIVER]: Ignoring xml since size > 5000000);");
-                    continue;
-                }
-                */
-
-                SceneObjectGroup sceneObject = serialiser.DeserializeGroupFromXml2(serialisedSceneObject);
-
-                // Happily this does not do much to the object since it hasn't been added to the scene yet
-                if (!sceneObject.IsAttachment)
-                {
-                    if (m_displacement != Vector3.Zero || m_rotation != 0f)
-                    {
-                        Vector3 pos = sceneObject.AbsolutePosition;
-                        if (m_rotation != 0f)
-                        {
-                            // Rotate the object
-                            sceneObject.RootPart.RotationOffset = rot * sceneObject.GroupRotation;
-                            // Get object position relative to rotation axis
-                            Vector3 offset = pos - m_rotationCenter;
-                            // Rotate the object position
-                            offset *= rot;
-                            // Restore the object position back to relative to the region
-                            pos = m_rotationCenter + offset;
-                        }
-                        if (m_displacement != Vector3.Zero)
-                        {
-                            pos += m_displacement;
-                        }
-                        sceneObject.AbsolutePosition = pos;
-                    }
-                }
-
-
-                bool isTelehub = (sceneObject.UUID == oldTelehubUUID) && (oldTelehubUUID != UUID.Zero);
-
-                // For now, give all incoming scene objects new uuids.  This will allow scenes to be cloned
-                // on the same region server and multiple examples a single object archive to be imported
-                // to the same scene (when this is possible).
-                sceneObject.ResetIDs();
-
-                if (isTelehub)
-                {
-                    // Change the Telehub Object to the new UUID
-                    scene.RegionInfo.RegionSettings.TelehubObject = sceneObject.UUID;
-                    scene.RegionInfo.RegionSettings.Save();
-                    oldTelehubUUID = UUID.Zero;
-                }
-
-                ModifySceneObject(scene, sceneObject);
-
-                if (scene.AddRestoredSceneObject(sceneObject, true, false))
-                {
-                    sceneObjectsLoadedCount++;
-                    sceneObject.CreateScriptInstances(0, false, scene.DefaultScriptEngine, 0);
-                    sceneObject.ResumeScripts();
-                }
-            }
-
-            m_log.InfoFormat("[ARCHIVER]: Restored {0} scene objects to the scene", sceneObjectsLoadedCount);
-
-            int ignoredObjects = serialisedSceneObjects.Count - sceneObjectsLoadedCount;
-
-            if (ignoredObjects > 0)
-                m_log.WarnFormat("[ARCHIVER]: Ignored {0} scene objects that already existed in the scene", ignoredObjects);
-
-            if (oldTelehubUUID != UUID.Zero)
-            {
-                m_log.WarnFormat("Telehub object not found: {0}", oldTelehubUUID);
-                scene.RegionInfo.RegionSettings.TelehubObject = UUID.Zero;
-                scene.RegionInfo.RegionSettings.ClearSpawnPoints();
-            }
-        }
-
-        /// <summary>
-        /// Optionally modify a loaded SceneObjectGroup. Currently this just ensures that the
-        /// User IDs and Group IDs are valid, but other manipulations could be done as well.
-        /// </summary>
-        private void ModifySceneObject(Scene scene, SceneObjectGroup sceneObject)
-        {
-            // Try to retain the original creator/owner/lastowner if their uuid is present on this grid
-            // or creator data is present.  Otherwise, use the estate owner instead.
-            foreach (SceneObjectPart part in sceneObject.Parts)
-            {
-                if (string.IsNullOrEmpty(part.CreatorData))
-                {
-                    if (!ResolveUserUuid(scene, part.CreatorID))
-                        part.CreatorID = scene.RegionInfo.EstateSettings.EstateOwner;
-                }
-                if (UserManager != null)
-                    UserManager.AddUser(part.CreatorID, part.CreatorData);
-
-                if (!(ResolveUserUuid(scene, part.OwnerID) || ResolveGroupUuid(part.OwnerID)))
-                    part.OwnerID = scene.RegionInfo.EstateSettings.EstateOwner;
-
-                if (!(ResolveUserUuid(scene, part.LastOwnerID) || ResolveGroupUuid(part.LastOwnerID)))
-                    part.LastOwnerID = scene.RegionInfo.EstateSettings.EstateOwner;
-
-                if (!ResolveGroupUuid(part.GroupID))
-                    part.GroupID = UUID.Zero;
-
-                // And zap any troublesome sit target information
-                //                    part.SitTargetOrientation = new Quaternion(0, 0, 0, 1);
-                //                    part.SitTargetPosition    = new Vector3(0, 0, 0);
-
-                // Fix ownership/creator of inventory items
-                // Not doing so results in inventory items
-                // being no copy/no mod for everyone
-                lock (part.TaskInventory)
-                {
-                    TaskInventoryDictionary inv = part.TaskInventory;
-                    foreach (KeyValuePair<UUID, TaskInventoryItem> kvp in inv)
-                    {
-                        if (!(ResolveUserUuid(scene, kvp.Value.OwnerID) || ResolveGroupUuid(kvp.Value.OwnerID)))
-                        {
-                            kvp.Value.OwnerID = scene.RegionInfo.EstateSettings.EstateOwner;
-                        }
-
-                        if (string.IsNullOrEmpty(kvp.Value.CreatorData))
-                        {
-                            if (!ResolveUserUuid(scene, kvp.Value.CreatorID))
-                                kvp.Value.CreatorID = scene.RegionInfo.EstateSettings.EstateOwner;
-                        }
-
-                        if (UserManager != null)
-                            UserManager.AddUser(kvp.Value.CreatorID, kvp.Value.CreatorData);
-
-                        if (!ResolveGroupUuid(kvp.Value.GroupID))
-                            kvp.Value.GroupID = UUID.Zero;
-                    }
-                }
-            }
-        }
-
-        
-        /// <summary>
-        /// Load serialized parcels.
-        /// </summary>
-        /// <param name="scene"></param>
-        /// <param name="serialisedParcels"></param>
-        protected void LoadParcels(Scene scene, List<string> serialisedParcels)
-        {
-            // Reload serialized parcels
-            m_log.InfoFormat("[ARCHIVER]: Loading {0} parcels.  Please wait.", serialisedParcels.Count);
-            List<LandData> landData = new List<LandData>();
-            foreach (string serialisedParcel in serialisedParcels)
-            {
-                LandData parcel = LandDataSerializer.Deserialize(serialisedParcel);
-
-                if (m_displacement != Vector3.Zero)
-                {
-                    Vector3 parcelDisp = new Vector3(m_displacement.X, m_displacement.Y, 0f);
-                    parcel.AABBMin += parcelDisp;
-                    parcel.AABBMax += parcelDisp;
-                }
-                
-                // Validate User and Group UUID's
-
-                if (!ResolveGroupUuid(parcel.GroupID))
-                    parcel.GroupID = UUID.Zero;
-
-                if (parcel.IsGroupOwned)
-                {
-                    if (parcel.GroupID != UUID.Zero)
-                    {
-                        // In group-owned parcels, OwnerID=GroupID. This should already be the case, but let's make sure.
-                        parcel.OwnerID = parcel.GroupID;
-                    }
-                    else
-                    {
-                        parcel.OwnerID = m_rootScene.RegionInfo.EstateSettings.EstateOwner;
-                        parcel.IsGroupOwned = false;
-                    }
-                }
-                else
-                {
-                    if (!ResolveUserUuid(scene, parcel.OwnerID))
-                        parcel.OwnerID = m_rootScene.RegionInfo.EstateSettings.EstateOwner;
-                }
-
-                List<LandAccessEntry> accessList = new List<LandAccessEntry>();
-                foreach (LandAccessEntry entry in parcel.ParcelAccessList)
-                {
-                    if (ResolveUserUuid(scene, entry.AgentID))
-                        accessList.Add(entry);
-                    // else, drop this access rule
-                }
-                parcel.ParcelAccessList = accessList;
-
-//                m_log.DebugFormat(
-//                    "[ARCHIVER]: Adding parcel {0}, local id {1}, owner {2}, group {3}, isGroupOwned {4}, area {5}", 
-//                    parcel.Name, parcel.LocalID, parcel.OwnerID, parcel.GroupID, parcel.IsGroupOwned, parcel.Area);
-                
-                landData.Add(parcel);
-            }
-
-            if (!m_merge)
-            {
-                bool setupDefaultParcel = (landData.Count == 0);
-                scene.LandChannel.Clear(setupDefaultParcel);
-            }
-            
-            scene.EventManager.TriggerIncomingLandDataFromStorage(landData);
-            m_log.InfoFormat("[ARCHIVER]: Restored {0} parcels.", landData.Count);
-        }
-
-        /// <summary>
-        /// Look up the given user id to check whether it's one that is valid for this grid.
-        /// </summary>
-        /// <param name="scene"></param>
-        /// <param name="uuid"></param>
-        /// <returns></returns>
-        private bool ResolveUserUuid(Scene scene, UUID uuid)
-        {
-            lock (m_validUserUuids)
-            {
-                if (!m_validUserUuids.ContainsKey(uuid))
-                {
-                    // Note: we call GetUserAccount() inside the lock because this UserID is likely
-                    // to occur many times, and we only want to query the users service once.
-                    UserAccount account = scene.UserAccountService.GetUserAccount(scene.RegionInfo.ScopeID, uuid);
-                    m_validUserUuids.Add(uuid, account != null);
-                }
-
-                return m_validUserUuids[uuid];
-            }
-        }
-
-        /// <summary>
-        /// Look up the given group id to check whether it's one that is valid for this grid.
-        /// </summary>
-        /// <param name="uuid"></param>
-        /// <returns></returns>
-        private bool ResolveGroupUuid(UUID uuid)
-        {
-            lock (m_validGroupUuids)
-            {
-                if (!m_validGroupUuids.ContainsKey(uuid))
-                {
-                    bool exists;
-                    if (m_groupsModule == null)
-                    {
-                        exists = false;
-                    }
-                    else
-                    {
-                        // Note: we call GetGroupRecord() inside the lock because this GroupID is likely
-                        // to occur many times, and we only want to query the groups service once.
-                        exists = (m_groupsModule.GetGroupRecord(uuid) != null);
-                    }
-                    m_validGroupUuids.Add(uuid, exists);
-                }
-
-                return m_validGroupUuids[uuid];
-            }
         }
 
         /// Load an asset
@@ -777,7 +717,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
                             ModifySceneObject(m_rootScene, sog);
                             return true;
                         });
-                    
+
                     if (data == null)
                         return false;
                 }
@@ -883,7 +823,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
             currentRegionSettings.Save();
 
             scene.TriggerEstateSunUpdate();
-            
+
             IEstateModule estateModule = scene.RequestModuleInterface<IEstateModule>();
             if (estateModule != null)
                 estateModule.sendRegionHandshakeToAll();
@@ -922,85 +862,136 @@ namespace OpenSim.Region.CoreModules.World.Archiver
         }
 
         /// <summary>
-        /// Load oar control file
+        /// Optionally modify a loaded SceneObjectGroup. Currently this just ensures that the
+        /// User IDs and Group IDs are valid, but other manipulations could be done as well.
         /// </summary>
-        /// <param name="path"></param>
-        /// <param name="data"></param>
-        /// <param name="dearchivedScenes"></param>
-        public DearchiveScenesInfo LoadControlFile(string path, byte[] data, DearchiveScenesInfo dearchivedScenes)
+        private void ModifySceneObject(Scene scene, SceneObjectGroup sceneObject)
         {
-            XmlNamespaceManager nsmgr = new XmlNamespaceManager(new NameTable());
-            XmlParserContext context = new XmlParserContext(null, nsmgr, null, XmlSpace.None);
-            XmlTextReader xtr = new XmlTextReader(Encoding.ASCII.GetString(data), XmlNodeType.Document, context);
-
-            // Loaded metadata will be empty if no information exists in the archive
-            dearchivedScenes.LoadedCreationDateTime = 0;
-            dearchivedScenes.DefaultOriginalID = "";
-
-            bool multiRegion = false;
-
-            while (xtr.Read()) 
+            // Try to retain the original creator/owner/lastowner if their uuid is present on this grid
+            // or creator data is present.  Otherwise, use the estate owner instead.
+            foreach (SceneObjectPart part in sceneObject.Parts)
             {
-                if (xtr.NodeType == XmlNodeType.Element) 
+                if (string.IsNullOrEmpty(part.CreatorData))
                 {
-                    if (xtr.Name.ToString() == "archive")
+                    if (!ResolveUserUuid(scene, part.CreatorID))
+                        part.CreatorID = scene.RegionInfo.EstateSettings.EstateOwner;
+                }
+                if (UserManager != null)
+                    UserManager.AddUser(part.CreatorID, part.CreatorData);
+
+                if (!(ResolveUserUuid(scene, part.OwnerID) || ResolveGroupUuid(part.OwnerID)))
+                    part.OwnerID = scene.RegionInfo.EstateSettings.EstateOwner;
+
+                if (!(ResolveUserUuid(scene, part.LastOwnerID) || ResolveGroupUuid(part.LastOwnerID)))
+                    part.LastOwnerID = scene.RegionInfo.EstateSettings.EstateOwner;
+
+                if (!ResolveGroupUuid(part.GroupID))
+                    part.GroupID = UUID.Zero;
+
+                // And zap any troublesome sit target information
+                //                    part.SitTargetOrientation = new Quaternion(0, 0, 0, 1);
+                //                    part.SitTargetPosition    = new Vector3(0, 0, 0);
+
+                // Fix ownership/creator of inventory items
+                // Not doing so results in inventory items
+                // being no copy/no mod for everyone
+                lock (part.TaskInventory)
+                {
+                    TaskInventoryDictionary inv = part.TaskInventory;
+                    foreach (KeyValuePair<UUID, TaskInventoryItem> kvp in inv)
                     {
-                        int majorVersion = int.Parse(xtr["major_version"]);
-                        int minorVersion = int.Parse(xtr["minor_version"]);
-                        string version = string.Format("{0}.{1}", majorVersion, minorVersion);
-                        
-                        if (majorVersion > MAX_MAJOR_VERSION)
+                        if (!(ResolveUserUuid(scene, kvp.Value.OwnerID) || ResolveGroupUuid(kvp.Value.OwnerID)))
                         {
-                            throw new Exception(
-                                string.Format(
-                                    "The OAR you are trying to load has major version number of {0} but this version of OpenSim can only load OARs with major version number {1} and below",
-                                    majorVersion, MAX_MAJOR_VERSION));
+                            kvp.Value.OwnerID = scene.RegionInfo.EstateSettings.EstateOwner;
                         }
-                        
-                        m_log.InfoFormat("[ARCHIVER]: Loading OAR with version {0}", version);
-                    }
-                    if (xtr.Name.ToString() == "datetime") 
-                    {
-                        int value;
-                        if (Int32.TryParse(xtr.ReadElementContentAsString(), out value))
-                            dearchivedScenes.LoadedCreationDateTime = value;
-                    } 
-                    else if (xtr.Name.ToString() == "row")
-                    {
-                        multiRegion = true;
-                        dearchivedScenes.StartRow();
-                    }
-                    else if (xtr.Name.ToString() == "region")
-                    {
-                        dearchivedScenes.StartRegion();
-                    }
-                    else if (xtr.Name.ToString() == "id")
-                    {
-                        string id = xtr.ReadElementContentAsString();
-                        dearchivedScenes.DefaultOriginalID = id;
-                        if (multiRegion)
-                            dearchivedScenes.SetRegionOriginalID(id);
-                    }
-                    else if (xtr.Name.ToString() == "dir")
-                    {
-                        dearchivedScenes.SetRegionDirectory(xtr.ReadElementContentAsString());
+
+                        if (string.IsNullOrEmpty(kvp.Value.CreatorData))
+                        {
+                            if (!ResolveUserUuid(scene, kvp.Value.CreatorID))
+                                kvp.Value.CreatorID = scene.RegionInfo.EstateSettings.EstateOwner;
+                        }
+
+                        if (UserManager != null)
+                            UserManager.AddUser(kvp.Value.CreatorID, kvp.Value.CreatorData);
+
+                        if (!ResolveGroupUuid(kvp.Value.GroupID))
+                            kvp.Value.GroupID = UUID.Zero;
                     }
                 }
             }
+        }
 
-            dearchivedScenes.MultiRegionFormat = multiRegion;
-            if (!multiRegion)
+        /// <summary>
+        /// Look up the given group id to check whether it's one that is valid for this grid.
+        /// </summary>
+        /// <param name="uuid"></param>
+        /// <returns></returns>
+        private bool ResolveGroupUuid(UUID uuid)
+        {
+            lock (m_validGroupUuids)
             {
-                // Add the single scene
-                dearchivedScenes.StartRow();
-                dearchivedScenes.StartRegion();
-                dearchivedScenes.SetRegionOriginalID(dearchivedScenes.DefaultOriginalID);
-                dearchivedScenes.SetRegionDirectory("");
+                if (!m_validGroupUuids.ContainsKey(uuid))
+                {
+                    bool exists;
+                    if (m_groupsModule == null)
+                    {
+                        exists = false;
+                    }
+                    else
+                    {
+                        // Note: we call GetGroupRecord() inside the lock because this GroupID is likely
+                        // to occur many times, and we only want to query the groups service once.
+                        exists = (m_groupsModule.GetGroupRecord(uuid) != null);
+                    }
+                    m_validGroupUuids.Add(uuid, exists);
+                }
+
+                return m_validGroupUuids[uuid];
+            }
+        }
+
+        /// <summary>
+        /// Look up the given user id to check whether it's one that is valid for this grid.
+        /// </summary>
+        /// <param name="scene"></param>
+        /// <param name="uuid"></param>
+        /// <returns></returns>
+        private bool ResolveUserUuid(Scene scene, UUID uuid)
+        {
+            lock (m_validUserUuids)
+            {
+                if (!m_validUserUuids.ContainsKey(uuid))
+                {
+                    // Note: we call GetUserAccount() inside the lock because this UserID is likely
+                    // to occur many times, and we only want to query the users service once.
+                    UserAccount account = scene.UserAccountService.GetUserAccount(scene.RegionInfo.ScopeID, uuid);
+                    m_validUserUuids.Add(uuid, account != null);
+                }
+
+                return m_validUserUuids[uuid];
+            }
+        }
+
+        /// <summary>
+        /// Contains data used while dearchiving a single scene.
+        /// </summary>
+        private class DearchiveContext
+        {
+            public DearchiveContext(Scene scene)
+            {
+                Scene = scene;
+                SerialisedSceneObjects = new List<string>();
+                SerialisedParcels = new List<string>();
+                SceneObjects = new List<SceneObjectGroup>();
             }
 
-            ControlFileLoaded = true;
+            public Scene Scene { get; set; }
 
-            return dearchivedScenes;
+            public List<SceneObjectGroup> SceneObjects { get; set; }
+
+            public List<string> SerialisedParcels { get; set; }
+
+            public List<string> SerialisedSceneObjects { get; set; }
         }
     }
 }

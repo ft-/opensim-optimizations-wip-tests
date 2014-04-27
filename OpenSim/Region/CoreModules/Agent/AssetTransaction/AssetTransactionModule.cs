@@ -32,7 +32,7 @@ using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using System;
-using System.Threading
+using System.Threading;
 using System.Collections.Generic;
 
 namespace OpenSim.Region.CoreModules.Agent.AssetTransaction

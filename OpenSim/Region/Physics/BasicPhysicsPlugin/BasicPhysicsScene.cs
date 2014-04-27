@@ -25,12 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using Nini.Config;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Physics.Manager;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Physics.BasicPhysicsPlugin
 {
@@ -44,9 +43,8 @@ namespace OpenSim.Region.Physics.BasicPhysicsPlugin
     public class BasicScene : PhysicsScene
     {
         private List<BasicActor> _actors = new List<BasicActor>();
-        private List<BasicPhysicsPrim> _prims = new List<BasicPhysicsPrim>();
         private float[] _heightMap;
-
+        private List<BasicPhysicsPrim> _prims = new List<BasicPhysicsPrim>();
         //protected internal string sceneIdentifier;
 
         public BasicScene(string engineType, string _sceneIdentifier)
@@ -56,11 +54,26 @@ namespace OpenSim.Region.Physics.BasicPhysicsPlugin
             //sceneIdentifier = _sceneIdentifier;
         }
 
-        public override void Initialise(IMesher meshmerizer, IConfigSource config)
+        public override bool IsThreaded
         {
+            get
+            {
+                return (false); // for now we won't be multithreaded
+            }
         }
 
-        public override void Dispose() {}
+        public override PhysicsActor AddAvatar(string avName, Vector3 position, Vector3 size, bool isFlying)
+        {
+            BasicActor act = new BasicActor(size);
+            act.Position = position;
+            act.Flying = isFlying;
+            _actors.Add(act);
+            return act;
+        }
+
+        public override void AddPhysicsActorTaint(PhysicsActor prim)
+        {
+        }
 
         public override PhysicsActor AddPrimShape(string primName, PrimitiveBaseShape pbs, Vector3 position,
                                                   Vector3 size, Quaternion rotation, bool isPhysical, uint localid)
@@ -73,13 +86,32 @@ namespace OpenSim.Region.Physics.BasicPhysicsPlugin
             return prim;
         }
 
-        public override PhysicsActor AddAvatar(string avName, Vector3 position, Vector3 size, bool isFlying)
+        public override void DeleteTerrain()
         {
-            BasicActor act = new BasicActor(size);
-            act.Position = position;
-            act.Flying = isFlying;
-            _actors.Add(act);
-            return act;
+        }
+
+        public override void Dispose()
+        {
+        }
+
+        public override void GetResults()
+        {
+        }
+
+        public override Dictionary<uint, float> GetTopColliders()
+        {
+            Dictionary<uint, float> returncolliders = new Dictionary<uint, float>();
+            return returncolliders;
+        }
+
+        public override void Initialise(IMesher meshmerizer, IConfigSource config)
+        {
+        }
+        public override void RemoveAvatar(PhysicsActor actor)
+        {
+            BasicActor act = (BasicActor)actor;
+            if (_actors.Contains(act))
+                _actors.Remove(act);
         }
 
         public override void RemovePrim(PhysicsActor actor)
@@ -88,21 +120,18 @@ namespace OpenSim.Region.Physics.BasicPhysicsPlugin
             if (_prims.Contains(prim))
                 _prims.Remove(prim);
         }
-
-        public override void RemoveAvatar(PhysicsActor actor)
+        public override void SetTerrain(float[] heightMap)
         {
-            BasicActor act = (BasicActor)actor;
-            if (_actors.Contains(act))
-                _actors.Remove(act);
+            _heightMap = heightMap;
         }
 
-        public override void AddPhysicsActorTaint(PhysicsActor prim)
+        public override void SetWaterLevel(float baseheight)
         {
         }
 
         public override float Simulate(float timeStep)
         {
-//            Console.WriteLine("Simulating");
+            //            Console.WriteLine("Simulating");
 
             float fps = 0;
             for (int i = 0; i < _actors.Count; ++i)
@@ -111,8 +140,8 @@ namespace OpenSim.Region.Physics.BasicPhysicsPlugin
                 Vector3 actorPosition = actor.Position;
                 Vector3 actorVelocity = actor.Velocity;
 
-//                Console.WriteLine(
-//                    "Processing actor {0}, starting pos {1}, starting vel {2}", i, actorPosition, actorVelocity);
+                //                Console.WriteLine(
+                //                    "Processing actor {0}, starting pos {1}, starting vel {2}", i, actorPosition, actorVelocity);
 
                 actorPosition.X += actor.Velocity.X * timeStep;
                 actorPosition.Y += actor.Velocity.Y * timeStep;
@@ -167,35 +196,6 @@ namespace OpenSim.Region.Physics.BasicPhysicsPlugin
             }
 
             return fps;
-        }
-
-        public override void GetResults()
-        {
-        }
-
-        public override bool IsThreaded
-        {
-            get { return (false); // for now we won't be multithreaded
-            }
-        }
-
-        public override void SetTerrain(float[] heightMap)
-        {
-            _heightMap = heightMap;
-        }
-
-        public override void DeleteTerrain()
-        {
-        }
-
-        public override void SetWaterLevel(float baseheight)
-        {
-        }
-
-        public override Dictionary<uint, float> GetTopColliders()
-        {
-            Dictionary<uint, float> returncolliders = new Dictionary<uint, float>();
-            return returncolliders;
         }
     }
 }

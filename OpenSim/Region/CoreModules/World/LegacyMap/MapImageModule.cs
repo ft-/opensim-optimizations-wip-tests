@@ -25,10 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Reflection;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
@@ -37,6 +33,10 @@ using OpenMetaverse.Imaging;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.World.LegacyMap
 {
@@ -47,30 +47,29 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
         Ellipse
     }
 
+    public struct DrawStruct
+    {
+        //        public Rectangle rect;
+        public SolidBrush brush;
+
+        public DrawRoutine dr;
+        public face[] trns;
+    }
+
     public struct face
     {
         public Point[] pts;
     }
-
-    public struct DrawStruct
-    {
-        public DrawRoutine dr;
-//        public Rectangle rect;
-        public SolidBrush brush;
-        public face[] trns;
-    }
-
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "MapImageModule")]
     public class MapImageModule : IMapImageGenerator, INonSharedRegionModule
     {
         private static readonly ILog m_log =
             LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private Scene m_scene;
         private IConfigSource m_config;
-        private IMapTileTerrainRenderer terrainRenderer;
         private bool m_Enabled = false;
-
+        private Scene m_scene;
+        private IMapTileTerrainRenderer terrainRenderer;
         #region IMapImageGenerator Members
 
         public Bitmap CreateMapTile()
@@ -82,11 +81,11 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
 
             string[] configSections = new string[] { "Map", "Startup" };
 
-            drawPrimVolume 
+            drawPrimVolume
                 = Util.GetConfigVarFromSections<bool>(m_config, "DrawPrimOnMapTile", configSections, drawPrimVolume);
-            textureTerrain 
+            textureTerrain
                 = Util.GetConfigVarFromSections<bool>(m_config, "TextureOnMapTile", configSections, textureTerrain);
-            generateMaptiles 
+            generateMaptiles
                 = Util.GetConfigVarFromSections<bool>(m_config, "GenerateMaptiles", configSections, generateMaptiles);
 
             if (generateMaptiles)
@@ -127,15 +126,15 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
                     catch (Exception)
                     {
                         m_log.ErrorFormat(
-                            "[MAPTILE]: Failed to load Static map image texture file: {0} for {1}", 
+                            "[MAPTILE]: Failed to load Static map image texture file: {0} for {1}",
                             m_scene.RegionInfo.MaptileStaticFile, m_scene.Name);
                         //mapbmp = new Bitmap((int)m_scene.Heightmap.Width, (int)m_scene.Heightmap.Height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
                         mapbmp = null;
                     }
 
-                    if (mapbmp != null) 
+                    if (mapbmp != null)
                         m_log.DebugFormat(
-                            "[MAPTILE]: Static map image texture file {0} found for {1}", 
+                            "[MAPTILE]: Static map image texture file {0} found for {1}",
                             m_scene.RegionInfo.MaptileStaticFile, m_scene.Name);
                 }
             }
@@ -165,19 +164,18 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
             return null;
         }
 
-        #endregion
+        #endregion IMapImageGenerator Members
 
         #region Region Module interface
 
-        public void Initialise(IConfigSource source)
+        public string Name
         {
-            m_config = source;
+            get { return "MapImageModule"; }
+        }
 
-            if (Util.GetConfigVarFromSections<string>(
-                m_config, "MapImageModule", new string[] { "Startup", "Map" }, "MapImageModule") != "MapImageModule")
-                return;
-
-            m_Enabled = true;
+        public Type ReplaceableInterface
+        {
+            get { return null; }
         }
 
         public void AddRegion(Scene scene)
@@ -190,6 +188,20 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
             m_scene.RegisterModuleInterface<IMapImageGenerator>(this);
         }
 
+        public void Close()
+        {
+        }
+
+        public void Initialise(IConfigSource source)
+        {
+            m_config = source;
+
+            if (Util.GetConfigVarFromSections<string>(
+                m_config, "MapImageModule", new string[] { "Startup", "Map" }, "MapImageModule") != "MapImageModule")
+                return;
+
+            m_Enabled = true;
+        }
         public void RegionLoaded(Scene scene)
         {
         }
@@ -197,105 +209,52 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
         public void RemoveRegion(Scene scene)
         {
         }
+        #endregion Region Module interface
 
-        public void Close()
+        // TODO: unused:
+        //         private void ShadeBuildings(Bitmap map)
+        //         {
+        //             lock (map)
+        //             {
+        //                 lock (m_scene.Entities)
+        //                 {
+        //                     foreach (EntityBase entity in m_scene.Entities.Values)
+        //                     {
+        //                         if (entity is SceneObjectGroup)
+        //                         {
+        //                             SceneObjectGroup sog = (SceneObjectGroup) entity;
+        //
+        //                             foreach (SceneObjectPart primitive in sog.Children.Values)
+        //                             {
+        //                                 int x = (int) (primitive.AbsolutePosition.X - (primitive.Scale.X / 2));
+        //                                 int y = (int) (primitive.AbsolutePosition.Y - (primitive.Scale.Y / 2));
+        //                                 int w = (int) primitive.Scale.X;
+        //                                 int h = (int) primitive.Scale.Y;
+        //
+        //                                 int dx;
+        //                                 for (dx = x; dx < x + w; dx++)
+        //                                 {
+        //                                     int dy;
+        //                                     for (dy = y; dy < y + h; dy++)
+        //                                     {
+        //                                         if (x < 0 || y < 0)
+        //                                             continue;
+        //                                         if (x >= map.Width || y >= map.Height)
+        //                                             continue;
+        //
+        //                                         map.SetPixel(dx, dy, Color.DarkGray);
+        //                                     }
+        //                                 }
+        //                             }
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         }
+
+        public Bitmap CreateViewImage(Vector3 camPos, Vector3 camDir, float fov, int width, int height, bool useTextures)
         {
-        }
-
-        public string Name
-        {
-            get { return "MapImageModule"; }
-        }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
-        #endregion
-
-// TODO: unused:
-//         private void ShadeBuildings(Bitmap map)
-//         {
-//             lock (map)
-//             {
-//                 lock (m_scene.Entities)
-//                 {
-//                     foreach (EntityBase entity in m_scene.Entities.Values)
-//                     {
-//                         if (entity is SceneObjectGroup)
-//                         {
-//                             SceneObjectGroup sog = (SceneObjectGroup) entity;
-//
-//                             foreach (SceneObjectPart primitive in sog.Children.Values)
-//                             {
-//                                 int x = (int) (primitive.AbsolutePosition.X - (primitive.Scale.X / 2));
-//                                 int y = (int) (primitive.AbsolutePosition.Y - (primitive.Scale.Y / 2));
-//                                 int w = (int) primitive.Scale.X;
-//                                 int h = (int) primitive.Scale.Y;
-//
-//                                 int dx;
-//                                 for (dx = x; dx < x + w; dx++)
-//                                 {
-//                                     int dy;
-//                                     for (dy = y; dy < y + h; dy++)
-//                                     {
-//                                         if (x < 0 || y < 0)
-//                                             continue;
-//                                         if (x >= map.Width || y >= map.Height)
-//                                             continue;
-//
-//                                         map.SetPixel(dx, dy, Color.DarkGray);
-//                                     }
-//                                 }
-//                             }
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-
-        private Bitmap FetchTexture(UUID id)
-        {
-            AssetBase asset = m_scene.AssetService.Get(id.ToString());
-
-            if (asset != null)
-            {
-                m_log.DebugFormat("[MAPTILE]: Static map image texture {0} found for {1}", id, m_scene.Name);
-            }
-            else
-            {
-                m_log.WarnFormat("[MAPTILE]: Static map image texture {0} not found for {1}", id, m_scene.Name);
-                return null;
-            }
-
-            ManagedImage managedImage;
-            Image image;
-
-            try
-            {
-                if (OpenJPEG.DecodeToImage(asset.Data, out managedImage, out image))
-                    return new Bitmap(image);
-                else
-                    return null;
-            }
-            catch (DllNotFoundException)
-            {
-                m_log.ErrorFormat("[MAPTILE]: OpenJpeg is not installed correctly on this system.   Asset Data is empty for {0}", id);
-
-            }
-            catch (IndexOutOfRangeException)
-            {
-                m_log.ErrorFormat("[MAPTILE]: OpenJpeg was unable to decode this.   Asset Data is empty for {0}", id);
-
-            }
-            catch (Exception)
-            {
-                m_log.ErrorFormat("[MAPTILE]: OpenJpeg was unable to decode this.   Asset Data is empty for {0}", id);
-
-            }
             return null;
-
         }
 
         private Bitmap DrawObjectVolume(Scene whichScene, Bitmap mapbmp)
@@ -309,7 +268,7 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
             List<uint> z_localIDs = new List<uint>();
             Dictionary<uint, DrawStruct> z_sort = new Dictionary<uint, DrawStruct>();
 
-            try 
+            try
             {
                 lock (objs)
                 {
@@ -438,6 +397,7 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
                                             continue;
 
                                         #region obb face reconstruction part duex
+
                                         Vector3[] vertexes = new Vector3[8];
 
                                         // float[] distance = new float[6];
@@ -541,7 +501,8 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
                                         FaceD[2] = vertexes[7];
                                         FaceC[3] = vertexes[7];
                                         FaceD[5] = vertexes[7];
-                                        #endregion
+
+                                        #endregion obb face reconstruction part duex
 
                                         //int wy = 0;
 
@@ -613,14 +574,13 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
                                 DrawStruct rectDrawStruct = z_sort[sortedlocalIds[s]];
                                 for (int r = 0; r < rectDrawStruct.trns.Length; r++)
                                 {
-                                    g.FillPolygon(rectDrawStruct.brush,rectDrawStruct.trns[r].pts);
+                                    g.FillPolygon(rectDrawStruct.brush, rectDrawStruct.trns[r].pts);
                                 }
                                 //g.FillRectangle(rectDrawStruct.brush , rectDrawStruct.rect);
                             }
                         }
                     }
                 } // lock entities objs
-
             }
             finally
             {
@@ -633,6 +593,44 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
             return mapbmp;
         }
 
+        private Bitmap FetchTexture(UUID id)
+        {
+            AssetBase asset = m_scene.AssetService.Get(id.ToString());
+
+            if (asset != null)
+            {
+                m_log.DebugFormat("[MAPTILE]: Static map image texture {0} found for {1}", id, m_scene.Name);
+            }
+            else
+            {
+                m_log.WarnFormat("[MAPTILE]: Static map image texture {0} not found for {1}", id, m_scene.Name);
+                return null;
+            }
+
+            ManagedImage managedImage;
+            Image image;
+
+            try
+            {
+                if (OpenJPEG.DecodeToImage(asset.Data, out managedImage, out image))
+                    return new Bitmap(image);
+                else
+                    return null;
+            }
+            catch (DllNotFoundException)
+            {
+                m_log.ErrorFormat("[MAPTILE]: OpenJpeg is not installed correctly on this system.   Asset Data is empty for {0}", id);
+            }
+            catch (IndexOutOfRangeException)
+            {
+                m_log.ErrorFormat("[MAPTILE]: OpenJpeg was unable to decode this.   Asset Data is empty for {0}", id);
+            }
+            catch (Exception)
+            {
+                m_log.ErrorFormat("[MAPTILE]: OpenJpeg was unable to decode this.   Asset Data is empty for {0}", id);
+            }
+            return null;
+        }
         private Point project(ITerrainChannel hm, Vector3 point3d, Vector3 originpos)
         {
             Point returnpt = new Point();
@@ -646,11 +644,6 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
             returnpt.Y = (int)((hm.Width - 1) - point3d.Y);//(int)(255 - (((topos.y - point3d.y) / z * d)));
 
             return returnpt;
-        }
-
-        public Bitmap CreateViewImage(Vector3 camPos, Vector3 camDir, float fov, int width, int height, bool useTextures)
-        {
-            return null;
         }
     }
 }

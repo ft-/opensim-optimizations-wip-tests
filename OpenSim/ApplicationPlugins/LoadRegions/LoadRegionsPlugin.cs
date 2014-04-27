@@ -25,20 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Threading;
 using log4net;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Framework.RegionLoader.Filesystem;
 using OpenSim.Framework.RegionLoader.Web;
-using OpenSim.Region.CoreModules.Agent.AssetTransaction;
-using OpenSim.Region.CoreModules.Avatar.InstantMessage;
-using OpenSim.Region.CoreModules.Scripting.DynamicTexture;
-using OpenSim.Region.CoreModules.Scripting.LoadImageURL;
-using OpenSim.Region.CoreModules.Scripting.XMLRPC;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Threading;
 
 namespace OpenSim.ApplicationPlugins.LoadRegions
 {
@@ -46,26 +41,30 @@ namespace OpenSim.ApplicationPlugins.LoadRegions
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        public event NewRegionCreated OnNewRegionCreated;
         private NewRegionCreated m_newRegionCreatedHandler;
 
+        public event NewRegionCreated OnNewRegionCreated;
         #region IApplicationPlugin Members
+
+        protected OpenSimBase m_openSim;
 
         // TODO: required by IPlugin, but likely not at all right
         private string m_name = "LoadRegionsPlugin";
-        private string m_version = "0.0";
 
-        public string Version
-        {
-            get { return m_version; }
-        }
+        private string m_version = "0.0";
 
         public string Name
         {
             get { return m_name; }
         }
 
-        protected OpenSimBase m_openSim;
+        public string Version
+        {
+            get { return m_version; }
+        }
+        public void Dispose()
+        {
+        }
 
         public void Initialise()
         {
@@ -105,8 +104,8 @@ namespace OpenSim.ApplicationPlugins.LoadRegions
             //m_openSim.ModuleLoader.LoadDefaultSharedModule(new LoadImageURLModule());
             //m_log.Info("[LOAD REGIONS PLUGIN]: XMLRPCModule...");
             //m_openSim.ModuleLoader.LoadDefaultSharedModule(new XMLRPCModule());
-//            m_log.Info("[LOADREGIONSPLUGIN]: AssetTransactionModule...");
-//            m_openSim.ModuleLoader.LoadDefaultSharedModule(new AssetTransactionModule());
+            //            m_log.Info("[LOADREGIONSPLUGIN]: AssetTransactionModule...");
+            //            m_openSim.ModuleLoader.LoadDefaultSharedModule(new AssetTransactionModule());
             m_log.Info("[LOAD REGIONS PLUGIN]: Done.");
 
             if (!CheckRegionsForSanity(regionsToLoad))
@@ -123,7 +122,7 @@ namespace OpenSim.ApplicationPlugins.LoadRegions
                 m_log.Debug("[LOAD REGIONS PLUGIN]: Creating Region: " + regionsToLoad[i].RegionName + " (ThreadID: " +
                             Thread.CurrentThread.ManagedThreadId.ToString() +
                             ")");
-                
+
                 bool changed = m_openSim.PopulateRegionEstateInfo(regionsToLoad[i]);
 
                 m_openSim.CreateRegion(regionsToLoad[i], true, out scene);
@@ -144,12 +143,7 @@ namespace OpenSim.ApplicationPlugins.LoadRegions
                 }
             }
         }
-
-        public void Dispose()
-        {
-        }
-
-        #endregion
+        #endregion IApplicationPlugin Members
 
         /// <summary>
         /// Check that region configuration information makes sense.

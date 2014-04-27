@@ -29,18 +29,19 @@ using OpenMetaverse;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
-    public class Email
-    {
-        public string time;
-        public string sender;
-        public string subject;
-        public string message;
-        public int numLeft;
-    }
-
     public interface IEmailModule
     {
-        void SendEmail(UUID objectID, string address, string subject, string body);
         Email GetNextEmail(UUID objectID, string sender, string subject);
+
+        void SendEmail(UUID objectID, string address, string subject, string body);
+    }
+
+    public class Email
+    {
+        public string message;
+        public int numLeft;
+        public string sender;
+        public string subject;
+        public string time;
     }
 }

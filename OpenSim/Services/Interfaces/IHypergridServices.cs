@@ -25,19 +25,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Net;
-using System.Collections.Generic;
-
-using OpenSim.Framework;
 using OpenMetaverse;
+using OpenSim.Framework;
+using System;
+using System.Collections.Generic;
 
 namespace OpenSim.Services.Interfaces
 {
+    public interface IFriendsSimConnector
+    {
+        bool LocalFriendshipApproved(UUID userID, string userName, UUID friendID);
+
+        bool LocalFriendshipOffered(UUID toID, GridInstantMessage im);
+
+        bool StatusNotify(UUID userID, UUID friendID, bool online);
+    }
+
     public interface IGatekeeperService
     {
-        bool LinkRegion(string regionDescriptor, out UUID regionID, out ulong regionHandle, out string externalName, out string imageURL, out string reason);
-        
         /// <summary>
         /// Returns the region a Hypergrid visitor should enter.
         /// </summary>
@@ -52,16 +57,39 @@ namespace OpenSim.Services.Interfaces
         /// <returns>The region the visitor should enter, or null if no region can be found / is allowed</returns>
         GridRegion GetHyperlinkRegion(UUID regionID, UUID agentID, string agentHomeURI, out string message);
 
+        bool LinkRegion(string regionDescriptor, out UUID regionID, out ulong regionHandle, out string externalName, out string imageURL, out string reason);
         bool LoginAgent(GridRegion source, AgentCircuitData aCircuit, GridRegion destination, out string reason);
+    }
 
+    public interface IHGFriendsService
+    {
+        bool DeleteFriendship(FriendInfo finfo, string secret);
+
+        bool FriendshipOffered(UUID from, string fromName, UUID to, string message);
+
+        int GetFriendPerms(UUID userID, UUID friendID);
+
+        bool NewFriendship(FriendInfo finfo, bool verified);
+        // Returns the local friends online
+        List<UUID> StatusNotification(List<string> friends, UUID userID, bool online);
+
+        bool ValidateFriendshipOffered(UUID fromID, UUID toID);
+    }
+
+    public interface IInstantMessage
+    {
+        bool IncomingInstantMessage(GridInstantMessage im);
+
+        bool OutgoingInstantMessage(GridInstantMessage im, string url, bool foreigner);
+    }
+
+    public interface IInstantMessageSimConnector
+    {
+        bool SendInstantMessage(GridInstantMessage im);
     }
 
     public interface IUserAgentService
     {
-        bool LoginAgentToGrid(GridRegion source, AgentCircuitData agent, GridRegion gatekeeper, GridRegion finalDestination, bool fromLogin, out string reason);
-        
-        void LogoutAgent(UUID userID, UUID sessionID);
-
         /// <summary>
         /// Returns the home region of a remote user.
         /// </summary>
@@ -84,13 +112,6 @@ namespace OpenSim.Services.Interfaces
         Dictionary<string, object> GetUserInfo(UUID userID);
 
         /// <summary>
-        /// Returns the current location of a remote user.
-        /// </summary>
-        /// <returns>On success: the user's Server URLs. If the user doesn't exist: "".</returns>
-        /// <remarks>Throws an exception if an error occurs (e.g., can't contact the server).</remarks>
-        string LocateUser(UUID userID);
-        
-        /// <summary>
         /// Returns the Universal User Identifier for 'targetUserID' on behalf of 'userID'.
         /// </summary>
         /// <returns>On success: the user's UUI. If the user doesn't exist: "".</returns>
@@ -104,40 +125,23 @@ namespace OpenSim.Services.Interfaces
         /// <remarks>Throws an exception if an error occurs (e.g., can't contact the server).</remarks>
         UUID GetUUID(String first, String last);
 
+        bool IsAgentComingHome(UUID sessionID, string thisGridExternalName);
+
+        /// <summary>
+        /// Returns the current location of a remote user.
+        /// </summary>
+        /// <returns>On success: the user's Server URLs. If the user doesn't exist: "".</returns>
+        /// <remarks>Throws an exception if an error occurs (e.g., can't contact the server).</remarks>
+        string LocateUser(UUID userID);
+
+        bool LoginAgentToGrid(GridRegion source, AgentCircuitData agent, GridRegion gatekeeper, GridRegion finalDestination, bool fromLogin, out string reason);
+
+        void LogoutAgent(UUID userID, UUID sessionID);
         // Returns the local friends online
         [Obsolete]
         List<UUID> StatusNotification(List<string> friends, UUID userID, bool online);
-
-        bool IsAgentComingHome(UUID sessionID, string thisGridExternalName);
         bool VerifyAgent(UUID sessionID, string token);
+
         bool VerifyClient(UUID sessionID, string reportedIP);
-    }
-
-    public interface IInstantMessage
-    {
-        bool IncomingInstantMessage(GridInstantMessage im);
-        bool OutgoingInstantMessage(GridInstantMessage im, string url, bool foreigner);
-    }
-    public interface IFriendsSimConnector
-    {
-        bool StatusNotify(UUID userID, UUID friendID, bool online);
-        bool LocalFriendshipOffered(UUID toID, GridInstantMessage im);
-        bool LocalFriendshipApproved(UUID userID, string userName, UUID friendID);
-    }
-
-    public interface IHGFriendsService
-    {
-        int GetFriendPerms(UUID userID, UUID friendID);
-        bool NewFriendship(FriendInfo finfo, bool verified);
-        bool DeleteFriendship(FriendInfo finfo, string secret);
-        bool FriendshipOffered(UUID from, string fromName, UUID to, string message);
-        bool ValidateFriendshipOffered(UUID fromID, UUID toID);
-        // Returns the local friends online
-        List<UUID> StatusNotification(List<string> friends, UUID userID, bool online);
-    }
-
-    public interface IInstantMessageSimConnector
-    {
-        bool SendInstantMessage(GridInstantMessage im);
     }
 }

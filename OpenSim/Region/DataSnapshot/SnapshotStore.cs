@@ -25,6 +25,9 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+using log4net;
+using OpenSim.Region.DataSnapshot.Interfaces;
+using OpenSim.Region.Framework.Scenes;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -32,26 +35,26 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
-using log4net;
-using OpenSim.Region.DataSnapshot.Interfaces;
-using OpenSim.Region.Framework.Scenes;
 
 namespace OpenSim.Region.DataSnapshot
 {
     public class SnapshotStore
     {
         #region Class Members
-        private String m_directory = "unyuu"; //not an attempt at adding RM references to core SVN, honest
-        private Dictionary<Scene, bool> m_scenes = null;
-        private List<IDataSnapshotProvider> m_providers = null;
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        private Dictionary<String, String> m_gridinfo = null;
-        private bool m_cacheEnabled = true;
-        private string m_listener_port = "9000"; //TODO: Set default port over 9000
-        private string m_hostname = "127.0.0.1";
-        #endregion
 
-        public SnapshotStore(string directory, Dictionary<String, String> gridinfo, string port, string hostname) {
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private bool m_cacheEnabled = true;
+        private String m_directory = "unyuu"; //not an attempt at adding RM references to core SVN, honest
+        private Dictionary<String, String> m_gridinfo = null;
+        private string m_hostname = "127.0.0.1";
+        private string m_listener_port = "9000";
+        private List<IDataSnapshotProvider> m_providers = null;
+        private Dictionary<Scene, bool> m_scenes = null;
+         //TODO: Set default port over 9000
+        #endregion Class Members
+
+        public SnapshotStore(string directory, Dictionary<String, String> gridinfo, string port, string hostname)
+        {
             m_directory = directory;
             m_scenes = new Dictionary<Scene, bool>();
             m_providers = new List<IDataSnapshotProvider>();
@@ -82,11 +85,13 @@ namespace OpenSim.Region.DataSnapshot
             }
         }
 
-        public void ForceSceneStale(Scene scene) {
+        public void ForceSceneStale(Scene scene)
+        {
             m_scenes[scene] = true;
         }
 
         #region Fragment storage
+
         public XmlNode GetFragment(IDataSnapshotProvider provider, XmlDocument factory)
         {
             XmlNode data = null;
@@ -113,7 +118,6 @@ namespace OpenSim.Region.DataSnapshot
                     {
                         m_log.WarnFormat("[DATASNAPSHOT]: Exception on writing to file {0}: {1}", path, e.Message);
                     }
-
                 }
 
                 //mark provider as not stale, parent scene as stale
@@ -139,14 +143,17 @@ namespace OpenSim.Region.DataSnapshot
 
             return data;
         }
-        #endregion
+
+        #endregion Fragment storage
 
         #region Response storage
+
         public XmlNode GetScene(Scene scene, XmlDocument factory)
         {
             m_log.Debug("[DATASNAPSHOT]: Data requested for scene " + scene.RegionInfo.RegionName);
 
-            if (!m_scenes.ContainsKey(scene)) {
+            if (!m_scenes.ContainsKey(scene))
+            {
                 m_scenes.Add(scene, true); //stale by default
             }
 
@@ -217,9 +224,18 @@ namespace OpenSim.Region.DataSnapshot
             return regionElement;
         }
 
-        #endregion
+        #endregion Response storage
 
         #region Helpers
+
+        private static string Sanitize(string name)
+        {
+            string invalidChars = Regex.Escape(new string(Path.GetInvalidFileNameChars()));
+            string invalidReStr = string.Format(@"[{0}]", invalidChars);
+            string newname = Regex.Replace(name, invalidReStr, "_");
+            return newname.Replace('.', '_');
+        }
+
         private string DataFileNameFragment(Scene scene, String fragmentName)
         {
             return Path.Combine(m_directory, Path.ChangeExtension(Sanitize(scene.RegionInfo.RegionName + "_" + fragmentName), "xml"));
@@ -230,13 +246,35 @@ namespace OpenSim.Region.DataSnapshot
             return Path.Combine(m_directory, Path.ChangeExtension(Sanitize(scene.RegionInfo.RegionName), "xml"));
             //return (m_snapsDir + Path.DirectorySeparatorChar + scene.RegionInfo.RegionName + ".xml");
         }
-
-        private static string Sanitize(string name)
+        private XmlNode GetGridSnapshotData(XmlDocument factory)
         {
-            string invalidChars = Regex.Escape(new string(Path.GetInvalidFileNameChars()));
-            string invalidReStr = string.Format(@"[{0}]", invalidChars);
-            string newname = Regex.Replace(name, invalidReStr, "_");
-            return newname.Replace('.', '_');
+            XmlNode griddata = factory.CreateNode(XmlNodeType.Element, "grid", "");
+
+            foreach (KeyValuePair<String, String> GridData in m_gridinfo)
+            {
+                //TODO: make it lowercase tag names for diva
+                XmlNode childnode = factory.CreateNode(XmlNodeType.Element, GridData.Key, "");
+                childnode.InnerText = GridData.Value;
+                griddata.AppendChild(childnode);
+            }
+
+            m_log.Debug("[DATASNAPSHOT]: Got grid snapshot data");
+
+            return griddata;
+        }
+
+        private String GetRegionCategory(Scene scene)
+        {
+            if (scene.RegionInfo.RegionSettings.Maturity == 0)
+                return "PG";
+
+            if (scene.RegionInfo.RegionSettings.Maturity == 1)
+                return "Mature";
+
+            if (scene.RegionInfo.RegionSettings.Maturity == 2)
+                return "Adult";
+
+            return "Unknown";
         }
 
         private XmlNode MakeRegionNode(Scene scene, XmlDocument basedoc)
@@ -254,7 +292,6 @@ namespace OpenSim.Region.DataSnapshot
             //attr = basedoc.CreateAttribute("parcels");
             //attr.Value = scene.LandManager.landList.Count.ToString();
             //docElement.Attributes.Append(attr);
-
 
             XmlNode infoblock = basedoc.CreateNode(XmlNodeType.Element, "info", "");
 
@@ -279,59 +316,29 @@ namespace OpenSim.Region.DataSnapshot
             m_log.Debug("[DATASNAPSHOT]: Generated region node");
             return docElement;
         }
-
-        private String GetRegionCategory(Scene scene)
-        {
-            if (scene.RegionInfo.RegionSettings.Maturity == 0)
-                return "PG";
-
-            if (scene.RegionInfo.RegionSettings.Maturity == 1)
-                return "Mature";
-
-            if (scene.RegionInfo.RegionSettings.Maturity == 2)
-                return "Adult";
-
-            return "Unknown";
-        }
-
-        private XmlNode GetGridSnapshotData(XmlDocument factory)
-        {
-            XmlNode griddata = factory.CreateNode(XmlNodeType.Element, "grid", "");
-
-            foreach (KeyValuePair<String, String> GridData in m_gridinfo)
-            {
-                //TODO: make it lowercase tag names for diva
-                XmlNode childnode = factory.CreateNode(XmlNodeType.Element, GridData.Key, "");
-                childnode.InnerText = GridData.Value;
-                griddata.AppendChild(childnode);
-            }
-
-            m_log.Debug("[DATASNAPSHOT]: Got grid snapshot data");
-
-            return griddata;
-        }
-        #endregion
+        #endregion Helpers
 
         #region Manage internal collections
-        public void AddScene(Scene newScene)
-        {
-            m_scenes.Add(newScene, true);
-        }
-
-        public void RemoveScene(Scene deadScene)
-        {
-            m_scenes.Remove(deadScene);
-        }
 
         public void AddProvider(IDataSnapshotProvider newProvider)
         {
             m_providers.Add(newProvider);
         }
 
+        public void AddScene(Scene newScene)
+        {
+            m_scenes.Add(newScene, true);
+        }
+
         public void RemoveProvider(IDataSnapshotProvider deadProvider)
         {
             m_providers.Remove(deadProvider);
         }
-        #endregion
+
+        public void RemoveScene(Scene deadScene)
+        {
+            m_scenes.Remove(deadScene);
+        }
+        #endregion Manage internal collections
     }
 }

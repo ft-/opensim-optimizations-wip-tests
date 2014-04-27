@@ -25,16 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenSim.Framework;
 using System;
 using System.Collections;
 using System.Globalization;
 using System.Text.RegularExpressions;
-using OpenSim.Framework;
-
-using OpenMetaverse;
+using OMV_Quaternion = OpenMetaverse.Quaternion;
 using OMV_Vector3 = OpenMetaverse.Vector3;
 using OMV_Vector3d = OpenMetaverse.Vector3d;
-using OMV_Quaternion = OpenMetaverse.Quaternion;
 
 namespace OpenSim.Region.ScriptEngine.Shared
 {
@@ -42,6 +40,956 @@ namespace OpenSim.Region.ScriptEngine.Shared
     public partial class LSL_Types
     {
         // Types are kept is separate .dll to avoid having to add whatever .dll it is in it to script AppDomain
+
+        [Serializable]
+        public struct key
+        {
+            public string value;
+
+            #region Constructors
+
+            public key(string s)
+            {
+                value = s;
+            }
+
+            #endregion Constructors
+
+            #region Methods
+
+            static public bool Parse2Key(string s)
+            {
+                Regex isuuid = new Regex(@"^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$", RegexOptions.Compiled);
+                if (isuuid.IsMatch(s))
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            #endregion Methods
+
+            #region Operators
+
+            static public implicit operator Boolean(key k)
+            {
+                if (k.value.Length == 0)
+                {
+                    return false;
+                }
+
+                if (k.value == "00000000-0000-0000-0000-000000000000")
+                {
+                    return false;
+                }
+                Regex isuuid = new Regex(@"^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$", RegexOptions.Compiled);
+                if (isuuid.IsMatch(k.value))
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            static public implicit operator key(string s)
+            {
+                return new key(s);
+            }
+
+            static public implicit operator LSLString(key k)
+            {
+                return k.value;
+            }
+
+            static public implicit operator String(key k)
+            {
+                return k.value;
+            }
+            public static bool operator !=(key k1, key k2)
+            {
+                return k1.value != k2.value;
+            }
+
+            public static bool operator ==(key k1, key k2)
+            {
+                return k1.value == k2.value;
+            }
+            #endregion Operators
+
+            #region Overriders
+
+            public override bool Equals(object o)
+            {
+                return o.ToString() == value;
+            }
+
+            public override int GetHashCode()
+            {
+                return value.GetHashCode();
+            }
+
+            public override string ToString()
+            {
+                return value;
+            }
+
+            #endregion Overriders
+        }
+
+        [Serializable]
+        public struct LSLFloat
+        {
+            public double value;
+
+            #region Constructors
+
+            public LSLFloat(int i)
+            {
+                this.value = (double)i;
+            }
+
+            public LSLFloat(double d)
+            {
+                this.value = d;
+            }
+
+            public LSLFloat(string s)
+            {
+                Regex r = new Regex("^ *(\\+|-)?([0-9]+\\.?[0-9]*|\\.[0-9]+)([eE](\\+|-)?[0-9]+)?");
+                Match m = r.Match(s);
+                string v = m.Groups[0].Value;
+
+                v = v.Trim();
+
+                if (v == String.Empty || v == null)
+                    v = "0.0";
+                else
+                    if (!v.Contains(".") && !v.ToLower().Contains("e"))
+                        v = v + ".0";
+                    else
+                        if (v.EndsWith("."))
+                            v = v + "0";
+                this.value = double.Parse(v, System.Globalization.NumberStyles.Float, Culture.NumberFormatInfo);
+            }
+
+            #endregion Constructors
+
+            #region Operators
+
+            static public explicit operator float(LSLFloat f)
+            {
+                return (float)f.value;
+            }
+
+            static public explicit operator int(LSLFloat f)
+            {
+                return (int)f.value;
+            }
+
+            static public explicit operator LSLFloat(string s)
+            {
+                return new LSLFloat(s);
+            }
+
+            static public explicit operator uint(LSLFloat f)
+            {
+                return (uint)Math.Abs(f.value);
+            }
+
+            static public implicit operator Boolean(LSLFloat f)
+            {
+                if (f.value == 0.0)
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+
+            public static implicit operator list(LSLFloat f)
+            {
+                return new list(new object[] { f });
+            }
+
+            static public implicit operator LSLFloat(int i)
+            {
+                return new LSLFloat(i);
+            }
+
+            static public implicit operator LSLFloat(LSLInteger i)
+            {
+                return new LSLFloat(i.value);
+            }
+            static public implicit operator LSLFloat(double d)
+            {
+                return new LSLFloat(d);
+            }
+
+            static public implicit operator LSLFloat(bool b)
+            {
+                if (b)
+                    return new LSLFloat(1.0);
+                else
+                    return new LSLFloat(0.0);
+            }
+
+            static public implicit operator System.Double(LSLFloat f)
+            {
+                return f.value;
+            }
+
+            static public LSLFloat operator -(LSLFloat f, int i)
+            {
+                return new LSLFloat(f.value - (double)i);
+            }
+
+            static public LSLFloat operator -(LSLFloat lhs, LSLFloat rhs)
+            {
+                return new LSLFloat(lhs.value - rhs.value);
+            }
+
+            static public LSLFloat operator -(LSLFloat f)
+            {
+                return new LSLFloat(-f.value);
+            }
+
+            static public LSLFloat operator --(LSLFloat f)
+            {
+                f.value--;
+                return f;
+            }
+
+            static public bool operator !=(LSLFloat f1, LSLFloat f2)
+            {
+                return f1.value != f2.value;
+            }
+
+            static public LSLFloat operator *(LSLFloat f, int i)
+            {
+                return new LSLFloat(f.value * (double)i);
+            }
+
+            static public LSLFloat operator *(LSLFloat lhs, LSLFloat rhs)
+            {
+                return new LSLFloat(lhs.value * rhs.value);
+            }
+
+            static public LSLFloat operator /(LSLFloat f, int i)
+            {
+                return new LSLFloat(f.value / (double)i);
+            }
+
+            static public LSLFloat operator /(LSLFloat lhs, LSLFloat rhs)
+            {
+                return new LSLFloat(lhs.value / rhs.value);
+            }
+
+            static public LSLFloat operator +(LSLFloat f, int i)
+            {
+                return new LSLFloat(f.value + (double)i);
+            }
+
+            static public LSLFloat operator +(LSLFloat lhs, LSLFloat rhs)
+            {
+                return new LSLFloat(lhs.value + rhs.value);
+            }
+
+            static public LSLFloat operator ++(LSLFloat f)
+            {
+                f.value++;
+                return f;
+            }
+
+            static public bool operator ==(LSLFloat f1, LSLFloat f2)
+            {
+                return f1.value == f2.value;
+            }
+            #endregion Operators
+
+            #region Overriders
+
+            public override bool Equals(Object o)
+            {
+                if (!(o is LSLFloat))
+                    return false;
+                return value == ((LSLFloat)o).value;
+            }
+
+            public override int GetHashCode()
+            {
+                return value.GetHashCode();
+            }
+
+            public override string ToString()
+            {
+                return String.Format(Culture.FormatProvider, "{0:0.000000}", this.value);
+            }
+            #endregion Overriders
+        }
+
+        [Serializable]
+        public struct LSLInteger
+        {
+            public int value;
+            private static readonly Regex castRegex = new Regex(@"(^[ ]*0[xX][0-9A-Fa-f][0-9A-Fa-f]*)|(^[ ]*(-?|\+?)[0-9][0-9]*)");
+
+            #region Constructors
+
+            public LSLInteger(int i)
+            {
+                value = i;
+            }
+
+            public LSLInteger(uint i)
+            {
+                value = (int)i;
+            }
+
+            public LSLInteger(double d)
+            {
+                value = (int)d;
+            }
+
+            public LSLInteger(string s)
+            {
+                Match m = castRegex.Match(s);
+                string v = m.Groups[0].Value;
+                // Leading plus sign is allowed, but ignored
+                v = v.Replace("+", "");
+
+                if (v == String.Empty)
+                {
+                    value = 0;
+                }
+                else
+                {
+                    try
+                    {
+                        if (v.Contains("x") || v.Contains("X"))
+                        {
+                            value = int.Parse(v.Substring(2), System.Globalization.NumberStyles.HexNumber);
+                        }
+                        else
+                        {
+                            value = int.Parse(v, System.Globalization.NumberStyles.Integer);
+                        }
+                    }
+                    catch (OverflowException)
+                    {
+                        value = -1;
+                    }
+                }
+            }
+
+            #endregion Constructors
+
+            #region Operators
+
+            static public explicit operator LSLInteger(string s)
+            {
+                return new LSLInteger(s);
+            }
+
+            static public explicit operator LSLInteger(double d)
+            {
+                return new LSLInteger(d);
+            }
+
+            static public explicit operator LSLInteger(LSLFloat f)
+            {
+                return new LSLInteger(f.value);
+            }
+            static public explicit operator LSLString(LSLInteger i)
+            {
+                return new LSLString(i.ToString());
+            }
+
+            static public implicit operator Boolean(LSLInteger i)
+            {
+                if (i.value == 0)
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+
+            static public implicit operator int(LSLInteger i)
+            {
+                return i.value;
+            }
+
+            static public explicit operator uint(LSLInteger i)
+            {
+                return (uint)i.value;
+            }
+            public static implicit operator list(LSLInteger i)
+            {
+                return new list(new object[] { i });
+            }
+            static public implicit operator LSLInteger(int i)
+            {
+                return new LSLInteger(i);
+            }
+            static public implicit operator LSLInteger(uint u)
+            {
+                return new LSLInteger(u);
+            }
+            static public implicit operator LSLInteger(bool b)
+            {
+                if (b)
+                    return new LSLInteger(1);
+                else
+                    return new LSLInteger(0);
+            }
+
+            static public implicit operator System.Double(LSLInteger i)
+            {
+                return (double)i.value;
+            }
+
+            static public LSLInteger operator -(LSLInteger i1, int i2)
+            {
+                return new LSLInteger(i1.value - i2);
+            }
+
+            static public LSLInteger operator -(LSLInteger i)
+            {
+                return new LSLInteger(-i.value);
+            }
+
+            public static LSLInteger operator --(LSLInteger i)
+            {
+                i.value--;
+                return i;
+            }
+
+            static public LSLInteger operator !(LSLInteger i1)
+            {
+                return i1.value == 0 ? 1 : 0;
+            }
+
+            static public LSLInteger operator !=(LSLInteger i1, LSLInteger i2)
+            {
+                bool ret = i1.value != i2.value;
+                return new LSLInteger((ret ? 1 : 0));
+            }
+
+            static public LSLInteger operator %(LSLInteger i1, LSLInteger i2)
+            {
+                int ret = i1.value % i2.value;
+                return ret;
+            }
+
+            static public LSLInteger operator &(LSLInteger i1, LSLInteger i2)
+            {
+                int ret = i1.value & i2.value;
+                return ret;
+            }
+
+            static public LSLInteger operator *(LSLInteger i1, int i2)
+            {
+                return new LSLInteger(i1.value * i2);
+            }
+
+            static public LSLInteger operator /(LSLInteger i1, int i2)
+            {
+                return new LSLInteger(i1.value / i2);
+            }
+
+            static public LSLInteger operator ^(LSLInteger i1, LSLInteger i2)
+            {
+                int ret = i1.value ^ i2.value;
+                return ret;
+            }
+
+            static public LSLInteger operator |(LSLInteger i1, LSLInteger i2)
+            {
+                int ret = i1.value | i2.value;
+                return ret;
+            }
+
+            //            static public LSLFloat operator +(LSLInteger i1, double f)
+            //            {
+            //                return new LSLFloat((double)i1.value + f);
+            //            }
+            //
+            //            static public LSLFloat operator -(LSLInteger i1, double f)
+            //            {
+            //                return new LSLFloat((double)i1.value - f);
+            //            }
+            //
+            //            static public LSLFloat operator *(LSLInteger i1, double f)
+            //            {
+            //                return new LSLFloat((double)i1.value * f);
+            //            }
+            //
+            //            static public LSLFloat operator /(LSLInteger i1, double f)
+            //            {
+            //                return new LSLFloat((double)i1.value / f);
+            //            }
+            static public LSLInteger operator ~(LSLInteger i)
+            {
+                return new LSLInteger(~i.value);
+            }
+
+            static public LSLInteger operator +(LSLInteger i1, int i2)
+            {
+                return new LSLInteger(i1.value + i2);
+            }
+
+            public static LSLInteger operator ++(LSLInteger i)
+            {
+                i.value++;
+                return i;
+            }
+
+            static public LSLInteger operator <(LSLInteger i1, LSLInteger i2)
+            {
+                bool ret = i1.value < i2.value;
+                return new LSLInteger((ret ? 1 : 0));
+            }
+
+            public static LSLInteger operator <<(LSLInteger i, int s)
+            {
+                return i.value << s;
+            }
+
+            static public LSLInteger operator <=(LSLInteger i1, LSLInteger i2)
+            {
+                bool ret = i1.value <= i2.value;
+                return new LSLInteger((ret ? 1 : 0));
+            }
+
+            static public LSLInteger operator ==(LSLInteger i1, LSLInteger i2)
+            {
+                bool ret = i1.value == i2.value;
+                return new LSLInteger((ret ? 1 : 0));
+            }
+            static public LSLInteger operator >(LSLInteger i1, LSLInteger i2)
+            {
+                bool ret = i1.value > i2.value;
+                return new LSLInteger((ret ? 1 : 0));
+            }
+
+            static public LSLInteger operator >=(LSLInteger i1, LSLInteger i2)
+            {
+                bool ret = i1.value >= i2.value;
+                return new LSLInteger((ret ? 1 : 0));
+            }
+            public static LSLInteger operator >>(LSLInteger i, int s)
+            {
+                return i.value >> s;
+            }
+
+            public static bool operator false(LSLInteger i)
+            {
+                return i.value == 0;
+            }
+
+            public static bool operator true(LSLInteger i)
+            {
+                return i.value != 0;
+            }
+
+            public override bool Equals(Object o)
+            {
+                if (!(o is LSLInteger))
+                {
+                    if (o is int)
+                    {
+                        return value == (int)o;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+
+                return value == ((LSLInteger)o).value;
+            }
+
+            public override int GetHashCode()
+            {
+                return value;
+            }
+            #endregion Operators
+
+            #region Overriders
+
+            public override string ToString()
+            {
+                return this.value.ToString();
+            }
+
+            #endregion Overriders
+        }
+
+        [Serializable]
+        public struct LSLString
+        {
+            public string m_string;
+
+            #region Constructors
+
+            public LSLString(string s)
+            {
+                m_string = s;
+            }
+
+            public LSLString(double d)
+            {
+                string s = String.Format(Culture.FormatProvider, "{0:0.000000}", d);
+                m_string = s;
+            }
+
+            public LSLString(LSLFloat f)
+            {
+                string s = String.Format(Culture.FormatProvider, "{0:0.000000}", f.value);
+                m_string = s;
+            }
+
+            public LSLString(int i)
+            {
+                string s = String.Format("{0}", i);
+                m_string = s;
+            }
+
+            public LSLString(LSLInteger i)
+                : this(i.value)
+            {
+            }
+
+            #endregion Constructors
+
+            #region Operators
+
+            public static explicit operator double(LSLString s)
+            {
+                return new LSLFloat(s).value;
+            }
+
+            public static explicit operator LSLInteger(LSLString s)
+            {
+                return new LSLInteger(s.m_string);
+            }
+
+            public static explicit operator LSLString(double d)
+            {
+                return new LSLString(d);
+            }
+
+            static public explicit operator LSLString(int i)
+            {
+                return new LSLString(i);
+            }
+
+            public static explicit operator LSLString(LSLFloat f)
+            {
+                return new LSLString(f);
+            }
+
+            static public explicit operator LSLString(bool b)
+            {
+                if (b)
+                    return new LSLString("1");
+                else
+                    return new LSLString("0");
+            }
+
+            static public implicit operator Boolean(LSLString s)
+            {
+                if (s.m_string.Length == 0)
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+
+            static public implicit operator LSLString(string s)
+            {
+                return new LSLString(s);
+            }
+
+            static public implicit operator String(LSLString s)
+            {
+                return s.m_string;
+            }
+            public static implicit operator list(LSLString s)
+            {
+                return new list(new object[] { s });
+            }
+            public static implicit operator Quaternion(LSLString s)
+            {
+                return new Quaternion(s.m_string);
+            }
+
+            public static bool operator !=(LSLString s1, string s2)
+            {
+                return s1.m_string != s2;
+            }
+
+            public static LSLString operator +(LSLString s1, LSLString s2)
+            {
+                return new LSLString(s1.m_string + s2.m_string);
+            }
+
+            public static bool operator ==(LSLString s1, string s2)
+            {
+                return s1.m_string == s2;
+            }
+
+            public static string ToString(LSLString s)
+            {
+                return s.m_string;
+            }
+
+            public override string ToString()
+            {
+                return m_string;
+            }
+            public static implicit operator Vector3(LSLString s)
+            {
+                return new Vector3(s.m_string);
+            }
+            public static implicit operator LSLFloat(LSLString s)
+            {
+                return new LSLFloat(s);
+            }
+            #endregion Operators
+
+            #region Overriders
+
+            public override bool Equals(object o)
+            {
+                return m_string == o.ToString();
+            }
+
+            public override int GetHashCode()
+            {
+                return m_string.GetHashCode();
+            }
+
+            #endregion Overriders
+
+            #region " Standard string functions "
+
+            public int Length { get { return m_string.Length; } }
+
+            //Clone,CompareTo,Contains
+            //CopyTo,EndsWith,Equals,GetEnumerator,GetHashCode,GetType,GetTypeCode
+            //IndexOf,IndexOfAny,Insert,IsNormalized,LastIndexOf,LastIndexOfAny
+            //Length,Normalize,PadLeft,PadRight,Remove,Replace,Split,StartsWith,Substring,ToCharArray,ToLowerInvariant
+            //ToString,ToUpper,ToUpperInvariant,Trim,TrimEnd,TrimStart
+            public bool Contains(string value)
+            {
+                return m_string.Contains(value);
+            }
+
+            public int IndexOf(string value)
+            {
+                return m_string.IndexOf(value);
+            }
+            #endregion " Standard string functions "
+        }
+
+        [Serializable]
+        public struct Quaternion
+        {
+            public double s;
+            public double x;
+            public double y;
+            public double z;
+            #region Constructors
+
+            public Quaternion(Quaternion Quat)
+            {
+                x = (float)Quat.x;
+                y = (float)Quat.y;
+                z = (float)Quat.z;
+                s = (float)Quat.s;
+                if (x == 0 && y == 0 && z == 0 && s == 0)
+                    s = 1;
+            }
+
+            public Quaternion(double X, double Y, double Z, double S)
+            {
+                x = X;
+                y = Y;
+                z = Z;
+                s = S;
+                if (x == 0 && y == 0 && z == 0 && s == 0)
+                    s = 1;
+            }
+
+            public Quaternion(string str)
+            {
+                str = str.Replace('<', ' ');
+                str = str.Replace('>', ' ');
+                string[] tmps = str.Split(new Char[] { ',', '<', '>' });
+                if (tmps.Length < 4)
+                {
+                    x = y = z = s = 0;
+                    return;
+                }
+                bool res;
+                res = Double.TryParse(tmps[0], NumberStyles.Float, Culture.NumberFormatInfo, out x);
+                res = res & Double.TryParse(tmps[1], NumberStyles.Float, Culture.NumberFormatInfo, out y);
+                res = res & Double.TryParse(tmps[2], NumberStyles.Float, Culture.NumberFormatInfo, out z);
+                res = res & Double.TryParse(tmps[3], NumberStyles.Float, Culture.NumberFormatInfo, out s);
+                if (x == 0 && y == 0 && z == 0 && s == 0)
+                    s = 1;
+            }
+
+            public Quaternion(OMV_Quaternion rot)
+            {
+                x = rot.X;
+                y = rot.Y;
+                z = rot.Z;
+                s = rot.W;
+            }
+
+            #endregion Constructors
+
+            #region Methods
+
+            public Quaternion Normalize()
+            {
+                double length = Math.Sqrt(x * x + y * y + z * z + s * s);
+                if (length < float.Epsilon)
+                {
+                    x = 0;
+                    y = 0;
+                    z = 0;
+                    s = 1;
+                }
+                else
+                {
+                    double invLength = 1.0 / length;
+                    x *= invLength;
+                    y *= invLength;
+                    z *= invLength;
+                    s *= invLength;
+                }
+
+                return this;
+            }
+
+            #endregion Methods
+
+            #region Overriders
+            public static explicit operator Quaternion(string s)
+            {
+                return new Quaternion(s);
+            }
+
+            public static explicit operator LSLString(Quaternion r)
+            {
+                string s = String.Format("<{0:0.000000},{1:0.000000},{2:0.000000},{3:0.000000}>", r.x, r.y, r.z, r.s);
+                return new LSLString(s);
+            }
+
+            public static implicit operator list(Quaternion r)
+            {
+                return new list(new object[] { r });
+            }
+
+            public static implicit operator OMV_Quaternion(Quaternion rot)
+            {
+                // LSL quaternions can normalize to 0, normal Quaternions can't.
+                if (rot.s == 0 && rot.x == 0 && rot.y == 0 && rot.z == 0)
+                    rot.z = 1; // ZERO_ROTATION = 0,0,0,1
+                OMV_Quaternion omvrot = new OMV_Quaternion((float)rot.x, (float)rot.y, (float)rot.z, (float)rot.s);
+                omvrot.Normalize();
+                return omvrot;
+            }
+
+            public static implicit operator Quaternion(OMV_Quaternion rot)
+            {
+                return new Quaternion(rot);
+            }
+
+            public static double Mag(Quaternion q)
+            {
+                return Math.Sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.s * q.s);
+            }
+
+            public static bool operator !=(Quaternion lhs, Quaternion rhs)
+            {
+                return !(lhs == rhs);
+            }
+
+            public static bool operator ==(Quaternion lhs, Quaternion rhs)
+            {
+                // Return true if the fields match:
+                return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.s == rhs.s;
+            }
+
+            public override bool Equals(object o)
+            {
+                if (!(o is Quaternion)) return false;
+
+                Quaternion quaternion = (Quaternion)o;
+
+                return x == quaternion.x && y == quaternion.y && z == quaternion.z && s == quaternion.s;
+            }
+
+            public override int GetHashCode()
+            {
+                return (x.GetHashCode() ^ y.GetHashCode() ^ z.GetHashCode() ^ s.GetHashCode());
+            }
+            public override string ToString()
+            {
+                string st = String.Format(Culture.FormatProvider, "<{0:0.000000},{1:0.000000},{2:0.000000},{3:0.000000}>", x, y, z, s);
+                return st;
+            }
+
+            public static explicit operator string(Quaternion r)
+            {
+                string s = String.Format("<{0:0.000000},{1:0.000000},{2:0.000000},{3:0.000000}>", r.x, r.y, r.z, r.s);
+                return s;
+            }
+            #endregion Overriders
+
+            public static Quaternion operator -(Quaternion a, Quaternion b)
+            {
+                return new Quaternion(a.x - b.x, a.y - b.y, a.z - b.z, a.s - b.s);
+            }
+
+            // using the equations below, we need to do "b * a" to be compatible with LSL
+            public static Quaternion operator *(Quaternion b, Quaternion a)
+            {
+                Quaternion c;
+                c.x = a.s * b.x + a.x * b.s + a.y * b.z - a.z * b.y;
+                c.y = a.s * b.y + a.y * b.s + a.z * b.x - a.x * b.z;
+                c.z = a.s * b.z + a.z * b.s + a.x * b.y - a.y * b.x;
+                c.s = a.s * b.s - a.x * b.x - a.y * b.y - a.z * b.z;
+                return c;
+            }
+
+            public static Quaternion operator /(Quaternion a, Quaternion b)
+            {
+                b.s = -b.s;
+                return a * b;
+            }
+
+            public static Quaternion operator +(Quaternion a, Quaternion b)
+            {
+                return new Quaternion(a.x + b.x, a.y + b.y, a.z + b.z, a.s + b.s);
+            }
+        }
 
         [Serializable]
         public struct Vector3
@@ -87,7 +1035,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 string[] tmps = str.Split(new Char[] { ',', '<', '>' });
                 if (tmps.Length < 3)
                 {
-                    x=y=z=0;
+                    x = y = z = 0;
                     return;
                 }
                 bool res;
@@ -96,25 +1044,19 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 res = res & Double.TryParse(tmps[2], NumberStyles.Float, Culture.NumberFormatInfo, out z);
             }
 
-            #endregion
+            #endregion Constructors
 
             #region Overriders
 
-            public override string ToString()
-            {
-                string s=String.Format("<{0:0.000000},{1:0.000000},{2:0.000000}>", x, y, z);
-                return s;
-            }
-
             public static explicit operator LSLString(Vector3 vec)
             {
-                string s=String.Format("<{0:0.000000},{1:0.000000},{2:0.000000}>", vec.x, vec.y, vec.z);
+                string s = String.Format("<{0:0.000000},{1:0.000000},{2:0.000000}>", vec.x, vec.y, vec.z);
                 return new LSLString(s);
             }
 
             public static explicit operator string(Vector3 vec)
             {
-                string s=String.Format("<{0:0.000000},{1:0.000000},{2:0.000000}>", vec.x, vec.y, vec.z);
+                string s = String.Format("<{0:0.000000},{1:0.000000},{2:0.000000}>", vec.x, vec.y, vec.z);
                 return s;
             }
 
@@ -133,14 +1075,14 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 return new OMV_Vector3((float)vec.x, (float)vec.y, (float)vec.z);
             }
 
-            public static implicit operator Vector3(OMV_Vector3 vec)
-            {
-                return new Vector3(vec);
-            }
-
             public static implicit operator OMV_Vector3d(Vector3 vec)
             {
                 return new OMV_Vector3d(vec.x, vec.y, vec.z);
+            }
+
+            public static implicit operator Vector3(OMV_Vector3 vec)
+            {
+                return new Vector3(vec);
             }
 
             public static implicit operator Vector3(OMV_Vector3d vec)
@@ -148,9 +1090,9 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 return new Vector3(vec);
             }
 
-            public static bool operator ==(Vector3 lhs, Vector3 rhs)
+            public static Vector3 operator -(Vector3 vector)
             {
-                return (lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z);
+                return new Vector3(-vector.x, -vector.y, -vector.z);
             }
 
             public static bool operator !=(Vector3 lhs, Vector3 rhs)
@@ -158,9 +1100,9 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 return !(lhs == rhs);
             }
 
-            public override int GetHashCode()
+            public static bool operator ==(Vector3 lhs, Vector3 rhs)
             {
-                return (x.GetHashCode() ^ y.GetHashCode() ^ z.GetHashCode());
+                return (lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z);
             }
 
             public override bool Equals(object o)
@@ -172,29 +1114,23 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 return (x == vector.x && y == vector.y && z == vector.z);
             }
 
-            public static Vector3 operator -(Vector3 vector)
+            public override int GetHashCode()
             {
-                return new Vector3(-vector.x, -vector.y, -vector.z);
+                return (x.GetHashCode() ^ y.GetHashCode() ^ z.GetHashCode());
             }
 
-            #endregion
+            public override string ToString()
+            {
+                string s = String.Format("<{0:0.000000},{1:0.000000},{2:0.000000}>", x, y, z);
+                return s;
+            }
+            #endregion Overriders
 
             #region Vector & Vector Math
-
-            // Vector-Vector Math
-            public static Vector3 operator +(Vector3 lhs, Vector3 rhs)
-            {
-                return new Vector3(lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z);
-            }
 
             public static Vector3 operator -(Vector3 lhs, Vector3 rhs)
             {
                 return new Vector3(lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z);
-            }
-
-            public static LSLFloat operator *(Vector3 lhs, Vector3 rhs)
-            {
-                return Dot(lhs, rhs);
             }
 
             public static Vector3 operator %(Vector3 v1, Vector3 v2)
@@ -207,7 +1143,17 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 return tv;
             }
 
-            #endregion
+            public static LSLFloat operator *(Vector3 lhs, Vector3 rhs)
+            {
+                return Dot(lhs, rhs);
+            }
+
+            // Vector-Vector Math
+            public static Vector3 operator +(Vector3 lhs, Vector3 rhs)
+            {
+                return new Vector3(lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z);
+            }
+            #endregion Vector & Vector Math
 
             #region Vector & Float Math
 
@@ -230,7 +1176,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 return v;
             }
 
-            #endregion
+            #endregion Vector & Float Math
 
             #region Vector & Double Math
 
@@ -252,7 +1198,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 return v;
             }
 
-            #endregion
+            #endregion Vector & Double Math
 
             #region Vector & Rotation Math
 
@@ -274,14 +1220,9 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 return v * r;
             }
 
-            #endregion
+            #endregion Vector & Rotation Math
 
             #region Static Helper Functions
-
-            public static double Dot(Vector3 v1, Vector3 v2)
-            {
-                return (v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z);
-            }
 
             public static Vector3 Cross(Vector3 v1, Vector3 v2)
             {
@@ -293,6 +1234,10 @@ namespace OpenSim.Region.ScriptEngine.Shared
                     );
             }
 
+            public static double Dot(Vector3 v1, Vector3 v2)
+            {
+                return (v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z);
+            }
             public static double Mag(Vector3 v)
             {
                 return Math.Sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
@@ -309,198 +1254,8 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 return new Vector3(0, 0, 0);
             }
 
-            #endregion
+            #endregion Static Helper Functions
         }
-
-        [Serializable]
-        public struct Quaternion
-        {
-            public double x;
-            public double y;
-            public double z;
-            public double s;
-
-            #region Constructors
-
-            public Quaternion(Quaternion Quat)
-            {
-                x = (float)Quat.x;
-                y = (float)Quat.y;
-                z = (float)Quat.z;
-                s = (float)Quat.s;
-                if (x == 0 && y == 0 && z == 0 && s == 0)
-                    s = 1;
-            }
-
-            public Quaternion(double X, double Y, double Z, double S)
-            {
-                x = X;
-                y = Y;
-                z = Z;
-                s = S;
-                if (x == 0 && y == 0 && z == 0 && s == 0)
-                    s = 1;
-            }
-
-            public Quaternion(string str)
-            {
-                str = str.Replace('<', ' ');
-                str = str.Replace('>', ' ');
-                string[] tmps = str.Split(new Char[] { ',', '<', '>' });
-                if (tmps.Length < 4)
-                {
-                    x=y=z=s=0;
-                    return;
-                }
-                bool res;
-                res = Double.TryParse(tmps[0], NumberStyles.Float, Culture.NumberFormatInfo, out x);
-                res = res & Double.TryParse(tmps[1], NumberStyles.Float, Culture.NumberFormatInfo, out y);
-                res = res & Double.TryParse(tmps[2], NumberStyles.Float, Culture.NumberFormatInfo, out z);
-                res = res & Double.TryParse(tmps[3], NumberStyles.Float, Culture.NumberFormatInfo, out s);
-                if (x == 0 && y == 0 && z == 0 && s == 0)
-                    s = 1;
-            }
-
-            public Quaternion(OMV_Quaternion rot)
-            {
-                x = rot.X;
-                y = rot.Y;
-                z = rot.Z;
-                s = rot.W;
-            }
-
-            #endregion
-
-            #region Methods
-            public Quaternion Normalize()
-            {
-                double length = Math.Sqrt(x * x + y * y + z * z + s * s);
-                if (length < float.Epsilon)
-                {
-                    x = 0;
-                    y = 0;
-                    z = 0;
-                    s = 1;
-                }
-                else
-                {
-
-                    double invLength = 1.0 / length;
-                    x *= invLength;
-                    y *= invLength;
-                    z *= invLength;
-                    s *= invLength;
-                }
-
-                return this;
-            }
-            #endregion
-
-            #region Overriders
-
-            public override int GetHashCode()
-            {
-                return (x.GetHashCode() ^ y.GetHashCode() ^ z.GetHashCode() ^ s.GetHashCode());
-            }
-
-            public override bool Equals(object o)
-            {
-                if (!(o is Quaternion)) return false;
-
-                Quaternion quaternion = (Quaternion)o;
-
-                return x == quaternion.x && y == quaternion.y && z == quaternion.z && s == quaternion.s;
-            }
-
-            public override string ToString()
-            {
-                string st=String.Format(Culture.FormatProvider, "<{0:0.000000},{1:0.000000},{2:0.000000},{3:0.000000}>", x, y, z, s);
-                return st;
-            }
-
-            public static explicit operator string(Quaternion r)
-            {
-                string s=String.Format("<{0:0.000000},{1:0.000000},{2:0.000000},{3:0.000000}>", r.x, r.y, r.z, r.s);
-                return s;
-            }
-
-            public static explicit operator LSLString(Quaternion r)
-            {
-                string s=String.Format("<{0:0.000000},{1:0.000000},{2:0.000000},{3:0.000000}>", r.x, r.y, r.z, r.s);
-                return new LSLString(s);
-            }
-
-            public static explicit operator Quaternion(string s)
-            {
-                return new Quaternion(s);
-            }
-
-            public static implicit operator list(Quaternion r)
-            {
-                return new list(new object[] { r });
-            }
-
-            public static implicit operator OMV_Quaternion(Quaternion rot)
-            {
-                // LSL quaternions can normalize to 0, normal Quaternions can't.
-                if (rot.s == 0 && rot.x == 0 && rot.y == 0 && rot.z == 0)
-                    rot.z = 1; // ZERO_ROTATION = 0,0,0,1
-                OMV_Quaternion omvrot = new OMV_Quaternion((float)rot.x, (float)rot.y, (float)rot.z, (float)rot.s);
-                omvrot.Normalize();
-                return omvrot;
-            }
-
-            public static implicit operator Quaternion(OMV_Quaternion rot)
-            {
-                return new Quaternion(rot);
-            }
-
-            public static bool operator ==(Quaternion lhs, Quaternion rhs)
-            {
-                // Return true if the fields match:
-                return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.s == rhs.s;
-            }
-
-            public static bool operator !=(Quaternion lhs, Quaternion rhs)
-            {
-                return !(lhs == rhs);
-            }
-
-            public static double Mag(Quaternion q)
-            {
-                return Math.Sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.s * q.s);
-            }
-
-            #endregion
-
-            public static Quaternion operator +(Quaternion a, Quaternion b)
-            {
-                return new Quaternion(a.x + b.x, a.y + b.y, a.z + b.z, a.s + b.s);
-            }
-
-            public static Quaternion operator /(Quaternion a, Quaternion b)
-            {
-                b.s = -b.s;
-                return a * b;
-            }
-
-            public static Quaternion operator -(Quaternion a, Quaternion b)
-            {
-                return new Quaternion(a.x - b.x, a.y - b.y, a.z - b.z, a.s - b.s);
-            }
-
-            // using the equations below, we need to do "b * a" to be compatible with LSL
-            public static Quaternion operator *(Quaternion b, Quaternion a)
-            {
-                Quaternion c;
-                c.x = a.s * b.x + a.x * b.s + a.y * b.z - a.z * b.y;
-                c.y = a.s * b.y + a.y * b.s + a.z * b.x - a.x * b.z;
-                c.z = a.s * b.z + a.z * b.s + a.x * b.y - a.y * b.x;
-                c.s = a.s * b.s - a.x * b.x - a.y * b.y - a.z * b.z;
-                return c;
-            }
-        }
-
         [Serializable]
         public class list
         {
@@ -511,12 +1266,24 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 m_data = args;
             }
 
+            public object[] Data
+            {
+                get
+                {
+                    if (m_data == null)
+                        m_data = new Object[0];
+                    return m_data;
+                }
+
+                set { m_data = value; }
+            }
+
             public int Length
             {
                 get
                 {
                     if (m_data == null)
-                        m_data=new Object[0];
+                        m_data = new Object[0];
                     return m_data.Length;
                 }
             }
@@ -526,7 +1293,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 get
                 {
                     if (m_data == null)
-                        m_data=new Object[0];
+                        m_data = new Object[0];
 
                     int size = 0;
 
@@ -558,30 +1325,158 @@ namespace OpenSim.Region.ScriptEngine.Shared
                     return size;
                 }
             }
-
-            public object[] Data
+            public static bool operator !=(list a, list b)
             {
-                get {
-                    if (m_data == null)
-                        m_data=new Object[0];
-                    return m_data;
-                }
+                int la = -1;
+                int lb = -1;
+                try { la = a.Length; }
+                catch (NullReferenceException) { }
+                try { lb = b.Length; }
+                catch (NullReferenceException) { }
 
-                set {m_data = value; }
+                return la != lb;
             }
 
-            /// <summary>
-            /// Obtain LSL type from an index.
-            /// </summary>
-            /// <remarks>
-            /// This is needed because LSL lists allow for multiple types, and safely
-            /// iterating in them requires a type check.
-            /// </remarks>
-            /// <returns></returns>
-            /// <param name='itemIndex'></param>
-            public Type GetLSLListItemType(int itemIndex)
+            public static list operator +(list a, list b)
             {
-                return m_data[itemIndex].GetType();
+                object[] tmp;
+                tmp = new object[a.Length + b.Length];
+                a.Data.CopyTo(tmp, 0);
+                b.Data.CopyTo(tmp, a.Length);
+                return new list(tmp);
+            }
+
+            public static list operator +(list a, LSLString s)
+            {
+                a.ExtendAndAdd(s);
+                return a;
+            }
+
+            public static list operator +(list a, LSLInteger i)
+            {
+                a.ExtendAndAdd(i);
+                return a;
+            }
+
+            public static list operator +(list a, LSLFloat d)
+            {
+                a.ExtendAndAdd(d);
+                return a;
+            }
+
+            public static bool operator ==(list a, list b)
+            {
+                int la = -1;
+                int lb = -1;
+                try { la = a.Length; }
+                catch (NullReferenceException) { }
+                try { lb = b.Length; }
+                catch (NullReferenceException) { }
+
+                return la == lb;
+            }
+
+            public void Add(object o)
+            {
+                object[] tmp;
+                tmp = new object[m_data.Length + 1];
+                m_data.CopyTo(tmp, 0);
+                tmp[m_data.Length] = o;
+                m_data = tmp;
+            }
+
+            public bool Contains(object o)
+            {
+                bool ret = false;
+                foreach (object i in Data)
+                {
+                    if (i == o)
+                    {
+                        ret = true;
+                        break;
+                    }
+                }
+                return ret;
+            }
+
+            public list DeleteSublist(int start, int end)
+            {
+                // Not an easy one
+                // If start <= end, remove that part
+                // if either is negative, count from the end of the array
+                // if the resulting start > end, remove all BUT that part
+
+                Object[] ret;
+
+                if (start < 0)
+                    start = m_data.Length + start;
+
+                if (start < 0)
+                    start = 0;
+
+                if (end < 0)
+                    end = m_data.Length + end;
+                if (end < 0)
+                    end = 0;
+
+                if (start > end)
+                {
+                    if (end >= m_data.Length)
+                        return new list(new Object[0]);
+
+                    if (start >= m_data.Length)
+                        start = m_data.Length - 1;
+
+                    return GetSublist(end, start);
+                }
+
+                // start >= 0 && end >= 0 here
+                if (start >= m_data.Length)
+                {
+                    ret = new Object[m_data.Length];
+                    Array.Copy(m_data, 0, ret, 0, m_data.Length);
+
+                    return new list(ret);
+                }
+
+                if (end >= m_data.Length)
+                    end = m_data.Length - 1;
+
+                // now, this makes the math easier
+                int remove = end + 1 - start;
+
+                ret = new Object[m_data.Length - remove];
+                if (ret.Length == 0)
+                    return new list(ret);
+
+                int src;
+                int dest = 0;
+
+                for (src = 0; src < m_data.Length; src++)
+                {
+                    if (src < start || src > end)
+                        ret[dest++] = m_data[src];
+                }
+
+                return new list(ret);
+            }
+
+            public override bool Equals(object o)
+            {
+                if (!(o is list))
+                    return false;
+
+                return Data.Length == ((list)o).Data.Length;
+            }
+
+            public override int GetHashCode()
+            {
+                return Data.GetHashCode();
+            }
+
+            public LSL_Types.key GetKeyItem(int itemIndex)
+            {
+                return (LSL_Types.key)m_data[itemIndex];
             }
 
             /// <summary>
@@ -624,18 +1519,6 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 }
             }
 
-            public LSL_Types.LSLString GetLSLStringItem(int itemIndex)
-            {
-                if (m_data[itemIndex] is LSL_Types.key)
-                {
-                    return (LSL_Types.key)m_data[itemIndex];
-                }
-                else
-                {
-                    return new LSL_Types.LSLString(m_data[itemIndex].ToString());
-                }
-            }
-
             public LSL_Types.LSLInteger GetLSLIntegerItem(int itemIndex)
             {
                 if (m_data[itemIndex] is LSL_Types.LSLInteger)
@@ -654,34 +1537,37 @@ namespace OpenSim.Region.ScriptEngine.Shared
                         m_data[itemIndex].GetType().Name : "null"));
             }
 
-            public LSL_Types.Vector3 GetVector3Item(int itemIndex)
+            /// <summary>
+            /// Obtain LSL type from an index.
+            /// </summary>
+            /// <remarks>
+            /// This is needed because LSL lists allow for multiple types, and safely
+            /// iterating in them requires a type check.
+            /// </remarks>
+            /// <returns></returns>
+            /// <param name='itemIndex'></param>
+            public Type GetLSLListItemType(int itemIndex)
             {
-                if (m_data[itemIndex] is LSL_Types.Vector3)
+                return m_data[itemIndex].GetType();
+            }
+            public LSL_Types.LSLString GetLSLStringItem(int itemIndex)
+            {
+                if (m_data[itemIndex] is LSL_Types.key)
                 {
-                    return (LSL_Types.Vector3)m_data[itemIndex];
-                }
-                else if(m_data[itemIndex] is OpenMetaverse.Vector3)
-                {
-                    return new LSL_Types.Vector3(
-                            (OpenMetaverse.Vector3)m_data[itemIndex]);
+                    return (LSL_Types.key)m_data[itemIndex];
                 }
                 else
                 {
-                    throw new InvalidCastException(string.Format(
-                        "{0} expected but {1} given",
-                        typeof(LSL_Types.Vector3).Name,
-                        m_data[itemIndex] != null ?
-                        m_data[itemIndex].GetType().Name : "null"));
+                    return new LSL_Types.LSLString(m_data[itemIndex].ToString());
                 }
             }
-
             public LSL_Types.Quaternion GetQuaternionItem(int itemIndex)
             {
                 if (m_data[itemIndex] is LSL_Types.Quaternion)
                 {
                     return (LSL_Types.Quaternion)m_data[itemIndex];
                 }
-                else if(m_data[itemIndex] is OpenMetaverse.Quaternion)
+                else if (m_data[itemIndex] is OpenMetaverse.Quaternion)
                 {
                     return new LSL_Types.Quaternion(
                             (OpenMetaverse.Quaternion)m_data[itemIndex]);
@@ -696,156 +1582,8 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 }
             }
 
-            public LSL_Types.key GetKeyItem(int itemIndex)
-            {
-              return (LSL_Types.key)m_data[itemIndex];
-            }
-
-            public static list operator +(list a, list b)
-            {
-                object[] tmp;
-                tmp = new object[a.Length + b.Length];
-                a.Data.CopyTo(tmp, 0);
-                b.Data.CopyTo(tmp, a.Length);
-                return new list(tmp);
-            }
-
-            private void ExtendAndAdd(object o)
-            {
-                Array.Resize(ref m_data, Length + 1);
-                m_data.SetValue(o, Length - 1);
-            }
-
-            public static list operator +(list a, LSLString s)
-            {
-                a.ExtendAndAdd(s);
-                return a;
-            }
-
-            public static list operator +(list a, LSLInteger i)
-            {
-                a.ExtendAndAdd(i);
-                return a;
-            }
-
-            public static list operator +(list a, LSLFloat d)
-            {
-                a.ExtendAndAdd(d);
-                return a;
-            }
-
-            public static bool operator ==(list a, list b)
-            {
-                int la = -1;
-                int lb = -1;
-                try { la = a.Length; }
-                catch (NullReferenceException) { }
-                try { lb = b.Length; }
-                catch (NullReferenceException) { }
-
-                return la == lb;
-            }
-
-            public static bool operator !=(list a, list b)
-            {
-                int la = -1;
-                int lb = -1;
-                try { la = a.Length; }
-                catch (NullReferenceException) { }
-                try {lb = b.Length;}
-                catch (NullReferenceException) { }
-
-                return la != lb;
-            }
-
-            public void Add(object o)
-            {
-                object[] tmp;
-                tmp = new object[m_data.Length + 1];
-                m_data.CopyTo(tmp, 0);
-                tmp[m_data.Length] = o;
-                m_data = tmp;
-            }
-
-            public bool Contains(object o)
-            {
-                bool ret = false;
-                foreach (object i in Data)
-                {
-                    if (i == o)
-                    {
-                        ret = true;
-                        break;
-                    }
-                }
-                return ret;
-            }
-
-            public list DeleteSublist(int start, int end)
-            {
-                // Not an easy one
-                // If start <= end, remove that part
-                // if either is negative, count from the end of the array
-                // if the resulting start > end, remove all BUT that part
-
-                Object[] ret;
-
-                if (start < 0)
-                    start=m_data.Length+start;
-
-                if (start < 0)
-                    start=0;
-
-                if (end < 0)
-                    end=m_data.Length+end;
-                if (end < 0)
-                    end=0;
-
-                if (start > end)
-                {
-                    if (end >= m_data.Length)
-                        return new list(new Object[0]);
-
-                    if (start >= m_data.Length)
-                        start=m_data.Length-1;
-
-                    return GetSublist(end, start);
-                }
-
-                // start >= 0 && end >= 0 here
-                if (start >= m_data.Length)
-                {
-                    ret=new Object[m_data.Length];
-                    Array.Copy(m_data, 0, ret, 0, m_data.Length);
-
-                    return new list(ret);
-                }
-
-                if (end >= m_data.Length)
-                    end=m_data.Length-1;
-
-                // now, this makes the math easier
-                int remove=end+1-start;
-
-                ret=new Object[m_data.Length-remove];
-                if (ret.Length == 0)
-                    return new list(ret);
-
-                int src;
-                int dest=0;
-
-                for (src = 0; src < m_data.Length; src++)
-                {
-                    if (src < start || src > end)
-                        ret[dest++]=m_data[src];
-                }
-
-                return new list(ret);
-            }
-
             public list GetSublist(int start, int end)
             {
-
                 object[] ret;
 
                 // Take care of neg start or end's
@@ -873,7 +1611,6 @@ namespace OpenSim.Region.ScriptEngine.Shared
 
                 if (start <= end)
                 {
-
                     // Start sublist beyond length
                     // Also deals with start AND end still negative
                     if (start >= m_data.Length || end < 0)
@@ -898,14 +1635,11 @@ namespace OpenSim.Region.ScriptEngine.Shared
                     Array.Copy(m_data, start, ret, 0, end - start + 1);
 
                     return new list(ret);
-
                 }
 
                 // Deal with the segmented case: 0->end + start->EOL
-
                 else
                 {
-
                     list result = null;
 
                     // If end is negative, then prefix list is empty
@@ -919,11 +1653,10 @@ namespace OpenSim.Region.ScriptEngine.Shared
                         {
                             return this;
                         }
-
                     }
                     else
                     {
-                        result = GetSublist(0,end);
+                        result = GetSublist(0, end);
                     }
 
                     // If start is outside of list, then just return
@@ -934,8 +1667,122 @@ namespace OpenSim.Region.ScriptEngine.Shared
                     }
 
                     return result + GetSublist(start, Data.Length);
-
                 }
+            }
+
+            public LSL_Types.Vector3 GetVector3Item(int itemIndex)
+            {
+                if (m_data[itemIndex] is LSL_Types.Vector3)
+                {
+                    return (LSL_Types.Vector3)m_data[itemIndex];
+                }
+                else if (m_data[itemIndex] is OpenMetaverse.Vector3)
+                {
+                    return new LSL_Types.Vector3(
+                            (OpenMetaverse.Vector3)m_data[itemIndex]);
+                }
+                else
+                {
+                    throw new InvalidCastException(string.Format(
+                        "{0} expected but {1} given",
+                        typeof(LSL_Types.Vector3).Name,
+                        m_data[itemIndex] != null ?
+                        m_data[itemIndex].GetType().Name : "null"));
+                }
+            }
+            public list Sort(int stride, int ascending)
+            {
+                if (Data.Length == 0)
+                    return new list(); // Don't even bother
+
+                object[] ret = new object[Data.Length];
+                Array.Copy(Data, 0, ret, 0, Data.Length);
+
+                if (stride <= 0)
+                {
+                    stride = 1;
+                }
+
+                // we can optimize here in the case where stride == 1 and the list
+                // consists of homogeneous types
+
+                if (stride == 1)
+                {
+                    bool homogeneous = true;
+                    int index;
+                    for (index = 1; index < Data.Length; index++)
+                    {
+                        if (!Data[0].GetType().Equals(Data[index].GetType()))
+                        {
+                            homogeneous = false;
+                            break;
+                        }
+                    }
+
+                    if (homogeneous)
+                    {
+                        Array.Sort(ret, new HomogeneousComparer());
+                        if (ascending == 0)
+                        {
+                            Array.Reverse(ret);
+                        }
+                        return new list(ret);
+                    }
+                }
+
+                // Because of the desired type specific feathered sorting behavior
+                // requried by the spec, we MUST use a non-optimized bubble sort here.
+                // Anything else will give you the incorrect behavior.
+
+                // begin bubble sort...
+                int i;
+                int j;
+                int k;
+                int n = Data.Length;
+
+                for (i = 0; i < (n - stride); i += stride)
+                {
+                    for (j = i + stride; j < n; j += stride)
+                    {
+                        if (compare(ret[i], ret[j], ascending) > 0)
+                        {
+                            for (k = 0; k < stride; k++)
+                            {
+                                object tmp = ret[i + k];
+                                ret[i + k] = ret[j + k];
+                                ret[j + k] = tmp;
+                            }
+                        }
+                    }
+                }
+
+                // end bubble sort
+
+                return new list(ret);
+            }
+
+            public string ToPrettyString()
+            {
+                string output;
+                if (m_data.Length == 0)
+                {
+                    return "[]";
+                }
+                output = "[";
+                foreach (object o in m_data)
+                {
+                    if (o is String)
+                    {
+                        output = output + "\"" + o + "\", ";
+                    }
+                    else
+                    {
+                        output = output + o.ToString() + ", ";
+                    }
+                }
+                output = output.Substring(0, output.Length - 2);
+                output = output + "]";
+                return output;
             }
 
             private static int compare(object left, object right, int ascending)
@@ -995,337 +1842,11 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 return ret;
             }
 
-            class HomogeneousComparer : IComparer
+            private void ExtendAndAdd(object o)
             {
-                public HomogeneousComparer()
-                {
-                }
-
-                public int Compare(object lhs, object rhs)
-                {
-                    return compare(lhs, rhs, 1);
-                }
+                Array.Resize(ref m_data, Length + 1);
+                m_data.SetValue(o, Length - 1);
             }
-
-            public list Sort(int stride, int ascending)
-            {
-                if (Data.Length == 0)
-                    return new list(); // Don't even bother
-
-                object[] ret = new object[Data.Length];
-                Array.Copy(Data, 0, ret, 0, Data.Length);
-
-                if (stride <= 0)
-                {
-                    stride = 1;
-                }
-
-                // we can optimize here in the case where stride == 1 and the list
-                // consists of homogeneous types
-
-                if (stride == 1)
-                {
-                    bool homogeneous = true;
-                    int index;
-                    for (index = 1; index < Data.Length; index++)
-                    {
-                        if (!Data[0].GetType().Equals(Data[index].GetType()))
-                        {
-                            homogeneous = false;
-                            break;
-                        }
-                    }
-
-                    if (homogeneous)
-                    {
-                        Array.Sort(ret, new HomogeneousComparer());
-                        if (ascending == 0)
-                        {
-                            Array.Reverse(ret);
-                        }
-                        return new list(ret);
-                    }
-                }
-
-                // Because of the desired type specific feathered sorting behavior
-                // requried by the spec, we MUST use a non-optimized bubble sort here.
-                // Anything else will give you the incorrect behavior.
-
-                // begin bubble sort...
-                int i;
-                int j;
-                int k;
-                int n = Data.Length;
-
-                for (i = 0; i < (n-stride); i += stride)
-                {
-                    for (j = i + stride; j < n; j += stride)
-                    {
-                        if (compare(ret[i], ret[j], ascending) > 0)
-                        {
-                            for (k = 0; k < stride; k++)
-                            {
-                                object tmp = ret[i + k];
-                                ret[i + k] = ret[j + k];
-                                ret[j + k] = tmp;
-                            }
-                        }
-                    }
-                }
-
-                // end bubble sort
-
-                return new list(ret);
-            }
-
-            #region CSV Methods
-
-            public static list FromCSV(string csv)
-            {
-                return new list(csv.Split(','));
-            }
-
-            public string ToCSV()
-            {
-                string ret = "";
-                foreach (object o in this.Data)
-                {
-                    if (ret == "")
-                    {
-                        ret = o.ToString();
-                    }
-                    else
-                    {
-                        ret = ret + ", " + o.ToString();
-                    }
-                }
-                return ret;
-            }
-
-            private string ToSoup()
-            {
-                string output;
-                output = String.Empty;
-                if (m_data.Length == 0)
-                {
-                    return String.Empty;
-                }
-                foreach (object o in m_data)
-                {
-                    output = output + o.ToString();
-                }
-                return output;
-            }
-
-            public static explicit operator String(list l)
-            {
-                return l.ToSoup();
-            }
-
-            public static explicit operator LSLString(list l)
-            {
-                return new LSLString(l.ToSoup());
-            }
-
-            public override string ToString()
-            {
-                return ToSoup();
-            }
-
-            #endregion
-
-            #region Statistic Methods
-
-            public double Min()
-            {
-                double minimum = double.PositiveInfinity;
-                double entry;
-                for (int i = 0; i < Data.Length; i++)
-                {
-                    if (double.TryParse(Data[i].ToString(), NumberStyles.Float, Culture.NumberFormatInfo, out entry))
-                    {
-                        if (entry < minimum) minimum = entry;
-                    }
-                }
-                return minimum;
-            }
-
-            public double Max()
-            {
-                double maximum = double.NegativeInfinity;
-                double entry;
-                for (int i = 0; i < Data.Length; i++)
-                {
-                    if (double.TryParse(Data[i].ToString(), NumberStyles.Float, Culture.NumberFormatInfo, out entry))
-                    {
-                        if (entry > maximum) maximum = entry;
-                    }
-                }
-                return maximum;
-            }
-
-            public double Range()
-            {
-                return (this.Max() / this.Min());
-            }
-
-            public int NumericLength()
-            {
-                int count = 0;
-                double entry;
-                for (int i = 0; i < Data.Length; i++)
-                {
-                    if (double.TryParse(Data[i].ToString(), NumberStyles.Float, Culture.NumberFormatInfo, out entry))
-                    {
-                        count++;
-                    }
-                }
-                return count;
-            }
-
-            public static list ToDoubleList(list src)
-            {
-                list ret = new list();
-                double entry;
-                for (int i = 0; i < src.Data.Length; i++)
-                {
-                    if (double.TryParse(src.Data[i].ToString(), NumberStyles.Float, Culture.NumberFormatInfo, out entry))
-                    {
-                        ret.Add(entry);
-                    }
-                }
-                return ret;
-            }
-
-            public double Sum()
-            {
-                double sum = 0;
-                double entry;
-                for (int i = 0; i < Data.Length; i++)
-                {
-                    if (double.TryParse(Data[i].ToString(), NumberStyles.Float, Culture.NumberFormatInfo, out entry))
-                    {
-                        sum = sum + entry;
-                    }
-                }
-                return sum;
-            }
-
-            public double SumSqrs()
-            {
-                double sum = 0;
-                double entry;
-                for (int i = 0; i < Data.Length; i++)
-                {
-                    if (double.TryParse(Data[i].ToString(), NumberStyles.Float, Culture.NumberFormatInfo, out entry))
-                    {
-                        sum = sum + Math.Pow(entry, 2);
-                    }
-                }
-                return sum;
-            }
-
-            public double Mean()
-            {
-                return (this.Sum() / this.NumericLength());
-            }
-
-            public void NumericSort()
-            {
-                IComparer Numeric = new NumericComparer();
-                Array.Sort(Data, Numeric);
-            }
-
-            public void AlphaSort()
-            {
-                IComparer Alpha = new AlphaCompare();
-                Array.Sort(Data, Alpha);
-            }
-
-            public double Median()
-            {
-                return Qi(0.5);
-            }
-
-            public double GeometricMean()
-            {
-                double ret = 1.0;
-                list nums = ToDoubleList(this);
-                for (int i = 0; i < nums.Data.Length; i++)
-                {
-                    ret *= (double)nums.Data[i];
-                }
-                return Math.Exp(Math.Log(ret) / (double)nums.Data.Length);
-            }
-
-            public double HarmonicMean()
-            {
-                double ret = 0.0;
-                list nums = ToDoubleList(this);
-                for (int i = 0; i < nums.Data.Length; i++)
-                {
-                    ret += 1.0 / (double)nums.Data[i];
-                }
-                return ((double)nums.Data.Length / ret);
-            }
-
-            public double Variance()
-            {
-                double s = 0;
-                list num = ToDoubleList(this);
-                for (int i = 0; i < num.Data.Length; i++)
-                {
-                    s += Math.Pow((double)num.Data[i], 2);
-                }
-                return (s - num.Data.Length * Math.Pow(num.Mean(), 2)) / (num.Data.Length - 1);
-            }
-
-            public double StdDev()
-            {
-                return Math.Sqrt(this.Variance());
-            }
-
-            public double Qi(double i)
-            {
-                list j = this;
-                j.NumericSort();
-
-                if (Math.Ceiling(this.Length * i) == this.Length * i)
-                {
-                    return (double)((double)j.Data[(int)(this.Length * i - 1)] + (double)j.Data[(int)(this.Length * i)]) / 2;
-                }
-                else
-                {
-                    return (double)j.Data[((int)(Math.Ceiling(this.Length * i))) - 1];
-                }
-            }
-
-            #endregion
-
-            public string ToPrettyString()
-            {
-                string output;
-                if (m_data.Length == 0)
-                {
-                    return "[]";
-                }
-                output = "[";
-                foreach (object o in m_data)
-                {
-                    if (o is String)
-                    {
-                        output = output + "\"" + o + "\", ";
-                    }
-                    else
-                    {
-                        output = output + o.ToString() + ", ";
-                    }
-                }
-                output = output.Substring(0, output.Length - 2);
-                output = output + "]";
-                return output;
-            }
-
             public class AlphaCompare : IComparer
             {
                 int IComparer.Compare(object x, object y)
@@ -1363,789 +1884,234 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 }
             }
 
-            public override bool Equals(object o)
+            private class HomogeneousComparer : IComparer
             {
-                if (!(o is list))
-                    return false;
-
-                return Data.Length == ((list)o).Data.Length;
-            }
-
-            public override int GetHashCode()
-            {
-                return Data.GetHashCode();
-            }
-        }
-
-        [Serializable]
-        public struct key
-        {
-            public string value;
-
-            #region Constructors
-            public key(string s)
-            {
-                value = s;
-            }
-
-            #endregion
-
-            #region Methods
-
-            static public bool Parse2Key(string s)
-            {
-                Regex isuuid = new Regex(@"^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$", RegexOptions.Compiled);
-                if (isuuid.IsMatch(s))
+                public HomogeneousComparer()
                 {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-
-            #endregion
-
-            #region Operators
-
-            static public implicit operator Boolean(key k)
-            {
-                if (k.value.Length == 0)
-                {
-                    return false;
                 }
 
-                if (k.value == "00000000-0000-0000-0000-000000000000")
+                public int Compare(object lhs, object rhs)
                 {
-                    return false;
-                }
-                Regex isuuid = new Regex(@"^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$", RegexOptions.Compiled);
-                if (isuuid.IsMatch(k.value))
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
+                    return compare(lhs, rhs, 1);
                 }
             }
-
-            static public implicit operator key(string s)
+            #region CSV Methods
+            public static explicit operator LSLString(list l)
             {
-                return new key(s);
+                return new LSLString(l.ToSoup());
             }
 
-            static public implicit operator String(key k)
+            public static list FromCSV(string csv)
             {
-                return k.value;
+                return new list(csv.Split(','));
             }
 
-            static public implicit operator LSLString(key k)
+            public string ToCSV()
             {
-                return k.value;
-            }
-
-            public static bool operator ==(key k1, key k2)
-            {
-                return k1.value == k2.value;
-            }
-            public static bool operator !=(key k1, key k2)
-            {
-                return k1.value != k2.value;
-            }
-
-            #endregion
-
-            #region Overriders
-
-            public override bool Equals(object o)
-            {
-                return o.ToString() == value;
-            }
-
-            public override int GetHashCode()
-            {
-                return value.GetHashCode();
-            }
-
-            public override string ToString()
-            {
-                return value;
-            }
-
-            #endregion
-        }
-
-        [Serializable]
-        public struct LSLString
-        {
-            public string m_string;
-
-            #region Constructors
-
-            public LSLString(string s)
-            {
-                m_string = s;
-            }
-
-            public LSLString(double d)
-            {
-                string s = String.Format(Culture.FormatProvider, "{0:0.000000}", d);
-                m_string = s;
-            }
-
-            public LSLString(LSLFloat f)
-            {
-                string s = String.Format(Culture.FormatProvider, "{0:0.000000}", f.value);
-                m_string = s;
-            }
-            
-            public LSLString(int i)
-            {
-                string s = String.Format("{0}", i);
-                m_string = s;
-            }
-
-            public LSLString(LSLInteger i) : this(i.value) {}
-            
-            #endregion
-
-            #region Operators
-            static public implicit operator Boolean(LSLString s)
-            {
-                if (s.m_string.Length == 0)
+                string ret = "";
+                foreach (object o in this.Data)
                 {
-                    return false;
-                }
-                else
-                {
-                    return true;
-                }
-            }
-
-
-
-            static public implicit operator String(LSLString s)
-            {
-                return s.m_string;
-            }
-
-            static public implicit operator LSLString(string s)
-            {
-                return new LSLString(s);
-            }
-
-            public static string ToString(LSLString s)
-            {
-                return s.m_string;
-            }
-
-            public override string ToString()
-            {
-                return m_string;
-            }
-
-            public static bool operator ==(LSLString s1, string s2)
-            {
-                return s1.m_string == s2;
-            }
-
-            public static bool operator !=(LSLString s1, string s2)
-            {
-                return s1.m_string != s2;
-            }
-
-            public static LSLString operator +(LSLString s1, LSLString s2)
-            {
-                return new LSLString(s1.m_string + s2.m_string);
-            }
-
-            public static explicit operator double(LSLString s)
-            {
-                return new LSLFloat(s).value;
-            }
-
-            public static explicit operator LSLInteger(LSLString s)
-            {
-                return new LSLInteger(s.m_string);
-            }
-
-            public static explicit operator LSLString(double d)
-            {
-                return new LSLString(d);
-            }
-            
-            static public explicit operator LSLString(int i)
-            {
-                return new LSLString(i);
-            }
-
-            public static explicit operator LSLString(LSLFloat f)
-            {
-                return new LSLString(f);
-            }
-
-            static public explicit operator LSLString(bool b)
-            {
-                if (b)
-                    return new LSLString("1");
-                else
-                    return new LSLString("0");
-            }
-
-            public static implicit operator Vector3(LSLString s)
-            {
-                return new Vector3(s.m_string);
-            }
-
-            public static implicit operator Quaternion(LSLString s)
-            {
-                return new Quaternion(s.m_string);
-            }
-
-            public static implicit operator LSLFloat(LSLString s)
-            {
-                return new LSLFloat(s);
-            }
-
-            public static implicit operator list(LSLString s)
-            {
-                return new list(new object[]{s});
-            }
-
-            #endregion
-
-            #region Overriders
-            public override bool Equals(object o)
-            {
-                return m_string == o.ToString();
-            }
-
-            public override int GetHashCode()
-            {
-                return m_string.GetHashCode();
-            }
-
-            #endregion
-
-            #region " Standard string functions "
-            //Clone,CompareTo,Contains
-            //CopyTo,EndsWith,Equals,GetEnumerator,GetHashCode,GetType,GetTypeCode
-            //IndexOf,IndexOfAny,Insert,IsNormalized,LastIndexOf,LastIndexOfAny
-            //Length,Normalize,PadLeft,PadRight,Remove,Replace,Split,StartsWith,Substring,ToCharArray,ToLowerInvariant
-            //ToString,ToUpper,ToUpperInvariant,Trim,TrimEnd,TrimStart
-            public bool Contains(string value) { return m_string.Contains(value); }
-            public int IndexOf(string value) { return m_string.IndexOf(value); }
-            public int Length { get { return m_string.Length; } }
-
-
-            #endregion
-        }
-
-        [Serializable]
-        public struct LSLInteger
-        {
-            public int value;
-            private static readonly Regex castRegex = new Regex(@"(^[ ]*0[xX][0-9A-Fa-f][0-9A-Fa-f]*)|(^[ ]*(-?|\+?)[0-9][0-9]*)");
-
-            #region Constructors
-            public LSLInteger(int i)
-            {
-                value = i;
-            }
-
-            public LSLInteger(uint i)
-            {
-                value = (int)i;
-            }
-
-            public LSLInteger(double d)
-            {
-                value = (int)d;
-            }
-
-            public LSLInteger(string s)
-            {
-                Match m = castRegex.Match(s);
-                string v = m.Groups[0].Value;
-                // Leading plus sign is allowed, but ignored
-                v = v.Replace("+", "");
-
-                if (v == String.Empty)
-                {
-                    value = 0;
-                }
-                else
-                {
-                    try
+                    if (ret == "")
                     {
-                        if (v.Contains("x") || v.Contains("X"))
-                        {
-                            value = int.Parse(v.Substring(2), System.Globalization.NumberStyles.HexNumber);
-                        }
-                        else
-                        {
-                            value = int.Parse(v, System.Globalization.NumberStyles.Integer);
-                        }
-                    }
-                    catch (OverflowException)
-                    {
-                        value = -1;
-                    }
-                }
-            }
-
-            #endregion
-
-            #region Operators
-
-            static public implicit operator int(LSLInteger i)
-            {
-                return i.value;
-            }
-
-            static public explicit operator uint(LSLInteger i)
-            {
-                return (uint)i.value;
-            }
-
-            static public explicit operator LSLString(LSLInteger i)
-            {
-                return new LSLString(i.ToString());
-            }
-
-            public static implicit operator list(LSLInteger i)
-            {
-                return new list(new object[] { i });
-            }
-
-            static public implicit operator Boolean(LSLInteger i)
-            {
-                if (i.value == 0)
-                {
-                    return false;
-                }
-                else
-                {
-                    return true;
-                }
-            }
-
-            static public implicit operator LSLInteger(int i)
-            {
-                return new LSLInteger(i);
-            }
-
-            static public explicit operator LSLInteger(string s)
-            {
-                return new LSLInteger(s);
-            }
-
-            static public implicit operator LSLInteger(uint u)
-            {
-                return new LSLInteger(u);
-            }
-
-            static public explicit operator LSLInteger(double d)
-            {
-                return new LSLInteger(d);
-            }
-
-            static public explicit operator LSLInteger(LSLFloat f)
-            {
-                return new LSLInteger(f.value);
-            }
-
-            static public implicit operator LSLInteger(bool b)
-            {
-                if (b)
-                    return new LSLInteger(1);
-                else
-                    return new LSLInteger(0);
-            }
-
-            static public LSLInteger operator ==(LSLInteger i1, LSLInteger i2)
-            {
-                bool ret = i1.value == i2.value;
-                return new LSLInteger((ret ? 1 : 0));
-            }
-
-            static public LSLInteger operator !=(LSLInteger i1, LSLInteger i2)
-            {
-                bool ret = i1.value != i2.value;
-                return new LSLInteger((ret ? 1 : 0));
-            }
-
-            static public LSLInteger operator <(LSLInteger i1, LSLInteger i2)
-            {
-                bool ret = i1.value < i2.value;
-                return new LSLInteger((ret ? 1 : 0));
-            }
-            static public LSLInteger operator <=(LSLInteger i1, LSLInteger i2)
-            {
-                bool ret = i1.value <= i2.value;
-                return new LSLInteger((ret ? 1 : 0));
-            }
-
-            static public LSLInteger operator >(LSLInteger i1, LSLInteger i2)
-            {
-                bool ret = i1.value > i2.value;
-                return new LSLInteger((ret ? 1 : 0));
-            }
-
-            static public LSLInteger operator >=(LSLInteger i1, LSLInteger i2)
-            {
-                bool ret = i1.value >= i2.value;
-                return new LSLInteger((ret ? 1 : 0));
-            }
-
-            static public LSLInteger operator +(LSLInteger i1, int i2)
-            {
-                return new LSLInteger(i1.value + i2);
-            }
-
-            static public LSLInteger operator -(LSLInteger i1, int i2)
-            {
-                return new LSLInteger(i1.value - i2);
-            }
-
-            static public LSLInteger operator *(LSLInteger i1, int i2)
-            {
-                return new LSLInteger(i1.value * i2);
-            }
-
-            static public LSLInteger operator /(LSLInteger i1, int i2)
-            {
-                return new LSLInteger(i1.value / i2);
-            }
-
-//            static public LSLFloat operator +(LSLInteger i1, double f)
-//            {
-//                return new LSLFloat((double)i1.value + f);
-//            }
-//
-//            static public LSLFloat operator -(LSLInteger i1, double f)
-//            {
-//                return new LSLFloat((double)i1.value - f);
-//            }
-//
-//            static public LSLFloat operator *(LSLInteger i1, double f)
-//            {
-//                return new LSLFloat((double)i1.value * f);
-//            }
-//
-//            static public LSLFloat operator /(LSLInteger i1, double f)
-//            {
-//                return new LSLFloat((double)i1.value / f);
-//            }
-
-            static public LSLInteger operator -(LSLInteger i)
-            {
-                return new LSLInteger(-i.value);
-            }
-
-            static public LSLInteger operator ~(LSLInteger i)
-            {
-                return new LSLInteger(~i.value);
-            }
-
-            public override bool Equals(Object o)
-            {
-                if (!(o is LSLInteger))
-                {
-                    if (o is int)
-                    {
-                        return value == (int)o;
+                        ret = o.ToString();
                     }
                     else
                     {
-                        return false;
+                        ret = ret + ", " + o.ToString();
                     }
                 }
-                
-                return value == ((LSLInteger)o).value;
-            }
-
-            public override int GetHashCode()
-            {
-                return value;
-            }
-
-            static public LSLInteger operator &(LSLInteger i1, LSLInteger i2)
-            {
-                int ret = i1.value & i2.value;
                 return ret;
             }
-
-            static public LSLInteger operator %(LSLInteger i1, LSLInteger i2)
-            {
-                int ret = i1.value % i2.value;
-                return ret;
-            }
-
-            static public LSLInteger operator |(LSLInteger i1, LSLInteger i2)
-            {
-                int ret = i1.value | i2.value;
-                return ret;
-            }
-
-            static public LSLInteger operator ^(LSLInteger i1, LSLInteger i2)
-            {
-                int ret = i1.value ^ i2.value;
-                return ret;
-            }
-
-            static public LSLInteger operator !(LSLInteger i1)
-            {
-                return i1.value == 0 ? 1 : 0;
-            }
-
-            public static LSLInteger operator ++(LSLInteger i)
-            {
-                i.value++;
-                return i;
-            }
-
-
-            public static LSLInteger operator --(LSLInteger i)
-            {
-                i.value--;
-                return i;
-            }
-
-            public static LSLInteger operator << (LSLInteger i, int s)
-            {
-                return i.value << s;
-            }
-
-            public static LSLInteger operator >> (LSLInteger i, int s)
-            {
-                return i.value >> s;
-            }
-
-            static public implicit operator System.Double(LSLInteger i)
-            {
-                return (double)i.value;
-            }
-
-            public static bool operator true(LSLInteger i)
-            {
-                return i.value != 0;
-            }
-
-            public static bool operator false(LSLInteger i)
-            {
-                return i.value == 0;
-            }
-
-            #endregion
-
-            #region Overriders
 
             public override string ToString()
             {
-                return this.value.ToString();
+                return ToSoup();
             }
 
-            #endregion
-        }
-
-        [Serializable]
-        public struct LSLFloat
-        {
-            public double value;
-
-            #region Constructors
-
-            public LSLFloat(int i)
+            private string ToSoup()
             {
-                this.value = (double)i;
-            }
-
-            public LSLFloat(double d)
-            {
-                this.value = d;
-            }
-
-            public LSLFloat(string s)
-            {
-                Regex r = new Regex("^ *(\\+|-)?([0-9]+\\.?[0-9]*|\\.[0-9]+)([eE](\\+|-)?[0-9]+)?");
-                Match m = r.Match(s);
-                string v = m.Groups[0].Value;
-
-                v = v.Trim();
-
-                if (v == String.Empty || v == null)
-                    v = "0.0";
-                else
-                    if (!v.Contains(".") && !v.ToLower().Contains("e"))
-                        v = v + ".0";
-                    else
-                        if (v.EndsWith("."))
-                            v = v + "0";
-                this.value = double.Parse(v, System.Globalization.NumberStyles.Float, Culture.NumberFormatInfo);
-            }
-
-            #endregion
-
-            #region Operators
-
-            static public explicit operator float(LSLFloat f)
-            {
-                return (float)f.value;
-            }
-
-            static public explicit operator int(LSLFloat f)
-            {
-                return (int)f.value;
-            }
-
-            static public explicit operator uint(LSLFloat f)
-            {
-                return (uint) Math.Abs(f.value);
-            }
-
-            static public implicit operator Boolean(LSLFloat f)
-            {
-                if (f.value == 0.0)
+                string output;
+                output = String.Empty;
+                if (m_data.Length == 0)
                 {
-                    return false;
+                    return String.Empty;
+                }
+                foreach (object o in m_data)
+                {
+                    output = output + o.ToString();
+                }
+                return output;
+            }
+
+            public static explicit operator String(list l)
+            {
+                return l.ToSoup();
+            }
+            #endregion CSV Methods
+
+            #region Statistic Methods
+
+            public static list ToDoubleList(list src)
+            {
+                list ret = new list();
+                double entry;
+                for (int i = 0; i < src.Data.Length; i++)
+                {
+                    if (double.TryParse(src.Data[i].ToString(), NumberStyles.Float, Culture.NumberFormatInfo, out entry))
+                    {
+                        ret.Add(entry);
+                    }
+                }
+                return ret;
+            }
+
+            public void AlphaSort()
+            {
+                IComparer Alpha = new AlphaCompare();
+                Array.Sort(Data, Alpha);
+            }
+
+            public double GeometricMean()
+            {
+                double ret = 1.0;
+                list nums = ToDoubleList(this);
+                for (int i = 0; i < nums.Data.Length; i++)
+                {
+                    ret *= (double)nums.Data[i];
+                }
+                return Math.Exp(Math.Log(ret) / (double)nums.Data.Length);
+            }
+
+            public double HarmonicMean()
+            {
+                double ret = 0.0;
+                list nums = ToDoubleList(this);
+                for (int i = 0; i < nums.Data.Length; i++)
+                {
+                    ret += 1.0 / (double)nums.Data[i];
+                }
+                return ((double)nums.Data.Length / ret);
+            }
+
+            public double Max()
+            {
+                double maximum = double.NegativeInfinity;
+                double entry;
+                for (int i = 0; i < Data.Length; i++)
+                {
+                    if (double.TryParse(Data[i].ToString(), NumberStyles.Float, Culture.NumberFormatInfo, out entry))
+                    {
+                        if (entry > maximum) maximum = entry;
+                    }
+                }
+                return maximum;
+            }
+
+            public double Mean()
+            {
+                return (this.Sum() / this.NumericLength());
+            }
+
+            public double Median()
+            {
+                return Qi(0.5);
+            }
+
+            public double Min()
+            {
+                double minimum = double.PositiveInfinity;
+                double entry;
+                for (int i = 0; i < Data.Length; i++)
+                {
+                    if (double.TryParse(Data[i].ToString(), NumberStyles.Float, Culture.NumberFormatInfo, out entry))
+                    {
+                        if (entry < minimum) minimum = entry;
+                    }
+                }
+                return minimum;
+            }
+            public int NumericLength()
+            {
+                int count = 0;
+                double entry;
+                for (int i = 0; i < Data.Length; i++)
+                {
+                    if (double.TryParse(Data[i].ToString(), NumberStyles.Float, Culture.NumberFormatInfo, out entry))
+                    {
+                        count++;
+                    }
+                }
+                return count;
+            }
+
+            public void NumericSort()
+            {
+                IComparer Numeric = new NumericComparer();
+                Array.Sort(Data, Numeric);
+            }
+
+            public double Qi(double i)
+            {
+                list j = this;
+                j.NumericSort();
+
+                if (Math.Ceiling(this.Length * i) == this.Length * i)
+                {
+                    return (double)((double)j.Data[(int)(this.Length * i - 1)] + (double)j.Data[(int)(this.Length * i)]) / 2;
                 }
                 else
                 {
-                    return true;
+                    return (double)j.Data[((int)(Math.Ceiling(this.Length * i))) - 1];
                 }
             }
 
-            static public implicit operator LSLFloat(int i)
+            public double Range()
             {
-                return new LSLFloat(i);
+                return (this.Max() / this.Min());
+            }
+            public double StdDev()
+            {
+                return Math.Sqrt(this.Variance());
             }
 
-            static public implicit operator LSLFloat(LSLInteger i)
+            public double Sum()
             {
-                return new LSLFloat(i.value);
+                double sum = 0;
+                double entry;
+                for (int i = 0; i < Data.Length; i++)
+                {
+                    if (double.TryParse(Data[i].ToString(), NumberStyles.Float, Culture.NumberFormatInfo, out entry))
+                    {
+                        sum = sum + entry;
+                    }
+                }
+                return sum;
             }
 
-            static public explicit operator LSLFloat(string s)
+            public double SumSqrs()
             {
-                return new LSLFloat(s);
+                double sum = 0;
+                double entry;
+                for (int i = 0; i < Data.Length; i++)
+                {
+                    if (double.TryParse(Data[i].ToString(), NumberStyles.Float, Culture.NumberFormatInfo, out entry))
+                    {
+                        sum = sum + Math.Pow(entry, 2);
+                    }
+                }
+                return sum;
             }
-
-            public static implicit operator list(LSLFloat f)
+            public double Variance()
             {
-                return new list(new object[] { f });
+                double s = 0;
+                list num = ToDoubleList(this);
+                for (int i = 0; i < num.Data.Length; i++)
+                {
+                    s += Math.Pow((double)num.Data[i], 2);
+                }
+                return (s - num.Data.Length * Math.Pow(num.Mean(), 2)) / (num.Data.Length - 1);
             }
-
-            static public implicit operator LSLFloat(double d)
-            {
-                return new LSLFloat(d);
-            }
-
-            static public implicit operator LSLFloat(bool b)
-            {
-                if (b)
-                    return new LSLFloat(1.0);
-                else
-                    return new LSLFloat(0.0);
-            }
-
-            static public bool operator ==(LSLFloat f1, LSLFloat f2)
-            {
-                return f1.value == f2.value;
-            }
-
-            static public bool operator !=(LSLFloat f1, LSLFloat f2)
-            {
-                return f1.value != f2.value;
-            }
-
-            static public LSLFloat operator ++(LSLFloat f)
-            {
-                f.value++;
-                return f;
-            }
-
-            static public LSLFloat operator --(LSLFloat f)
-            {
-                f.value--;
-                return f;
-            }
-
-            static public LSLFloat operator +(LSLFloat f, int i)
-            {
-                return new LSLFloat(f.value + (double)i);
-            }
-
-            static public LSLFloat operator -(LSLFloat f, int i)
-            {
-                return new LSLFloat(f.value - (double)i);
-            }
-
-            static public LSLFloat operator *(LSLFloat f, int i)
-            {
-                return new LSLFloat(f.value * (double)i);
-            }
-
-            static public LSLFloat operator /(LSLFloat f, int i)
-            {
-                return new LSLFloat(f.value / (double)i);
-            }
-
-            static public LSLFloat operator +(LSLFloat lhs, LSLFloat rhs)
-            {
-                return new LSLFloat(lhs.value + rhs.value);
-            }
-
-            static public LSLFloat operator -(LSLFloat lhs, LSLFloat rhs)
-            {
-                return new LSLFloat(lhs.value - rhs.value);
-            }
-
-            static public LSLFloat operator *(LSLFloat lhs, LSLFloat rhs)
-            {
-                return new LSLFloat(lhs.value * rhs.value);
-            }
-
-            static public LSLFloat operator /(LSLFloat lhs, LSLFloat rhs)
-            {
-                return new LSLFloat(lhs.value / rhs.value);
-            }
-
-            static public LSLFloat operator -(LSLFloat f)
-            {
-                return new LSLFloat(-f.value);
-            }
-
-            static public implicit operator System.Double(LSLFloat f)
-            {
-                return f.value;
-            }
-
-            #endregion
-
-            #region Overriders
-
-            public override string ToString()
-            {
-                return String.Format(Culture.FormatProvider, "{0:0.000000}", this.value);
-            }
-
-            public override bool Equals(Object o)
-            {
-                if (!(o is LSLFloat))
-                    return false;
-                return value == ((LSLFloat)o).value;
-            }
-
-            public override int GetHashCode()
-            {
-                return value.GetHashCode();
-            }
-
-
-            #endregion
+            #endregion Statistic Methods
         }
     }
 }

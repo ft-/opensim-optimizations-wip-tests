@@ -25,35 +25,31 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Nini.Config;
+using OpenSim.Services.Base;
 using System;
 using System.Reflection;
-using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Services.Interfaces;
-using OpenSim.Services.Base;
-using log4net;
 
 namespace OpenSim.Services.FreeswitchService
 {
     public class FreeswitchServiceBase : ServiceBase
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        protected string m_freeSwitchRealm;
-        protected string m_freeSwitchSIPProxy;
-        protected bool m_freeSwitchAttemptUseSTUN = false;
-        protected string m_freeSwitchEchoServer;
-        protected int m_freeSwitchEchoPort = 50505;
-        protected string m_freeSwitchDefaultWellKnownIP;
-        protected int m_freeSwitchDefaultTimeout = 5000;
-        protected string m_freeSwitchContext = "default";
-        protected string m_freeSwitchServerUser = "freeswitch";
-        protected string m_freeSwitchServerPass = "password";
         protected readonly string m_freeSwitchAPIPrefix = "/fsapi";
-
         protected bool m_Enabled = false;
-
-        public FreeswitchServiceBase(IConfigSource config) : base(config)
+        protected bool m_freeSwitchAttemptUseSTUN = false;
+        protected string m_freeSwitchContext = "default";
+        protected int m_freeSwitchDefaultTimeout = 5000;
+        protected string m_freeSwitchDefaultWellKnownIP;
+        protected int m_freeSwitchEchoPort = 50505;
+        protected string m_freeSwitchEchoServer;
+        protected string m_freeSwitchRealm;
+        protected string m_freeSwitchServerPass = "password";
+        protected string m_freeSwitchServerUser = "freeswitch";
+        protected string m_freeSwitchSIPProxy;
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        public FreeswitchServiceBase(IConfigSource config)
+            : base(config)
         {
             //
             // Try reading the [FreeswitchService] section first, if it exists

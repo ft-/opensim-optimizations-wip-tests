@@ -25,64 +25,25 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using OpenMetaverse;
+using OpenSim.Framework.Servers.HttpServer;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Xml;
-
-using OpenSim.Framework;
-using OpenSim.Server.Base;
-using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Region.Framework.Interfaces;
-
-using OpenMetaverse;
-using log4net;
 
 namespace OpenSim.Region.OptionalModules.World.WorldView
 {
     public class WorldViewRequestHandler : BaseStreamHandler
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        protected WorldViewModule m_WorldViewModule;
         protected Object m_RequestLock = new Object();
-
+        protected WorldViewModule m_WorldViewModule;
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         public WorldViewRequestHandler(WorldViewModule fmodule, string rid)
-                : base("GET", "/worldview/" + rid)
+            : base("GET", "/worldview/" + rid)
         {
             m_WorldViewModule = fmodule;
-        }
-
-        protected override byte[] ProcessRequest(string path, Stream requestData,
-                IOSHttpRequest httpRequest, IOSHttpResponse httpResponse)
-        {
-            httpResponse.ContentType = "image/jpeg";
-
-//            StreamReader sr = new StreamReader(requestData);
-//            string body = sr.ReadToEnd();
-//            sr.Close();
-//            body = body.Trim();
-
-            try
-            {
-                lock (m_RequestLock)
-                {
-                    Dictionary<string, object> request =
-                            new Dictionary<string, object>();
-                    foreach (string name in httpRequest.QueryString)
-                        request[name] = httpRequest.QueryString[name];
-
-                    return SendWorldView(request);
-                }
-            }
-            catch (Exception e)
-            {
-                m_log.Debug("[WORLDVIEW]: Exception: " + e.ToString());
-            }
-
-            return new Byte[0];
         }
 
         public Byte[] SendWorldView(Dictionary<string, object> request)
@@ -143,6 +104,35 @@ namespace OpenSim.Region.OptionalModules.World.WorldView
             return m_WorldViewModule.GenerateWorldView(pos, rot, fov, width,
                     height, usetex);
         }
+
+        protected override byte[] ProcessRequest(string path, Stream requestData,
+                IOSHttpRequest httpRequest, IOSHttpResponse httpResponse)
+        {
+            httpResponse.ContentType = "image/jpeg";
+
+            //            StreamReader sr = new StreamReader(requestData);
+            //            string body = sr.ReadToEnd();
+            //            sr.Close();
+            //            body = body.Trim();
+
+            try
+            {
+                lock (m_RequestLock)
+                {
+                    Dictionary<string, object> request =
+                            new Dictionary<string, object>();
+                    foreach (string name in httpRequest.QueryString)
+                        request[name] = httpRequest.QueryString[name];
+
+                    return SendWorldView(request);
+                }
+            }
+            catch (Exception e)
+            {
+                m_log.Debug("[WORLDVIEW]: Exception: " + e.ToString());
+            }
+
+            return new Byte[0];
+        }
     }
 }
-

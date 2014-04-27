@@ -25,13 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using OpenSim.Framework;
-
 namespace OpenSim.Services.Interfaces
 {
     // Generic Authorization service used for authorizing principals in a particular region
-    
+
     public interface IAuthorizationService
     {
         /// <summary>
@@ -50,16 +47,15 @@ namespace OpenSim.Services.Interfaces
         bool IsAuthorizedForRegion(
             string userID, string firstName, string lastName, string regionID, out string message);
     }
-    
+
     public class AuthorizationRequest
     {
-        private string m_userID;
-        private string m_firstname;
-        private string m_surname;
         private string m_email;
-        private string m_regionName;
+        private string m_firstname;
         private string m_regionID;
-
+        private string m_regionName;
+        private string m_surname;
+        private string m_userID;
         public AuthorizationRequest()
         {
         }
@@ -69,7 +65,7 @@ namespace OpenSim.Services.Interfaces
             m_userID = ID;
             m_regionID = RegionID;
         }
-        
+
         public AuthorizationRequest(
             string ID, string FirstName, string SurName, string Email, string RegionName, string RegionID)
         {
@@ -80,44 +76,43 @@ namespace OpenSim.Services.Interfaces
             m_regionName = RegionName;
             m_regionID = RegionID;
         }
-        
-        public string ID
-        {
-            get { return m_userID; }
-            set { m_userID = value; }
-        }
-        
-        public string FirstName
-        {
-            get { return m_firstname; }
-            set { m_firstname = value; }
-        }
-        
-        public string SurName
-        {
-            get { return m_surname; }
-            set { m_surname = value; }
-        }
-        
+
         public string Email
         {
             get { return m_email; }
             set { m_email = value; }
         }
-        
-        public string RegionName
+
+        public string FirstName
         {
-            get { return m_regionName; }
-            set { m_regionName = value; }
+            get { return m_firstname; }
+            set { m_firstname = value; }
         }
-                        
+
+        public string ID
+        {
+            get { return m_userID; }
+            set { m_userID = value; }
+        }
         public string RegionID
         {
             get { return m_regionID; }
             set { m_regionID = value; }
         }
+
+        public string RegionName
+        {
+            get { return m_regionName; }
+            set { m_regionName = value; }
+        }
+
+        public string SurName
+        {
+            get { return m_surname; }
+            set { m_surname = value; }
+        }
     }
-    
+
     public class AuthorizationResponse
     {
         private bool m_isAuthorized;
@@ -132,13 +127,13 @@ namespace OpenSim.Services.Interfaces
             m_isAuthorized = isAuthorized;
             m_message = message;
         }
-        
+
         public bool IsAuthorized
         {
             get { return m_isAuthorized; }
             set { m_isAuthorized = value; }
         }
-        
+
         public string Message
         {
             get { return m_message; }

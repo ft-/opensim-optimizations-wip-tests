@@ -25,49 +25,20 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Server.Base;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-
-using OpenSim.Services.Interfaces;
 using GridRegion = OpenSim.Services.Interfaces.GridRegion;
-using OpenSim.Server.Base;
-using OpenSim.Framework;
-
-using OpenMetaverse;
-using log4net;
 
 namespace OpenSim.Services.Connectors.Friends
 {
     public class FriendsSimConnector
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        protected virtual string ServicePath()
-        {
-            return "friends";
-        }
-
-        public bool FriendshipOffered(GridRegion region, UUID userID, UUID friendID, string message)
-        {
-            return FriendshipOffered(region, userID, friendID, message, String.Empty);
-        }
-
-        public virtual bool FriendshipOffered(GridRegion region, UUID userID, UUID friendID, string message, string userName)
-        {
-            Dictionary<string, object> sendData = new Dictionary<string, object>();
-            //sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
-            //sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
-            sendData["METHOD"] = "friendship_offered";
-
-            sendData["FromID"] = userID.ToString();
-            sendData["ToID"] = friendID.ToString();
-            sendData["Message"] = message;
-            if (userName != String.Empty)
-                sendData["FromName"] = userName;
-
-            return Call(region, sendData);
-        }
 
         public bool FriendshipApproved(GridRegion region, UUID userID, string userName, UUID friendID)
         {
@@ -96,6 +67,27 @@ namespace OpenSim.Services.Connectors.Friends
             sendData["FromID"] = userID.ToString();
             sendData["FromName"] = userName;
             sendData["ToID"] = friendID.ToString();
+
+            return Call(region, sendData);
+        }
+
+        public bool FriendshipOffered(GridRegion region, UUID userID, UUID friendID, string message)
+        {
+            return FriendshipOffered(region, userID, friendID, message, String.Empty);
+        }
+
+        public virtual bool FriendshipOffered(GridRegion region, UUID userID, UUID friendID, string message, string userName)
+        {
+            Dictionary<string, object> sendData = new Dictionary<string, object>();
+            //sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
+            //sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
+            sendData["METHOD"] = "friendship_offered";
+
+            sendData["FromID"] = userID.ToString();
+            sendData["ToID"] = friendID.ToString();
+            sendData["Message"] = message;
+            if (userName != String.Empty)
+                sendData["FromName"] = userName;
 
             return Call(region, sendData);
         }
@@ -142,6 +134,10 @@ namespace OpenSim.Services.Connectors.Friends
             return Call(region, sendData);
         }
 
+        protected virtual string ServicePath()
+        {
+            return "friends";
+        }
         private bool Call(GridRegion region, Dictionary<string, object> sendData)
         {
             string reqString = ServerUtils.BuildQueryString(sendData);
@@ -153,7 +149,7 @@ namespace OpenSim.Services.Connectors.Friends
             if (!region.ServerURI.EndsWith("/"))
                 path = "/" + path;
             string uri = region.ServerURI + path;
-//            m_log.DebugFormat("[FRIENDS SIM CONNECTOR]: calling {0}", uri);
+            //            m_log.DebugFormat("[FRIENDS SIM CONNECTOR]: calling {0}", uri);
 
             try
             {
@@ -171,7 +167,6 @@ namespace OpenSim.Services.Connectors.Friends
                     }
                     else
                         m_log.DebugFormat("[FRIENDS SIM CONNECTOR]: reply data does not contain result field");
-
                 }
                 else
                     m_log.DebugFormat("[FRIENDS SIM CONNECTOR]: received empty reply");

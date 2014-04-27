@@ -26,15 +26,26 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Runtime.Remoting.Lifetime;
-using System.Text;
 
 namespace OpenSim.Region.ScriptEngine.Shared.Api.Runtime
 {
     public class ScriptSponsor : MarshalByRefObject, ISponsor
     {
+        // For tracing GC while debugging
+        public static bool GCDummy = false;
+
         private bool m_closed = false;
+
+        ~ScriptSponsor()
+        {
+            GCDummy = true;
+        }
+
+        public void Close()
+        {
+            m_closed = true;
+        }
 
         public TimeSpan Renewal(ILease lease)
         {
@@ -42,16 +53,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api.Runtime
                 return lease.InitialLeaseTime;
             return TimeSpan.FromTicks(0);
         }
-
-        public void Close() { m_closed = true; }
-
 #if DEBUG
-        // For tracing GC while debugging
-        public static bool GCDummy = false;
-        ~ScriptSponsor()
-        {
-            GCDummy = true;
-        }
 #endif
     }
 }

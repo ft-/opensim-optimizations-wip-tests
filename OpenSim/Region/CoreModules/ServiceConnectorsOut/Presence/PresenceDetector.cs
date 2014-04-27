@@ -24,24 +24,19 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using log4net;
-using OpenMetaverse;
+
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Presence
 {
-    public class PresenceDetector 
+    public class PresenceDetector
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private IPresenceService m_PresenceService;
         private Scene m_aScene;
-
+        private IPresenceService m_PresenceService;
         public PresenceDetector(IPresenceService presenceservice)
         {
             m_PresenceService = presenceservice;
@@ -58,17 +53,18 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Presence
                 m_aScene = scene;
         }
 
-        public void RemoveRegion(Scene scene)
+        public void OnConnectionClose(IClientAPI client)
         {
-            scene.EventManager.OnMakeRootAgent -= OnMakeRootAgent;
-            scene.EventManager.OnNewClient -= OnNewClient;
-
-            m_PresenceService.LogoutRegionAgents(scene.RegionInfo.RegionID);
+            if (client != null && client.SceneAgent != null && !client.SceneAgent.IsChildAgent)
+            {
+                //                m_log.DebugFormat("[PRESENCE DETECTOR]: Detected client logout {0} in {1}", client.AgentId, client.Scene.RegionInfo.RegionName);
+                m_PresenceService.LogoutAgent(client.SessionId);
+            }
         }
 
         public void OnMakeRootAgent(ScenePresence sp)
         {
-//            m_log.DebugFormat("[PRESENCE DETECTOR]: Detected root presence {0} in {1}", sp.UUID, sp.Scene.RegionInfo.RegionName);
+            //            m_log.DebugFormat("[PRESENCE DETECTOR]: Detected root presence {0} in {1}", sp.UUID, sp.Scene.RegionInfo.RegionName);
             m_PresenceService.ReportAgent(sp.ControllingClient.SessionId, sp.Scene.RegionInfo.RegionID);
         }
 
@@ -77,13 +73,12 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Presence
             client.OnConnectionClosed += OnConnectionClose;
         }
 
-        public void OnConnectionClose(IClientAPI client)
+        public void RemoveRegion(Scene scene)
         {
-            if (client != null && client.SceneAgent != null && !client.SceneAgent.IsChildAgent)
-            {
-//                m_log.DebugFormat("[PRESENCE DETECTOR]: Detected client logout {0} in {1}", client.AgentId, client.Scene.RegionInfo.RegionName);
-                m_PresenceService.LogoutAgent(client.SessionId);
-            }
+            scene.EventManager.OnMakeRootAgent -= OnMakeRootAgent;
+            scene.EventManager.OnNewClient -= OnNewClient;
+
+            m_PresenceService.LogoutRegionAgents(scene.RegionInfo.RegionID);
         }
     }
 }

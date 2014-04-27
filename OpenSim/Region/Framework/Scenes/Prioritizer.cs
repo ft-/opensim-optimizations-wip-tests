@@ -25,17 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using log4net;
-using Nini.Config;
-using OpenSim.Framework;
 using OpenMetaverse;
+using OpenSim.Framework;
 using OpenSim.Region.Physics.Manager;
+using System;
 
 /*
  * Steps to add a new prioritization policy:
- * 
+ *
  *  - Add a new value to the UpdatePrioritizationSchemes enum.
  *  - Specify this new value in the [InterestManagement] section of your
  *    OpenSim.ini. The name in the config file must match the enum value name
@@ -59,7 +57,7 @@ namespace OpenSim.Region.Framework.Scenes
     public class Prioritizer
     {
         private static readonly ILog m_log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-        
+
         private Scene m_scene;
 
         public Prioritizer(Scene scene)
@@ -91,98 +89,34 @@ namespace OpenSim.Region.Framework.Scenes
                 return 0;
 
             uint priority;
-            
+
             switch (m_scene.UpdatePrioritizationScheme)
             {
                 case UpdatePrioritizationSchemes.Time:
                     priority = GetPriorityByTime(client, entity);
                     break;
+
                 case UpdatePrioritizationSchemes.Distance:
                     priority = GetPriorityByDistance(client, entity);
                     break;
+
                 case UpdatePrioritizationSchemes.SimpleAngularDistance:
                     priority = GetPriorityByDistance(client, entity); // TODO: Reimplement SimpleAngularDistance
                     break;
+
                 case UpdatePrioritizationSchemes.FrontBack:
                     priority = GetPriorityByFrontBack(client, entity);
                     break;
+
                 case UpdatePrioritizationSchemes.BestAvatarResponsiveness:
                     priority = GetPriorityByBestAvatarResponsiveness(client, entity);
                     break;
+
                 default:
                     throw new InvalidOperationException("UpdatePrioritizationScheme not defined.");
             }
-            
+
             return priority;
-        }
-
-        private uint GetPriorityByTime(IClientAPI client, ISceneEntity entity)
-        {
-            // And anything attached to this avatar gets top priority as well
-            if (entity is SceneObjectPart)
-            {
-                SceneObjectPart sop = (SceneObjectPart)entity;
-                if (sop.ParentGroup.IsAttachment && client.AgentId == sop.ParentGroup.AttachedAvatar)
-                    return 1;
-            }
-
-            return PriorityQueue.NumberOfImmediateQueues; // first queue past the immediate queues
-        }
-
-        private uint GetPriorityByDistance(IClientAPI client, ISceneEntity entity)
-        {
-            // And anything attached to this avatar gets top priority as well
-            if (entity is SceneObjectPart)
-            {
-                SceneObjectPart sop = (SceneObjectPart)entity;
-                if (sop.ParentGroup.IsAttachment && client.AgentId == sop.ParentGroup.AttachedAvatar)
-                    return 1;
-            }
-
-            return ComputeDistancePriority(client,entity,false);
-        }
-        
-        private uint GetPriorityByFrontBack(IClientAPI client, ISceneEntity entity)
-        {
-            // And anything attached to this avatar gets top priority as well
-            if (entity is SceneObjectPart)
-            {
-                SceneObjectPart sop = (SceneObjectPart)entity;
-                if (sop.ParentGroup.IsAttachment && client.AgentId == sop.ParentGroup.AttachedAvatar)
-                    return 1;
-            }
-
-            return ComputeDistancePriority(client,entity,true);
-        }
-
-        private uint GetPriorityByBestAvatarResponsiveness(IClientAPI client, ISceneEntity entity)
-        {
-            uint pqueue = ComputeDistancePriority(client,entity,true);
-
-            ScenePresence presence = m_scene.GetScenePresence(client.AgentId);
-            if (presence != null)
-            {
-                if (!presence.IsChildAgent)
-                {
-                    // All avatars other than our own go into pqueue 1
-                    if (entity is ScenePresence)
-                        return 1;
-                    
-                    if (entity is SceneObjectPart)
-                    {
-                        // Attachments are high priority, 
-                        if (((SceneObjectPart)entity).ParentGroup.IsAttachment)
-                            return 1;
-
-                        // Non physical prims are lower priority than physical prims
-                        PhysicsActor physActor = ((SceneObjectPart)entity).ParentGroup.RootPart.PhysActor;
-                        if (physActor == null || !physActor.IsPhysical)
-                            pqueue++;
-                    }
-                }
-            }
-
-            return pqueue;
         }
 
         private uint ComputeDistancePriority(IClientAPI client, ISceneEntity entity, bool useFrontBack)
@@ -191,7 +125,7 @@ namespace OpenSim.Region.Framework.Scenes
             ScenePresence presence = m_scene.GetScenePresence(client.AgentId);
             if (presence == null)
             {
-                // this shouldn't happen, it basically means that we are prioritizing 
+                // this shouldn't happen, it basically means that we are prioritizing
                 // updates to send to a client that doesn't have a presence in the scene
                 // seems like there's race condition here...
 
@@ -199,7 +133,7 @@ namespace OpenSim.Region.Framework.Scenes
                 // throw new InvalidOperationException("Prioritization agent not defined");
                 return PriorityQueue.NumberOfQueues - 1;
             }
-                
+
             // Use group position for child prims, since we are putting child prims in
             // the same queue with the root of the group, the root prim (which goes into
             // the queue first) should always be sent first, no need to adjust child prim
@@ -216,24 +150,24 @@ namespace OpenSim.Region.Framework.Scenes
                 presence.AbsolutePosition :
                 presence.CameraPosition;
 
-            // Compute the distance... 
+            // Compute the distance...
             double distance = Vector3.Distance(presencePos, entityPos);
 
             // And convert the distance to a priority queue, this computation gives queues
             // at 10, 20, 40, 80, 160, 320, 640, and 1280m
             uint pqueue = PriorityQueue.NumberOfImmediateQueues;
             uint queues = PriorityQueue.NumberOfQueues - PriorityQueue.NumberOfImmediateQueues;
-            
+
             for (int i = 0; i < queues - 1; i++)
             {
-                if (distance < 10 * Math.Pow(2.0,i))
+                if (distance < 10 * Math.Pow(2.0, i))
                     break;
                 pqueue++;
             }
-            
+
             // If this is a root agent, then determine front & back
             // Bump up the priority queue (drop the priority) for any objects behind the avatar
-            if (useFrontBack && ! presence.IsChildAgent)
+            if (useFrontBack && !presence.IsChildAgent)
             {
                 // Root agent, decrease priority for objects behind us
                 Vector3 camPosition = presence.CameraPosition;
@@ -242,12 +176,80 @@ namespace OpenSim.Region.Framework.Scenes
                 // Plane equation
                 float d = -Vector3.Dot(camPosition, camAtAxis);
                 float p = Vector3.Dot(camAtAxis, entityPos) + d;
-                if (p < 0.0f) 
+                if (p < 0.0f)
                     pqueue++;
             }
 
             return pqueue;
         }
 
+        private uint GetPriorityByBestAvatarResponsiveness(IClientAPI client, ISceneEntity entity)
+        {
+            uint pqueue = ComputeDistancePriority(client, entity, true);
+
+            ScenePresence presence = m_scene.GetScenePresence(client.AgentId);
+            if (presence != null)
+            {
+                if (!presence.IsChildAgent)
+                {
+                    // All avatars other than our own go into pqueue 1
+                    if (entity is ScenePresence)
+                        return 1;
+
+                    if (entity is SceneObjectPart)
+                    {
+                        // Attachments are high priority,
+                        if (((SceneObjectPart)entity).ParentGroup.IsAttachment)
+                            return 1;
+
+                        // Non physical prims are lower priority than physical prims
+                        PhysicsActor physActor = ((SceneObjectPart)entity).ParentGroup.RootPart.PhysActor;
+                        if (physActor == null || !physActor.IsPhysical)
+                            pqueue++;
+                    }
+                }
+            }
+
+            return pqueue;
+        }
+
+        private uint GetPriorityByDistance(IClientAPI client, ISceneEntity entity)
+        {
+            // And anything attached to this avatar gets top priority as well
+            if (entity is SceneObjectPart)
+            {
+                SceneObjectPart sop = (SceneObjectPart)entity;
+                if (sop.ParentGroup.IsAttachment && client.AgentId == sop.ParentGroup.AttachedAvatar)
+                    return 1;
+            }
+
+            return ComputeDistancePriority(client, entity, false);
+        }
+
+        private uint GetPriorityByFrontBack(IClientAPI client, ISceneEntity entity)
+        {
+            // And anything attached to this avatar gets top priority as well
+            if (entity is SceneObjectPart)
+            {
+                SceneObjectPart sop = (SceneObjectPart)entity;
+                if (sop.ParentGroup.IsAttachment && client.AgentId == sop.ParentGroup.AttachedAvatar)
+                    return 1;
+            }
+
+            return ComputeDistancePriority(client, entity, true);
+        }
+
+        private uint GetPriorityByTime(IClientAPI client, ISceneEntity entity)
+        {
+            // And anything attached to this avatar gets top priority as well
+            if (entity is SceneObjectPart)
+            {
+                SceneObjectPart sop = (SceneObjectPart)entity;
+                if (sop.ParentGroup.IsAttachment && client.AgentId == sop.ParentGroup.AttachedAvatar)
+                    return 1;
+            }
+
+            return PriorityQueue.NumberOfImmediateQueues; // first queue past the immediate queues
+        }
     }
 }

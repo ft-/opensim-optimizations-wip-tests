@@ -25,15 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
-using OpenSim;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.ApplicationPlugins.RegionModulesController
 {
@@ -45,25 +44,24 @@ namespace OpenSim.ApplicationPlugins.RegionModulesController
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
-        // Config access
-        private OpenSimBase m_openSim;
-
         // Our name
         private string m_name;
 
         // Internal lists to collect information about modules present
         private List<TypeExtensionNode> m_nonSharedModules =
                 new List<TypeExtensionNode>();
-        private List<TypeExtensionNode> m_sharedModules =
-                new List<TypeExtensionNode>();
 
+        // Config access
+        private OpenSimBase m_openSim;
         // List of shared module instances, for adding to Scenes
         private List<ISharedRegionModule> m_sharedInstances =
                 new List<ISharedRegionModule>();
 
-#region IApplicationPlugin implementation
-        
-        public void Initialise (OpenSimBase openSim)
+        private List<TypeExtensionNode> m_sharedModules =
+                new List<TypeExtensionNode>();
+        #region IApplicationPlugin implementation
+
+        public void Initialise(OpenSimBase openSim)
         {
             m_openSim = openSim;
             m_openSim.ApplicationRegistry.RegisterInterface<IRegionModulesController>(this);
@@ -97,7 +95,7 @@ namespace OpenSim.ApplicationPlugins.RegionModulesController
                     loadedModules.Add(node.Addin, new List<int> { 0, 0, 0 });
 
                 loadedModuleData = loadedModules[node.Addin];
-                      
+
                 if (node.Type.GetInterface(typeof(ISharedRegionModule).ToString()) != null)
                 {
                     if (CheckModuleEnabled(node, modulesConfig))
@@ -127,7 +125,7 @@ namespace OpenSim.ApplicationPlugins.RegionModulesController
             {
                 m_log.InfoFormat(
                     "[REGIONMODULES]: From plugin {0}, (version {1}), loaded {2} modules, {3} shared, {4} non-shared {5} unknown",
-                    loadedModuleData.Key.Id, 
+                    loadedModuleData.Key.Id,
                     loadedModuleData.Key.Version,
                     loadedModuleData.Value[0] + loadedModuleData.Value[1] + loadedModuleData.Value[2],
                     loadedModuleData.Value[0], loadedModuleData.Value[1], loadedModuleData.Value[2]);
@@ -179,7 +177,7 @@ namespace OpenSim.ApplicationPlugins.RegionModulesController
             }
         }
 
-        public void PostInitialise ()
+        public void PostInitialise()
         {
             m_log.DebugFormat("[REGIONMODULES]: PostInitializing...");
 
@@ -190,24 +188,24 @@ namespace OpenSim.ApplicationPlugins.RegionModulesController
             }
         }
 
-#endregion
+        #endregion IApplicationPlugin implementation
 
-#region IPlugin implementation
+        #region IPlugin implementation
 
         // We don't do that here
         //
-        public void Initialise ()
+        public void Initialise()
         {
             throw new System.NotImplementedException();
         }
 
-#endregion
+        #endregion IPlugin implementation
 
-#region IDisposable implementation
+        #region IDisposable implementation
 
         // Cleanup
         //
-        public void Dispose ()
+        public void Dispose()
         {
             // We expect that all regions have been removed already
             while (m_sharedInstances.Count > 0)
@@ -219,15 +217,7 @@ namespace OpenSim.ApplicationPlugins.RegionModulesController
             m_nonSharedModules.Clear();
         }
 
-#endregion
-
-        public string Version
-        {
-            get
-            {
-                return AddinManager.CurrentAddin.Version;
-            }
-        }
+        #endregion IDisposable implementation
 
         public string Name
         {
@@ -237,50 +227,21 @@ namespace OpenSim.ApplicationPlugins.RegionModulesController
             }
         }
 
-#region Region Module interfacesController implementation
-        
-        /// <summary>
-        /// Check that the given module is no disabled in the [Modules] section of the config files.
-        /// </summary>
-        /// <param name="node"></param>
-        /// <param name="modulesConfig">The config section</param>
-        /// <returns>true if the module is enabled, false if it is disabled</returns>
-        protected bool CheckModuleEnabled(TypeExtensionNode node, IConfig modulesConfig)
+        public string Version
         {
-            // Get the config string
-            string moduleString =
-                    modulesConfig.GetString("Setup_" + node.Id, String.Empty);
-
-            // We have a selector
-            if (moduleString != String.Empty)
+            get
             {
-                // Allow disabling modules even if they don't have
-                // support for it
-                if (moduleString == "disabled")
-                    return false;
-
-                // Split off port, if present
-                string[] moduleParts = moduleString.Split(new char[] { '/' }, 2);
-                // Format is [port/][class]
-                string className = moduleParts[0];
-                if (moduleParts.Length > 1)
-                    className = moduleParts[1];
-
-                // Match the class name if given
-                if (className != String.Empty &&
-                        node.Type.ToString() != className)
-                    return false;
-            }            
-            
-            return true;
-        }        
+                return AddinManager.CurrentAddin.Version;
+            }
+        }
+        #region Region Module interfacesController implementation
 
         // The root of all evil.
         // This is where we handle adding the modules to scenes when they
         // load. This means that here we deal with replaceable interfaces,
         // nonshared modules, etc.
         //
-        public void AddRegionToModules (Scene scene)
+        public void AddRegionToModules(Scene scene)
         {
             Dictionary<Type, ISharedRegionModule> deferredSharedModules =
                     new Dictionary<Type, ISharedRegionModule>();
@@ -339,7 +300,7 @@ namespace OpenSim.ApplicationPlugins.RegionModulesController
             List<INonSharedRegionModule> list = new List<INonSharedRegionModule>();
             foreach (TypeExtensionNode node in m_nonSharedModules)
             {
-                Object[] ctorArgs = new Object[] {0};
+                Object[] ctorArgs = new Object[] { 0 };
 
                 // Read the config
                 string moduleString =
@@ -349,7 +310,7 @@ namespace OpenSim.ApplicationPlugins.RegionModulesController
                 if (moduleString != String.Empty)
                 {
                     // Get the port number from the string
-                    string[] moduleParts = moduleString.Split(new char[] {'/'},
+                    string[] moduleParts = moduleString.Split(new char[] { '/' },
                             2);
                     if (moduleParts.Length > 1)
                         ctorArgs[0] = Convert.ToUInt32(moduleParts[0]);
@@ -484,7 +445,7 @@ namespace OpenSim.ApplicationPlugins.RegionModulesController
             }
         }
 
-        public void RemoveRegionFromModules (Scene scene)
+        public void RemoveRegionFromModules(Scene scene)
         {
             foreach (IRegionModuleBase module in scene.RegionModules.Values)
             {
@@ -500,7 +461,41 @@ namespace OpenSim.ApplicationPlugins.RegionModulesController
             scene.RegionModules.Clear();
         }
 
-#endregion
+        /// <summary>
+        /// Check that the given module is no disabled in the [Modules] section of the config files.
+        /// </summary>
+        /// <param name="node"></param>
+        /// <param name="modulesConfig">The config section</param>
+        /// <returns>true if the module is enabled, false if it is disabled</returns>
+        protected bool CheckModuleEnabled(TypeExtensionNode node, IConfig modulesConfig)
+        {
+            // Get the config string
+            string moduleString =
+                    modulesConfig.GetString("Setup_" + node.Id, String.Empty);
 
+            // We have a selector
+            if (moduleString != String.Empty)
+            {
+                // Allow disabling modules even if they don't have
+                // support for it
+                if (moduleString == "disabled")
+                    return false;
+
+                // Split off port, if present
+                string[] moduleParts = moduleString.Split(new char[] { '/' }, 2);
+                // Format is [port/][class]
+                string className = moduleParts[0];
+                if (moduleParts.Length > 1)
+                    className = moduleParts[1];
+
+                // Match the class name if given
+                if (className != String.Empty &&
+                        node.Type.ToString() != className)
+                    return false;
+            }
+
+            return true;
+        }
+        #endregion Region Module interfacesController implementation
     }
 }

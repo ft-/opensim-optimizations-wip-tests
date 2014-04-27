@@ -1,3 +1,11 @@
+using log4net;
+using Mono.Addins;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
+
 /*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
@@ -24,17 +32,10 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using log4net;
-using Nini.Config;
-using OpenMetaverse;
-using Mono.Addins;
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
 using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 
 namespace OpenSim.Region.CoreModules.World.WorldMap
@@ -45,13 +46,19 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
         private static readonly ILog m_log =
             LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        Scene m_scene = null; // only need one for communication with GridService
-        List<Scene> m_scenes = new List<Scene>();
-        List<UUID> m_Clients;
-
+        private List<UUID> m_Clients;
+        private Scene m_scene = null; // only need one for communication with GridService
+        private List<Scene> m_scenes = new List<Scene>();
         #region ISharedRegionModule Members
-        public void Initialise(IConfigSource source)
+
+        public string Name
         {
+            get { return "MapSearchModule"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
         }
 
         public void AddRegion(Scene scene)
@@ -66,6 +73,23 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
             m_Clients = new List<UUID>();
         }
 
+        public void Close()
+        {
+            m_scene = null;
+            m_scenes.Clear();
+        }
+
+        public void Initialise(IConfigSource source)
+        {
+        }
+        public void PostInitialise()
+        {
+        }
+
+        public void RegionLoaded(Scene scene)
+        {
+        }
+
         public void RemoveRegion(Scene scene)
         {
             m_scenes.Remove(scene);
@@ -74,56 +98,21 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
 
             scene.EventManager.OnNewClient -= OnNewClient;
         }
+        #endregion ISharedRegionModule Members
 
-        public void PostInitialise()
+        private void AddFinalBlock(List<MapBlockData> blocks)
         {
-        }
-
-        public void Close()
-        {
-            m_scene = null;
-            m_scenes.Clear();
-        }
-
-        public string Name
-        {
-            get { return "MapSearchModule"; }
-        }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
-        public void RegionLoaded(Scene scene)
-        {
-        }
-        #endregion
-
-        private void OnNewClient(IClientAPI client)
-        {
-            client.OnMapNameRequest += OnMapNameRequestHandler;
-        }
-
-        private void OnMapNameRequestHandler(IClientAPI remoteClient, string mapName, uint flags)
-        {
-            lock (m_Clients)
-            {
-                if (m_Clients.Contains(remoteClient.AgentId))
-                    return;
-
-                m_Clients.Add(remoteClient.AgentId);
-            }
-
-            try
-            {
-                OnMapNameRequest(remoteClient, mapName, flags);
-            }
-            finally
-            {
-                lock (m_Clients)
-                    m_Clients.Remove(remoteClient.AgentId);
-            }
+            // final block, closing the search result
+            MapBlockData data = new MapBlockData();
+            data.Agents = 0;
+            data.Access = (byte)SimAccess.NonExistent;
+            data.MapImageId = UUID.Zero;
+            data.Name = "";
+            data.RegionFlags = 0;
+            data.WaterHeight = 0; // not used
+            data.X = 0;
+            data.Y = 0;
+            blocks.Add(data);
         }
 
         private void OnMapNameRequest(IClientAPI remoteClient, string mapName, uint flags)
@@ -142,7 +131,6 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
                 return;
             }
 
-
             //m_log.DebugFormat("MAP NAME=({0})", mapName);
 
             // Hack to get around the fact that ll V3 now drops the port from the
@@ -160,7 +148,7 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
                 mapName = mapName.Replace('+', ' ');
             if (mapName.Contains("!"))
                 mapName = mapName.Replace('!', '/');
-            
+
             // try to fetch from GridServer
             List<GridRegion> regionInfos = m_scene.GridService.GetRegionsByName(m_scene.RegionInfo.ScopeID, mapName, 20);
 
@@ -173,7 +161,7 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
                     data.Agents = 0;
                     data.Access = info.Access;
                     if (flags == 2) // V2 sends this
-                        data.MapImageId = UUID.Zero; 
+                        data.MapImageId = UUID.Zero;
                     else
                         data.MapImageId = info.TerrainImage;
                     // ugh! V2-3 is very sensitive about the result being
@@ -200,7 +188,7 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
             // send extra user messages for V3
             // because the UI is very confusing
             // while we don't fix the hard-coded urls
-            if (flags == 2) 
+            if (flags == 2)
             {
                 if (regionInfos.Count == 0)
                     remoteClient.SendAlertMessage("No regions found with that name.");
@@ -209,28 +197,39 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
             }
         }
 
-        private void AddFinalBlock(List<MapBlockData> blocks)
+        private void OnMapNameRequestHandler(IClientAPI remoteClient, string mapName, uint flags)
         {
-                // final block, closing the search result
-                MapBlockData data = new MapBlockData();
-                data.Agents = 0;
-                data.Access = (byte)SimAccess.NonExistent;
-                data.MapImageId = UUID.Zero;
-                data.Name = "";
-                data.RegionFlags = 0;
-                data.WaterHeight = 0; // not used
-                data.X = 0;
-                data.Y = 0;
-                blocks.Add(data);
+            lock (m_Clients)
+            {
+                if (m_Clients.Contains(remoteClient.AgentId))
+                    return;
+
+                m_Clients.Add(remoteClient.AgentId);
+            }
+
+            try
+            {
+                OnMapNameRequest(remoteClient, mapName, flags);
+            }
+            finally
+            {
+                lock (m_Clients)
+                    m_Clients.Remove(remoteClient.AgentId);
+            }
         }
-//        private Scene GetClientScene(IClientAPI client)
-//        {
-//            foreach (Scene s in m_scenes)
-//            {
-//                if (client.Scene.RegionInfo.RegionHandle == s.RegionInfo.RegionHandle)
-//                    return s;
-//            }
-//            return m_scene;
-//        }
+
+        private void OnNewClient(IClientAPI client)
+        {
+            client.OnMapNameRequest += OnMapNameRequestHandler;
+        }
+        //        private Scene GetClientScene(IClientAPI client)
+        //        {
+        //            foreach (Scene s in m_scenes)
+        //            {
+        //                if (client.Scene.RegionInfo.RegionHandle == s.RegionInfo.RegionHandle)
+        //                    return s;
+        //            }
+        //            return m_scene;
+        //        }
     }
 }

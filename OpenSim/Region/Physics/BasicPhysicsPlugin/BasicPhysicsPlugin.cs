@@ -25,10 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using Nini.Config;
-using OpenSim.Framework;
 using OpenSim.Region.Physics.Manager;
 
 namespace OpenSim.Region.Physics.BasicPhysicsPlugin
@@ -42,14 +38,8 @@ namespace OpenSim.Region.Physics.BasicPhysicsPlugin
         {
         }
 
-        public bool Init()
+        public void Dispose()
         {
-            return true;
-        }
-
-        public PhysicsScene GetScene(string sceneIdentifier)
-        {
-            return new BasicScene(GetName(), sceneIdentifier);
         }
 
         public string GetName()
@@ -57,8 +47,14 @@ namespace OpenSim.Region.Physics.BasicPhysicsPlugin
             return ("basicphysics");
         }
 
-        public void Dispose()
+        public PhysicsScene GetScene(string sceneIdentifier)
         {
+            return new BasicScene(GetName(), sceneIdentifier);
+        }
+
+        public bool Init()
+        {
+            return true;
         }
     }
 }

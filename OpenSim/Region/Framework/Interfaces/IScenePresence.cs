@@ -25,10 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
@@ -41,18 +41,22 @@ namespace OpenSim.Region.Framework.Interfaces
     public interface IScenePresence : ISceneAgent
     {
         /// <summary>
-        /// Copy of the script states while the agent is in transit. This state may
-        /// need to be placed back in case of transfer fail.
-        /// </summary>
-        List<string> InTransitScriptStates { get; }
-
-        /// <summary>
         /// The AttachmentsModule synchronizes on this to avoid race conditions between commands to add and remove attachments.
         /// </summary>
         /// <remarks>
         /// All add and remove attachment operations must synchronize on this for the lifetime of their operations.
         /// </remarks>
         Object AttachmentsSyncLock { get; }
+
+        /// <summary>
+        /// Copy of the script states while the agent is in transit. This state may
+        /// need to be placed back in case of transfer fail.
+        /// </summary>
+        List<string> InTransitScriptStates { get; }
+        // Don't use these methods directly.  Instead, use the AttachmentsModule
+        void AddAttachment(SceneObjectGroup gobj);
+
+        void ClearAttachments();
 
         /// <summary>
         /// The scene objects attached to this avatar.
@@ -77,10 +81,6 @@ namespace OpenSim.Region.Framework.Interfaces
         /// </summary>
         /// <returns></returns>
         bool HasAttachments();
-
-        // Don't use these methods directly.  Instead, use the AttachmentsModule
-        void AddAttachment(SceneObjectGroup gobj);
         void RemoveAttachment(SceneObjectGroup gobj);
-        void ClearAttachments();
     }
 }

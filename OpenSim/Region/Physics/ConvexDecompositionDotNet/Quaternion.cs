@@ -1,21 +1,21 @@
 ﻿/* The MIT License
- * 
+ *
  * Copyright (c) 2010 Intel Corporation.
  * All rights reserved.
  *
- * Based on the convexdecomposition library from 
+ * Based on the convexdecomposition library from
  * <http://codesuppository.googlecode.com> by John W. Ratcliff and Stan Melax.
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -55,42 +55,36 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
             w = _w;
         }
 
-        public float angle()
+        public static float dot(Quaternion a, Quaternion b)
         {
-            return (float)Math.Acos(w) * 2.0f;
-        }
-
-        public float3 axis()
-        {
-            float3 a = new float3(x, y, z);
-            if (Math.Abs(angle()) < 0.0000001f)
-                return new float3(1f, 0f, 0f);
-            return a * (1 / (float)Math.Sin(angle() / 2.0f));
-        }
-
-        public float3 xdir()
-        {
-            return new float3(1 - 2 * (y * y + z * z), 2 * (x * y + w * z), 2 * (x * z - w * y));
-        }
-
-        public float3 ydir()
-        {
-            return new float3(2 * (x * y - w * z), 1 - 2 * (x * x + z * z), 2 * (y * z + w * x));
-        }
-
-        public float3 zdir()
-        {
-            return new float3(2 * (x * z + w * y), 2 * (y * z - w * x), 1 - 2 * (x * x + y * y));
-        }
-
-        public float3x3 getmatrix()
-        {
-            return new float3x3(xdir(), ydir(), zdir());
+            return (a.w * b.w + a.x * b.x + a.y * b.y + a.z * b.z);
         }
 
         public static implicit operator float3x3(Quaternion q)
         {
             return q.getmatrix();
+        }
+
+        public static Quaternion Interpolate(Quaternion q0, Quaternion q1, float alpha)
+        {
+            return slerp(q0, q1, alpha);
+        }
+
+        public static Quaternion Inverse(Quaternion q)
+        {
+            return new Quaternion(-q.x, -q.y, -q.z, q.w);
+        }
+
+        public static Quaternion normalize(Quaternion a)
+        {
+            float m = (float)Math.Sqrt(a.w * a.w + a.x * a.x + a.y * a.y + a.z * a.z);
+            if (m < 0.000000001f)
+            {
+                a.w = 1;
+                a.x = a.y = a.z = 0;
+                return a;
+            }
+            return a * (1f / m);
         }
 
         public static Quaternion operator *(Quaternion a, Quaternion b)
@@ -120,31 +114,27 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
             return new float3((1 - 2 * (qy2 + qz2)) * v.x + (2 * (qxqy - qzqw)) * v.y + (2 * (qxqz + qyqw)) * v.z, (2 * (qxqy + qzqw)) * v.x + (1 - 2 * (qx2 + qz2)) * v.y + (2 * (qyqz - qxqw)) * v.z, (2 * (qxqz - qyqw)) * v.x + (2 * (qyqz + qxqw)) * v.y + (1 - 2 * (qx2 + qy2)) * v.z);
         }
 
+        public static Quaternion operator *(Quaternion a, float b)
+        {
+            return new Quaternion(a.x * b, a.y * b, a.z * b, a.w * b);
+        }
+
         public static Quaternion operator +(Quaternion a, Quaternion b)
         {
             return new Quaternion(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
         }
 
-        public static Quaternion operator *(Quaternion a, float b)
-	    {
-		    return new Quaternion(a.x *b, a.y *b, a.z *b, a.w *b);
-	    }
-
-        public static Quaternion normalize(Quaternion a)
+        public static float Pitch(Quaternion q)
         {
-            float m = (float)Math.Sqrt(a.w * a.w + a.x * a.x + a.y * a.y + a.z * a.z);
-            if (m < 0.000000001f)
-            {
-                a.w = 1;
-                a.x = a.y = a.z = 0;
-                return a;
-            }
-            return a * (1f / m);
+            float3 v = q.ydir();
+            return (float)Math.Atan2(v.z, Math.Sqrt(v.x * v.x + v.y * v.y)) * (180.0f / 3.14159264f);
         }
 
-        public static float dot(Quaternion a, Quaternion b)
+        public static float Roll(Quaternion q)
         {
-            return (a.w * b.w + a.x * b.x + a.y * b.y + a.z * b.z);
+            q = new Quaternion(new float3(0.0f, 0.0f, 1.0f), -Yaw(q) * (3.14159264f / 180.0f)) * q;
+            q = new Quaternion(new float3(1.0f, 0.0f, 0.0f), -Pitch(q) * (3.14159264f / 180.0f)) * q;
+            return (float)Math.Atan2(-q.xdir().z, q.xdir().x) * (180.0f / 3.14159264f);
         }
 
         public static Quaternion slerp(Quaternion a, Quaternion b, float interp)
@@ -169,14 +159,10 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
             return a * ((float)Math.Sin(theta - interp * theta) / (float)Math.Sin(theta)) + b * ((float)Math.Sin(interp * theta) / (float)Math.Sin(theta));
         }
 
-        public static Quaternion Interpolate(Quaternion q0, Quaternion q1, float alpha)
+        public static float Yaw(Quaternion q)
         {
-            return slerp(q0, q1, alpha);
-        }
-
-        public static Quaternion Inverse(Quaternion q)
-        {
-            return new Quaternion(-q.x, -q.y, -q.z, q.w);
+            float3 v = q.ydir();
+            return (v.y == 0.0 && v.x == 0.0) ? 0.0f : (float)Math.Atan2(-v.x, v.y) * (180.0f / 3.14159264f);
         }
 
         public static Quaternion YawPitchRoll(float yaw, float pitch, float roll)
@@ -187,23 +173,37 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
             return new Quaternion(new float3(0.0f, 0.0f, 1.0f), yaw) * new Quaternion(new float3(1.0f, 0.0f, 0.0f), pitch) * new Quaternion(new float3(0.0f, 1.0f, 0.0f), roll);
         }
 
-        public static float Yaw(Quaternion q)
+        public float angle()
         {
-            float3 v = q.ydir();
-            return (v.y == 0.0 && v.x == 0.0) ? 0.0f : (float)Math.Atan2(-v.x, v.y) * (180.0f / 3.14159264f);
+            return (float)Math.Acos(w) * 2.0f;
         }
 
-        public static float Pitch(Quaternion q)
+        public float3 axis()
         {
-            float3 v = q.ydir();
-            return (float)Math.Atan2(v.z, Math.Sqrt(v.x * v.x + v.y * v.y)) * (180.0f / 3.14159264f);
+            float3 a = new float3(x, y, z);
+            if (Math.Abs(angle()) < 0.0000001f)
+                return new float3(1f, 0f, 0f);
+            return a * (1 / (float)Math.Sin(angle() / 2.0f));
         }
 
-        public static float Roll(Quaternion q)
+        public float3x3 getmatrix()
         {
-            q = new Quaternion(new float3(0.0f, 0.0f, 1.0f), -Yaw(q) * (3.14159264f / 180.0f)) * q;
-            q = new Quaternion(new float3(1.0f, 0.0f, 0.0f), -Pitch(q) * (3.14159264f / 180.0f)) * q;
-            return (float)Math.Atan2(-q.xdir().z, q.xdir().x) * (180.0f / 3.14159264f);
+            return new float3x3(xdir(), ydir(), zdir());
+        }
+
+        public float3 xdir()
+        {
+            return new float3(1 - 2 * (y * y + z * z), 2 * (x * y + w * z), 2 * (x * z - w * y));
+        }
+
+        public float3 ydir()
+        {
+            return new float3(2 * (x * y - w * z), 1 - 2 * (x * x + z * z), 2 * (y * z + w * x));
+        }
+
+        public float3 zdir()
+        {
+            return new float3(2 * (x * z + w * y), 2 * (y * z - w * x), 1 - 2 * (x * x + y * y));
         }
     }
 }

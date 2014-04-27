@@ -25,20 +25,27 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenSim.Region.ScriptEngine.Interfaces;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
-using log4net;
-using OpenSim.Region.ScriptEngine.Interfaces;
 
 namespace OpenSim.Region.ScriptEngine.Shared.Api
 {
     public class ApiManager
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private Dictionary<string,Type> m_Apis = new Dictionary<string,Type>();
+        private Dictionary<string, Type> m_Apis = new Dictionary<string, Type>();
+
+        public IScriptApi CreateApi(string api)
+        {
+            if (!m_Apis.ContainsKey(api))
+                return null;
+
+            IScriptApi ret = (IScriptApi)(Activator.CreateInstance(m_Apis[api]));
+            return ret;
+        }
 
         public string[] GetApis()
         {
@@ -53,7 +60,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                     string name = t.ToString();
                     int idx = name.LastIndexOf('.');
                     if (idx != -1)
-                        name = name.Substring(idx+1);
+                        name = name.Substring(idx + 1);
 
                     if (name.EndsWith("_Api"))
                     {
@@ -63,18 +70,9 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 }
             }
 
-//            m_log.DebugFormat("[API MANAGER]: Found {0} apis", m_Apis.Keys.Count);
+            //            m_log.DebugFormat("[API MANAGER]: Found {0} apis", m_Apis.Keys.Count);
 
             return new List<string>(m_Apis.Keys).ToArray();
-        }
-
-        public IScriptApi CreateApi(string api)
-        {
-            if (!m_Apis.ContainsKey(api))
-                return null;
-
-            IScriptApi ret = (IScriptApi)(Activator.CreateInstance(m_Apis[api]));
-            return ret;
         }
     }
 }

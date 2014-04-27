@@ -32,9 +32,10 @@ namespace OpenSim.Region.RegionCombinerModule
 {
     public class RegionData
     {
-        public UUID RegionId;
-        public Scene RegionScene;
         // Offset of this region from the base of the root region.
         public Vector3 Offset;
+
+        public UUID RegionId;
+        public Scene RegionScene;
     }
 }

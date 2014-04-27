@@ -25,7 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.CoreModules.Avatar.Attachments;
@@ -46,41 +45,66 @@ namespace OpenSim.Region.RegionCombinerModule
             m_virtScene = virtScene;
         }
 
+        public void ClientClosed(UUID clientid, Scene scene)
+        {
+        }
+
         public void ClientConnect(IClientAPI client)
         {
             m_virtScene.UnSubscribeToClientPrimEvents(client);
             m_virtScene.UnSubscribeToClientPrimRezEvents(client);
             m_virtScene.UnSubscribeToClientInventoryEvents(client);
-            if(m_virtScene.AttachmentsModule != null)
+            if (m_virtScene.AttachmentsModule != null)
                 ((AttachmentsModule)m_virtScene.AttachmentsModule).UnsubscribeFromClientEvents(client);
             //m_virtScene.UnSubscribeToClientTeleportEvents(client);
             m_virtScene.UnSubscribeToClientScriptEvents(client);
-            
+
             IGodsModule virtGodsModule = m_virtScene.RequestModuleInterface<IGodsModule>();
             if (virtGodsModule != null)
                 ((GodsModule)virtGodsModule).UnsubscribeFromClientEvents(client);
-            
+
             m_virtScene.UnSubscribeToClientNetworkEvents(client);
 
             m_rootScene.SubscribeToClientPrimEvents(client);
             client.OnAddPrim += LocalAddNewPrim;
             client.OnRezObject += LocalRezObject;
-            
+
             m_rootScene.SubscribeToClientInventoryEvents(client);
             if (m_rootScene.AttachmentsModule != null)
                 ((AttachmentsModule)m_rootScene.AttachmentsModule).SubscribeToClientEvents(client);
             //m_rootScene.SubscribeToClientTeleportEvents(client);
             m_rootScene.SubscribeToClientScriptEvents(client);
-            
+
             IGodsModule rootGodsModule = m_virtScene.RequestModuleInterface<IGodsModule>();
             if (rootGodsModule != null)
                 ((GodsModule)rootGodsModule).UnsubscribeFromClientEvents(client);
-            
+
             m_rootScene.SubscribeToClientNetworkEvents(client);
         }
-
-        public void ClientClosed(UUID clientid, Scene scene)
+        /// <summary>
+        /// Fixes position based on the region the AddPrimShape event came in on
+        /// </summary>
+        /// <param name="ownerid"></param>
+        /// <param name="groupid"></param>
+        /// <param name="rayend"></param>
+        /// <param name="rot"></param>
+        /// <param name="shape"></param>
+        /// <param name="bypassraycast"></param>
+        /// <param name="raystart"></param>
+        /// <param name="raytargetid"></param>
+        /// <param name="rayendisintersection"></param>
+        private void LocalAddNewPrim(UUID ownerid, UUID groupid, Vector3 rayend, Quaternion rot,
+            PrimitiveBaseShape shape, byte bypassraycast, Vector3 raystart, UUID raytargetid,
+            byte rayendisintersection)
         {
+            int differenceX = (int)m_virtScene.RegionInfo.RegionLocX - (int)m_rootScene.RegionInfo.RegionLocX;
+            int differenceY = (int)m_virtScene.RegionInfo.RegionLocY - (int)m_rootScene.RegionInfo.RegionLocY;
+            rayend.X += differenceX * (int)Constants.RegionSize;
+            rayend.Y += differenceY * (int)Constants.RegionSize;
+            raystart.X += differenceX * (int)Constants.RegionSize;
+            raystart.Y += differenceY * (int)Constants.RegionSize;
+            m_rootScene.AddNewPrim(ownerid, groupid, rayend, rot, shape, bypassraycast, raystart, raytargetid,
+                                   rayendisintersection);
         }
 
         /// <summary>
@@ -96,8 +120,8 @@ namespace OpenSim.Region.RegionCombinerModule
         /// <param name="rezselected"></param>
         /// <param name="removeitem"></param>
         /// <param name="fromtaskid"></param>
-        private void LocalRezObject(IClientAPI remoteclient, UUID itemid, Vector3 rayend, Vector3 raystart, 
-            UUID raytargetid, byte bypassraycast, bool rayendisintersection, bool rezselected, bool removeitem, 
+        private void LocalRezObject(IClientAPI remoteclient, UUID itemid, Vector3 rayend, Vector3 raystart,
+            UUID raytargetid, byte bypassraycast, bool rayendisintersection, bool rezselected, bool removeitem,
             UUID fromtaskid)
         {
             int differenceX = (int)m_virtScene.RegionInfo.RegionLocX - (int)m_rootScene.RegionInfo.RegionLocX;
@@ -109,31 +133,6 @@ namespace OpenSim.Region.RegionCombinerModule
 
             m_rootScene.RezObject(remoteclient, itemid, rayend, raystart, raytargetid, bypassraycast,
                                   rayendisintersection, rezselected, removeitem, fromtaskid);
-        }
-        /// <summary>
-        /// Fixes position based on the region the AddPrimShape event came in on
-        /// </summary>
-        /// <param name="ownerid"></param>
-        /// <param name="groupid"></param>
-        /// <param name="rayend"></param>
-        /// <param name="rot"></param>
-        /// <param name="shape"></param>
-        /// <param name="bypassraycast"></param>
-        /// <param name="raystart"></param>
-        /// <param name="raytargetid"></param>
-        /// <param name="rayendisintersection"></param>
-        private void LocalAddNewPrim(UUID ownerid, UUID groupid, Vector3 rayend, Quaternion rot, 
-            PrimitiveBaseShape shape, byte bypassraycast, Vector3 raystart, UUID raytargetid, 
-            byte rayendisintersection)
-        {
-            int differenceX = (int)m_virtScene.RegionInfo.RegionLocX - (int)m_rootScene.RegionInfo.RegionLocX;
-            int differenceY = (int)m_virtScene.RegionInfo.RegionLocY - (int)m_rootScene.RegionInfo.RegionLocY;
-            rayend.X += differenceX * (int)Constants.RegionSize;
-            rayend.Y += differenceY * (int)Constants.RegionSize;
-            raystart.X += differenceX * (int)Constants.RegionSize;
-            raystart.Y += differenceY * (int)Constants.RegionSize;
-            m_rootScene.AddNewPrim(ownerid, groupid, rayend, rot, shape, bypassraycast, raystart, raytargetid,
-                                   rayendisintersection);
         }
     }
 }

@@ -25,16 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Net;
-using System.Reflection;
 using log4net;
+using Mono.Addins;
 using Nini.Config;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Region.OptionalModules.Agent.InternetRelayClientView.Server;
-
-using Mono.Addins;
+using System;
+using System.Net;
+using System.Reflection;
 
 namespace OpenSim.Region.OptionalModules.Agent.InternetRelayClientView
 {
@@ -43,43 +42,12 @@ namespace OpenSim.Region.OptionalModules.Agent.InternetRelayClientView
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private IRCServer m_server;
-        private int m_Port;
-//        private Scene m_scene;
+        //        private Scene m_scene;
         private bool m_Enabled;
 
+        private int m_Port;
+        private IRCServer m_server;
         #region Implementation of INonSharedRegionModule
-
-        public void Initialise(IConfigSource source)
-        {
-            if (null != source.Configs["IRCd"] &&
-                source.Configs["IRCd"].GetBoolean("Enabled", false))
-            {
-                m_Enabled = true;
-                m_Port = source.Configs["IRCd"].GetInt("Port", 6666);
-            }
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-            m_server = new IRCServer(IPAddress.Parse("0.0.0.0"), m_Port, scene);
-            m_server.OnNewIRCClient += m_server_OnNewIRCClient;
-        }
-
-        public void RegionLoaded(Scene scene)
-        {
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-        }
-
-        public void Close()
-        {
-        }
 
         public string Name
         {
@@ -91,19 +59,47 @@ namespace OpenSim.Region.OptionalModules.Agent.InternetRelayClientView
             get { return null; }
         }
 
-        #endregion
+        public void AddRegion(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
 
-        void m_server_OnNewIRCClient(IRCClientView user)
+            m_server = new IRCServer(IPAddress.Parse("0.0.0.0"), m_Port, scene);
+            m_server.OnNewIRCClient += m_server_OnNewIRCClient;
+        }
+
+        public void Close()
+        {
+        }
+
+        public void Initialise(IConfigSource source)
+        {
+            if (null != source.Configs["IRCd"] &&
+                source.Configs["IRCd"].GetBoolean("Enabled", false))
+            {
+                m_Enabled = true;
+                m_Port = source.Configs["IRCd"].GetInt("Port", 6666);
+            }
+        }
+        public void RegionLoaded(Scene scene)
+        {
+        }
+
+        public void RemoveRegion(Scene scene)
+        {
+        }
+        #endregion Implementation of INonSharedRegionModule
+
+        private void m_server_OnNewIRCClient(IRCClientView user)
         {
             user.OnIRCReady += user_OnIRCReady;
         }
 
-        void user_OnIRCReady(IRCClientView cv)
+        private void user_OnIRCReady(IRCClientView cv)
         {
             m_log.Info("[IRCd] Adding user...");
             cv.Start();
             m_log.Info("[IRCd] Added user to Scene");
         }
-
     }
 }

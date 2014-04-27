@@ -25,35 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
 using OpenSim.Framework;
+using System;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
-    public interface IWorldCommListenerInfo
-    {
-        Object[] GetSerializationData();
-        UUID GetItemID();
-        UUID GetHostID();
-        int GetChannel();
-        uint GetLocalID();
-        int GetHandle();
-        string GetMessage();
-        string GetName();
-        bool IsActive();
-        void Deactivate();
-        void Activate();
-        UUID GetID();
-
-        /// <summary>
-        /// Bitfield indicating which strings should be processed as regex.
-        /// 1 corresponds to IWorldCommListenerInfo::GetName()
-        /// 2 corresponds to IWorldCommListenerInfo::GetMessage()
-        /// </summary>
-        int RegexBitfield { get; }
-    }
-
     public interface IWorldComm
     {
         /// <summary>
@@ -61,38 +38,10 @@ namespace OpenSim.Region.Framework.Interfaces
         /// </summary>
         int ListenerCount { get; }
 
-        /// <summary>
-        /// Create a listen event callback with the specified filters.
-        /// The parameters localID,itemID are needed to uniquely identify
-        /// the script during 'peek' time. Parameter hostID is needed to
-        /// determine the position of the script.
-        /// </summary>
-        /// <param name="LocalID">localID of the script engine</param>
-        /// <param name="itemID">UUID of the script engine</param>
-        /// <param name="hostID">UUID of the SceneObjectPart</param>
-        /// <param name="channel">channel to listen on</param>
-        /// <param name="name">name to filter on</param>
-        /// <param name="id">key to filter on (user given, could be totally faked)</param>
-        /// <param name="msg">msg to filter on</param>
-        /// <returns>number of the scripts handle</returns>
-        int Listen(uint LocalID, UUID itemID, UUID hostID, int channel, string name, UUID id, string msg);
+        void CreateFromData(uint localID, UUID itemID, UUID hostID,
+                                    Object[] data);
 
-         /// <summary>
-        /// Create a listen event callback with the specified filters.
-        /// The parameters localID,itemID are needed to uniquely identify
-        /// the script during 'peek' time. Parameter hostID is needed to
-        /// determine the position of the script.
-        /// </summary>
-        /// <param name="LocalID">localID of the script engine</param>
-        /// <param name="itemID">UUID of the script engine</param>
-        /// <param name="hostID">UUID of the SceneObjectPart</param>
-        /// <param name="channel">channel to listen on</param>
-        /// <param name="name">name to filter on</param>
-        /// <param name="id">key to filter on (user given, could be totally faked)</param>
-        /// <param name="msg">msg to filter on</param>
-        /// <param name="regexBitfield">Bitfield indicating which strings should be processed as regex.</param>
-        /// <returns>number of the scripts handle</returns>
-        int Listen(uint LocalID, UUID itemID, UUID hostID, int channel, string name, UUID id, string msg, int regexBitfield);
+        void DeleteListener(UUID itemID);
 
         /// <summary>
         /// This method scans over the objects which registered an interest in listen callbacks.
@@ -130,22 +79,86 @@ namespace OpenSim.Region.Framework.Interfaces
         void DeliverMessageTo(UUID target, int channel, Vector3 pos, string name, UUID id, string msg);
 
         /// <summary>
+        /// Pop the first availlable listen event from the queue
+        /// </summary>
+        /// <returns>ListenerInfo with filter filled in</returns>
+        IWorldCommListenerInfo GetNextMessage();
+
+        Object[] GetSerializationData(UUID itemID);
+
+        /// <summary>
         /// Are there any listen events ready to be dispatched?
         /// </summary>
         /// <returns>boolean indication</returns>
         bool HasMessages();
 
         /// <summary>
-        /// Pop the first availlable listen event from the queue
+        /// Create a listen event callback with the specified filters.
+        /// The parameters localID,itemID are needed to uniquely identify
+        /// the script during 'peek' time. Parameter hostID is needed to
+        /// determine the position of the script.
         /// </summary>
-        /// <returns>ListenerInfo with filter filled in</returns>
-        IWorldCommListenerInfo GetNextMessage();
-        
+        /// <param name="LocalID">localID of the script engine</param>
+        /// <param name="itemID">UUID of the script engine</param>
+        /// <param name="hostID">UUID of the SceneObjectPart</param>
+        /// <param name="channel">channel to listen on</param>
+        /// <param name="name">name to filter on</param>
+        /// <param name="id">key to filter on (user given, could be totally faked)</param>
+        /// <param name="msg">msg to filter on</param>
+        /// <returns>number of the scripts handle</returns>
+        int Listen(uint LocalID, UUID itemID, UUID hostID, int channel, string name, UUID id, string msg);
+
+        /// <summary>
+        /// Create a listen event callback with the specified filters.
+        /// The parameters localID,itemID are needed to uniquely identify
+        /// the script during 'peek' time. Parameter hostID is needed to
+        /// determine the position of the script.
+        /// </summary>
+        /// <param name="LocalID">localID of the script engine</param>
+        /// <param name="itemID">UUID of the script engine</param>
+        /// <param name="hostID">UUID of the SceneObjectPart</param>
+        /// <param name="channel">channel to listen on</param>
+        /// <param name="name">name to filter on</param>
+        /// <param name="id">key to filter on (user given, could be totally faked)</param>
+        /// <param name="msg">msg to filter on</param>
+        /// <param name="regexBitfield">Bitfield indicating which strings should be processed as regex.</param>
+        /// <returns>number of the scripts handle</returns>
+        int Listen(uint LocalID, UUID itemID, UUID hostID, int channel, string name, UUID id, string msg, int regexBitfield);
         void ListenControl(UUID itemID, int handle, int active);
+
         void ListenRemove(UUID itemID, int handle);
-        void DeleteListener(UUID itemID);
-        Object[] GetSerializationData(UUID itemID);
-        void CreateFromData(uint localID, UUID itemID, UUID hostID,
-                            Object[] data);
+    }
+
+    public interface IWorldCommListenerInfo
+    {
+        /// <summary>
+        /// Bitfield indicating which strings should be processed as regex.
+        /// 1 corresponds to IWorldCommListenerInfo::GetName()
+        /// 2 corresponds to IWorldCommListenerInfo::GetMessage()
+        /// </summary>
+        int RegexBitfield { get; }
+
+        void Activate();
+
+        void Deactivate();
+
+        int GetChannel();
+
+        int GetHandle();
+
+        UUID GetHostID();
+
+        UUID GetID();
+
+        UUID GetItemID();
+
+        uint GetLocalID();
+
+        string GetMessage();
+
+        string GetName();
+
+        Object[] GetSerializationData();
+        bool IsActive();
     }
 }

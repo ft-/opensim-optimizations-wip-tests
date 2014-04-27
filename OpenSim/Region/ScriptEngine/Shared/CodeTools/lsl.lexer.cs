@@ -1,381 +1,1240 @@
-using System;using Tools;
-namespace OpenSim.Region.ScriptEngine.Shared.CodeTools {
-//%+STRING_CONSTANT+3
-public class STRING_CONSTANT : TOKEN{
-public override string yyname { get { return "STRING_CONSTANT"; }}
-public override int yynum { get { return 3; }}
-public STRING_CONSTANT(Lexer yyl):base(yyl){}}
-//%INCREMENT+4
-public class INCREMENT : TOKEN{ public override string yyname { get { return "INCREMENT";}}
-public override int yynum { get { return 4; }}
- public INCREMENT(Lexer yyl):base(yyl) {}}
-//%DECREMENT+5
-public class DECREMENT : TOKEN{ public override string yyname { get { return "DECREMENT";}}
-public override int yynum { get { return 5; }}
- public DECREMENT(Lexer yyl):base(yyl) {}}
-//%PLUS_EQUALS+6
-public class PLUS_EQUALS : TOKEN{ public override string yyname { get { return "PLUS_EQUALS";}}
-public override int yynum { get { return 6; }}
- public PLUS_EQUALS(Lexer yyl):base(yyl) {}}
-//%MINUS_EQUALS+7
-public class MINUS_EQUALS : TOKEN{ public override string yyname { get { return "MINUS_EQUALS";}}
-public override int yynum { get { return 7; }}
- public MINUS_EQUALS(Lexer yyl):base(yyl) {}}
-//%STAR_EQUALS+8
-public class STAR_EQUALS : TOKEN{ public override string yyname { get { return "STAR_EQUALS";}}
-public override int yynum { get { return 8; }}
- public STAR_EQUALS(Lexer yyl):base(yyl) {}}
-//%SLASH_EQUALS+9
-public class SLASH_EQUALS : TOKEN{ public override string yyname { get { return "SLASH_EQUALS";}}
-public override int yynum { get { return 9; }}
- public SLASH_EQUALS(Lexer yyl):base(yyl) {}}
-//%PERCENT_EQUALS+10
-public class PERCENT_EQUALS : TOKEN{ public override string yyname { get { return "PERCENT_EQUALS";}}
-public override int yynum { get { return 10; }}
- public PERCENT_EQUALS(Lexer yyl):base(yyl) {}}
-//%SEMICOLON+11
-public class SEMICOLON : TOKEN{ public override string yyname { get { return "SEMICOLON";}}
-public override int yynum { get { return 11; }}
- public SEMICOLON(Lexer yyl):base(yyl) {}}
-//%LEFT_BRACE+12
-public class LEFT_BRACE : TOKEN{ public override string yyname { get { return "LEFT_BRACE";}}
-public override int yynum { get { return 12; }}
- public LEFT_BRACE(Lexer yyl):base(yyl) {}}
-//%RIGHT_BRACE+13
-public class RIGHT_BRACE : TOKEN{ public override string yyname { get { return "RIGHT_BRACE";}}
-public override int yynum { get { return 13; }}
- public RIGHT_BRACE(Lexer yyl):base(yyl) {}}
-//%COMMA+14
-public class COMMA : TOKEN{ public override string yyname { get { return "COMMA";}}
-public override int yynum { get { return 14; }}
- public COMMA(Lexer yyl):base(yyl) {}}
-//%EQUALS+15
-public class EQUALS : TOKEN{ public override string yyname { get { return "EQUALS";}}
-public override int yynum { get { return 15; }}
- public EQUALS(Lexer yyl):base(yyl) {}}
-//%LEFT_PAREN+16
-public class LEFT_PAREN : TOKEN{ public override string yyname { get { return "LEFT_PAREN";}}
-public override int yynum { get { return 16; }}
- public LEFT_PAREN(Lexer yyl):base(yyl) {}}
-//%RIGHT_PAREN+17
-public class RIGHT_PAREN : TOKEN{ public override string yyname { get { return "RIGHT_PAREN";}}
-public override int yynum { get { return 17; }}
- public RIGHT_PAREN(Lexer yyl):base(yyl) {}}
-//%PLUS+18
-public class PLUS : TOKEN{ public override string yyname { get { return "PLUS";}}
-public override int yynum { get { return 18; }}
- public PLUS(Lexer yyl):base(yyl) {}}
-//%MINUS+19
-public class MINUS : TOKEN{ public override string yyname { get { return "MINUS";}}
-public override int yynum { get { return 19; }}
- public MINUS(Lexer yyl):base(yyl) {}}
-//%STAR+20
-public class STAR : TOKEN{ public override string yyname { get { return "STAR";}}
-public override int yynum { get { return 20; }}
- public STAR(Lexer yyl):base(yyl) {}}
-//%SLASH+21
-public class SLASH : TOKEN{ public override string yyname { get { return "SLASH";}}
-public override int yynum { get { return 21; }}
- public SLASH(Lexer yyl):base(yyl) {}}
-//%PERCENT+22
-public class PERCENT : TOKEN{ public override string yyname { get { return "PERCENT";}}
-public override int yynum { get { return 22; }}
- public PERCENT(Lexer yyl):base(yyl) {}}
-//%AT+23
-public class AT : TOKEN{ public override string yyname { get { return "AT";}}
-public override int yynum { get { return 23; }}
- public AT(Lexer yyl):base(yyl) {}}
-//%PERIOD+24
-public class PERIOD : TOKEN{ public override string yyname { get { return "PERIOD";}}
-public override int yynum { get { return 24; }}
- public PERIOD(Lexer yyl):base(yyl) {}}
-//%LEFT_ANGLE+25
-public class LEFT_ANGLE : TOKEN{ public override string yyname { get { return "LEFT_ANGLE";}}
-public override int yynum { get { return 25; }}
- public LEFT_ANGLE(Lexer yyl):base(yyl) {}}
-//%RIGHT_ANGLE+26
-public class RIGHT_ANGLE : TOKEN{ public override string yyname { get { return "RIGHT_ANGLE";}}
-public override int yynum { get { return 26; }}
- public RIGHT_ANGLE(Lexer yyl):base(yyl) {}}
-//%LEFT_BRACKET+27
-public class LEFT_BRACKET : TOKEN{ public override string yyname { get { return "LEFT_BRACKET";}}
-public override int yynum { get { return 27; }}
- public LEFT_BRACKET(Lexer yyl):base(yyl) {}}
-//%RIGHT_BRACKET+28
-public class RIGHT_BRACKET : TOKEN{ public override string yyname { get { return "RIGHT_BRACKET";}}
-public override int yynum { get { return 28; }}
- public RIGHT_BRACKET(Lexer yyl):base(yyl) {}}
-//%EQUALS_EQUALS+29
-public class EQUALS_EQUALS : TOKEN{ public override string yyname { get { return "EQUALS_EQUALS";}}
-public override int yynum { get { return 29; }}
- public EQUALS_EQUALS(Lexer yyl):base(yyl) {}}
-//%EXCLAMATION_EQUALS+30
-public class EXCLAMATION_EQUALS : TOKEN{ public override string yyname { get { return "EXCLAMATION_EQUALS";}}
-public override int yynum { get { return 30; }}
- public EXCLAMATION_EQUALS(Lexer yyl):base(yyl) {}}
-//%LESS_EQUALS+31
-public class LESS_EQUALS : TOKEN{ public override string yyname { get { return "LESS_EQUALS";}}
-public override int yynum { get { return 31; }}
- public LESS_EQUALS(Lexer yyl):base(yyl) {}}
-//%GREATER_EQUALS+32
-public class GREATER_EQUALS : TOKEN{ public override string yyname { get { return "GREATER_EQUALS";}}
-public override int yynum { get { return 32; }}
- public GREATER_EQUALS(Lexer yyl):base(yyl) {}}
-//%AMP+33
-public class AMP : TOKEN{ public override string yyname { get { return "AMP";}}
-public override int yynum { get { return 33; }}
- public AMP(Lexer yyl):base(yyl) {}}
-//%STROKE+34
-public class STROKE : TOKEN{ public override string yyname { get { return "STROKE";}}
-public override int yynum { get { return 34; }}
- public STROKE(Lexer yyl):base(yyl) {}}
-//%CARET+35
-public class CARET : TOKEN{ public override string yyname { get { return "CARET";}}
-public override int yynum { get { return 35; }}
- public CARET(Lexer yyl):base(yyl) {}}
-//%TILDE+36
-public class TILDE : TOKEN{ public override string yyname { get { return "TILDE";}}
-public override int yynum { get { return 36; }}
- public TILDE(Lexer yyl):base(yyl) {}}
-//%EXCLAMATION+37
-public class EXCLAMATION : TOKEN{ public override string yyname { get { return "EXCLAMATION";}}
-public override int yynum { get { return 37; }}
- public EXCLAMATION(Lexer yyl):base(yyl) {}}
-//%AMP_AMP+38
-public class AMP_AMP : TOKEN{ public override string yyname { get { return "AMP_AMP";}}
-public override int yynum { get { return 38; }}
- public AMP_AMP(Lexer yyl):base(yyl) {}}
-//%STROKE_STROKE+39
-public class STROKE_STROKE : TOKEN{ public override string yyname { get { return "STROKE_STROKE";}}
-public override int yynum { get { return 39; }}
- public STROKE_STROKE(Lexer yyl):base(yyl) {}}
-//%LEFT_SHIFT+40
-public class LEFT_SHIFT : TOKEN{ public override string yyname { get { return "LEFT_SHIFT";}}
-public override int yynum { get { return 40; }}
- public LEFT_SHIFT(Lexer yyl):base(yyl) {}}
-//%RIGHT_SHIFT+41
-public class RIGHT_SHIFT : TOKEN{ public override string yyname { get { return "RIGHT_SHIFT";}}
-public override int yynum { get { return 41; }}
- public RIGHT_SHIFT(Lexer yyl):base(yyl) {}}
-//%IF+42
-public class IF : TOKEN{ public override string yyname { get { return "IF";}}
-public override int yynum { get { return 42; }}
- public IF(Lexer yyl):base(yyl) {}}
-//%ELSE+43
-public class ELSE : TOKEN{ public override string yyname { get { return "ELSE";}}
-public override int yynum { get { return 43; }}
- public ELSE(Lexer yyl):base(yyl) {}}
-//%DO+44
-public class DO : TOKEN{ public override string yyname { get { return "DO";}}
-public override int yynum { get { return 44; }}
- public DO(Lexer yyl):base(yyl) {}}
-//%WHILE+45
-public class WHILE : TOKEN{ public override string yyname { get { return "WHILE";}}
-public override int yynum { get { return 45; }}
- public WHILE(Lexer yyl):base(yyl) {}}
-//%FOR+46
-public class FOR : TOKEN{ public override string yyname { get { return "FOR";}}
-public override int yynum { get { return 46; }}
- public FOR(Lexer yyl):base(yyl) {}}
-//%DEFAULT_STATE+47
-public class DEFAULT_STATE : TOKEN{ public override string yyname { get { return "DEFAULT_STATE";}}
-public override int yynum { get { return 47; }}
- public DEFAULT_STATE(Lexer yyl):base(yyl) {}}
-//%STATE+48
-public class STATE : TOKEN{ public override string yyname { get { return "STATE";}}
-public override int yynum { get { return 48; }}
- public STATE(Lexer yyl):base(yyl) {}}
-//%JUMP+49
-public class JUMP : TOKEN{ public override string yyname { get { return "JUMP";}}
-public override int yynum { get { return 49; }}
- public JUMP(Lexer yyl):base(yyl) {}}
-//%RETURN+50
-public class RETURN : TOKEN{ public override string yyname { get { return "RETURN";}}
-public override int yynum { get { return 50; }}
- public RETURN(Lexer yyl):base(yyl) {}}
-//%INTEGER_TYPE+51
-public class INTEGER_TYPE : TOKEN{ public override string yyname { get { return "INTEGER_TYPE";}}
-public override int yynum { get { return 51; }}
- public INTEGER_TYPE(Lexer yyl):base(yyl) {}}
-//%FLOAT_TYPE+52
-public class FLOAT_TYPE : TOKEN{ public override string yyname { get { return "FLOAT_TYPE";}}
-public override int yynum { get { return 52; }}
- public FLOAT_TYPE(Lexer yyl):base(yyl) {}}
-//%STRING_TYPE+53
-public class STRING_TYPE : TOKEN{ public override string yyname { get { return "STRING_TYPE";}}
-public override int yynum { get { return 53; }}
- public STRING_TYPE(Lexer yyl):base(yyl) {}}
-//%KEY_TYPE+54
-public class KEY_TYPE : TOKEN{ public override string yyname { get { return "KEY_TYPE";}}
-public override int yynum { get { return 54; }}
- public KEY_TYPE(Lexer yyl):base(yyl) {}}
-//%VECTOR_TYPE+55
-public class VECTOR_TYPE : TOKEN{ public override string yyname { get { return "VECTOR_TYPE";}}
-public override int yynum { get { return 55; }}
- public VECTOR_TYPE(Lexer yyl):base(yyl) {}}
-//%ROTATION_TYPE+56
-public class ROTATION_TYPE : TOKEN{ public override string yyname { get { return "ROTATION_TYPE";}}
-public override int yynum { get { return 56; }}
- public ROTATION_TYPE(Lexer yyl):base(yyl) {}}
-//%LIST_TYPE+57
-public class LIST_TYPE : TOKEN{ public override string yyname { get { return "LIST_TYPE";}}
-public override int yynum { get { return 57; }}
- public LIST_TYPE(Lexer yyl):base(yyl) {}}
-//%AT_ROT_TARGET_EVENT+58
-public class AT_ROT_TARGET_EVENT : TOKEN{ public override string yyname { get { return "AT_ROT_TARGET_EVENT";}}
-public override int yynum { get { return 58; }}
- public AT_ROT_TARGET_EVENT(Lexer yyl):base(yyl) {}}
-//%AT_TARGET_EVENT+59
-public class AT_TARGET_EVENT : TOKEN{ public override string yyname { get { return "AT_TARGET_EVENT";}}
-public override int yynum { get { return 59; }}
- public AT_TARGET_EVENT(Lexer yyl):base(yyl) {}}
-//%ATTACH_EVENT+60
-public class ATTACH_EVENT : TOKEN{ public override string yyname { get { return "ATTACH_EVENT";}}
-public override int yynum { get { return 60; }}
- public ATTACH_EVENT(Lexer yyl):base(yyl) {}}
-//%CHANGED_EVENT+61
-public class CHANGED_EVENT : TOKEN{ public override string yyname { get { return "CHANGED_EVENT";}}
-public override int yynum { get { return 61; }}
- public CHANGED_EVENT(Lexer yyl):base(yyl) {}}
-//%COLLISION_EVENT+62
-public class COLLISION_EVENT : TOKEN{ public override string yyname { get { return "COLLISION_EVENT";}}
-public override int yynum { get { return 62; }}
- public COLLISION_EVENT(Lexer yyl):base(yyl) {}}
-//%COLLISION_END_EVENT+63
-public class COLLISION_END_EVENT : TOKEN{ public override string yyname { get { return "COLLISION_END_EVENT";}}
-public override int yynum { get { return 63; }}
- public COLLISION_END_EVENT(Lexer yyl):base(yyl) {}}
-//%COLLISION_START_EVENT+64
-public class COLLISION_START_EVENT : TOKEN{ public override string yyname { get { return "COLLISION_START_EVENT";}}
-public override int yynum { get { return 64; }}
- public COLLISION_START_EVENT(Lexer yyl):base(yyl) {}}
-//%CONTROL_EVENT+65
-public class CONTROL_EVENT : TOKEN{ public override string yyname { get { return "CONTROL_EVENT";}}
-public override int yynum { get { return 65; }}
- public CONTROL_EVENT(Lexer yyl):base(yyl) {}}
-//%DATASERVER_EVENT+66
-public class DATASERVER_EVENT : TOKEN{ public override string yyname { get { return "DATASERVER_EVENT";}}
-public override int yynum { get { return 66; }}
- public DATASERVER_EVENT(Lexer yyl):base(yyl) {}}
-//%EMAIL_EVENT+67
-public class EMAIL_EVENT : TOKEN{ public override string yyname { get { return "EMAIL_EVENT";}}
-public override int yynum { get { return 67; }}
- public EMAIL_EVENT(Lexer yyl):base(yyl) {}}
-//%HTTP_RESPONSE_EVENT+68
-public class HTTP_RESPONSE_EVENT : TOKEN{ public override string yyname { get { return "HTTP_RESPONSE_EVENT";}}
-public override int yynum { get { return 68; }}
- public HTTP_RESPONSE_EVENT(Lexer yyl):base(yyl) {}}
-//%LAND_COLLISION_EVENT+69
-public class LAND_COLLISION_EVENT : TOKEN{ public override string yyname { get { return "LAND_COLLISION_EVENT";}}
-public override int yynum { get { return 69; }}
- public LAND_COLLISION_EVENT(Lexer yyl):base(yyl) {}}
-//%LAND_COLLISION_END_EVENT+70
-public class LAND_COLLISION_END_EVENT : TOKEN{ public override string yyname { get { return "LAND_COLLISION_END_EVENT";}}
-public override int yynum { get { return 70; }}
- public LAND_COLLISION_END_EVENT(Lexer yyl):base(yyl) {}}
-//%LAND_COLLISION_START_EVENT+71
-public class LAND_COLLISION_START_EVENT : TOKEN{ public override string yyname { get { return "LAND_COLLISION_START_EVENT";}}
-public override int yynum { get { return 71; }}
- public LAND_COLLISION_START_EVENT(Lexer yyl):base(yyl) {}}
-//%LINK_MESSAGE_EVENT+72
-public class LINK_MESSAGE_EVENT : TOKEN{ public override string yyname { get { return "LINK_MESSAGE_EVENT";}}
-public override int yynum { get { return 72; }}
- public LINK_MESSAGE_EVENT(Lexer yyl):base(yyl) {}}
-//%LISTEN_EVENT+73
-public class LISTEN_EVENT : TOKEN{ public override string yyname { get { return "LISTEN_EVENT";}}
-public override int yynum { get { return 73; }}
- public LISTEN_EVENT(Lexer yyl):base(yyl) {}}
-//%MONEY_EVENT+74
-public class MONEY_EVENT : TOKEN{ public override string yyname { get { return "MONEY_EVENT";}}
-public override int yynum { get { return 74; }}
- public MONEY_EVENT(Lexer yyl):base(yyl) {}}
-//%MOVING_END_EVENT+75
-public class MOVING_END_EVENT : TOKEN{ public override string yyname { get { return "MOVING_END_EVENT";}}
-public override int yynum { get { return 75; }}
- public MOVING_END_EVENT(Lexer yyl):base(yyl) {}}
-//%MOVING_START_EVENT+76
-public class MOVING_START_EVENT : TOKEN{ public override string yyname { get { return "MOVING_START_EVENT";}}
-public override int yynum { get { return 76; }}
- public MOVING_START_EVENT(Lexer yyl):base(yyl) {}}
-//%NO_SENSOR_EVENT+77
-public class NO_SENSOR_EVENT : TOKEN{ public override string yyname { get { return "NO_SENSOR_EVENT";}}
-public override int yynum { get { return 77; }}
- public NO_SENSOR_EVENT(Lexer yyl):base(yyl) {}}
-//%NOT_AT_ROT_TARGET_EVENT+78
-public class NOT_AT_ROT_TARGET_EVENT : TOKEN{ public override string yyname { get { return "NOT_AT_ROT_TARGET_EVENT";}}
-public override int yynum { get { return 78; }}
- public NOT_AT_ROT_TARGET_EVENT(Lexer yyl):base(yyl) {}}
-//%NOT_AT_TARGET_EVENT+79
-public class NOT_AT_TARGET_EVENT : TOKEN{ public override string yyname { get { return "NOT_AT_TARGET_EVENT";}}
-public override int yynum { get { return 79; }}
- public NOT_AT_TARGET_EVENT(Lexer yyl):base(yyl) {}}
-//%OBJECT_REZ_EVENT+80
-public class OBJECT_REZ_EVENT : TOKEN{ public override string yyname { get { return "OBJECT_REZ_EVENT";}}
-public override int yynum { get { return 80; }}
- public OBJECT_REZ_EVENT(Lexer yyl):base(yyl) {}}
-//%ON_REZ_EVENT+81
-public class ON_REZ_EVENT : TOKEN{ public override string yyname { get { return "ON_REZ_EVENT";}}
-public override int yynum { get { return 81; }}
- public ON_REZ_EVENT(Lexer yyl):base(yyl) {}}
-//%REMOTE_DATA_EVENT+82
-public class REMOTE_DATA_EVENT : TOKEN{ public override string yyname { get { return "REMOTE_DATA_EVENT";}}
-public override int yynum { get { return 82; }}
- public REMOTE_DATA_EVENT(Lexer yyl):base(yyl) {}}
-//%RUN_TIME_PERMISSIONS_EVENT+83
-public class RUN_TIME_PERMISSIONS_EVENT : TOKEN{ public override string yyname { get { return "RUN_TIME_PERMISSIONS_EVENT";}}
-public override int yynum { get { return 83; }}
- public RUN_TIME_PERMISSIONS_EVENT(Lexer yyl):base(yyl) {}}
-//%SENSOR_EVENT+84
-public class SENSOR_EVENT : TOKEN{ public override string yyname { get { return "SENSOR_EVENT";}}
-public override int yynum { get { return 84; }}
- public SENSOR_EVENT(Lexer yyl):base(yyl) {}}
-//%STATE_ENTRY_EVENT+85
-public class STATE_ENTRY_EVENT : TOKEN{ public override string yyname { get { return "STATE_ENTRY_EVENT";}}
-public override int yynum { get { return 85; }}
- public STATE_ENTRY_EVENT(Lexer yyl):base(yyl) {}}
-//%STATE_EXIT_EVENT+86
-public class STATE_EXIT_EVENT : TOKEN{ public override string yyname { get { return "STATE_EXIT_EVENT";}}
-public override int yynum { get { return 86; }}
- public STATE_EXIT_EVENT(Lexer yyl):base(yyl) {}}
-//%TIMER_EVENT+87
-public class TIMER_EVENT : TOKEN{ public override string yyname { get { return "TIMER_EVENT";}}
-public override int yynum { get { return 87; }}
- public TIMER_EVENT(Lexer yyl):base(yyl) {}}
-//%TOUCH_EVENT+88
-public class TOUCH_EVENT : TOKEN{ public override string yyname { get { return "TOUCH_EVENT";}}
-public override int yynum { get { return 88; }}
- public TOUCH_EVENT(Lexer yyl):base(yyl) {}}
-//%TOUCH_START_EVENT+89
-public class TOUCH_START_EVENT : TOKEN{ public override string yyname { get { return "TOUCH_START_EVENT";}}
-public override int yynum { get { return 89; }}
- public TOUCH_START_EVENT(Lexer yyl):base(yyl) {}}
-//%TOUCH_END_EVENT+90
-public class TOUCH_END_EVENT : TOKEN{ public override string yyname { get { return "TOUCH_END_EVENT";}}
-public override int yynum { get { return 90; }}
- public TOUCH_END_EVENT(Lexer yyl):base(yyl) {}}
-//%HTTP_REQUEST_EVENT+91
-public class HTTP_REQUEST_EVENT : TOKEN{ public override string yyname { get { return "HTTP_REQUEST_EVENT";}}
-public override int yynum { get { return 91; }}
- public HTTP_REQUEST_EVENT(Lexer yyl):base(yyl) {}}
-//%IDENT+92
-public class IDENT : TOKEN{ public override string yyname { get { return "IDENT";}}
-public override int yynum { get { return 92; }}
- public IDENT(Lexer yyl):base(yyl) {}}
-//%INTEGER_CONSTANT+93
-public class INTEGER_CONSTANT : TOKEN{ public override string yyname { get { return "INTEGER_CONSTANT";}}
-public override int yynum { get { return 93; }}
- public INTEGER_CONSTANT(Lexer yyl):base(yyl) {}}
-//%HEX_INTEGER_CONSTANT+94
-public class HEX_INTEGER_CONSTANT : TOKEN{ public override string yyname { get { return "HEX_INTEGER_CONSTANT";}}
-public override int yynum { get { return 94; }}
- public HEX_INTEGER_CONSTANT(Lexer yyl):base(yyl) {}}
-//%FLOAT_CONSTANT+95
-public class FLOAT_CONSTANT : TOKEN{ public override string yyname { get { return "FLOAT_CONSTANT";}}
-public override int yynum { get { return 95; }}
- public FLOAT_CONSTANT(Lexer yyl):base(yyl) {}}
-//%|LSLTokens
-public class yyLSLTokens : YyLexer {
- public yyLSLTokens(ErrorHandler eh):base(eh) { arr = new int[] { 
+using System;
+using Tools;
+
+namespace OpenSim.Region.ScriptEngine.Shared.CodeTools
+{
+    //%AMP+33
+    public class AMP : TOKEN
+    {
+        public AMP(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "AMP"; } }
+
+        public override int yynum { get { return 33; } }
+    }
+
+    //%AMP_AMP+38
+    public class AMP_AMP : TOKEN
+    {
+        public AMP_AMP(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "AMP_AMP"; } }
+
+        public override int yynum { get { return 38; } }
+    }
+
+    //%AT+23
+    public class AT : TOKEN
+    {
+        public AT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "AT"; } }
+
+        public override int yynum { get { return 23; } }
+    }
+
+    //%AT_ROT_TARGET_EVENT+58
+    public class AT_ROT_TARGET_EVENT : TOKEN
+    {
+        public AT_ROT_TARGET_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "AT_ROT_TARGET_EVENT"; } }
+
+        public override int yynum { get { return 58; } }
+    }
+
+    //%AT_TARGET_EVENT+59
+    public class AT_TARGET_EVENT : TOKEN
+    {
+        public AT_TARGET_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "AT_TARGET_EVENT"; } }
+
+        public override int yynum { get { return 59; } }
+    }
+
+    //%ATTACH_EVENT+60
+    public class ATTACH_EVENT : TOKEN
+    {
+        public ATTACH_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "ATTACH_EVENT"; } }
+
+        public override int yynum { get { return 60; } }
+    }
+
+    //%CARET+35
+    public class CARET : TOKEN
+    {
+        public CARET(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "CARET"; } }
+
+        public override int yynum { get { return 35; } }
+    }
+
+    //%CHANGED_EVENT+61
+    public class CHANGED_EVENT : TOKEN
+    {
+        public CHANGED_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "CHANGED_EVENT"; } }
+
+        public override int yynum { get { return 61; } }
+    }
+
+    //%COLLISION_END_EVENT+63
+    public class COLLISION_END_EVENT : TOKEN
+    {
+        public COLLISION_END_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "COLLISION_END_EVENT"; } }
+
+        public override int yynum { get { return 63; } }
+    }
+
+    //%COLLISION_EVENT+62
+    public class COLLISION_EVENT : TOKEN
+    {
+        public COLLISION_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "COLLISION_EVENT"; } }
+
+        public override int yynum { get { return 62; } }
+    }
+
+    //%COLLISION_START_EVENT+64
+    public class COLLISION_START_EVENT : TOKEN
+    {
+        public COLLISION_START_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "COLLISION_START_EVENT"; } }
+
+        public override int yynum { get { return 64; } }
+    }
+
+    //%COMMA+14
+    public class COMMA : TOKEN
+    {
+        public COMMA(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "COMMA"; } }
+
+        public override int yynum { get { return 14; } }
+    }
+
+    //%CONTROL_EVENT+65
+    public class CONTROL_EVENT : TOKEN
+    {
+        public CONTROL_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "CONTROL_EVENT"; } }
+
+        public override int yynum { get { return 65; } }
+    }
+
+    //%DATASERVER_EVENT+66
+    public class DATASERVER_EVENT : TOKEN
+    {
+        public DATASERVER_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "DATASERVER_EVENT"; } }
+
+        public override int yynum { get { return 66; } }
+    }
+
+    //%DECREMENT+5
+    public class DECREMENT : TOKEN
+    {
+        public DECREMENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "DECREMENT"; } }
+
+        public override int yynum { get { return 5; } }
+    }
+
+    //%DEFAULT_STATE+47
+    public class DEFAULT_STATE : TOKEN
+    {
+        public DEFAULT_STATE(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "DEFAULT_STATE"; } }
+
+        public override int yynum { get { return 47; } }
+    }
+
+    //%DO+44
+    public class DO : TOKEN
+    {
+        public DO(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "DO"; } }
+
+        public override int yynum { get { return 44; } }
+    }
+
+    //%ELSE+43
+    public class ELSE : TOKEN
+    {
+        public ELSE(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "ELSE"; } }
+
+        public override int yynum { get { return 43; } }
+    }
+
+    //%EMAIL_EVENT+67
+    public class EMAIL_EVENT : TOKEN
+    {
+        public EMAIL_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "EMAIL_EVENT"; } }
+
+        public override int yynum { get { return 67; } }
+    }
+
+    //%EQUALS+15
+    public class EQUALS : TOKEN
+    {
+        public EQUALS(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "EQUALS"; } }
+
+        public override int yynum { get { return 15; } }
+    }
+
+    //%EQUALS_EQUALS+29
+    public class EQUALS_EQUALS : TOKEN
+    {
+        public EQUALS_EQUALS(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "EQUALS_EQUALS"; } }
+
+        public override int yynum { get { return 29; } }
+    }
+
+    //%EXCLAMATION+37
+    public class EXCLAMATION : TOKEN
+    {
+        public EXCLAMATION(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "EXCLAMATION"; } }
+
+        public override int yynum { get { return 37; } }
+    }
+
+    //%EXCLAMATION_EQUALS+30
+    public class EXCLAMATION_EQUALS : TOKEN
+    {
+        public EXCLAMATION_EQUALS(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "EXCLAMATION_EQUALS"; } }
+
+        public override int yynum { get { return 30; } }
+    }
+
+    //%FLOAT_CONSTANT+95
+    public class FLOAT_CONSTANT : TOKEN
+    {
+        public FLOAT_CONSTANT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "FLOAT_CONSTANT"; } }
+
+        public override int yynum { get { return 95; } }
+    }
+
+    //%FLOAT_TYPE+52
+    public class FLOAT_TYPE : TOKEN
+    {
+        public FLOAT_TYPE(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "FLOAT_TYPE"; } }
+
+        public override int yynum { get { return 52; } }
+    }
+
+    //%FOR+46
+    public class FOR : TOKEN
+    {
+        public FOR(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "FOR"; } }
+
+        public override int yynum { get { return 46; } }
+    }
+
+    //%GREATER_EQUALS+32
+    public class GREATER_EQUALS : TOKEN
+    {
+        public GREATER_EQUALS(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "GREATER_EQUALS"; } }
+
+        public override int yynum { get { return 32; } }
+    }
+
+    //%HEX_INTEGER_CONSTANT+94
+    public class HEX_INTEGER_CONSTANT : TOKEN
+    {
+        public HEX_INTEGER_CONSTANT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "HEX_INTEGER_CONSTANT"; } }
+
+        public override int yynum { get { return 94; } }
+    }
+
+    //%HTTP_REQUEST_EVENT+91
+    public class HTTP_REQUEST_EVENT : TOKEN
+    {
+        public HTTP_REQUEST_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "HTTP_REQUEST_EVENT"; } }
+
+        public override int yynum { get { return 91; } }
+    }
+
+    //%HTTP_RESPONSE_EVENT+68
+    public class HTTP_RESPONSE_EVENT : TOKEN
+    {
+        public HTTP_RESPONSE_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "HTTP_RESPONSE_EVENT"; } }
+
+        public override int yynum { get { return 68; } }
+    }
+
+    //%IDENT+92
+    public class IDENT : TOKEN
+    {
+        public IDENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "IDENT"; } }
+
+        public override int yynum { get { return 92; } }
+    }
+
+    //%IF+42
+    public class IF : TOKEN
+    {
+        public IF(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "IF"; } }
+
+        public override int yynum { get { return 42; } }
+    }
+
+    //%INCREMENT+4
+    public class INCREMENT : TOKEN
+    {
+        public INCREMENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "INCREMENT"; } }
+
+        public override int yynum { get { return 4; } }
+    }
+
+    //%INTEGER_CONSTANT+93
+    public class INTEGER_CONSTANT : TOKEN
+    {
+        public INTEGER_CONSTANT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "INTEGER_CONSTANT"; } }
+
+        public override int yynum { get { return 93; } }
+    }
+
+    //%INTEGER_TYPE+51
+    public class INTEGER_TYPE : TOKEN
+    {
+        public INTEGER_TYPE(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "INTEGER_TYPE"; } }
+
+        public override int yynum { get { return 51; } }
+    }
+
+    //%JUMP+49
+    public class JUMP : TOKEN
+    {
+        public JUMP(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "JUMP"; } }
+
+        public override int yynum { get { return 49; } }
+    }
+
+    //%KEY_TYPE+54
+    public class KEY_TYPE : TOKEN
+    {
+        public KEY_TYPE(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "KEY_TYPE"; } }
+
+        public override int yynum { get { return 54; } }
+    }
+
+    //%LAND_COLLISION_END_EVENT+70
+    public class LAND_COLLISION_END_EVENT : TOKEN
+    {
+        public LAND_COLLISION_END_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "LAND_COLLISION_END_EVENT"; } }
+
+        public override int yynum { get { return 70; } }
+    }
+
+    //%LAND_COLLISION_EVENT+69
+    public class LAND_COLLISION_EVENT : TOKEN
+    {
+        public LAND_COLLISION_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "LAND_COLLISION_EVENT"; } }
+
+        public override int yynum { get { return 69; } }
+    }
+
+    //%LAND_COLLISION_START_EVENT+71
+    public class LAND_COLLISION_START_EVENT : TOKEN
+    {
+        public LAND_COLLISION_START_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "LAND_COLLISION_START_EVENT"; } }
+
+        public override int yynum { get { return 71; } }
+    }
+
+    //%LEFT_ANGLE+25
+    public class LEFT_ANGLE : TOKEN
+    {
+        public LEFT_ANGLE(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "LEFT_ANGLE"; } }
+
+        public override int yynum { get { return 25; } }
+    }
+
+    //%LEFT_BRACE+12
+    public class LEFT_BRACE : TOKEN
+    {
+        public LEFT_BRACE(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "LEFT_BRACE"; } }
+
+        public override int yynum { get { return 12; } }
+    }
+
+    //%LEFT_BRACKET+27
+    public class LEFT_BRACKET : TOKEN
+    {
+        public LEFT_BRACKET(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "LEFT_BRACKET"; } }
+
+        public override int yynum { get { return 27; } }
+    }
+
+    //%LEFT_PAREN+16
+    public class LEFT_PAREN : TOKEN
+    {
+        public LEFT_PAREN(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "LEFT_PAREN"; } }
+
+        public override int yynum { get { return 16; } }
+    }
+
+    //%LEFT_SHIFT+40
+    public class LEFT_SHIFT : TOKEN
+    {
+        public LEFT_SHIFT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "LEFT_SHIFT"; } }
+
+        public override int yynum { get { return 40; } }
+    }
+
+    //%LESS_EQUALS+31
+    public class LESS_EQUALS : TOKEN
+    {
+        public LESS_EQUALS(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "LESS_EQUALS"; } }
+
+        public override int yynum { get { return 31; } }
+    }
+
+    //%LINK_MESSAGE_EVENT+72
+    public class LINK_MESSAGE_EVENT : TOKEN
+    {
+        public LINK_MESSAGE_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "LINK_MESSAGE_EVENT"; } }
+
+        public override int yynum { get { return 72; } }
+    }
+
+    //%LIST_TYPE+57
+    public class LIST_TYPE : TOKEN
+    {
+        public LIST_TYPE(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "LIST_TYPE"; } }
+
+        public override int yynum { get { return 57; } }
+    }
+
+    //%LISTEN_EVENT+73
+    public class LISTEN_EVENT : TOKEN
+    {
+        public LISTEN_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "LISTEN_EVENT"; } }
+
+        public override int yynum { get { return 73; } }
+    }
+
+    public class LSLTokens : Lexer
+    {
+        public string str;
+
+        public LSLTokens()
+            : base(new yyLSLTokens(new ErrorHandler(false)))
+        {
+        }
+
+        public LSLTokens(ErrorHandler eh)
+            : base(new yyLSLTokens(eh))
+        {
+        }
+
+        public LSLTokens(YyLexer tks)
+            : base(tks)
+        {
+        }
+    }
+
+    //%MINUS+19
+    public class MINUS : TOKEN
+    {
+        public MINUS(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "MINUS"; } }
+
+        public override int yynum { get { return 19; } }
+    }
+
+    //%MINUS_EQUALS+7
+    public class MINUS_EQUALS : TOKEN
+    {
+        public MINUS_EQUALS(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "MINUS_EQUALS"; } }
+
+        public override int yynum { get { return 7; } }
+    }
+
+    //%MONEY_EVENT+74
+    public class MONEY_EVENT : TOKEN
+    {
+        public MONEY_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "MONEY_EVENT"; } }
+
+        public override int yynum { get { return 74; } }
+    }
+
+    //%MOVING_END_EVENT+75
+    public class MOVING_END_EVENT : TOKEN
+    {
+        public MOVING_END_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "MOVING_END_EVENT"; } }
+
+        public override int yynum { get { return 75; } }
+    }
+
+    //%MOVING_START_EVENT+76
+    public class MOVING_START_EVENT : TOKEN
+    {
+        public MOVING_START_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "MOVING_START_EVENT"; } }
+
+        public override int yynum { get { return 76; } }
+    }
+
+    //%NO_SENSOR_EVENT+77
+    public class NO_SENSOR_EVENT : TOKEN
+    {
+        public NO_SENSOR_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "NO_SENSOR_EVENT"; } }
+
+        public override int yynum { get { return 77; } }
+    }
+
+    //%NOT_AT_ROT_TARGET_EVENT+78
+    public class NOT_AT_ROT_TARGET_EVENT : TOKEN
+    {
+        public NOT_AT_ROT_TARGET_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "NOT_AT_ROT_TARGET_EVENT"; } }
+
+        public override int yynum { get { return 78; } }
+    }
+
+    //%NOT_AT_TARGET_EVENT+79
+    public class NOT_AT_TARGET_EVENT : TOKEN
+    {
+        public NOT_AT_TARGET_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "NOT_AT_TARGET_EVENT"; } }
+
+        public override int yynum { get { return 79; } }
+    }
+
+    //%OBJECT_REZ_EVENT+80
+    public class OBJECT_REZ_EVENT : TOKEN
+    {
+        public OBJECT_REZ_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "OBJECT_REZ_EVENT"; } }
+
+        public override int yynum { get { return 80; } }
+    }
+
+    //%ON_REZ_EVENT+81
+    public class ON_REZ_EVENT : TOKEN
+    {
+        public ON_REZ_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "ON_REZ_EVENT"; } }
+
+        public override int yynum { get { return 81; } }
+    }
+
+    //%PERCENT+22
+    public class PERCENT : TOKEN
+    {
+        public PERCENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "PERCENT"; } }
+
+        public override int yynum { get { return 22; } }
+    }
+
+    //%PERCENT_EQUALS+10
+    public class PERCENT_EQUALS : TOKEN
+    {
+        public PERCENT_EQUALS(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "PERCENT_EQUALS"; } }
+
+        public override int yynum { get { return 10; } }
+    }
+
+    //%PERIOD+24
+    public class PERIOD : TOKEN
+    {
+        public PERIOD(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "PERIOD"; } }
+
+        public override int yynum { get { return 24; } }
+    }
+
+    //%PLUS+18
+    public class PLUS : TOKEN
+    {
+        public PLUS(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "PLUS"; } }
+
+        public override int yynum { get { return 18; } }
+    }
+
+    //%PLUS_EQUALS+6
+    public class PLUS_EQUALS : TOKEN
+    {
+        public PLUS_EQUALS(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "PLUS_EQUALS"; } }
+
+        public override int yynum { get { return 6; } }
+    }
+
+    //%REMOTE_DATA_EVENT+82
+    public class REMOTE_DATA_EVENT : TOKEN
+    {
+        public REMOTE_DATA_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "REMOTE_DATA_EVENT"; } }
+
+        public override int yynum { get { return 82; } }
+    }
+
+    //%RETURN+50
+    public class RETURN : TOKEN
+    {
+        public RETURN(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "RETURN"; } }
+
+        public override int yynum { get { return 50; } }
+    }
+
+    //%RIGHT_ANGLE+26
+    public class RIGHT_ANGLE : TOKEN
+    {
+        public RIGHT_ANGLE(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "RIGHT_ANGLE"; } }
+
+        public override int yynum { get { return 26; } }
+    }
+
+    //%RIGHT_BRACE+13
+    public class RIGHT_BRACE : TOKEN
+    {
+        public RIGHT_BRACE(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "RIGHT_BRACE"; } }
+
+        public override int yynum { get { return 13; } }
+    }
+
+    //%RIGHT_BRACKET+28
+    public class RIGHT_BRACKET : TOKEN
+    {
+        public RIGHT_BRACKET(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "RIGHT_BRACKET"; } }
+
+        public override int yynum { get { return 28; } }
+    }
+
+    //%RIGHT_PAREN+17
+    public class RIGHT_PAREN : TOKEN
+    {
+        public RIGHT_PAREN(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "RIGHT_PAREN"; } }
+
+        public override int yynum { get { return 17; } }
+    }
+
+    //%RIGHT_SHIFT+41
+    public class RIGHT_SHIFT : TOKEN
+    {
+        public RIGHT_SHIFT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "RIGHT_SHIFT"; } }
+
+        public override int yynum { get { return 41; } }
+    }
+
+    //%ROTATION_TYPE+56
+    public class ROTATION_TYPE : TOKEN
+    {
+        public ROTATION_TYPE(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "ROTATION_TYPE"; } }
+
+        public override int yynum { get { return 56; } }
+    }
+
+    //%RUN_TIME_PERMISSIONS_EVENT+83
+    public class RUN_TIME_PERMISSIONS_EVENT : TOKEN
+    {
+        public RUN_TIME_PERMISSIONS_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "RUN_TIME_PERMISSIONS_EVENT"; } }
+
+        public override int yynum { get { return 83; } }
+    }
+
+    //%SEMICOLON+11
+    public class SEMICOLON : TOKEN
+    {
+        public SEMICOLON(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "SEMICOLON"; } }
+
+        public override int yynum { get { return 11; } }
+    }
+
+    //%SENSOR_EVENT+84
+    public class SENSOR_EVENT : TOKEN
+    {
+        public SENSOR_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "SENSOR_EVENT"; } }
+
+        public override int yynum { get { return 84; } }
+    }
+
+    //%SLASH+21
+    public class SLASH : TOKEN
+    {
+        public SLASH(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "SLASH"; } }
+
+        public override int yynum { get { return 21; } }
+    }
+
+    //%SLASH_EQUALS+9
+    public class SLASH_EQUALS : TOKEN
+    {
+        public SLASH_EQUALS(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "SLASH_EQUALS"; } }
+
+        public override int yynum { get { return 9; } }
+    }
+
+    //%STAR+20
+    public class STAR : TOKEN
+    {
+        public STAR(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "STAR"; } }
+
+        public override int yynum { get { return 20; } }
+    }
+
+    //%STAR_EQUALS+8
+    public class STAR_EQUALS : TOKEN
+    {
+        public STAR_EQUALS(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "STAR_EQUALS"; } }
+
+        public override int yynum { get { return 8; } }
+    }
+
+    //%STATE+48
+    public class STATE : TOKEN
+    {
+        public STATE(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "STATE"; } }
+
+        public override int yynum { get { return 48; } }
+    }
+
+    //%STATE_ENTRY_EVENT+85
+    public class STATE_ENTRY_EVENT : TOKEN
+    {
+        public STATE_ENTRY_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "STATE_ENTRY_EVENT"; } }
+
+        public override int yynum { get { return 85; } }
+    }
+
+    //%STATE_EXIT_EVENT+86
+    public class STATE_EXIT_EVENT : TOKEN
+    {
+        public STATE_EXIT_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "STATE_EXIT_EVENT"; } }
+
+        public override int yynum { get { return 86; } }
+    }
+
+    //%+STRING_CONSTANT+3
+    public class STRING_CONSTANT : TOKEN
+    {
+        public STRING_CONSTANT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "STRING_CONSTANT"; } }
+
+        public override int yynum { get { return 3; } }
+    }
+    //%STRING_TYPE+53
+    public class STRING_TYPE : TOKEN
+    {
+        public STRING_TYPE(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "STRING_TYPE"; } }
+
+        public override int yynum { get { return 53; } }
+    }
+
+    //%STROKE+34
+    public class STROKE : TOKEN
+    {
+        public STROKE(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "STROKE"; } }
+
+        public override int yynum { get { return 34; } }
+    }
+    //%STROKE_STROKE+39
+    public class STROKE_STROKE : TOKEN
+    {
+        public STROKE_STROKE(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "STROKE_STROKE"; } }
+
+        public override int yynum { get { return 39; } }
+    }
+
+    //%TILDE+36
+    public class TILDE : TOKEN
+    {
+        public TILDE(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "TILDE"; } }
+
+        public override int yynum { get { return 36; } }
+    }
+    //%TIMER_EVENT+87
+    public class TIMER_EVENT : TOKEN
+    {
+        public TIMER_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "TIMER_EVENT"; } }
+
+        public override int yynum { get { return 87; } }
+    }
+
+    //%TOUCH_END_EVENT+90
+    public class TOUCH_END_EVENT : TOKEN
+    {
+        public TOUCH_END_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "TOUCH_END_EVENT"; } }
+
+        public override int yynum { get { return 90; } }
+    }
+
+    //%TOUCH_EVENT+88
+    public class TOUCH_EVENT : TOKEN
+    {
+        public TOUCH_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "TOUCH_EVENT"; } }
+
+        public override int yynum { get { return 88; } }
+    }
+
+    //%TOUCH_START_EVENT+89
+    public class TOUCH_START_EVENT : TOKEN
+    {
+        public TOUCH_START_EVENT(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "TOUCH_START_EVENT"; } }
+
+        public override int yynum { get { return 89; } }
+    }
+
+    //%VECTOR_TYPE+55
+    public class VECTOR_TYPE : TOKEN
+    {
+        public VECTOR_TYPE(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "VECTOR_TYPE"; } }
+
+        public override int yynum { get { return 55; } }
+    }
+
+    //%WHILE+45
+    public class WHILE : TOKEN
+    {
+        public WHILE(Lexer yyl)
+            : base(yyl)
+        {
+        }
+
+        public override string yyname { get { return "WHILE"; } }
+
+        public override int yynum { get { return 45; } }
+    }
+    //%|LSLTokens
+    public class yyLSLTokens : YyLexer
+    {
+        public yyLSLTokens(ErrorHandler eh)
+            : base(eh)
+        {
+            arr = new int[] {
 101,4,6,52,0,
 46,0,53,0,6,
 102,4,16,117,0,
@@ -18592,235 +19451,612 @@ public class yyLSLTokens : YyLexer {
 775,1,71,449,1486,
 10,449,1,65,1487,
 5,0,0};
- new Tfactory(this,"MINUS",new TCreator(MINUS_factory));
- new Tfactory(this,"DEFAULT_STATE",new TCreator(DEFAULT_STATE_factory));
- new Tfactory(this,"INTEGER_CONSTANT",new TCreator(INTEGER_CONSTANT_factory));
- new Tfactory(this,"RETURN",new TCreator(RETURN_factory));
- new Tfactory(this,"OBJECT_REZ_EVENT",new TCreator(OBJECT_REZ_EVENT_factory));
- new Tfactory(this,"STRING_TYPE",new TCreator(STRING_TYPE_factory));
- new Tfactory(this,"EXCLAMATION",new TCreator(EXCLAMATION_factory));
- new Tfactory(this,"ELSE",new TCreator(ELSE_factory));
- new Tfactory(this,"INTEGER_TYPE",new TCreator(INTEGER_TYPE_factory));
- new Tfactory(this,"FOR",new TCreator(FOR_factory));
- new Tfactory(this,"LEFT_PAREN",new TCreator(LEFT_PAREN_factory));
- new Tfactory(this,"RIGHT_PAREN",new TCreator(RIGHT_PAREN_factory));
- new Tfactory(this,"HTTP_RESPONSE_EVENT",new TCreator(HTTP_RESPONSE_EVENT_factory));
- new Tfactory(this,"MOVING_END_EVENT",new TCreator(MOVING_END_EVENT_factory));
- new Tfactory(this,"CARET",new TCreator(CARET_factory));
- new Tfactory(this,"STAR",new TCreator(STAR_factory));
- new Tfactory(this,"PLUS_EQUALS",new TCreator(PLUS_EQUALS_factory));
- new Tfactory(this,"PERCENT",new TCreator(PERCENT_factory));
- new Tfactory(this,"SLASH",new TCreator(SLASH_factory));
- new Tfactory(this,"FLOAT_CONSTANT",new TCreator(FLOAT_CONSTANT_factory));
- new Tfactory(this,"TOUCH_EVENT",new TCreator(TOUCH_EVENT_factory));
- new Tfactory(this,"COLLISION_START_EVENT",new TCreator(COLLISION_START_EVENT_factory));
- new Tfactory(this,"JUMP",new TCreator(JUMP_factory));
- new Tfactory(this,"RIGHT_BRACKET",new TCreator(RIGHT_BRACKET_factory));
- new Tfactory(this,"LEFT_ANGLE",new TCreator(LEFT_ANGLE_factory));
- new Tfactory(this,"IF",new TCreator(IF_factory));
- new Tfactory(this,"LAND_COLLISION_EVENT",new TCreator(LAND_COLLISION_EVENT_factory));
- new Tfactory(this,"STATE",new TCreator(STATE_factory));
- new Tfactory(this,"RIGHT_SHIFT",new TCreator(RIGHT_SHIFT_factory));
- new Tfactory(this,"LIST_TYPE",new TCreator(LIST_TYPE_factory));
- new Tfactory(this,"HTTP_REQUEST_EVENT",new TCreator(HTTP_REQUEST_EVENT_factory));
- new Tfactory(this,"INCREMENT",new TCreator(INCREMENT_factory));
- new Tfactory(this,"AT",new TCreator(AT_factory));
- new Tfactory(this,"COLLISION_END_EVENT",new TCreator(COLLISION_END_EVENT_factory));
- new Tfactory(this,"SENSOR_EVENT",new TCreator(SENSOR_EVENT_factory));
- new Tfactory(this,"EQUALS_EQUALS",new TCreator(EQUALS_EQUALS_factory));
- new Tfactory(this,"DECREMENT",new TCreator(DECREMENT_factory));
- new Tfactory(this,"LESS_EQUALS",new TCreator(LESS_EQUALS_factory));
- new Tfactory(this,"FLOAT_TYPE",new TCreator(FLOAT_TYPE_factory));
- new Tfactory(this,"MOVING_START_EVENT",new TCreator(MOVING_START_EVENT_factory));
- new Tfactory(this,"RUN_TIME_PERMISSIONS_EVENT",new TCreator(RUN_TIME_PERMISSIONS_EVENT_factory));
- new Tfactory(this,"ON_REZ_EVENT",new TCreator(ON_REZ_EVENT_factory));
- new Tfactory(this,"NO_SENSOR_EVENT",new TCreator(NO_SENSOR_EVENT_factory));
- new Tfactory(this,"EXCLAMATION_EQUALS",new TCreator(EXCLAMATION_EQUALS_factory));
- new Tfactory(this,"MINUS_EQUALS",new TCreator(MINUS_EQUALS_factory));
- new Tfactory(this,"LISTEN_EVENT",new TCreator(LISTEN_EVENT_factory));
- new Tfactory(this,"PERCENT_EQUALS",new TCreator(PERCENT_EQUALS_factory));
- new Tfactory(this,"LEFT_BRACKET",new TCreator(LEFT_BRACKET_factory));
- new Tfactory(this,"HEX_INTEGER_CONSTANT",new TCreator(HEX_INTEGER_CONSTANT_factory));
- new Tfactory(this,"COMMA",new TCreator(COMMA_factory));
- new Tfactory(this,"PERIOD",new TCreator(PERIOD_factory));
- new Tfactory(this,"KEY_TYPE",new TCreator(KEY_TYPE_factory));
- new Tfactory(this,"SLASH_EQUALS",new TCreator(SLASH_EQUALS_factory));
- new Tfactory(this,"STATE_EXIT_EVENT",new TCreator(STATE_EXIT_EVENT_factory));
- new Tfactory(this,"COLLISION_EVENT",new TCreator(COLLISION_EVENT_factory));
- new Tfactory(this,"STRING_CONSTANT",new TCreator(STRING_CONSTANT_factory));
- new Tfactory(this,"WHILE",new TCreator(WHILE_factory));
- new Tfactory(this,"IDENT",new TCreator(IDENT_factory));
- new Tfactory(this,"DATASERVER_EVENT",new TCreator(DATASERVER_EVENT_factory));
- new Tfactory(this,"ROTATION_TYPE",new TCreator(ROTATION_TYPE_factory));
- new Tfactory(this,"AT_ROT_TARGET_EVENT",new TCreator(AT_ROT_TARGET_EVENT_factory));
- new Tfactory(this,"LEFT_BRACE",new TCreator(LEFT_BRACE_factory));
- new Tfactory(this,"DO",new TCreator(DO_factory));
- new Tfactory(this,"LEFT_SHIFT",new TCreator(LEFT_SHIFT_factory));
- new Tfactory(this,"REMOTE_DATA_EVENT",new TCreator(REMOTE_DATA_EVENT_factory));
- new Tfactory(this,"EMAIL_EVENT",new TCreator(EMAIL_EVENT_factory));
- new Tfactory(this,"NOT_AT_ROT_TARGET_EVENT",new TCreator(NOT_AT_ROT_TARGET_EVENT_factory));
- new Tfactory(this,"TILDE",new TCreator(TILDE_factory));
- new Tfactory(this,"STROKE",new TCreator(STROKE_factory));
- new Tfactory(this,"LAND_COLLISION_END_EVENT",new TCreator(LAND_COLLISION_END_EVENT_factory));
- new Tfactory(this,"TIMER_EVENT",new TCreator(TIMER_EVENT_factory));
- new Tfactory(this,"MONEY_EVENT",new TCreator(MONEY_EVENT_factory));
- new Tfactory(this,"RIGHT_ANGLE",new TCreator(RIGHT_ANGLE_factory));
- new Tfactory(this,"AT_TARGET_EVENT",new TCreator(AT_TARGET_EVENT_factory));
- new Tfactory(this,"AMP",new TCreator(AMP_factory));
- new Tfactory(this,"SEMICOLON",new TCreator(SEMICOLON_factory));
- new Tfactory(this,"AMP_AMP",new TCreator(AMP_AMP_factory));
- new Tfactory(this,"CHANGED_EVENT",new TCreator(CHANGED_EVENT_factory));
- new Tfactory(this,"LINK_MESSAGE_EVENT",new TCreator(LINK_MESSAGE_EVENT_factory));
- new Tfactory(this,"TOUCH_END_EVENT",new TCreator(TOUCH_END_EVENT_factory));
- new Tfactory(this,"EQUALS",new TCreator(EQUALS_factory));
- new Tfactory(this,"NOT_AT_TARGET_EVENT",new TCreator(NOT_AT_TARGET_EVENT_factory));
- new Tfactory(this,"STROKE_STROKE",new TCreator(STROKE_STROKE_factory));
- new Tfactory(this,"GREATER_EQUALS",new TCreator(GREATER_EQUALS_factory));
- new Tfactory(this,"TOUCH_START_EVENT",new TCreator(TOUCH_START_EVENT_factory));
- new Tfactory(this,"ATTACH_EVENT",new TCreator(ATTACH_EVENT_factory));
- new Tfactory(this,"VECTOR_TYPE",new TCreator(VECTOR_TYPE_factory));
- new Tfactory(this,"RIGHT_BRACE",new TCreator(RIGHT_BRACE_factory));
- new Tfactory(this,"STATE_ENTRY_EVENT",new TCreator(STATE_ENTRY_EVENT_factory));
- new Tfactory(this,"PLUS",new TCreator(PLUS_factory));
- new Tfactory(this,"STAR_EQUALS",new TCreator(STAR_EQUALS_factory));
- new Tfactory(this,"LAND_COLLISION_START_EVENT",new TCreator(LAND_COLLISION_START_EVENT_factory));
- new Tfactory(this,"CONTROL_EVENT",new TCreator(CONTROL_EVENT_factory));
-}
-public static object MINUS_factory(Lexer yyl) { return new MINUS(yyl);}
-public static object DEFAULT_STATE_factory(Lexer yyl) { return new DEFAULT_STATE(yyl);}
-public static object INTEGER_CONSTANT_factory(Lexer yyl) { return new INTEGER_CONSTANT(yyl);}
-public static object RETURN_factory(Lexer yyl) { return new RETURN(yyl);}
-public static object OBJECT_REZ_EVENT_factory(Lexer yyl) { return new OBJECT_REZ_EVENT(yyl);}
-public static object STRING_TYPE_factory(Lexer yyl) { return new STRING_TYPE(yyl);}
-public static object EXCLAMATION_factory(Lexer yyl) { return new EXCLAMATION(yyl);}
-public static object ELSE_factory(Lexer yyl) { return new ELSE(yyl);}
-public static object INTEGER_TYPE_factory(Lexer yyl) { return new INTEGER_TYPE(yyl);}
-public static object FOR_factory(Lexer yyl) { return new FOR(yyl);}
-public static object LEFT_PAREN_factory(Lexer yyl) { return new LEFT_PAREN(yyl);}
-public static object RIGHT_PAREN_factory(Lexer yyl) { return new RIGHT_PAREN(yyl);}
-public static object HTTP_RESPONSE_EVENT_factory(Lexer yyl) { return new HTTP_RESPONSE_EVENT(yyl);}
-public static object MOVING_END_EVENT_factory(Lexer yyl) { return new MOVING_END_EVENT(yyl);}
-public static object CARET_factory(Lexer yyl) { return new CARET(yyl);}
-public static object STAR_factory(Lexer yyl) { return new STAR(yyl);}
-public static object PLUS_EQUALS_factory(Lexer yyl) { return new PLUS_EQUALS(yyl);}
-public static object PERCENT_factory(Lexer yyl) { return new PERCENT(yyl);}
-public static object SLASH_factory(Lexer yyl) { return new SLASH(yyl);}
-public static object FLOAT_CONSTANT_factory(Lexer yyl) { return new FLOAT_CONSTANT(yyl);}
-public static object TOUCH_EVENT_factory(Lexer yyl) { return new TOUCH_EVENT(yyl);}
-public static object COLLISION_START_EVENT_factory(Lexer yyl) { return new COLLISION_START_EVENT(yyl);}
-public static object JUMP_factory(Lexer yyl) { return new JUMP(yyl);}
-public static object RIGHT_BRACKET_factory(Lexer yyl) { return new RIGHT_BRACKET(yyl);}
-public static object LEFT_ANGLE_factory(Lexer yyl) { return new LEFT_ANGLE(yyl);}
-public static object IF_factory(Lexer yyl) { return new IF(yyl);}
-public static object LAND_COLLISION_EVENT_factory(Lexer yyl) { return new LAND_COLLISION_EVENT(yyl);}
-public static object STATE_factory(Lexer yyl) { return new STATE(yyl);}
-public static object RIGHT_SHIFT_factory(Lexer yyl) { return new RIGHT_SHIFT(yyl);}
-public static object LIST_TYPE_factory(Lexer yyl) { return new LIST_TYPE(yyl);}
-public static object HTTP_REQUEST_EVENT_factory(Lexer yyl) { return new HTTP_REQUEST_EVENT(yyl);}
-public static object INCREMENT_factory(Lexer yyl) { return new INCREMENT(yyl);}
-public static object AT_factory(Lexer yyl) { return new AT(yyl);}
-public static object COLLISION_END_EVENT_factory(Lexer yyl) { return new COLLISION_END_EVENT(yyl);}
-public static object SENSOR_EVENT_factory(Lexer yyl) { return new SENSOR_EVENT(yyl);}
-public static object EQUALS_EQUALS_factory(Lexer yyl) { return new EQUALS_EQUALS(yyl);}
-public static object DECREMENT_factory(Lexer yyl) { return new DECREMENT(yyl);}
-public static object LESS_EQUALS_factory(Lexer yyl) { return new LESS_EQUALS(yyl);}
-public static object FLOAT_TYPE_factory(Lexer yyl) { return new FLOAT_TYPE(yyl);}
-public static object MOVING_START_EVENT_factory(Lexer yyl) { return new MOVING_START_EVENT(yyl);}
-public static object RUN_TIME_PERMISSIONS_EVENT_factory(Lexer yyl) { return new RUN_TIME_PERMISSIONS_EVENT(yyl);}
-public static object ON_REZ_EVENT_factory(Lexer yyl) { return new ON_REZ_EVENT(yyl);}
-public static object NO_SENSOR_EVENT_factory(Lexer yyl) { return new NO_SENSOR_EVENT(yyl);}
-public static object EXCLAMATION_EQUALS_factory(Lexer yyl) { return new EXCLAMATION_EQUALS(yyl);}
-public static object MINUS_EQUALS_factory(Lexer yyl) { return new MINUS_EQUALS(yyl);}
-public static object LISTEN_EVENT_factory(Lexer yyl) { return new LISTEN_EVENT(yyl);}
-public static object PERCENT_EQUALS_factory(Lexer yyl) { return new PERCENT_EQUALS(yyl);}
-public static object LEFT_BRACKET_factory(Lexer yyl) { return new LEFT_BRACKET(yyl);}
-public static object HEX_INTEGER_CONSTANT_factory(Lexer yyl) { return new HEX_INTEGER_CONSTANT(yyl);}
-public static object COMMA_factory(Lexer yyl) { return new COMMA(yyl);}
-public static object PERIOD_factory(Lexer yyl) { return new PERIOD(yyl);}
-public static object KEY_TYPE_factory(Lexer yyl) { return new KEY_TYPE(yyl);}
-public static object SLASH_EQUALS_factory(Lexer yyl) { return new SLASH_EQUALS(yyl);}
-public static object STATE_EXIT_EVENT_factory(Lexer yyl) { return new STATE_EXIT_EVENT(yyl);}
-public static object COLLISION_EVENT_factory(Lexer yyl) { return new COLLISION_EVENT(yyl);}
-public static object STRING_CONSTANT_factory(Lexer yyl) { return new STRING_CONSTANT(yyl);}
-public static object WHILE_factory(Lexer yyl) { return new WHILE(yyl);}
-public static object IDENT_factory(Lexer yyl) { return new IDENT(yyl);}
-public static object DATASERVER_EVENT_factory(Lexer yyl) { return new DATASERVER_EVENT(yyl);}
-public static object ROTATION_TYPE_factory(Lexer yyl) { return new ROTATION_TYPE(yyl);}
-public static object AT_ROT_TARGET_EVENT_factory(Lexer yyl) { return new AT_ROT_TARGET_EVENT(yyl);}
-public static object LEFT_BRACE_factory(Lexer yyl) { return new LEFT_BRACE(yyl);}
-public static object DO_factory(Lexer yyl) { return new DO(yyl);}
-public static object LEFT_SHIFT_factory(Lexer yyl) { return new LEFT_SHIFT(yyl);}
-public static object REMOTE_DATA_EVENT_factory(Lexer yyl) { return new REMOTE_DATA_EVENT(yyl);}
-public static object EMAIL_EVENT_factory(Lexer yyl) { return new EMAIL_EVENT(yyl);}
-public static object NOT_AT_ROT_TARGET_EVENT_factory(Lexer yyl) { return new NOT_AT_ROT_TARGET_EVENT(yyl);}
-public static object TILDE_factory(Lexer yyl) { return new TILDE(yyl);}
-public static object STROKE_factory(Lexer yyl) { return new STROKE(yyl);}
-public static object LAND_COLLISION_END_EVENT_factory(Lexer yyl) { return new LAND_COLLISION_END_EVENT(yyl);}
-public static object TIMER_EVENT_factory(Lexer yyl) { return new TIMER_EVENT(yyl);}
-public static object MONEY_EVENT_factory(Lexer yyl) { return new MONEY_EVENT(yyl);}
-public static object RIGHT_ANGLE_factory(Lexer yyl) { return new RIGHT_ANGLE(yyl);}
-public static object AT_TARGET_EVENT_factory(Lexer yyl) { return new AT_TARGET_EVENT(yyl);}
-public static object AMP_factory(Lexer yyl) { return new AMP(yyl);}
-public static object SEMICOLON_factory(Lexer yyl) { return new SEMICOLON(yyl);}
-public static object AMP_AMP_factory(Lexer yyl) { return new AMP_AMP(yyl);}
-public static object CHANGED_EVENT_factory(Lexer yyl) { return new CHANGED_EVENT(yyl);}
-public static object LINK_MESSAGE_EVENT_factory(Lexer yyl) { return new LINK_MESSAGE_EVENT(yyl);}
-public static object TOUCH_END_EVENT_factory(Lexer yyl) { return new TOUCH_END_EVENT(yyl);}
-public static object EQUALS_factory(Lexer yyl) { return new EQUALS(yyl);}
-public static object NOT_AT_TARGET_EVENT_factory(Lexer yyl) { return new NOT_AT_TARGET_EVENT(yyl);}
-public static object STROKE_STROKE_factory(Lexer yyl) { return new STROKE_STROKE(yyl);}
-public static object GREATER_EQUALS_factory(Lexer yyl) { return new GREATER_EQUALS(yyl);}
-public static object TOUCH_START_EVENT_factory(Lexer yyl) { return new TOUCH_START_EVENT(yyl);}
-public static object ATTACH_EVENT_factory(Lexer yyl) { return new ATTACH_EVENT(yyl);}
-public static object VECTOR_TYPE_factory(Lexer yyl) { return new VECTOR_TYPE(yyl);}
-public static object RIGHT_BRACE_factory(Lexer yyl) { return new RIGHT_BRACE(yyl);}
-public static object STATE_ENTRY_EVENT_factory(Lexer yyl) { return new STATE_ENTRY_EVENT(yyl);}
-public static object PLUS_factory(Lexer yyl) { return new PLUS(yyl);}
-public static object STAR_EQUALS_factory(Lexer yyl) { return new STAR_EQUALS(yyl);}
-public static object LAND_COLLISION_START_EVENT_factory(Lexer yyl) { return new LAND_COLLISION_START_EVENT(yyl);}
-public static object CONTROL_EVENT_factory(Lexer yyl) { return new CONTROL_EVENT(yyl);}
-public override TOKEN OldAction(Lexer yym,ref string yytext,int action, ref bool reject) {
-  switch(action) {
-  case -1: break;
-   case 946: { ((LSLTokens)yym).str += yytext; }
-      break;
-   case 1010: { yym.yy_begin("YYINITIAL"); ((LSLTokens)yym).yytext = ((LSLTokens)yym).str; ((LSLTokens)yym).str = String.Empty; return new STRING_CONSTANT(yym); }
-      break;
-   case 1015: { yym.yy_begin("COMMENT"); }
-      break;
-   case 1027: { yym.yy_begin("YYINITIAL"); }
-      break;
-   case 1041: ;
-      break;
-   case 1045: ;
-      break;
-   case 1054: ;   
-      break;
-   case 1005: { ((LSLTokens)yym).str += '\\'; }
-      break;
-   case 1050: ;   
-      break;
-   case 941: { yym.yy_begin("STRING"); ((LSLTokens)yym).str = "";}
-      break;
-   case 957: { ((LSLTokens)yym).str += "\\n"; }
-      break;
-   case 969: { ((LSLTokens)yym).str += "    "; }
-      break;
-   case 981: { ((LSLTokens)yym).str += "\\\""; }
-      break;
-   case 952: { ((LSLTokens)yym).str += "\\n"; }
-      break;
-   case 993: { ((LSLTokens)yym).str += "\\\\"; }
-      break;
-  }
-  return null;
-}}
-public class LSLTokens:Lexer {
-public LSLTokens():base(new yyLSLTokens(new ErrorHandler(false))) {}
-public LSLTokens(ErrorHandler eh):base(new yyLSLTokens(eh)) {}
-public LSLTokens(YyLexer tks):base(tks){}
+            new Tfactory(this, "MINUS", new TCreator(MINUS_factory));
+            new Tfactory(this, "DEFAULT_STATE", new TCreator(DEFAULT_STATE_factory));
+            new Tfactory(this, "INTEGER_CONSTANT", new TCreator(INTEGER_CONSTANT_factory));
+            new Tfactory(this, "RETURN", new TCreator(RETURN_factory));
+            new Tfactory(this, "OBJECT_REZ_EVENT", new TCreator(OBJECT_REZ_EVENT_factory));
+            new Tfactory(this, "STRING_TYPE", new TCreator(STRING_TYPE_factory));
+            new Tfactory(this, "EXCLAMATION", new TCreator(EXCLAMATION_factory));
+            new Tfactory(this, "ELSE", new TCreator(ELSE_factory));
+            new Tfactory(this, "INTEGER_TYPE", new TCreator(INTEGER_TYPE_factory));
+            new Tfactory(this, "FOR", new TCreator(FOR_factory));
+            new Tfactory(this, "LEFT_PAREN", new TCreator(LEFT_PAREN_factory));
+            new Tfactory(this, "RIGHT_PAREN", new TCreator(RIGHT_PAREN_factory));
+            new Tfactory(this, "HTTP_RESPONSE_EVENT", new TCreator(HTTP_RESPONSE_EVENT_factory));
+            new Tfactory(this, "MOVING_END_EVENT", new TCreator(MOVING_END_EVENT_factory));
+            new Tfactory(this, "CARET", new TCreator(CARET_factory));
+            new Tfactory(this, "STAR", new TCreator(STAR_factory));
+            new Tfactory(this, "PLUS_EQUALS", new TCreator(PLUS_EQUALS_factory));
+            new Tfactory(this, "PERCENT", new TCreator(PERCENT_factory));
+            new Tfactory(this, "SLASH", new TCreator(SLASH_factory));
+            new Tfactory(this, "FLOAT_CONSTANT", new TCreator(FLOAT_CONSTANT_factory));
+            new Tfactory(this, "TOUCH_EVENT", new TCreator(TOUCH_EVENT_factory));
+            new Tfactory(this, "COLLISION_START_EVENT", new TCreator(COLLISION_START_EVENT_factory));
+            new Tfactory(this, "JUMP", new TCreator(JUMP_factory));
+            new Tfactory(this, "RIGHT_BRACKET", new TCreator(RIGHT_BRACKET_factory));
+            new Tfactory(this, "LEFT_ANGLE", new TCreator(LEFT_ANGLE_factory));
+            new Tfactory(this, "IF", new TCreator(IF_factory));
+            new Tfactory(this, "LAND_COLLISION_EVENT", new TCreator(LAND_COLLISION_EVENT_factory));
+            new Tfactory(this, "STATE", new TCreator(STATE_factory));
+            new Tfactory(this, "RIGHT_SHIFT", new TCreator(RIGHT_SHIFT_factory));
+            new Tfactory(this, "LIST_TYPE", new TCreator(LIST_TYPE_factory));
+            new Tfactory(this, "HTTP_REQUEST_EVENT", new TCreator(HTTP_REQUEST_EVENT_factory));
+            new Tfactory(this, "INCREMENT", new TCreator(INCREMENT_factory));
+            new Tfactory(this, "AT", new TCreator(AT_factory));
+            new Tfactory(this, "COLLISION_END_EVENT", new TCreator(COLLISION_END_EVENT_factory));
+            new Tfactory(this, "SENSOR_EVENT", new TCreator(SENSOR_EVENT_factory));
+            new Tfactory(this, "EQUALS_EQUALS", new TCreator(EQUALS_EQUALS_factory));
+            new Tfactory(this, "DECREMENT", new TCreator(DECREMENT_factory));
+            new Tfactory(this, "LESS_EQUALS", new TCreator(LESS_EQUALS_factory));
+            new Tfactory(this, "FLOAT_TYPE", new TCreator(FLOAT_TYPE_factory));
+            new Tfactory(this, "MOVING_START_EVENT", new TCreator(MOVING_START_EVENT_factory));
+            new Tfactory(this, "RUN_TIME_PERMISSIONS_EVENT", new TCreator(RUN_TIME_PERMISSIONS_EVENT_factory));
+            new Tfactory(this, "ON_REZ_EVENT", new TCreator(ON_REZ_EVENT_factory));
+            new Tfactory(this, "NO_SENSOR_EVENT", new TCreator(NO_SENSOR_EVENT_factory));
+            new Tfactory(this, "EXCLAMATION_EQUALS", new TCreator(EXCLAMATION_EQUALS_factory));
+            new Tfactory(this, "MINUS_EQUALS", new TCreator(MINUS_EQUALS_factory));
+            new Tfactory(this, "LISTEN_EVENT", new TCreator(LISTEN_EVENT_factory));
+            new Tfactory(this, "PERCENT_EQUALS", new TCreator(PERCENT_EQUALS_factory));
+            new Tfactory(this, "LEFT_BRACKET", new TCreator(LEFT_BRACKET_factory));
+            new Tfactory(this, "HEX_INTEGER_CONSTANT", new TCreator(HEX_INTEGER_CONSTANT_factory));
+            new Tfactory(this, "COMMA", new TCreator(COMMA_factory));
+            new Tfactory(this, "PERIOD", new TCreator(PERIOD_factory));
+            new Tfactory(this, "KEY_TYPE", new TCreator(KEY_TYPE_factory));
+            new Tfactory(this, "SLASH_EQUALS", new TCreator(SLASH_EQUALS_factory));
+            new Tfactory(this, "STATE_EXIT_EVENT", new TCreator(STATE_EXIT_EVENT_factory));
+            new Tfactory(this, "COLLISION_EVENT", new TCreator(COLLISION_EVENT_factory));
+            new Tfactory(this, "STRING_CONSTANT", new TCreator(STRING_CONSTANT_factory));
+            new Tfactory(this, "WHILE", new TCreator(WHILE_factory));
+            new Tfactory(this, "IDENT", new TCreator(IDENT_factory));
+            new Tfactory(this, "DATASERVER_EVENT", new TCreator(DATASERVER_EVENT_factory));
+            new Tfactory(this, "ROTATION_TYPE", new TCreator(ROTATION_TYPE_factory));
+            new Tfactory(this, "AT_ROT_TARGET_EVENT", new TCreator(AT_ROT_TARGET_EVENT_factory));
+            new Tfactory(this, "LEFT_BRACE", new TCreator(LEFT_BRACE_factory));
+            new Tfactory(this, "DO", new TCreator(DO_factory));
+            new Tfactory(this, "LEFT_SHIFT", new TCreator(LEFT_SHIFT_factory));
+            new Tfactory(this, "REMOTE_DATA_EVENT", new TCreator(REMOTE_DATA_EVENT_factory));
+            new Tfactory(this, "EMAIL_EVENT", new TCreator(EMAIL_EVENT_factory));
+            new Tfactory(this, "NOT_AT_ROT_TARGET_EVENT", new TCreator(NOT_AT_ROT_TARGET_EVENT_factory));
+            new Tfactory(this, "TILDE", new TCreator(TILDE_factory));
+            new Tfactory(this, "STROKE", new TCreator(STROKE_factory));
+            new Tfactory(this, "LAND_COLLISION_END_EVENT", new TCreator(LAND_COLLISION_END_EVENT_factory));
+            new Tfactory(this, "TIMER_EVENT", new TCreator(TIMER_EVENT_factory));
+            new Tfactory(this, "MONEY_EVENT", new TCreator(MONEY_EVENT_factory));
+            new Tfactory(this, "RIGHT_ANGLE", new TCreator(RIGHT_ANGLE_factory));
+            new Tfactory(this, "AT_TARGET_EVENT", new TCreator(AT_TARGET_EVENT_factory));
+            new Tfactory(this, "AMP", new TCreator(AMP_factory));
+            new Tfactory(this, "SEMICOLON", new TCreator(SEMICOLON_factory));
+            new Tfactory(this, "AMP_AMP", new TCreator(AMP_AMP_factory));
+            new Tfactory(this, "CHANGED_EVENT", new TCreator(CHANGED_EVENT_factory));
+            new Tfactory(this, "LINK_MESSAGE_EVENT", new TCreator(LINK_MESSAGE_EVENT_factory));
+            new Tfactory(this, "TOUCH_END_EVENT", new TCreator(TOUCH_END_EVENT_factory));
+            new Tfactory(this, "EQUALS", new TCreator(EQUALS_factory));
+            new Tfactory(this, "NOT_AT_TARGET_EVENT", new TCreator(NOT_AT_TARGET_EVENT_factory));
+            new Tfactory(this, "STROKE_STROKE", new TCreator(STROKE_STROKE_factory));
+            new Tfactory(this, "GREATER_EQUALS", new TCreator(GREATER_EQUALS_factory));
+            new Tfactory(this, "TOUCH_START_EVENT", new TCreator(TOUCH_START_EVENT_factory));
+            new Tfactory(this, "ATTACH_EVENT", new TCreator(ATTACH_EVENT_factory));
+            new Tfactory(this, "VECTOR_TYPE", new TCreator(VECTOR_TYPE_factory));
+            new Tfactory(this, "RIGHT_BRACE", new TCreator(RIGHT_BRACE_factory));
+            new Tfactory(this, "STATE_ENTRY_EVENT", new TCreator(STATE_ENTRY_EVENT_factory));
+            new Tfactory(this, "PLUS", new TCreator(PLUS_factory));
+            new Tfactory(this, "STAR_EQUALS", new TCreator(STAR_EQUALS_factory));
+            new Tfactory(this, "LAND_COLLISION_START_EVENT", new TCreator(LAND_COLLISION_START_EVENT_factory));
+            new Tfactory(this, "CONTROL_EVENT", new TCreator(CONTROL_EVENT_factory));
+        }
 
-    public string str;
+        public static object AMP_AMP_factory(Lexer yyl)
+        {
+            return new AMP_AMP(yyl);
+        }
 
- }
+        public static object AMP_factory(Lexer yyl)
+        {
+            return new AMP(yyl);
+        }
+
+        public static object AT_factory(Lexer yyl)
+        {
+            return new AT(yyl);
+        }
+
+        public static object AT_ROT_TARGET_EVENT_factory(Lexer yyl)
+        {
+            return new AT_ROT_TARGET_EVENT(yyl);
+        }
+
+        public static object AT_TARGET_EVENT_factory(Lexer yyl)
+        {
+            return new AT_TARGET_EVENT(yyl);
+        }
+
+        public static object ATTACH_EVENT_factory(Lexer yyl)
+        {
+            return new ATTACH_EVENT(yyl);
+        }
+
+        public static object CARET_factory(Lexer yyl)
+        {
+            return new CARET(yyl);
+        }
+
+        public static object CHANGED_EVENT_factory(Lexer yyl)
+        {
+            return new CHANGED_EVENT(yyl);
+        }
+
+        public static object COLLISION_END_EVENT_factory(Lexer yyl)
+        {
+            return new COLLISION_END_EVENT(yyl);
+        }
+
+        public static object COLLISION_EVENT_factory(Lexer yyl)
+        {
+            return new COLLISION_EVENT(yyl);
+        }
+
+        public static object COLLISION_START_EVENT_factory(Lexer yyl)
+        {
+            return new COLLISION_START_EVENT(yyl);
+        }
+
+        public static object COMMA_factory(Lexer yyl)
+        {
+            return new COMMA(yyl);
+        }
+
+        public static object CONTROL_EVENT_factory(Lexer yyl)
+        {
+            return new CONTROL_EVENT(yyl);
+        }
+
+        public static object DATASERVER_EVENT_factory(Lexer yyl)
+        {
+            return new DATASERVER_EVENT(yyl);
+        }
+
+        public static object DECREMENT_factory(Lexer yyl)
+        {
+            return new DECREMENT(yyl);
+        }
+
+        public static object DEFAULT_STATE_factory(Lexer yyl)
+        {
+            return new DEFAULT_STATE(yyl);
+        }
+
+        public static object DO_factory(Lexer yyl)
+        {
+            return new DO(yyl);
+        }
+
+        public static object ELSE_factory(Lexer yyl)
+        {
+            return new ELSE(yyl);
+        }
+
+        public static object EMAIL_EVENT_factory(Lexer yyl)
+        {
+            return new EMAIL_EVENT(yyl);
+        }
+
+        public static object EQUALS_EQUALS_factory(Lexer yyl)
+        {
+            return new EQUALS_EQUALS(yyl);
+        }
+
+        public static object EQUALS_factory(Lexer yyl)
+        {
+            return new EQUALS(yyl);
+        }
+
+        public static object EXCLAMATION_EQUALS_factory(Lexer yyl)
+        {
+            return new EXCLAMATION_EQUALS(yyl);
+        }
+
+        public static object EXCLAMATION_factory(Lexer yyl)
+        {
+            return new EXCLAMATION(yyl);
+        }
+
+        public static object FLOAT_CONSTANT_factory(Lexer yyl)
+        {
+            return new FLOAT_CONSTANT(yyl);
+        }
+
+        public static object FLOAT_TYPE_factory(Lexer yyl)
+        {
+            return new FLOAT_TYPE(yyl);
+        }
+
+        public static object FOR_factory(Lexer yyl)
+        {
+            return new FOR(yyl);
+        }
+
+        public static object GREATER_EQUALS_factory(Lexer yyl)
+        {
+            return new GREATER_EQUALS(yyl);
+        }
+
+        public static object HEX_INTEGER_CONSTANT_factory(Lexer yyl)
+        {
+            return new HEX_INTEGER_CONSTANT(yyl);
+        }
+
+        public static object HTTP_REQUEST_EVENT_factory(Lexer yyl)
+        {
+            return new HTTP_REQUEST_EVENT(yyl);
+        }
+
+        public static object HTTP_RESPONSE_EVENT_factory(Lexer yyl)
+        {
+            return new HTTP_RESPONSE_EVENT(yyl);
+        }
+
+        public static object IDENT_factory(Lexer yyl)
+        {
+            return new IDENT(yyl);
+        }
+
+        public static object IF_factory(Lexer yyl)
+        {
+            return new IF(yyl);
+        }
+
+        public static object INCREMENT_factory(Lexer yyl)
+        {
+            return new INCREMENT(yyl);
+        }
+
+        public static object INTEGER_CONSTANT_factory(Lexer yyl)
+        {
+            return new INTEGER_CONSTANT(yyl);
+        }
+
+        public static object INTEGER_TYPE_factory(Lexer yyl)
+        {
+            return new INTEGER_TYPE(yyl);
+        }
+
+        public static object JUMP_factory(Lexer yyl)
+        {
+            return new JUMP(yyl);
+        }
+
+        public static object KEY_TYPE_factory(Lexer yyl)
+        {
+            return new KEY_TYPE(yyl);
+        }
+
+        public static object LAND_COLLISION_END_EVENT_factory(Lexer yyl)
+        {
+            return new LAND_COLLISION_END_EVENT(yyl);
+        }
+
+        public static object LAND_COLLISION_EVENT_factory(Lexer yyl)
+        {
+            return new LAND_COLLISION_EVENT(yyl);
+        }
+
+        public static object LAND_COLLISION_START_EVENT_factory(Lexer yyl)
+        {
+            return new LAND_COLLISION_START_EVENT(yyl);
+        }
+
+        public static object LEFT_ANGLE_factory(Lexer yyl)
+        {
+            return new LEFT_ANGLE(yyl);
+        }
+
+        public static object LEFT_BRACE_factory(Lexer yyl)
+        {
+            return new LEFT_BRACE(yyl);
+        }
+
+        public static object LEFT_BRACKET_factory(Lexer yyl)
+        {
+            return new LEFT_BRACKET(yyl);
+        }
+
+        public static object LEFT_PAREN_factory(Lexer yyl)
+        {
+            return new LEFT_PAREN(yyl);
+        }
+
+        public static object LEFT_SHIFT_factory(Lexer yyl)
+        {
+            return new LEFT_SHIFT(yyl);
+        }
+
+        public static object LESS_EQUALS_factory(Lexer yyl)
+        {
+            return new LESS_EQUALS(yyl);
+        }
+
+        public static object LINK_MESSAGE_EVENT_factory(Lexer yyl)
+        {
+            return new LINK_MESSAGE_EVENT(yyl);
+        }
+
+        public static object LIST_TYPE_factory(Lexer yyl)
+        {
+            return new LIST_TYPE(yyl);
+        }
+
+        public static object LISTEN_EVENT_factory(Lexer yyl)
+        {
+            return new LISTEN_EVENT(yyl);
+        }
+
+        public static object MINUS_EQUALS_factory(Lexer yyl)
+        {
+            return new MINUS_EQUALS(yyl);
+        }
+
+        public static object MINUS_factory(Lexer yyl)
+        {
+            return new MINUS(yyl);
+        }
+        public static object MONEY_EVENT_factory(Lexer yyl)
+        {
+            return new MONEY_EVENT(yyl);
+        }
+
+        public static object MOVING_END_EVENT_factory(Lexer yyl)
+        {
+            return new MOVING_END_EVENT(yyl);
+        }
+
+        public static object MOVING_START_EVENT_factory(Lexer yyl)
+        {
+            return new MOVING_START_EVENT(yyl);
+        }
+
+        public static object NO_SENSOR_EVENT_factory(Lexer yyl)
+        {
+            return new NO_SENSOR_EVENT(yyl);
+        }
+
+        public static object NOT_AT_ROT_TARGET_EVENT_factory(Lexer yyl)
+        {
+            return new NOT_AT_ROT_TARGET_EVENT(yyl);
+        }
+
+        public static object NOT_AT_TARGET_EVENT_factory(Lexer yyl)
+        {
+            return new NOT_AT_TARGET_EVENT(yyl);
+        }
+
+        public static object OBJECT_REZ_EVENT_factory(Lexer yyl)
+        {
+            return new OBJECT_REZ_EVENT(yyl);
+        }
+
+        public static object ON_REZ_EVENT_factory(Lexer yyl)
+        {
+            return new ON_REZ_EVENT(yyl);
+        }
+
+        public static object PERCENT_EQUALS_factory(Lexer yyl)
+        {
+            return new PERCENT_EQUALS(yyl);
+        }
+
+        public static object PERCENT_factory(Lexer yyl)
+        {
+            return new PERCENT(yyl);
+        }
+
+        public static object PERIOD_factory(Lexer yyl)
+        {
+            return new PERIOD(yyl);
+        }
+
+        public static object PLUS_EQUALS_factory(Lexer yyl)
+        {
+            return new PLUS_EQUALS(yyl);
+        }
+
+        public static object PLUS_factory(Lexer yyl)
+        {
+            return new PLUS(yyl);
+        }
+
+        public static object REMOTE_DATA_EVENT_factory(Lexer yyl)
+        {
+            return new REMOTE_DATA_EVENT(yyl);
+        }
+
+        public static object RETURN_factory(Lexer yyl)
+        {
+            return new RETURN(yyl);
+        }
+        public static object RIGHT_ANGLE_factory(Lexer yyl)
+        {
+            return new RIGHT_ANGLE(yyl);
+        }
+
+        public static object RIGHT_BRACE_factory(Lexer yyl)
+        {
+            return new RIGHT_BRACE(yyl);
+        }
+
+        public static object RIGHT_BRACKET_factory(Lexer yyl)
+        {
+            return new RIGHT_BRACKET(yyl);
+        }
+
+        public static object RIGHT_PAREN_factory(Lexer yyl)
+        {
+            return new RIGHT_PAREN(yyl);
+        }
+
+        public static object RIGHT_SHIFT_factory(Lexer yyl)
+        {
+            return new RIGHT_SHIFT(yyl);
+        }
+
+        public static object ROTATION_TYPE_factory(Lexer yyl)
+        {
+            return new ROTATION_TYPE(yyl);
+        }
+
+        public static object RUN_TIME_PERMISSIONS_EVENT_factory(Lexer yyl)
+        {
+            return new RUN_TIME_PERMISSIONS_EVENT(yyl);
+        }
+
+        public static object SEMICOLON_factory(Lexer yyl)
+        {
+            return new SEMICOLON(yyl);
+        }
+
+        public static object SENSOR_EVENT_factory(Lexer yyl)
+        {
+            return new SENSOR_EVENT(yyl);
+        }
+
+        public static object SLASH_EQUALS_factory(Lexer yyl)
+        {
+            return new SLASH_EQUALS(yyl);
+        }
+
+        public static object SLASH_factory(Lexer yyl)
+        {
+            return new SLASH(yyl);
+        }
+
+        public static object STAR_EQUALS_factory(Lexer yyl)
+        {
+            return new STAR_EQUALS(yyl);
+        }
+
+        public static object STAR_factory(Lexer yyl)
+        {
+            return new STAR(yyl);
+        }
+
+        public static object STATE_ENTRY_EVENT_factory(Lexer yyl)
+        {
+            return new STATE_ENTRY_EVENT(yyl);
+        }
+
+        public static object STATE_EXIT_EVENT_factory(Lexer yyl)
+        {
+            return new STATE_EXIT_EVENT(yyl);
+        }
+
+        public static object STATE_factory(Lexer yyl)
+        {
+            return new STATE(yyl);
+        }
+
+        public static object STRING_CONSTANT_factory(Lexer yyl)
+        {
+            return new STRING_CONSTANT(yyl);
+        }
+
+        public static object STRING_TYPE_factory(Lexer yyl)
+        {
+            return new STRING_TYPE(yyl);
+        }
+        public static object STROKE_factory(Lexer yyl)
+        {
+            return new STROKE(yyl);
+        }
+
+        public static object STROKE_STROKE_factory(Lexer yyl)
+        {
+            return new STROKE_STROKE(yyl);
+        }
+
+        public static object TILDE_factory(Lexer yyl)
+        {
+            return new TILDE(yyl);
+        }
+
+        public static object TIMER_EVENT_factory(Lexer yyl)
+        {
+            return new TIMER_EVENT(yyl);
+        }
+
+        public static object TOUCH_END_EVENT_factory(Lexer yyl)
+        {
+            return new TOUCH_END_EVENT(yyl);
+        }
+
+        public static object TOUCH_EVENT_factory(Lexer yyl)
+        {
+            return new TOUCH_EVENT(yyl);
+        }
+        public static object TOUCH_START_EVENT_factory(Lexer yyl)
+        {
+            return new TOUCH_START_EVENT(yyl);
+        }
+
+        public static object VECTOR_TYPE_factory(Lexer yyl)
+        {
+            return new VECTOR_TYPE(yyl);
+        }
+
+        public static object WHILE_factory(Lexer yyl)
+        {
+            return new WHILE(yyl);
+        }
+        public override TOKEN OldAction(Lexer yym, ref string yytext, int action, ref bool reject)
+        {
+            switch (action)
+            {
+                case -1: break;
+                case 946: { ((LSLTokens)yym).str += yytext; }
+                    break;
+
+                case 1010: { yym.yy_begin("YYINITIAL"); ((LSLTokens)yym).yytext = ((LSLTokens)yym).str; ((LSLTokens)yym).str = String.Empty; return new STRING_CONSTANT(yym); }
+                    break;
+
+                case 1015: { yym.yy_begin("COMMENT"); }
+                    break;
+
+                case 1027: { yym.yy_begin("YYINITIAL"); }
+                    break;
+
+                case 1041: ;
+                    break;
+
+                case 1045: ;
+                    break;
+
+                case 1054: ;
+                    break;
+
+                case 1005: { ((LSLTokens)yym).str += '\\'; }
+                    break;
+
+                case 1050: ;
+                    break;
+
+                case 941: { yym.yy_begin("STRING"); ((LSLTokens)yym).str = ""; }
+                    break;
+
+                case 957: { ((LSLTokens)yym).str += "\\n"; }
+                    break;
+
+                case 969: { ((LSLTokens)yym).str += "    "; }
+                    break;
+
+                case 981: { ((LSLTokens)yym).str += "\\\""; }
+                    break;
+
+                case 952: { ((LSLTokens)yym).str += "\\n"; }
+                    break;
+
+                case 993: { ((LSLTokens)yym).str += "\\\\"; }
+                    break;
+            }
+            return null;
+        }
+    }
 }

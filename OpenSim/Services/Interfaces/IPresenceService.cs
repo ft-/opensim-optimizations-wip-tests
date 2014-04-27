@@ -25,42 +25,27 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using OpenSim.Framework;
-using System.Collections.Generic;
 using OpenMetaverse;
+using System.Collections.Generic;
 
 namespace OpenSim.Services.Interfaces
 {
-    public class PresenceInfo
-    {
-        public string UserID;
-        public UUID RegionID;
-
-        public PresenceInfo()
-        {
-        }
-
-        public PresenceInfo(Dictionary<string, object> kvp)
-        {
-            if (kvp.ContainsKey("UserID"))
-                UserID = kvp["UserID"].ToString();
-            if (kvp.ContainsKey("RegionID"))
-                UUID.TryParse(kvp["RegionID"].ToString(), out RegionID);
-        }
-
-        public Dictionary<string, object> ToKeyValuePairs()
-        {
-            Dictionary<string, object> result = new Dictionary<string, object>();
-            result["UserID"] = UserID;
-            result["RegionID"] = RegionID.ToString();
-
-            return result;
-        }
-    }
-
     public interface IPresenceService
     {
+        /// <summary>
+        /// Get session information for a given session ID.
+        /// </summary>
+        /// <returns></returns>
+        /// <param name='sessionID'></param>
+        PresenceInfo GetAgent(UUID sessionID);
+
+        /// <summary>
+        /// Get session information for a collection of users.
+        /// </summary>
+        /// <returns>Session information for the users.</returns>
+        /// <param name='userIDs'></param>
+        PresenceInfo[] GetAgents(string[] userIDs);
+
         /// <summary>
         /// Store session information.
         /// </summary>
@@ -91,19 +76,31 @@ namespace OpenSim.Services.Interfaces
         /// <param name='sessionID'></param>
         /// <param name='regionID'></param>
         bool ReportAgent(UUID sessionID, UUID regionID);
+    }
 
-        /// <summary>
-        /// Get session information for a given session ID.
-        /// </summary>
-        /// <returns></returns>
-        /// <param name='sessionID'></param>
-        PresenceInfo GetAgent(UUID sessionID);
+    public class PresenceInfo
+    {
+        public UUID RegionID;
+        public string UserID;
+        public PresenceInfo()
+        {
+        }
 
-        /// <summary>
-        /// Get session information for a collection of users.
-        /// </summary>
-        /// <returns>Session information for the users.</returns>
-        /// <param name='userIDs'></param>
-        PresenceInfo[] GetAgents(string[] userIDs);
+        public PresenceInfo(Dictionary<string, object> kvp)
+        {
+            if (kvp.ContainsKey("UserID"))
+                UserID = kvp["UserID"].ToString();
+            if (kvp.ContainsKey("RegionID"))
+                UUID.TryParse(kvp["RegionID"].ToString(), out RegionID);
+        }
+
+        public Dictionary<string, object> ToKeyValuePairs()
+        {
+            Dictionary<string, object> result = new Dictionary<string, object>();
+            result["UserID"] = UserID;
+            result["RegionID"] = RegionID.ToString();
+
+            return result;
+        }
     }
 }

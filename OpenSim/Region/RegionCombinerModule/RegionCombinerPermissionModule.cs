@@ -25,16 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.RegionCombinerModule
 {
- public class RegionCombinerPermissionModule
+    public class RegionCombinerPermissionModule
     {
         private Scene m_rootScene;
 
@@ -50,29 +48,44 @@ namespace OpenSim.Region.RegionCombinerModule
             return m_rootScene.Permissions.BypassPermissions();
         }
 
-        public void SetBypassPermissions(bool value)
-        {
-            m_rootScene.Permissions.SetBypassPermissions(value);
-        }
-
-        public bool PropagatePermissions()
-        {
-            return m_rootScene.Permissions.PropagatePermissions();
-        }
-
-        public uint GenerateClientFlags(UUID userid, UUID objectidid)
-        {
-            return m_rootScene.Permissions.GenerateClientFlags(userid,objectidid);
-        }
-
         public bool CanAbandonParcel(UUID user, ILandObject parcel, Scene scene)
         {
-            return m_rootScene.Permissions.CanAbandonParcel(user,parcel);
+            return m_rootScene.Permissions.CanAbandonParcel(user, parcel);
         }
 
-        public bool CanReclaimParcel(UUID user, ILandObject parcel, Scene scene)
+        public bool CanBuyLand(UUID user, ILandObject parcel, Scene scene)
         {
-            return m_rootScene.Permissions.CanReclaimParcel(user, parcel);
+            return m_rootScene.Permissions.CanBuyLand(user, parcel);
+        }
+
+        public bool CanCompileScript(UUID owneruuid, int scripttype, Scene scene)
+        {
+            return m_rootScene.Permissions.CanCompileScript(owneruuid, scripttype);
+        }
+
+        public bool CanCopyObjectInventory(UUID itemid, UUID objectid, UUID userid)
+        {
+            return m_rootScene.Permissions.CanCopyObjectInventory(itemid, objectid, userid);
+        }
+
+        public bool CanCopyUserInventory(UUID itemid, UUID userid)
+        {
+            return m_rootScene.Permissions.CanCopyUserInventory(itemid, userid);
+        }
+
+        public bool CanCreateObjectInventory(int invtype, UUID objectid, UUID userid)
+        {
+            return m_rootScene.Permissions.CanCreateObjectInventory(invtype, objectid, userid);
+        }
+
+        public bool CanCreateUserInventory(int invtype, UUID userid)
+        {
+            return m_rootScene.Permissions.CanCreateUserInventory(invtype, userid);
+        }
+
+        public bool CanDeedObject(UUID user, UUID @group, Scene scene)
+        {
+            return m_rootScene.Permissions.CanDeedObject(user, @group);
         }
 
         public bool CanDeedParcel(UUID user, ILandObject parcel, Scene scene)
@@ -80,14 +93,24 @@ namespace OpenSim.Region.RegionCombinerModule
             return m_rootScene.Permissions.CanDeedParcel(user, parcel);
         }
 
-        public bool CanDeedObject(UUID user, UUID @group, Scene scene)
+        public bool CanDeleteObject(UUID objectid, UUID deleter, Scene scene)
         {
-            return m_rootScene.Permissions.CanDeedObject(user,@group);
+            return m_rootScene.Permissions.CanDeleteObject(objectid, deleter);
         }
 
-        public bool IsGod(UUID user, Scene requestfromscene)
+        public bool CanDeleteObjectInventory(UUID itemid, UUID objectid, UUID userid)
         {
-            return m_rootScene.Permissions.IsGod(user);
+            return m_rootScene.Permissions.CanDeleteObjectInventory(itemid, objectid, userid);
+        }
+
+        public bool CanDeleteUserInventory(UUID itemid, UUID userid)
+        {
+            return m_rootScene.Permissions.CanDeleteUserInventory(itemid, userid);
+        }
+
+        public bool CanDelinkObject(UUID user, UUID objectid)
+        {
+            return m_rootScene.Permissions.CanDelinkObject(user, objectid);
         }
 
         public bool CanDuplicateObject(int objectcount, UUID objectid, UUID owner, Scene scene, Vector3 objectposition)
@@ -95,9 +118,9 @@ namespace OpenSim.Region.RegionCombinerModule
             return m_rootScene.Permissions.CanDuplicateObject(objectcount, objectid, owner, objectposition);
         }
 
-        public bool CanDeleteObject(UUID objectid, UUID deleter, Scene scene)
+        public bool CanEditNotecard(UUID notecard, UUID objectid, UUID user, Scene scene)
         {
-            return m_rootScene.Permissions.CanDeleteObject(objectid, deleter);
+            return m_rootScene.Permissions.CanEditNotecard(notecard, objectid, user);
         }
 
         public bool CanEditObject(UUID objectid, UUID editorid, Scene scene)
@@ -105,9 +128,24 @@ namespace OpenSim.Region.RegionCombinerModule
             return m_rootScene.Permissions.CanEditObject(objectid, editorid);
         }
 
+        public bool CanEditObjectInventory(UUID objectid, UUID editorid, Scene scene)
+        {
+            return m_rootScene.Permissions.CanEditObjectInventory(objectid, editorid);
+        }
+
         public bool CanEditParcelProperties(UUID user, ILandObject parcel, GroupPowers g, Scene scene)
         {
             return m_rootScene.Permissions.CanEditParcelProperties(user, parcel, g);
+        }
+
+        public bool CanEditScript(UUID script, UUID objectid, UUID user, Scene scene)
+        {
+            return m_rootScene.Permissions.CanEditScript(script, objectid, user);
+        }
+
+        public bool CanEditUserInventory(UUID itemid, UUID userid)
+        {
+            return m_rootScene.Permissions.CanEditUserInventory(itemid, userid);
         }
 
         public bool CanInstantMessage(UUID user, UUID target, Scene startscene)
@@ -125,6 +163,11 @@ namespace OpenSim.Region.RegionCombinerModule
             return m_rootScene.Permissions.CanIssueEstateCommand(user, ownercommand);
         }
 
+        public bool CanLinkObject(UUID user, UUID objectid)
+        {
+            return m_rootScene.Permissions.CanLinkObject(user, objectid);
+        }
+
         public bool CanMoveObject(UUID objectid, UUID moverid, Scene scene)
         {
             return m_rootScene.Permissions.CanMoveObject(objectid, moverid);
@@ -133,6 +176,16 @@ namespace OpenSim.Region.RegionCombinerModule
         public bool CanObjectEntry(UUID objectid, bool enteringregion, Vector3 newpoint, Scene scene)
         {
             return m_rootScene.Permissions.CanObjectEntry(objectid, enteringregion, newpoint);
+        }
+
+        public bool CanReclaimParcel(UUID user, ILandObject parcel, Scene scene)
+        {
+            return m_rootScene.Permissions.CanReclaimParcel(user, parcel);
+        }
+
+        public bool CanResetScript(UUID prim, UUID script, UUID user, Scene scene)
+        {
+            return m_rootScene.Permissions.CanResetScript(prim, script, user);
         }
 
         public bool CanReturnObjects(ILandObject land, UUID user, List<SceneObjectGroup> objects, Scene scene)
@@ -155,19 +208,9 @@ namespace OpenSim.Region.RegionCombinerModule
             return m_rootScene.Permissions.CanRunScript(script, objectid, user);
         }
 
-        public bool CanCompileScript(UUID owneruuid, int scripttype, Scene scene)
-        {
-            return m_rootScene.Permissions.CanCompileScript(owneruuid, scripttype);
-        }
-
         public bool CanSellParcel(UUID user, ILandObject parcel, Scene scene)
         {
             return m_rootScene.Permissions.CanSellParcel(user, parcel);
-        }
-
-        public bool CanTakeObject(UUID objectid, UUID stealer, Scene scene)
-        {
-            return m_rootScene.Permissions.CanTakeObject(objectid, stealer);
         }
 
         public bool CanTakeCopyObject(UUID objectid, UUID userid, Scene inscene)
@@ -175,24 +218,19 @@ namespace OpenSim.Region.RegionCombinerModule
             return m_rootScene.Permissions.CanTakeObject(objectid, userid);
         }
 
+        public bool CanTakeObject(UUID objectid, UUID stealer, Scene scene)
+        {
+            return m_rootScene.Permissions.CanTakeObject(objectid, stealer);
+        }
+
+        public bool CanTeleport(UUID userid, Scene scene)
+        {
+            return m_rootScene.Permissions.CanTeleport(userid);
+        }
+
         public bool CanTerraformLand(UUID user, Vector3 position, Scene requestfromscene)
         {
             return m_rootScene.Permissions.CanTerraformLand(user, position);
-        }
-
-        public bool CanLinkObject(UUID user, UUID objectid)
-        {
-            return m_rootScene.Permissions.CanLinkObject(user, objectid);
-        }
-
-        public bool CanDelinkObject(UUID user, UUID objectid)
-        {
-            return m_rootScene.Permissions.CanDelinkObject(user, objectid);
-        }
-
-        public bool CanBuyLand(UUID user, ILandObject parcel, Scene scene)
-        {
-            return m_rootScene.Permissions.CanBuyLand(user, parcel);
         }
 
         public bool CanViewNotecard(UUID script, UUID objectid, UUID user, Scene scene)
@@ -205,66 +243,25 @@ namespace OpenSim.Region.RegionCombinerModule
             return m_rootScene.Permissions.CanViewScript(script, objectid, user);
         }
 
-        public bool CanEditNotecard(UUID notecard, UUID objectid, UUID user, Scene scene)
+        public uint GenerateClientFlags(UUID userid, UUID objectidid)
         {
-            return m_rootScene.Permissions.CanEditNotecard(notecard, objectid, user);
+            return m_rootScene.Permissions.GenerateClientFlags(userid, objectidid);
         }
 
-        public bool CanEditScript(UUID script, UUID objectid, UUID user, Scene scene)
+        public bool IsGod(UUID user, Scene requestfromscene)
         {
-            return m_rootScene.Permissions.CanEditScript(script, objectid, user);
+            return m_rootScene.Permissions.IsGod(user);
         }
 
-        public bool CanCreateObjectInventory(int invtype, UUID objectid, UUID userid)
+        public bool PropagatePermissions()
         {
-            return m_rootScene.Permissions.CanCreateObjectInventory(invtype, objectid, userid);
+            return m_rootScene.Permissions.PropagatePermissions();
         }
 
-        public bool CanEditObjectInventory(UUID objectid, UUID editorid, Scene scene)
+        public void SetBypassPermissions(bool value)
         {
-            return m_rootScene.Permissions.CanEditObjectInventory(objectid, editorid);
+            m_rootScene.Permissions.SetBypassPermissions(value);
         }
-
-        public bool CanCopyObjectInventory(UUID itemid, UUID objectid, UUID userid)
-        {
-            return m_rootScene.Permissions.CanCopyObjectInventory(itemid, objectid, userid);
-        }
-
-        public bool CanDeleteObjectInventory(UUID itemid, UUID objectid, UUID userid)
-        {
-            return m_rootScene.Permissions.CanDeleteObjectInventory(itemid, objectid, userid);
-        }
-
-        public bool CanResetScript(UUID prim, UUID script, UUID user, Scene scene)
-        {
-            return m_rootScene.Permissions.CanResetScript(prim, script, user);
-        }
-
-        public bool CanCreateUserInventory(int invtype, UUID userid)
-        {
-            return m_rootScene.Permissions.CanCreateUserInventory(invtype, userid);
-        }
-
-        public bool CanCopyUserInventory(UUID itemid, UUID userid)
-        {
-            return m_rootScene.Permissions.CanCopyUserInventory(itemid, userid);
-        }
-
-        public bool CanEditUserInventory(UUID itemid, UUID userid)
-        {
-            return m_rootScene.Permissions.CanEditUserInventory(itemid, userid);
-        }
-
-        public bool CanDeleteUserInventory(UUID itemid, UUID userid)
-        {
-            return m_rootScene.Permissions.CanDeleteUserInventory(itemid, userid);
-        }
-
-        public bool CanTeleport(UUID userid, Scene scene)
-        {
-            return m_rootScene.Permissions.CanTeleport(userid);
-        }
-
-        #endregion
+        #endregion Permission Override
     }
 }

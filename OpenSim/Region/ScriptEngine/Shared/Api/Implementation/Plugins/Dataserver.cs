@@ -25,27 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using OpenMetaverse;
-using OpenSim.Region.ScriptEngine.Shared;
-using OpenSim.Region.ScriptEngine.Shared.Api;
+using System;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.ScriptEngine.Shared.Api.Plugins
 {
     public class Dataserver
     {
         public AsyncCommandManager m_CmdManager;
-
-        public int DataserverRequestsCount
-        {
-            get
-            {
-                lock (DataserverRequests)
-                    return DataserverRequests.Count;
-            }
-        }
 
         private Dictionary<string, DataserverRequest> DataserverRequests =
                 new Dictionary<string, DataserverRequest>();
@@ -55,15 +43,44 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api.Plugins
             m_CmdManager = CmdManager;
         }
 
-        private class DataserverRequest
+        public int DataserverRequestsCount
         {
-            public uint localID;
-            public UUID itemID;
+            get
+            {
+                lock (DataserverRequests)
+                    return DataserverRequests.Count;
+            }
+        }
+        public void DataserverReply(string identifier, string reply)
+        {
+            DataserverRequest ds;
 
-            public UUID ID;
-            public string handle;
+            lock (DataserverRequests)
+            {
+                if (!DataserverRequests.ContainsKey(identifier))
+                    return;
 
-            public DateTime startTime;
+                ds = DataserverRequests[identifier];
+                DataserverRequests.Remove(identifier);
+            }
+
+            m_CmdManager.m_ScriptEngine.PostObjectEvent(ds.localID,
+                    new EventParams("dataserver", new Object[]
+                            { new LSL_Types.LSLString(ds.ID.ToString()),
+                            new LSL_Types.LSLString(reply)},
+                    new DetectParams[0]));
+        }
+
+        public void ExpireRequests()
+        {
+            lock (DataserverRequests)
+            {
+                foreach (DataserverRequest ds in new List<DataserverRequest>(DataserverRequests.Values))
+                {
+                    if (ds.startTime > DateTime.Now.AddSeconds(30))
+                        DataserverRequests.Remove(ds.handle);
+                }
+            }
         }
 
         public UUID RegisterRequest(uint localID, UUID itemID,
@@ -90,26 +107,6 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api.Plugins
             }
         }
 
-        public void DataserverReply(string identifier, string reply)
-        {
-            DataserverRequest ds;
-
-            lock (DataserverRequests)
-            {
-                if (!DataserverRequests.ContainsKey(identifier))
-                    return;
-
-                ds = DataserverRequests[identifier];
-                DataserverRequests.Remove(identifier);
-            }
-
-            m_CmdManager.m_ScriptEngine.PostObjectEvent(ds.localID,
-                    new EventParams("dataserver", new Object[]
-                            { new LSL_Types.LSLString(ds.ID.ToString()),
-                            new LSL_Types.LSLString(reply)},
-                    new DetectParams[0]));
-        }
-
         public void RemoveEvents(uint localID, UUID itemID)
         {
             lock (DataserverRequests)
@@ -122,16 +119,13 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api.Plugins
             }
         }
 
-        public void ExpireRequests()
+        private class DataserverRequest
         {
-            lock (DataserverRequests)
-            {
-                foreach (DataserverRequest ds in new List<DataserverRequest>(DataserverRequests.Values))
-                {
-                    if (ds.startTime > DateTime.Now.AddSeconds(30))
-                        DataserverRequests.Remove(ds.handle);
-                }
-            }
+            public string handle;
+            public UUID ID;
+            public UUID itemID;
+            public uint localID;
+            public DateTime startTime;
         }
     }
 }

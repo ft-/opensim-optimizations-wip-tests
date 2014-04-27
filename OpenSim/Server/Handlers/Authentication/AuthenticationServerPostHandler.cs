@@ -25,22 +25,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using Nini.Config;
 using log4net;
-using System;
-using System.Reflection;
-using System.IO;
-using System.Net;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Xml;
-using System.Xml.Serialization;
-using System.Collections.Generic;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
+using Nini.Config;
+using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Framework.Servers.HttpServer;
-using OpenMetaverse;
+using OpenSim.Server.Base;
+using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Xml;
 
 namespace OpenSim.Server.Handlers.Authentication
 {
@@ -48,17 +44,15 @@ namespace OpenSim.Server.Handlers.Authentication
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private IAuthenticationService m_AuthenticationService;
-
         private bool m_AllowGetAuthInfo = false;
         private bool m_AllowSetAuthInfo = false;
         private bool m_AllowSetPassword = false;
-
+        private IAuthenticationService m_AuthenticationService;
         public AuthenticationServerPostHandler(IAuthenticationService service) :
-                this(service, null) {}
+            this(service, null) { }
 
         public AuthenticationServerPostHandler(IAuthenticationService service, IConfig config) :
-                base("POST", "/auth")
+            base("POST", "/auth")
         {
             m_AuthenticationService = service;
 
@@ -79,22 +73,39 @@ namespace OpenSim.Server.Handlers.Authentication
             {
                 switch (p[0])
                 {
-                case "plain":
-                    StreamReader sr = new StreamReader(request);
-                    string body = sr.ReadToEnd();
-                    sr.Close();
+                    case "plain":
+                        StreamReader sr = new StreamReader(request);
+                        string body = sr.ReadToEnd();
+                        sr.Close();
 
-                    return DoPlainMethods(body);
-                case "crypt":
-                    byte[] buffer = new byte[request.Length];
-                    long length = request.Length;
-                    if (length > 16384)
-                        length = 16384;
-                    request.Read(buffer, 0, (int)length);
+                        return DoPlainMethods(body);
 
-                    return DoEncryptedMethods(buffer);
+                    case "crypt":
+                        byte[] buffer = new byte[request.Length];
+                        long length = request.Length;
+                        if (length > 16384)
+                            length = 16384;
+                        request.Read(buffer, 0, (int)length);
+
+                        return DoEncryptedMethods(buffer);
                 }
             }
+            return new byte[0];
+        }
+
+        private byte[] DocToBytes(XmlDocument doc)
+        {
+            MemoryStream ms = new MemoryStream();
+            XmlTextWriter xw = new XmlTextWriter(ms, null);
+            xw.Formatting = Formatting.Indented;
+            doc.WriteTo(xw);
+            xw.Flush();
+
+            return ms.GetBuffer();
+        }
+
+        private byte[] DoEncryptedMethods(byte[] ciphertext)
+        {
             return new byte[0];
         }
 
@@ -130,41 +141,41 @@ namespace OpenSim.Server.Handlers.Authentication
                 case "authenticate":
                     if (!request.ContainsKey("PASSWORD"))
                         return FailureResult();
-                    
+
                     token = m_AuthenticationService.Authenticate(principalID, request["PASSWORD"].ToString(), lifetime);
-    
+
                     if (token != String.Empty)
                         return SuccessResult(token);
                     return FailureResult();
-    
+
                 case "setpassword":
                     if (!m_AllowSetPassword)
                         return FailureResult();
 
                     if (!request.ContainsKey("PASSWORD"))
                         return FailureResult();
-    
+
                     if (m_AuthenticationService.SetPassword(principalID, request["PASSWORD"].ToString()))
                         return SuccessResult();
                     else
                         return FailureResult();
-    
+
                 case "verify":
                     if (!request.ContainsKey("TOKEN"))
                         return FailureResult();
-                    
+
                     if (m_AuthenticationService.Verify(principalID, request["TOKEN"].ToString(), lifetime))
                         return SuccessResult();
-    
+
                     return FailureResult();
-    
+
                 case "release":
                     if (!request.ContainsKey("TOKEN"))
                         return FailureResult();
-    
+
                     if (m_AuthenticationService.Release(principalID, request["TOKEN"].ToString()))
                         return SuccessResult();
-    
+
                     return FailureResult();
 
                 case "getauthinfo":
@@ -182,13 +193,7 @@ namespace OpenSim.Server.Handlers.Authentication
 
             return FailureResult();
         }
-
-        private byte[] DoEncryptedMethods(byte[] ciphertext)
-        {
-            return new byte[0];
-        }
-
-        private byte[] SuccessResult()
+        private byte[] FailureResult()
         {
             XmlDocument doc = new XmlDocument();
 
@@ -203,14 +208,14 @@ namespace OpenSim.Server.Handlers.Authentication
             doc.AppendChild(rootElement);
 
             XmlElement result = doc.CreateElement("", "Result", "");
-            result.AppendChild(doc.CreateTextNode("Success"));
+            result.AppendChild(doc.CreateTextNode("Failure"));
 
             rootElement.AppendChild(result);
 
             return DocToBytes(doc);
         }
 
-        byte[] GetAuthInfo(UUID principalID)
+        private byte[] GetAuthInfo(UUID principalID)
         {
             AuthInfo info = m_AuthenticationService.GetAuthInfo(principalID);
 
@@ -227,7 +232,13 @@ namespace OpenSim.Server.Handlers.Authentication
             }
         }
 
-        byte[] SetAuthInfo(UUID principalID, Dictionary<string, object> request)
+        private byte[] ResultToBytes(Dictionary<string, object> result)
+        {
+            string xmlString = ServerUtils.BuildXmlResponse(result);
+            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
+        }
+
+        private byte[] SetAuthInfo(UUID principalID, Dictionary<string, object> request)
         {
             AuthInfo existingInfo = m_AuthenticationService.GetAuthInfo(principalID);
 
@@ -258,7 +269,7 @@ namespace OpenSim.Server.Handlers.Authentication
             return SuccessResult();
         }
 
-        private byte[] FailureResult()
+        private byte[] SuccessResult()
         {
             XmlDocument doc = new XmlDocument();
 
@@ -273,13 +284,12 @@ namespace OpenSim.Server.Handlers.Authentication
             doc.AppendChild(rootElement);
 
             XmlElement result = doc.CreateElement("", "Result", "");
-            result.AppendChild(doc.CreateTextNode("Failure"));
+            result.AppendChild(doc.CreateTextNode("Success"));
 
             rootElement.AppendChild(result);
 
             return DocToBytes(doc);
         }
-
         private byte[] SuccessResult(string token)
         {
             XmlDocument doc = new XmlDocument();
@@ -305,23 +315,6 @@ namespace OpenSim.Server.Handlers.Authentication
             rootElement.AppendChild(t);
 
             return DocToBytes(doc);
-        }
-
-        private byte[] DocToBytes(XmlDocument doc)
-        {
-            MemoryStream ms = new MemoryStream();
-            XmlTextWriter xw = new XmlTextWriter(ms, null);
-            xw.Formatting = Formatting.Indented;
-            doc.WriteTo(xw);
-            xw.Flush();
-
-            return ms.GetBuffer();
-        }
-
-        private byte[] ResultToBytes(Dictionary<string, object> result)
-        {
-            string xmlString = ServerUtils.BuildXmlResponse(result);
-            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
         }
     }
 }

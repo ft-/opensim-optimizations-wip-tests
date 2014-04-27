@@ -25,17 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.ScriptEngine.Interfaces;
-using OpenSim.Region.ScriptEngine.Shared;
-using Amib.Threading;
-using log4net;
 using Nini.Config;
 using OpenMetaverse;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
+using OpenSim.Region.ScriptEngine.Shared;
+using System.Reflection;
 
 namespace OpenSim.Region.ScriptEngine.Interfaces
 {
@@ -45,61 +40,14 @@ namespace OpenSim.Region.ScriptEngine.Interfaces
     /// </summary>
     public interface IScriptEngine
     {
-        /// <summary>
-        /// Queue an event for execution
-        /// </summary>
-        IScriptWorkItem QueueEventHandler(object parms);
-
-        Scene World { get; }
-
-        IScriptModule ScriptModule { get; }
-
-        /// <summary>
-        /// Post an event to a single script
-        /// </summary>
-        bool PostScriptEvent(UUID itemID, EventParams parms);
-        
-        /// <summary>
-        /// Post event to an entire prim
-        /// </summary>
-        bool PostObjectEvent(uint localID, EventParams parms);
-
-        DetectParams GetDetectParams(UUID item, int number);
-        void SetMinEventDelay(UUID itemID, double delay);
-        int GetStartParameter(UUID itemID);
-
-        void SetScriptState(UUID itemID, bool state);
-        bool GetScriptState(UUID itemID);
-        void SetState(UUID itemID, string newState);
-        void ApiResetScript(UUID itemID);
-        void ResetScript(UUID itemID);
         IConfig Config { get; }
-        IConfigSource ConfigSource { get; }
-        string ScriptEngineName { get; }
-        string ScriptEnginePath { get; }
 
-        /// <summary>
-        /// Return the name of the class that will be used for all running scripts.
-        /// </summary>
-        /// <remarks>
-        /// Each class goes in its own assembly so we don't need to otherwise distinguish the class name.
-        /// </remarks>
-        string ScriptClassName { get; }
+        IConfigSource ConfigSource { get; }
 
         /// <summary>
         /// Return the name of the base class that will be used for all running scripts.
         /// </summary>
         string ScriptBaseClassName { get; }
-
-        /// <summary>
-        /// Assemblies that need to be referenced when compiling scripts.
-        /// </summary>
-        /// <remarks>
-        /// These are currently additional to those always referenced by the compiler, BUT THIS MAY CHANGE IN THE 
-        /// FUTURE.
-        /// This can be null if there are no additional assemblies.
-        /// </remarks>
-        string[] ScriptReferencedAssemblies { get; }
 
         /// <summary>
         /// Parameters for the generated script's constructor.
@@ -109,6 +57,60 @@ namespace OpenSim.Region.ScriptEngine.Interfaces
         /// </remarks>
         ParameterInfo[] ScriptBaseClassParameters { get; }
 
+        /// <summary>
+        /// Return the name of the class that will be used for all running scripts.
+        /// </summary>
+        /// <remarks>
+        /// Each class goes in its own assembly so we don't need to otherwise distinguish the class name.
+        /// </remarks>
+        string ScriptClassName { get; }
+
+        string ScriptEngineName { get; }
+
+        string ScriptEnginePath { get; }
+
+        IScriptModule ScriptModule { get; }
+
+        /// <summary>
+        /// Assemblies that need to be referenced when compiling scripts.
+        /// </summary>
+        /// <remarks>
+        /// These are currently additional to those always referenced by the compiler, BUT THIS MAY CHANGE IN THE
+        /// FUTURE.
+        /// This can be null if there are no additional assemblies.
+        /// </remarks>
+        string[] ScriptReferencedAssemblies { get; }
+
+        Scene World { get; }
+
+        void ApiResetScript(UUID itemID);
+
         IScriptApi GetApi(UUID itemID, string name);
+
+        DetectParams GetDetectParams(UUID item, int number);
+
+        bool GetScriptState(UUID itemID);
+
+        int GetStartParameter(UUID itemID);
+
+        /// <summary>
+        /// Post event to an entire prim
+        /// </summary>
+        bool PostObjectEvent(uint localID, EventParams parms);
+
+        /// <summary>
+        /// Post an event to a single script
+        /// </summary>
+        bool PostScriptEvent(UUID itemID, EventParams parms);
+
+        /// <summary>
+        /// Queue an event for execution
+        /// </summary>
+        IScriptWorkItem QueueEventHandler(object parms);
+        void ResetScript(UUID itemID);
+
+        void SetMinEventDelay(UUID itemID, double delay);
+        void SetScriptState(UUID itemID, bool state);
+        void SetState(UUID itemID, string newState);
     }
 }

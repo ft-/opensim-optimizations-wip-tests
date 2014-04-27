@@ -25,8 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenSim.Framework;
+using System;
 
 namespace OpenSim.Services.Interfaces
 {
@@ -35,6 +35,20 @@ namespace OpenSim.Services.Interfaces
     public interface IAssetService
     {
         /// <summary>
+        /// Check if assets exist in the database.
+        /// </summary>
+        /// <param name="ids">The assets' IDs</param>
+        /// <returns>For each asset: true if it exists, false otherwise</returns>
+        bool[] AssetsExist(string[] ids);
+
+        /// <summary>
+        /// Delete an asset
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        bool Delete(string id);
+
+        /// <summary>
         /// Get an asset synchronously.
         /// </summary>
         /// <param name="id"></param>
@@ -42,28 +56,7 @@ namespace OpenSim.Services.Interfaces
         AssetBase Get(string id);
 
         /// <summary>
-        /// Get an asset's metadata
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        AssetMetadata GetMetadata(string id);
-        
-        /// <summary>
-        /// Get an asset's data, ignoring the metadata.
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns>null if there is no such asset</returns>
-        byte[] GetData(string id);
-
-        /// <summary>
-        /// Synchronously fetches an asset from the local cache only.
-        /// </summary>
-        /// <param name="id">Asset ID</param>
-        /// <returns>The fetched asset, or null if it did not exist in the local cache</returns>
-        AssetBase GetCached(string id);
-
-        /// <summary>
-        /// Get an asset synchronously or asynchronously (depending on whether 
+        /// Get an asset synchronously or asynchronously (depending on whether
         /// it is locally cached) and fire a callback with the fetched asset
         /// </summary>
         /// <param name="id">The asset id</param>
@@ -75,14 +68,27 @@ namespace OpenSim.Services.Interfaces
         /// </param>
         /// <returns>True if the id was parseable, false otherwise</returns>
         bool Get(string id, Object sender, AssetRetrieved handler);
-        
-        /// <summary>
-        /// Check if assets exist in the database.
-        /// </summary>
-        /// <param name="ids">The assets' IDs</param>
-        /// <returns>For each asset: true if it exists, false otherwise</returns>
-        bool[] AssetsExist(string[] ids);
 
+        /// <summary>
+        /// Synchronously fetches an asset from the local cache only.
+        /// </summary>
+        /// <param name="id">Asset ID</param>
+        /// <returns>The fetched asset, or null if it did not exist in the local cache</returns>
+        AssetBase GetCached(string id);
+
+        /// <summary>
+        /// Get an asset's data, ignoring the metadata.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns>null if there is no such asset</returns>
+        byte[] GetData(string id);
+
+        /// <summary>
+        /// Get an asset's metadata
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        AssetMetadata GetMetadata(string id);
         /// <summary>
         /// Creates a new asset
         /// </summary>
@@ -103,12 +109,5 @@ namespace OpenSim.Services.Interfaces
         /// <param name="data"></param>
         /// <returns></returns>
         bool UpdateContent(string id, byte[] data);
-
-        /// <summary>
-        /// Delete an asset
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        bool Delete(string id);
     }
 }

@@ -25,21 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Text.RegularExpressions;
-using log4net;
 using Mono.Addins;
 using NDesk.Options;
 using Nini.Config;
 using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Framework.Console;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace OpenSim.Region.OptionalModules.Avatar.SitStand
 {
@@ -49,42 +44,36 @@ namespace OpenSim.Region.OptionalModules.Avatar.SitStand
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "AnimationsCommandModule")]
     public class SitStandCommandModule : INonSharedRegionModule
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private Scene m_scene;
 
         public string Name { get { return "SitStand Command Module"; } }
-        
+
         public Type ReplaceableInterface { get { return null; } }
-        
-        public void Initialise(IConfigSource source)
-        {
-//            m_log.DebugFormat("[ANIMATIONS COMMAND MODULE]: INITIALIZED MODULE");
-        }
-        
-        public void PostInitialise()
-        {
-//            m_log.DebugFormat("[ANIMATIONS COMMAND MODULE]: POST INITIALIZED MODULE");
-        }
-        
-        public void Close()
-        {
-//            m_log.DebugFormat("[ANIMATIONS COMMAND MODULE]: CLOSED MODULE");
-        }
-        
+
         public void AddRegion(Scene scene)
         {
-//            m_log.DebugFormat("[ANIMATIONS COMMAND MODULE]: REGION {0} ADDED", scene.RegionInfo.RegionName);
+            //            m_log.DebugFormat("[ANIMATIONS COMMAND MODULE]: REGION {0} ADDED", scene.RegionInfo.RegionName);
         }
-        
-        public void RemoveRegion(Scene scene)
+
+        public void Close()
         {
-//            m_log.DebugFormat("[ATTACHMENTS COMMAND MODULE]: REGION {0} REMOVED", scene.RegionInfo.RegionName);
-        }        
-        
+            //            m_log.DebugFormat("[ANIMATIONS COMMAND MODULE]: CLOSED MODULE");
+        }
+
+        public void Initialise(IConfigSource source)
+        {
+            //            m_log.DebugFormat("[ANIMATIONS COMMAND MODULE]: INITIALIZED MODULE");
+        }
+
+        public void PostInitialise()
+        {
+            //            m_log.DebugFormat("[ANIMATIONS COMMAND MODULE]: POST INITIALIZED MODULE");
+        }
         public void RegionLoaded(Scene scene)
         {
-//            m_log.DebugFormat("[ANIMATIONS COMMAND MODULE]: REGION {0} LOADED", scene.RegionInfo.RegionName);
+            //            m_log.DebugFormat("[ANIMATIONS COMMAND MODULE]: REGION {0} LOADED", scene.RegionInfo.RegionName);
 
             m_scene = scene;
 
@@ -102,6 +91,44 @@ namespace OpenSim.Region.OptionalModules.Avatar.SitStand
                 "Stand the named user.",
                 "If --regex is specified then the names are treated as regular expressions.",
                 HandleStandUserNameCommand);
+        }
+
+        public void RemoveRegion(Scene scene)
+        {
+            //            m_log.DebugFormat("[ATTACHMENTS COMMAND MODULE]: REGION {0} REMOVED", scene.RegionInfo.RegionName);
+        }
+        private List<ScenePresence> GetScenePresences(string[] cmdParams)
+        {
+            bool useRegex = false;
+            OptionSet options = new OptionSet().Add("regex", v => useRegex = v != null);
+
+            List<string> mainParams = options.Parse(cmdParams);
+
+            string firstName = mainParams[3];
+            string lastName = mainParams[4];
+
+            List<ScenePresence> scenePresencesMatched = new List<ScenePresence>();
+
+            if (useRegex)
+            {
+                Regex nameRegex = new Regex(string.Format("{0} {1}", firstName, lastName));
+                List<ScenePresence> scenePresences = m_scene.GetScenePresences();
+
+                foreach (ScenePresence sp in scenePresences)
+                {
+                    if (!sp.IsChildAgent && nameRegex.IsMatch(sp.Name))
+                        scenePresencesMatched.Add(sp);
+                }
+            }
+            else
+            {
+                ScenePresence sp = m_scene.GetScenePresence(firstName, lastName);
+
+                if (sp != null && !sp.IsChildAgent)
+                    scenePresencesMatched.Add(sp);
+            }
+
+            return scenePresencesMatched;
         }
 
         private void HandleSitUserNameCommand(string module, string[] cmd)
@@ -143,7 +170,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.SitStand
                 if (sitPart != null)
                 {
                     MainConsole.Instance.OutputFormat(
-                        "Sitting {0} on {1} {2} in {3}", 
+                        "Sitting {0} on {1} {2} in {3}",
                         sp.Name, sitPart.ParentGroup.Name, sitPart.ParentGroup.UUID, m_scene.Name);
 
                     sp.HandleAgentRequestSit(sp.ControllingClient, sp.UUID, sitPart.UUID, Vector3.Zero);
@@ -181,40 +208,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.SitStand
                     sp.StandUp();
                 }
             }
-        }
-
-        private List<ScenePresence> GetScenePresences(string[] cmdParams)
-        {
-            bool useRegex = false;
-            OptionSet options = new OptionSet().Add("regex", v=> useRegex = v != null );
-
-            List<string> mainParams = options.Parse(cmdParams);
-
-            string firstName = mainParams[3];
-            string lastName = mainParams[4];
-
-            List<ScenePresence> scenePresencesMatched = new List<ScenePresence>();
-
-            if (useRegex)
-            {
-                Regex nameRegex = new Regex(string.Format("{0} {1}", firstName, lastName));
-                List<ScenePresence> scenePresences = m_scene.GetScenePresences();
-
-                foreach (ScenePresence sp in scenePresences)
-                {
-                    if (!sp.IsChildAgent && nameRegex.IsMatch(sp.Name)) 
-                        scenePresencesMatched.Add(sp);
-                }
-            }
-            else
-            {
-                ScenePresence sp = m_scene.GetScenePresence(firstName, lastName);
-        
-                if (sp != null && !sp.IsChildAgent)
-                    scenePresencesMatched.Add(sp);
-            }
-
-            return scenePresencesMatched;
         }
     }
 }

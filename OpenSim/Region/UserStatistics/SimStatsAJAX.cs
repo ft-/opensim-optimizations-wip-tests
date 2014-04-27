@@ -25,16 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
-using Mono.Data.SqliteClient;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Framework.Monitoring;
+using System.Collections;
+using System.Collections.Generic;
+using System.Text;
 
 namespace OpenSim.Region.UserStatistics
 {
@@ -50,18 +46,76 @@ namespace OpenSim.Region.UserStatistics
         public Hashtable ProcessModel(Hashtable pParams)
         {
             List<Scene> m_scene = (List<Scene>)pParams["Scenes"];
-            
+
             Hashtable nh = new Hashtable();
             nh.Add("hdata", m_scene);
             nh.Add("simstats", pParams["SimStats"]);
             return nh;
         }
 
+        /// <summary>
+        /// Return stat information for all regions in the sim. Returns data of the form:
+        /// <pre>
+        /// {"REGIONNAME": {
+        ///     "region": "REGIONNAME",
+        ///     "timeDilation": "101",
+        ///     ...     // the rest of the stat info
+        ///     },
+        ///  ...    // entries for each region
+        ///  }
+        /// </pre>
+        /// </summary>
+        /// <param name="pModelResult"></param>
+        /// <returns></returns>
+        public string RenderJson(Hashtable pModelResult)
+        {
+            List<Scene> all_scenes = (List<Scene>)pModelResult["hdata"];
+            Dictionary<UUID, USimStatsData> sdatadic = (Dictionary<UUID, USimStatsData>)pModelResult["simstats"];
+
+            OSDMap allStatsInfo = new OpenMetaverse.StructuredData.OSDMap();
+            foreach (USimStatsData sdata in sdatadic.Values)
+            {
+                OSDMap statsInfo = new OpenMetaverse.StructuredData.OSDMap();
+                string regionName = "unknown";
+                foreach (Scene sn in all_scenes)
+                {
+                    if (sn.RegionInfo.RegionID == sdata.RegionId)
+                    {
+                        regionName = sn.RegionInfo.RegionName;
+                        break;
+                    }
+                }
+                statsInfo.Add("region", new OSDString(regionName));
+                statsInfo.Add("timeDilation", new OSDString(sdata.TimeDilation.ToString()));
+                statsInfo.Add("simFPS", new OSDString(sdata.SimFps.ToString()));
+                statsInfo.Add("physicsFPS", new OSDString(sdata.PhysicsFps.ToString()));
+                statsInfo.Add("agentUpdates", new OSDString(sdata.AgentUpdates.ToString()));
+                statsInfo.Add("rootAgents", new OSDString(sdata.RootAgents.ToString()));
+                statsInfo.Add("childAgents", new OSDString(sdata.ChildAgents.ToString()));
+                statsInfo.Add("totalPrims", new OSDString(sdata.TotalPrims.ToString()));
+                statsInfo.Add("activePrims", new OSDString(sdata.ActivePrims.ToString()));
+                statsInfo.Add("activeScripts", new OSDString(sdata.ActiveScripts.ToString()));
+                statsInfo.Add("scriptLinesPerSec", new OSDString(sdata.ScriptLinesPerSecond.ToString()));
+                statsInfo.Add("totalFrameTime", new OSDString(sdata.TotalFrameTime.ToString()));
+                statsInfo.Add("agentFrameTime", new OSDString(sdata.AgentFrameTime.ToString()));
+                statsInfo.Add("physicsFrameTime", new OSDString(sdata.PhysicsFrameTime.ToString()));
+                statsInfo.Add("otherFrameTime", new OSDString(sdata.OtherFrameTime.ToString()));
+                statsInfo.Add("outPacketsPerSec", new OSDString(sdata.OutPacketsPerSecond.ToString()));
+                statsInfo.Add("inPacketsPerSec", new OSDString(sdata.InPacketsPerSecond.ToString()));
+                statsInfo.Add("unackedByptes", new OSDString(sdata.UnackedBytes.ToString()));
+                statsInfo.Add("pendingDownloads", new OSDString(sdata.PendingDownloads.ToString()));
+                statsInfo.Add("pendingUploads", new OSDString(sdata.PendingUploads.ToString()));
+
+                allStatsInfo.Add(regionName, statsInfo);
+            }
+            return allStatsInfo.ToString();
+        }
+
         public string RenderView(Hashtable pModelResult)
         {
             StringBuilder output = new StringBuilder();
-            List<Scene> all_scenes = (List<Scene>) pModelResult["hdata"];
-            Dictionary<UUID, USimStatsData> sdatadic = (Dictionary<UUID,USimStatsData>)pModelResult["simstats"];
+            List<Scene> all_scenes = (List<Scene>)pModelResult["hdata"];
+            Dictionary<UUID, USimStatsData> sdatadic = (Dictionary<UUID, USimStatsData>)pModelResult["simstats"];
 
             const string TableClass = "defaultr";
             const string TRClass = "defaultr";
@@ -72,8 +126,6 @@ namespace OpenSim.Region.UserStatistics
 
             foreach (USimStatsData sdata in sdatadic.Values)
             {
-
-
                 foreach (Scene sn in all_scenes)
                 {
                     if (sn.RegionInfo.RegionID == sdata.RegionId)
@@ -213,70 +265,10 @@ namespace OpenSim.Region.UserStatistics
                 HTMLUtil.TD_C(ref output);
                 HTMLUtil.TR_C(ref output);
                 HTMLUtil.TABLE_C(ref output);
-                
             }
-            
+
             return output.ToString();
         }
-
-        /// <summary>
-        /// Return stat information for all regions in the sim. Returns data of the form:
-        /// <pre>
-        /// {"REGIONNAME": {
-        ///     "region": "REGIONNAME",
-        ///     "timeDilation": "101", 
-        ///     ...     // the rest of the stat info
-        ///     },
-        ///  ...    // entries for each region
-        ///  }
-        /// </pre>
-        /// </summary>
-        /// <param name="pModelResult"></param>
-        /// <returns></returns>
-        public string RenderJson(Hashtable pModelResult)
-        {
-            List<Scene> all_scenes = (List<Scene>) pModelResult["hdata"];
-            Dictionary<UUID, USimStatsData> sdatadic = (Dictionary<UUID,USimStatsData>)pModelResult["simstats"];
-
-            OSDMap allStatsInfo = new OpenMetaverse.StructuredData.OSDMap();
-            foreach (USimStatsData sdata in sdatadic.Values)
-            {
-                OSDMap statsInfo = new OpenMetaverse.StructuredData.OSDMap();
-                string regionName = "unknown";
-                foreach (Scene sn in all_scenes)
-                {
-                    if (sn.RegionInfo.RegionID == sdata.RegionId)
-                    {
-                        regionName = sn.RegionInfo.RegionName;
-                        break;
-                    }
-                }
-                statsInfo.Add("region", new OSDString(regionName));
-                statsInfo.Add("timeDilation", new OSDString(sdata.TimeDilation.ToString()));
-                statsInfo.Add("simFPS", new OSDString(sdata.SimFps.ToString()));
-                statsInfo.Add("physicsFPS", new OSDString(sdata.PhysicsFps.ToString()));
-                statsInfo.Add("agentUpdates", new OSDString(sdata.AgentUpdates.ToString()));
-                statsInfo.Add("rootAgents", new OSDString(sdata.RootAgents.ToString()));
-                statsInfo.Add("childAgents", new OSDString(sdata.ChildAgents.ToString()));
-                statsInfo.Add("totalPrims", new OSDString(sdata.TotalPrims.ToString()));
-                statsInfo.Add("activePrims", new OSDString(sdata.ActivePrims.ToString()));
-                statsInfo.Add("activeScripts", new OSDString(sdata.ActiveScripts.ToString()));
-                statsInfo.Add("scriptLinesPerSec", new OSDString(sdata.ScriptLinesPerSecond.ToString()));
-                statsInfo.Add("totalFrameTime", new OSDString(sdata.TotalFrameTime.ToString()));
-                statsInfo.Add("agentFrameTime", new OSDString(sdata.AgentFrameTime.ToString()));
-                statsInfo.Add("physicsFrameTime", new OSDString(sdata.PhysicsFrameTime.ToString()));
-                statsInfo.Add("otherFrameTime", new OSDString(sdata.OtherFrameTime.ToString()));
-                statsInfo.Add("outPacketsPerSec", new OSDString(sdata.OutPacketsPerSecond.ToString()));
-                statsInfo.Add("inPacketsPerSec", new OSDString(sdata.InPacketsPerSecond.ToString()));
-                statsInfo.Add("unackedByptes", new OSDString(sdata.UnackedBytes.ToString()));
-                statsInfo.Add("pendingDownloads", new OSDString(sdata.PendingDownloads.ToString()));
-                statsInfo.Add("pendingUploads", new OSDString(sdata.PendingUploads.ToString()));
-
-                allStatsInfo.Add(regionName, statsInfo);
-            }
-            return allStatsInfo.ToString();
-        }
-
-        #endregion
+        #endregion IStatsController Members
     }
 }

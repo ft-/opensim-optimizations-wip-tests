@@ -25,15 +25,43 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.IO;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.IO;
 
 namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
 {
     public class LLRAW : ITerrainLoader
     {
+        /// <summary>Lookup table to speed up terrain exports</summary>
+        private HeightmapLookupValue[] LookupHeightTable;
+
+        public LLRAW()
+        {
+            LookupHeightTable = new HeightmapLookupValue[256 * 256];
+
+            for (int i = 0; i < 256; i++)
+            {
+                for (int j = 0; j < 256; j++)
+                {
+                    LookupHeightTable[i + (j * 256)] = new HeightmapLookupValue((ushort)(i + (j * 256)), (float)((double)i * ((double)j / 128.0d)));
+                }
+            }
+            Array.Sort<HeightmapLookupValue>(LookupHeightTable);
+        }
+
+        //Returns true if this extension is supported for terrain save-tile
+        public bool SupportsTileSave()
+        {
+            return false;
+        }
+
+        public override string ToString()
+        {
+            return "LL/SL RAW";
+        }
+
         public struct HeightmapLookupValue : IComparable<HeightmapLookupValue>
         {
             public ushort Index;
@@ -50,25 +78,12 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
                 return Value.CompareTo(val.Value);
             }
         }
-
-        /// <summary>Lookup table to speed up terrain exports</summary>
-        HeightmapLookupValue[] LookupHeightTable;
-
-        public LLRAW()
-        {
-            LookupHeightTable = new HeightmapLookupValue[256 * 256];
-
-            for (int i = 0; i < 256; i++)
-            {
-                for (int j = 0; j < 256; j++)
-                {
-                    LookupHeightTable[i + (j * 256)] = new HeightmapLookupValue((ushort)(i + (j * 256)), (float)((double)i * ((double)j / 128.0d)));
-                }
-            }
-            Array.Sort<HeightmapLookupValue>(LookupHeightTable);
-        }
-
         #region ITerrainLoader Members
+
+        public string FileExtension
+        {
+            get { return ".raw"; }
+        }
 
         public ITerrainChannel LoadFile(string filename)
         {
@@ -175,6 +190,14 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
             s.Close();
         }
 
+        public virtual void SaveFile(ITerrainChannel m_channel, string filename,
+                             int offsetX, int offsetY,
+                             int fileWidth, int fileHeight,
+                             int regionSizeX, int regionSizeY)
+        {
+            throw new System.Exception("Not Implemented");
+        }
+
         public void SaveStream(Stream s, ITerrainChannel map)
         {
             BinaryWriter binStream = new BinaryWriter(s);
@@ -202,8 +225,8 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
 
                     index = LookupHeightTable[index].Index;
 
-                    byte red = (byte) (index & 0xFF);
-                    byte green = (byte) ((index >> 8) & 0xFF);
+                    byte red = (byte)(index & 0xFF);
+                    byte green = (byte)((index >> 8) & 0xFF);
                     const byte blue = 20;
                     const byte alpha1 = 0;
                     const byte alpha2 = 0;
@@ -234,32 +257,6 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
 
             binStream.Close();
         }
-
-        public string FileExtension
-        {
-            get { return ".raw"; }
-        }
-
-        public virtual void SaveFile(ITerrainChannel m_channel, string filename,
-                             int offsetX, int offsetY,
-                             int fileWidth, int fileHeight,
-                             int regionSizeX, int regionSizeY)
-        {
-            throw new System.Exception("Not Implemented");
-        }
-
-        #endregion
-
-        public override string ToString()
-        {
-            return "LL/SL RAW";
-        }
-
-        //Returns true if this extension is supported for terrain save-tile
-        public bool SupportsTileSave()
-        {
-            return false;
-        }
-
+        #endregion ITerrainLoader Members
     }
 }

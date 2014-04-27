@@ -25,10 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using OpenMetaverse;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using pCampBot.Interfaces;
 
 namespace pCampBot
@@ -36,21 +32,24 @@ namespace pCampBot
     public class AbstractBehaviour : IBehaviour
     {
         /// <summary>
-        /// Abbreviated name of this behaviour. 
+        /// Abbreviated name of this behaviour.
         /// </summary>
         public string AbbreviatedName { get; protected set; }
 
-        public string Name { get; protected set; }
-
         public Bot Bot { get; protected set; }
 
-        public virtual void Action() {}
+        public string Name { get; protected set; }
+        public virtual void Action()
+        {
+        }
+
+        public virtual void Close()
+        {
+        }
 
         public virtual void Initialize(Bot bot)
         {
             Bot = bot;
         }
-
-        public virtual void Close() {}
     }
 }

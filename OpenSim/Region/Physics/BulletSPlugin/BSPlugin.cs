@@ -1,4 +1,6 @@
-﻿/*
+﻿using OpenSim.Region.Physics.Manager;
+
+/*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
  *
@@ -24,11 +26,8 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 using System;
-using System.Collections.Generic;
-using OpenSim.Framework;
-using OpenSim.Region.Physics.Manager;
-using OpenMetaverse;
 
 namespace OpenSim.Region.Physics.BulletSPlugin
 {
@@ -40,37 +39,37 @@ namespace OpenSim.Region.Physics.BulletSPlugin
     /// The unmanaged library is compiled and linked statically with Bullet
     /// to create BulletSim.dll and libBulletSim.so (for both 32 and 64 bit).
     /// </summary>
-public class BSPlugin : IPhysicsPlugin
-{
-    //private static readonly log4net.ILog m_log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-
-    private BSScene _mScene;
-
-    public BSPlugin()
+    public class BSPlugin : IPhysicsPlugin
     {
-    }
+        //private static readonly log4net.ILog m_log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-    public bool Init()
-    {
-        return true;
-    }
+        private BSScene _mScene;
 
-    public PhysicsScene GetScene(String sceneIdentifier)
-    {
-        if (_mScene == null)
+        public BSPlugin()
         {
-            _mScene = new BSScene(GetName(), sceneIdentifier);
         }
-        return (_mScene);
-    }
 
-    public string GetName()
-    {
-        return ("BulletSim");
-    }
+        public void Dispose()
+        {
+        }
 
-    public void Dispose()
-    {
+        public string GetName()
+        {
+            return ("BulletSim");
+        }
+
+        public PhysicsScene GetScene(String sceneIdentifier)
+        {
+            if (_mScene == null)
+            {
+                _mScene = new BSScene(GetName(), sceneIdentifier);
+            }
+            return (_mScene);
+        }
+
+        public bool Init()
+        {
+            return true;
+        }
     }
-}
 }

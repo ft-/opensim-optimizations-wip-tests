@@ -25,36 +25,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Scenes;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
     public interface ISimulationDataService
     {
-        /// <summary>
-        /// Stores all object's details apart from inventory
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <param name="regionUUID"></param>
-        void StoreObject(SceneObjectGroup obj, UUID regionUUID);
+        Dictionary<string, string> GetExtra(UUID regionID);
 
-        /// <summary>
-        /// Entirely removes the object, including inventory
-        /// </summary>
-        /// <param name="uuid"></param>
-        /// <param name="regionUUID"></param>
-        /// <returns></returns>
-        void RemoveObject(UUID uuid, UUID regionUUID);
-
-        /// <summary>
-        /// Store a prim's inventory
-        /// </summary>
-        /// <returns></returns>
-        void StorePrimInventory(UUID primID, ICollection<TaskInventoryItem> items);
+        List<LandData> LoadLandObjects(UUID regionUUID);
 
         /// <summary>
         /// Load persisted objects from region storage.
@@ -64,14 +46,15 @@ namespace OpenSim.Region.Framework.Interfaces
         List<SceneObjectGroup> LoadObjects(UUID regionUUID);
 
         /// <summary>
-        /// Store a terrain revision in region storage
+        /// Load Environment settings from region storage
         /// </summary>
-        /// <param name="ter">HeightField data</param>
-        /// <param name="regionID">region UUID</param>
-        void StoreTerrain(TerrainData terrain, UUID regionID);
+        /// <param name="regionUUID">the region UUID</param>
+        /// <returns>LLSD string for viewer</returns>
+        string LoadRegionEnvironmentSettings(UUID regionUUID);
 
-        // Legacy version kept for downward compabibility
-        void StoreTerrain(double[,] terrain, UUID regionID);
+        RegionSettings LoadRegionSettings(UUID regionUUID);
+
+        RegionLightShareData LoadRegionWindlightSettings(UUID regionUUID);
 
         /// <summary>
         /// Load the latest terrain revision from region storage
@@ -86,7 +69,7 @@ namespace OpenSim.Region.Framework.Interfaces
         // Legacy version kept for downward compabibility
         double[,] LoadTerrain(UUID regionID);
 
-        void StoreLandObject(ILandObject Parcel);
+        void RemoveExtra(UUID regionID, string name);
 
         /// <summary>
         /// <list type="bullet">
@@ -97,27 +80,13 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="globalID"></param>
         void RemoveLandObject(UUID globalID);
 
-        List<LandData> LoadLandObjects(UUID regionUUID);
-
-        void StoreRegionSettings(RegionSettings rs);
-        RegionSettings LoadRegionSettings(UUID regionUUID);
-        RegionLightShareData LoadRegionWindlightSettings(UUID regionUUID);
-        void StoreRegionWindlightSettings(RegionLightShareData wl);
-        void RemoveRegionWindlightSettings(UUID regionID);
-
         /// <summary>
-        /// Load Environment settings from region storage
+        /// Entirely removes the object, including inventory
         /// </summary>
-        /// <param name="regionUUID">the region UUID</param>
-        /// <returns>LLSD string for viewer</returns>
-        string LoadRegionEnvironmentSettings(UUID regionUUID);
-
-        /// <summary>
-        /// Store Environment settings into region storage
-        /// </summary>
-        /// <param name="regionUUID">the region UUID</param>
-        /// <param name="settings">LLSD string from viewer</param>
-        void StoreRegionEnvironmentSettings(UUID regionUUID, string settings);
+        /// <param name="uuid"></param>
+        /// <param name="regionUUID"></param>
+        /// <returns></returns>
+        void RemoveObject(UUID uuid, UUID regionUUID);
 
         /// <summary>
         /// Delete Environment settings from region storage
@@ -125,10 +94,42 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="regionUUID">the region UUID</param>
         void RemoveRegionEnvironmentSettings(UUID regionUUID);
 
+        void RemoveRegionWindlightSettings(UUID regionID);
+
         void SaveExtra(UUID regionID, string name, string value);
 
-        void RemoveExtra(UUID regionID, string name);
+        void StoreLandObject(ILandObject Parcel);
 
-        Dictionary<string, string> GetExtra(UUID regionID);
+        /// <summary>
+        /// Stores all object's details apart from inventory
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <param name="regionUUID"></param>
+        void StoreObject(SceneObjectGroup obj, UUID regionUUID);
+        /// <summary>
+        /// Store a prim's inventory
+        /// </summary>
+        /// <returns></returns>
+        void StorePrimInventory(UUID primID, ICollection<TaskInventoryItem> items);
+        /// <summary>
+        /// Store Environment settings into region storage
+        /// </summary>
+        /// <param name="regionUUID">the region UUID</param>
+        /// <param name="settings">LLSD string from viewer</param>
+        void StoreRegionEnvironmentSettings(UUID regionUUID, string settings);
+
+        void StoreRegionSettings(RegionSettings rs);
+
+        void StoreRegionWindlightSettings(RegionLightShareData wl);
+
+        /// <summary>
+        /// Store a terrain revision in region storage
+        /// </summary>
+        /// <param name="ter">HeightField data</param>
+        /// <param name="regionID">region UUID</param>
+        void StoreTerrain(TerrainData terrain, UUID regionID);
+
+        // Legacy version kept for downward compabibility
+        void StoreTerrain(double[,] terrain, UUID regionID);
     }
 }

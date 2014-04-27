@@ -25,52 +25,42 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
-using System.Collections;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Scenes;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
     /// <summary>
     /// Interface to an entity's (SceneObjectPart's) inventory
     /// </summary>
-    /// 
-    /// This is not a finished 1.0 candidate interface 
+    ///
+    /// This is not a finished 1.0 candidate interface
     public interface IEntityInventory
     {
         /// <summary>
-        /// Force the task inventory of this prim to persist at the next update sweep
+        /// Number of items in this inventory.
         /// </summary>
-        void ForceInventoryPersistence();
+        int Count { get; }
 
         /// <summary>
-        /// Reset UUIDs for all the items in the prim's inventory.
+        /// Add an item to this entity's inventory.  If an item with the same name already exists, then an alternative
+        /// name is chosen.
         /// </summary>
-        /// 
-        /// This involves either generating
-        /// new ones or setting existing UUIDs to the correct parent UUIDs.
-        ///
-        /// If this method is called and there are inventory items, then we regard the inventory as having changed.
-        /// 
-        /// <param name="linkNum">Link number for the part</param>
-        void ResetInventoryIDs();
+        /// <param name="item"></param>
+        void AddInventoryItem(TaskInventoryItem item, bool allowedDrop);
 
         /// <summary>
-        /// Reset parent object UUID for all the items in the prim's inventory.
+        /// Add an item to this entity's inventory.  If an item with the same name already exists, it is replaced.
         /// </summary>
-        /// 
-        /// If this method is called and there are inventory items, then we regard the inventory as having changed.
-        /// 
-        /// <param name="linkNum">Link number for the part</param>
-        void ResetObjectID();
+        /// <param name="item"></param>
+        void AddInventoryItemExclusive(TaskInventoryItem item, bool allowedDrop);
 
-        /// <summary>
-        /// Change every item in this inventory to a new owner.
-        /// </summary>
-        /// <param name="ownerId"></param>
-        void ChangeInventoryOwner(UUID ownerId);
+        void ApplyGodPermissions(uint perms);
+
+        void ApplyNextOwnerPermissions();
 
         /// <summary>
         /// Change every item in this inventory to a new group.
@@ -79,31 +69,15 @@ namespace OpenSim.Region.Framework.Interfaces
         void ChangeInventoryGroup(UUID groupID);
 
         /// <summary>
-        /// Start all the scripts contained in this entity's inventory
+        /// Change every item in this inventory to a new owner.
         /// </summary>
-        /// <param name="startParam"></param>
-        /// <param name="postOnRez"></param>
-        /// <param name="engine"></param>
-        /// <param name="stateSource"></param>
-        /// <returns>Number of scripts started.</returns>
-        int CreateScriptInstances(int startParam, bool postOnRez, string engine, int stateSource);
-        
-        ArrayList GetScriptErrors(UUID itemID);
-        void ResumeScripts();
+        /// <param name="ownerId"></param>
+        void ChangeInventoryOwner(UUID ownerId);
 
         /// <summary>
-        /// Stop and remove all the scripts in this entity from the scene.
-        /// </summary>
-        /// <param name="sceneObjectBeingDeleted">
-        /// Should be true if these scripts are being removed because the scene
-        /// object is being deleted.  This will prevent spurious updates to the client.
-        /// </param>
-        void RemoveScriptInstances(bool sceneObjectBeingDeleted);
-
-        /// <summary>
-        /// Stop all the scripts in this entity.
-        /// </summary>
-        void StopScriptInstances();
+        /// Returns true if this inventory contains any scripts
+        /// </summary></returns>
+        bool ContainsScripts();
 
         /// <summary>
         /// Start a script which is in this entity's inventory.
@@ -134,55 +108,19 @@ namespace OpenSim.Region.Framework.Interfaces
         bool CreateScriptInstance(UUID itemId, int startParam, bool postOnRez, string engine, int stateSource);
 
         /// <summary>
-        /// Stop and remove a script which is in this prim's inventory from the scene.
+        /// Start all the scripts contained in this entity's inventory
         /// </summary>
-        /// <param name="itemId"></param>
-        /// <param name="sceneObjectBeingDeleted">
-        /// Should be true if these scripts are being removed because the scene
-        /// object is being deleted.  This will prevent spurious updates to the client.
-        /// </param>
-        void RemoveScriptInstance(UUID itemId, bool sceneObjectBeingDeleted);
+        /// <param name="startParam"></param>
+        /// <param name="postOnRez"></param>
+        /// <param name="engine"></param>
+        /// <param name="stateSource"></param>
+        /// <returns>Number of scripts started.</returns>
+        int CreateScriptInstances(int startParam, bool postOnRez, string engine, int stateSource);
 
         /// <summary>
-        /// Stop a script which is in this prim's inventory.
+        /// Force the task inventory of this prim to persist at the next update sweep
         /// </summary>
-        /// <param name="itemId"></param>
-        void StopScriptInstance(UUID itemId);
-
-        /// <summary>
-        /// Try to get the script running status.
-        /// </summary>
-        /// <returns>
-        /// Returns true if a script for the item was found in one of the simulator's script engines.  In this case,
-        /// the running parameter will reflect the running status.
-        /// Returns false if the item could not be found, if the item is not a script or if a script instance for the
-        /// item was not found in any of the script engines.  In this case, running status is irrelevant.
-        /// </returns>
-        /// <param name='itemId'></param>
-        /// <param name='running'></param>
-        bool TryGetScriptInstanceRunning(UUID itemId, out bool running);
-
-        /// <summary>
-        /// Add an item to this entity's inventory.  If an item with the same name already exists, then an alternative
-        /// name is chosen.
-        /// </summary>
-        /// <param name="item"></param>
-        void AddInventoryItem(TaskInventoryItem item, bool allowedDrop);
-
-        /// <summary>
-        /// Add an item to this entity's inventory.  If an item with the same name already exists, it is replaced.
-        /// </summary>
-        /// <param name="item"></param>
-        void AddInventoryItemExclusive(TaskInventoryItem item, bool allowedDrop);
-
-        /// <summary>
-        /// Restore a whole collection of items to the entity's inventory at once.
-        /// We assume that the items already have all their fields correctly filled out.
-        /// The items are not flagged for persistence to the database, since they are being restored
-        /// from persistence rather than being newly added.
-        /// </summary>
-        /// <param name="items"></param>
-        void RestoreInventoryItems(ICollection<TaskInventoryItem> items);
+        void ForceInventoryPersistence();
 
         /// <summary>
         /// Returns an existing inventory item.  Returns the original, so any changes will be live.
@@ -190,15 +128,6 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="itemID"></param>
         /// <returns>null if the item does not exist</returns>
         TaskInventoryItem GetInventoryItem(UUID itemId);
-
-        /// <summary>
-        /// Get all inventory items.
-        /// </summary>
-        /// <param name="name"></param>
-        /// <returns>
-        /// If there are no inventory items then an empty list is returned.
-        /// </returns>
-        List<TaskInventoryItem> GetInventoryItems();
 
         /// <summary>
         /// Gets an inventory item by name
@@ -212,6 +141,15 @@ namespace OpenSim.Region.Framework.Interfaces
         /// The inventory item.  Null if no such item was found.
         /// </returns>
         TaskInventoryItem GetInventoryItem(string name);
+
+        /// <summary>
+        /// Get all inventory items.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns>
+        /// If there are no inventory items then an empty list is returned.
+        /// </returns>
+        List<TaskInventoryItem> GetInventoryItems();
 
         /// <summary>
         /// Get inventory items by name.
@@ -234,27 +172,41 @@ namespace OpenSim.Region.Framework.Interfaces
         List<TaskInventoryItem> GetInventoryItems(InventoryType type);
 
         /// <summary>
+        /// Get the uuids of all items in this inventory
+        /// </summary>
+        /// <returns></returns>
+        List<UUID> GetInventoryList();
+
+        /// <summary>
         /// Get the scene object(s) referenced by an inventory item.
         /// </summary>
-        /// 
+        ///
         /// This is returned in a 'rez ready' state.  That is, name, description, permissions and other details have
         /// been adjusted to reflect the part and item from which it originates.
-        /// 
+        ///
         /// <param name="item">Inventory item</param>
         /// <param name="objlist">The scene objects</param>
         /// <param name="veclist">Relative offsets for each object</param>
         /// <returns>true = success, false = the scene object asset couldn't be found</returns>
         bool GetRezReadySceneObjects(TaskInventoryItem item, out List<SceneObjectGroup> objlist, out List<Vector3> veclist);
 
+        ArrayList GetScriptErrors(UUID itemID);
+
         /// <summary>
-        /// Update an existing inventory item.
+        /// Get the xml representing the saved states of scripts in this inventory.
         /// </summary>
-        /// <param name="item">The updated item.  An item with the same id must already exist
-        /// in this prim's inventory.</param>
-        /// <returns>false if the item did not exist, true if the update occurred successfully</returns>
-        bool UpdateInventoryItem(TaskInventoryItem item);
-        bool UpdateInventoryItem(TaskInventoryItem item, bool fireScriptEvents);
-        bool UpdateInventoryItem(TaskInventoryItem item, bool fireScriptEvents, bool considerChanged);
+        /// <returns>
+        /// A <see cref="Dictionary`2"/>
+        /// </returns>
+        Dictionary<UUID, string> GetScriptStates();
+
+        uint MaskEffectivePermissions();
+
+        /// <summary>
+        /// Backup the inventory to the given data store
+        /// </summary>
+        /// <param name="datastore"></param>
+        void ProcessInventoryBackup(ISimulationDataService datastore);
 
         /// <summary>
         /// Remove an item from this entity's inventory
@@ -265,32 +217,64 @@ namespace OpenSim.Region.Framework.Interfaces
         int RemoveInventoryItem(UUID itemID);
 
         /// <summary>
+        /// Stop and remove a script which is in this prim's inventory from the scene.
+        /// </summary>
+        /// <param name="itemId"></param>
+        /// <param name="sceneObjectBeingDeleted">
+        /// Should be true if these scripts are being removed because the scene
+        /// object is being deleted.  This will prevent spurious updates to the client.
+        /// </param>
+        void RemoveScriptInstance(UUID itemId, bool sceneObjectBeingDeleted);
+
+        /// <summary>
+        /// Stop and remove all the scripts in this entity from the scene.
+        /// </summary>
+        /// <param name="sceneObjectBeingDeleted">
+        /// Should be true if these scripts are being removed because the scene
+        /// object is being deleted.  This will prevent spurious updates to the client.
+        /// </param>
+        void RemoveScriptInstances(bool sceneObjectBeingDeleted);
+
+        /// <summary>
         /// Serialize all the metadata for the items in this prim's inventory ready for sending to the client
         /// </summary>
         /// <param name="xferManager"></param>
         void RequestInventoryFile(IClientAPI client, IXfer xferManager);
 
         /// <summary>
-        /// Backup the inventory to the given data store
+        /// Reset UUIDs for all the items in the prim's inventory.
         /// </summary>
-        /// <param name="datastore"></param>
-        void ProcessInventoryBackup(ISimulationDataService datastore);
-
-        uint MaskEffectivePermissions();
-
-        void ApplyNextOwnerPermissions();
-
-        void ApplyGodPermissions(uint perms);
+        ///
+        /// This involves either generating
+        /// new ones or setting existing UUIDs to the correct parent UUIDs.
+        ///
+        /// If this method is called and there are inventory items, then we regard the inventory as having changed.
+        ///
+        /// <param name="linkNum">Link number for the part</param>
+        void ResetInventoryIDs();
 
         /// <summary>
-        /// Number of items in this inventory.
+        /// Reset parent object UUID for all the items in the prim's inventory.
         /// </summary>
-        int Count { get; }
-
+        ///
+        /// If this method is called and there are inventory items, then we regard the inventory as having changed.
+        ///
+        /// <param name="linkNum">Link number for the part</param>
+        void ResetObjectID();
         /// <summary>
-        /// Returns true if this inventory contains any scripts
+        /// Restore a whole collection of items to the entity's inventory at once.
+        /// We assume that the items already have all their fields correctly filled out.
+        /// The items are not flagged for persistence to the database, since they are being restored
+        /// from persistence rather than being newly added.
+        /// </summary>
+        /// <param name="items"></param>
+        void RestoreInventoryItems(ICollection<TaskInventoryItem> items);
+
+        void ResumeScripts();
+        /// <summary>
+        /// Number of running scripts in this inventory.
         /// </summary></returns>
-        bool ContainsScripts();
+        int RunningScriptCount();
 
         /// <summary>
         /// Number of scripts in this inventory.
@@ -301,22 +285,37 @@ namespace OpenSim.Region.Framework.Interfaces
         int ScriptCount();
 
         /// <summary>
-        /// Number of running scripts in this inventory.
-        /// </summary></returns>
-        int RunningScriptCount();
+        /// Stop a script which is in this prim's inventory.
+        /// </summary>
+        /// <param name="itemId"></param>
+        void StopScriptInstance(UUID itemId);
 
         /// <summary>
-        /// Get the uuids of all items in this inventory
+        /// Stop all the scripts in this entity.
         /// </summary>
-        /// <returns></returns>
-        List<UUID> GetInventoryList();
-        
+        void StopScriptInstances();
         /// <summary>
-        /// Get the xml representing the saved states of scripts in this inventory.
+        /// Try to get the script running status.
         /// </summary>
         /// <returns>
-        /// A <see cref="Dictionary`2"/>
+        /// Returns true if a script for the item was found in one of the simulator's script engines.  In this case,
+        /// the running parameter will reflect the running status.
+        /// Returns false if the item could not be found, if the item is not a script or if a script instance for the
+        /// item was not found in any of the script engines.  In this case, running status is irrelevant.
         /// </returns>
-        Dictionary<UUID, string> GetScriptStates();
+        /// <param name='itemId'></param>
+        /// <param name='running'></param>
+        bool TryGetScriptInstanceRunning(UUID itemId, out bool running);
+        /// <summary>
+        /// Update an existing inventory item.
+        /// </summary>
+        /// <param name="item">The updated item.  An item with the same id must already exist
+        /// in this prim's inventory.</param>
+        /// <returns>false if the item did not exist, true if the update occurred successfully</returns>
+        bool UpdateInventoryItem(TaskInventoryItem item);
+
+        bool UpdateInventoryItem(TaskInventoryItem item, bool fireScriptEvents);
+
+        bool UpdateInventoryItem(TaskInventoryItem item, bool fireScriptEvents, bool considerChanged);
     }
 }

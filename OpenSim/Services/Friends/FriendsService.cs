@@ -25,22 +25,32 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using Nini.Config;
 using OpenMetaverse;
+using OpenSim.Data;
 using OpenSim.Framework;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
-using OpenSim.Services.Interfaces;
-using OpenSim.Data;
-using Nini.Config;
-using log4net;
 using FriendInfo = OpenSim.Services.Interfaces.FriendInfo;
 
 namespace OpenSim.Services.Friends
 {
     public class FriendsService : FriendsServiceBase, IFriendsService
     {
-        public FriendsService(IConfigSource config) : base(config)
+        public FriendsService(IConfigSource config)
+            : base(config)
         {
+        }
+
+        public bool Delete(string principalID, string friend)
+        {
+            return m_Database.Delete(principalID, friend);
+        }
+
+        public virtual bool Delete(UUID PrincipalID, string Friend)
+        {
+            return m_Database.Delete(PrincipalID, Friend);
         }
 
         public virtual FriendInfo[] GetFriends(UUID PrincipalID)
@@ -100,16 +110,5 @@ namespace OpenSim.Services.Friends
 
             return m_Database.Store(d);
         }
-
-        public bool Delete(string principalID, string friend)
-        {
-            return m_Database.Delete(principalID, friend);
-        }
-
-        public virtual bool Delete(UUID PrincipalID, string Friend)
-        {
-            return m_Database.Delete(PrincipalID, Friend);
-        }
-
     }
 }

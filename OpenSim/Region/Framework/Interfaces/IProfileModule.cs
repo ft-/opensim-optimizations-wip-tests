@@ -32,6 +32,5 @@ namespace OpenSim.Framework
     public interface IProfileModule
     {
         void RequestAvatarProperties(IClientAPI remoteClient, UUID avatarID);
-
     }
 }

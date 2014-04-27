@@ -25,27 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Runtime.Remoting.Lifetime;
-using System.Threading;
-using System.Reflection;
-using System.Collections;
-using System.Collections.Generic;
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.ScriptEngine.Interfaces;
 using OpenSim.Region.ScriptEngine.Shared.Api.Interfaces;
-using integer = OpenSim.Region.ScriptEngine.Shared.LSL_Types.LSLInteger;
-using vector = OpenSim.Region.ScriptEngine.Shared.LSL_Types.Vector3;
-using rotation = OpenSim.Region.ScriptEngine.Shared.LSL_Types.Quaternion;
-using key = OpenSim.Region.ScriptEngine.Shared.LSL_Types.LSLString;
-
+using System;
 using LSL_Float = OpenSim.Region.ScriptEngine.Shared.LSL_Types.LSLFloat;
 using LSL_Integer = OpenSim.Region.ScriptEngine.Shared.LSL_Types.LSLInteger;
 using LSL_Key = OpenSim.Region.ScriptEngine.Shared.LSL_Types.LSLString;
 using LSL_List = OpenSim.Region.ScriptEngine.Shared.LSL_Types.list;
 using LSL_Rotation = OpenSim.Region.ScriptEngine.Shared.LSL_Types.Quaternion;
+
 using LSL_String = OpenSim.Region.ScriptEngine.Shared.LSL_Types.LSLString;
+
 using LSL_Vector = OpenSim.Region.ScriptEngine.Shared.LSL_Types.Vector3;
 
 namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
@@ -62,14 +52,9 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
             m_MOD_Functions = (IMOD_Api)api;
         }
 
-        public void modInvokeN(string fname, params object[] parms)
+        public LSL_Float modInvokeF(string fname, params object[] parms)
         {
-            m_MOD_Functions.modInvokeN(fname, parms);
-        }
-
-        public LSL_String modInvokeS(string fname, params object[] parms)
-        {
-            return m_MOD_Functions.modInvokeS(fname, parms);
+            return m_MOD_Functions.modInvokeF(fname, parms);
         }
 
         public LSL_Integer modInvokeI(string fname, params object[] parms)
@@ -77,24 +62,9 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
             return m_MOD_Functions.modInvokeI(fname, parms);
         }
 
-        public LSL_Float modInvokeF(string fname, params object[] parms)
-        {
-            return m_MOD_Functions.modInvokeF(fname, parms);
-        }
-
         public LSL_Key modInvokeK(string fname, params object[] parms)
         {
             return m_MOD_Functions.modInvokeK(fname, parms);
-        }
-
-        public LSL_Vector modInvokeV(string fname, params object[] parms)
-        {
-            return m_MOD_Functions.modInvokeV(fname, parms);
-        }
-
-        public LSL_Rotation modInvokeR(string fname, params object[] parms)
-        {
-            return m_MOD_Functions.modInvokeR(fname, parms);
         }
 
         public LSL_List modInvokeL(string fname, params object[] parms)
@@ -102,6 +72,24 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
             return m_MOD_Functions.modInvokeL(fname, parms);
         }
 
+        public void modInvokeN(string fname, params object[] parms)
+        {
+            m_MOD_Functions.modInvokeN(fname, parms);
+        }
+
+        public LSL_Rotation modInvokeR(string fname, params object[] parms)
+        {
+            return m_MOD_Functions.modInvokeR(fname, parms);
+        }
+
+        public LSL_String modInvokeS(string fname, params object[] parms)
+        {
+            return m_MOD_Functions.modInvokeS(fname, parms);
+        }
+        public LSL_Vector modInvokeV(string fname, params object[] parms)
+        {
+            return m_MOD_Functions.modInvokeV(fname, parms);
+        }
         public string modSendCommand(string module, string command, string k)
         {
             return m_MOD_Functions.modSendCommand(module, command, k);

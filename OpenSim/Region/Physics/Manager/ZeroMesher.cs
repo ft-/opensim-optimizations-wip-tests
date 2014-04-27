@@ -25,10 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using OpenSim.Framework;
-using OpenMetaverse;
 using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using System;
 
 /*
  * This is the zero mesher.
@@ -43,23 +43,6 @@ using Nini.Config;
 
 namespace OpenSim.Region.Physics.Manager
 {
-    public class ZeroMesherPlugin : IMeshingPlugin
-    {
-        public ZeroMesherPlugin()
-        {
-        }
-
-        public string GetName()
-        {
-            return "ZeroMesher";
-        }
-
-        public IMesher GetMesher(IConfigSource config)
-        {
-            return new ZeroMesher();
-        }
-    }
-
     public class ZeroMesher : IMesher
     {
         public IMesh CreateMesh(String primName, PrimitiveBaseShape primShape, Vector3 size, float lod)
@@ -78,6 +61,23 @@ namespace OpenSim.Region.Physics.Manager
             primShape.SculptData = OpenMetaverse.Utils.EmptyBytes;
 
             return null;
+        }
+    }
+
+    public class ZeroMesherPlugin : IMeshingPlugin
+    {
+        public ZeroMesherPlugin()
+        {
+        }
+
+        public IMesher GetMesher(IConfigSource config)
+        {
+            return new ZeroMesher();
+        }
+
+        public string GetName()
+        {
+            return "ZeroMesher";
         }
     }
 }

@@ -25,16 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using log4net;
 using Nini.Config;
 using OpenMetaverse;
 using OpenSim.Data;
 using OpenSim.Framework;
 using OpenSim.Services.Interfaces;
-using OpenSim.Framework.Console;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 using PermissionMask = OpenSim.Framework.PermissionMask;
 
@@ -42,6 +41,11 @@ namespace OpenSim.Services.UserAccountService
 {
     public class UserAccountService : UserAccountServiceBase, IUserAccountService
     {
+        protected IAuthenticationService m_AuthenticationService;
+        protected IAvatarService m_AvatarService;
+        protected IGridService m_GridService;
+        protected IGridUserService m_GridUserService;
+        protected IInventoryService m_InventoryService;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private static UserAccountService m_RootInstance;
 
@@ -49,13 +53,6 @@ namespace OpenSim.Services.UserAccountService
         /// Should we create default entries (minimum body parts/clothing, avatar wearable entries) for a new avatar?
         /// </summary>
         private bool m_CreateDefaultAvatarEntries;
-
-        protected IGridService m_GridService;
-        protected IAuthenticationService m_AuthenticationService;
-        protected IGridUserService m_GridUserService;
-        protected IInventoryService m_InventoryService;
-        protected IAvatarService m_AvatarService;
-
         public UserAccountService(IConfigSource config)
             : base(config)
         {
@@ -120,9 +117,9 @@ namespace OpenSim.Services.UserAccountService
         public UserAccount GetUserAccount(UUID scopeID, string firstName,
                 string lastName)
         {
-//            m_log.DebugFormat(
-//                "[USER ACCOUNT SERVICE]: Retrieving account by username for {0} {1}, scope {2}",
-//                firstName, lastName, scopeID);
+            //            m_log.DebugFormat(
+            //                "[USER ACCOUNT SERVICE]: Retrieving account by username for {0} {1}, scope {2}",
+            //                firstName, lastName, scopeID);
 
             UserAccountData[] d;
 
@@ -149,51 +146,6 @@ namespace OpenSim.Services.UserAccountService
                 return null;
 
             return MakeUserAccount(d[0]);
-        }
-
-        private UserAccount MakeUserAccount(UserAccountData d)
-        {
-            UserAccount u = new UserAccount();
-            u.FirstName = d.FirstName;
-            u.LastName = d.LastName;
-            u.PrincipalID = d.PrincipalID;
-            u.ScopeID = d.ScopeID;
-            if (d.Data.ContainsKey("Email") && d.Data["Email"] != null)
-                u.Email = d.Data["Email"].ToString();
-            else
-                u.Email = string.Empty;
-            u.Created = Convert.ToInt32(d.Data["Created"].ToString());
-            if (d.Data.ContainsKey("UserTitle") && d.Data["UserTitle"] != null)
-                u.UserTitle = d.Data["UserTitle"].ToString();
-            else
-                u.UserTitle = string.Empty;
-            if (d.Data.ContainsKey("UserLevel") && d.Data["UserLevel"] != null)
-                Int32.TryParse(d.Data["UserLevel"], out u.UserLevel);
-            if (d.Data.ContainsKey("UserFlags") && d.Data["UserFlags"] != null)
-                Int32.TryParse(d.Data["UserFlags"], out u.UserFlags);
-
-            if (d.Data.ContainsKey("ServiceURLs") && d.Data["ServiceURLs"] != null)
-            {
-                string[] URLs = d.Data["ServiceURLs"].ToString().Split(new char[] { ' ' });
-                u.ServiceURLs = new Dictionary<string, object>();
-
-                foreach (string url in URLs)
-                {
-                    string[] parts = url.Split(new char[] { '=' });
-
-                    if (parts.Length != 2)
-                        continue;
-
-                    string name = System.Web.HttpUtility.UrlDecode(parts[0]);
-                    string val = System.Web.HttpUtility.UrlDecode(parts[1]);
-
-                    u.ServiceURLs[name] = val;
-                }
-            }
-            else
-                u.ServiceURLs = new Dictionary<string, object>();
-
-            return u;
         }
 
         public UserAccount GetUserAccount(UUID scopeID, string email)
@@ -256,15 +208,30 @@ namespace OpenSim.Services.UserAccountService
             return MakeUserAccount(d[0]);
         }
 
+        public List<UserAccount> GetUserAccounts(UUID scopeID, string query)
+        {
+            UserAccountData[] d = m_Database.GetUsers(scopeID, query);
+
+            if (d == null)
+                return new List<UserAccount>();
+
+            List<UserAccount> ret = new List<UserAccount>();
+
+            foreach (UserAccountData data in d)
+                ret.Add(MakeUserAccount(data));
+
+            return ret;
+        }
+
         public void InvalidateCache(UUID userID)
         {
         }
 
         public bool StoreUserAccount(UserAccount data)
         {
-//            m_log.DebugFormat(
-//                "[USER ACCOUNT SERVICE]: Storing user account for {0} {1} {2}, scope {3}",
-//                data.FirstName, data.LastName, data.PrincipalID, data.ScopeID);
+            //            m_log.DebugFormat(
+            //                "[USER ACCOUNT SERVICE]: Storing user account for {0} {1} {2}, scope {3}",
+            //                data.FirstName, data.LastName, data.PrincipalID, data.ScopeID);
 
             UserAccountData d = new UserAccountData();
 
@@ -294,22 +261,51 @@ namespace OpenSim.Services.UserAccountService
             return m_Database.Store(d);
         }
 
-        public List<UserAccount> GetUserAccounts(UUID scopeID, string query)
+        private UserAccount MakeUserAccount(UserAccountData d)
         {
-            UserAccountData[] d = m_Database.GetUsers(scopeID, query);
+            UserAccount u = new UserAccount();
+            u.FirstName = d.FirstName;
+            u.LastName = d.LastName;
+            u.PrincipalID = d.PrincipalID;
+            u.ScopeID = d.ScopeID;
+            if (d.Data.ContainsKey("Email") && d.Data["Email"] != null)
+                u.Email = d.Data["Email"].ToString();
+            else
+                u.Email = string.Empty;
+            u.Created = Convert.ToInt32(d.Data["Created"].ToString());
+            if (d.Data.ContainsKey("UserTitle") && d.Data["UserTitle"] != null)
+                u.UserTitle = d.Data["UserTitle"].ToString();
+            else
+                u.UserTitle = string.Empty;
+            if (d.Data.ContainsKey("UserLevel") && d.Data["UserLevel"] != null)
+                Int32.TryParse(d.Data["UserLevel"], out u.UserLevel);
+            if (d.Data.ContainsKey("UserFlags") && d.Data["UserFlags"] != null)
+                Int32.TryParse(d.Data["UserFlags"], out u.UserFlags);
 
-            if (d == null)
-                return new List<UserAccount>();
+            if (d.Data.ContainsKey("ServiceURLs") && d.Data["ServiceURLs"] != null)
+            {
+                string[] URLs = d.Data["ServiceURLs"].ToString().Split(new char[] { ' ' });
+                u.ServiceURLs = new Dictionary<string, object>();
 
-            List<UserAccount> ret = new List<UserAccount>();
+                foreach (string url in URLs)
+                {
+                    string[] parts = url.Split(new char[] { '=' });
 
-            foreach (UserAccountData data in d)
-                ret.Add(MakeUserAccount(data));
+                    if (parts.Length != 2)
+                        continue;
 
-            return ret;
+                    string name = System.Web.HttpUtility.UrlDecode(parts[0]);
+                    string val = System.Web.HttpUtility.UrlDecode(parts[1]);
+
+                    u.ServiceURLs[name] = val;
+                }
+            }
+            else
+                u.ServiceURLs = new Dictionary<string, object>();
+
+            return u;
         }
-
-        #endregion
+        #endregion IUserAccountService
 
         #region Console commands
 
@@ -325,7 +321,7 @@ namespace OpenSim.Services.UserAccountService
             string email;
             string rawPrincipalId;
 
-            List<char> excluded = new List<char>(new char[]{' '});
+            List<char> excluded = new List<char>(new char[] { ' ' });
 
             if (cmdparams.Length < 3)
                 firstName = MainConsole.Instance.CmdPrompt("First name", "Default", excluded);
@@ -353,36 +349,6 @@ namespace OpenSim.Services.UserAccountService
                 throw new Exception(string.Format("ID {0} is not a valid UUID", rawPrincipalId));
 
             CreateUser(UUID.Zero, principalId, firstName, lastName, password, email);
-        }
-
-        protected void HandleShowAccount(string module, string[] cmdparams)
-        {
-            if (cmdparams.Length != 4)
-            {
-                MainConsole.Instance.Output("Usage: show account <first-name> <last-name>");
-                return;
-            }
-
-            string firstName = cmdparams[2];
-            string lastName = cmdparams[3];
-
-            UserAccount ua = GetUserAccount(UUID.Zero, firstName, lastName);
-
-            if (ua == null)
-            {
-                MainConsole.Instance.OutputFormat("No user named {0} {1}", firstName, lastName);
-                return;
-            }
-
-            MainConsole.Instance.OutputFormat("Name:    {0}", ua.Name);
-            MainConsole.Instance.OutputFormat("ID:      {0}", ua.PrincipalID);
-            MainConsole.Instance.OutputFormat("Title:   {0}", ua.UserTitle);
-            MainConsole.Instance.OutputFormat("E-mail:  {0}", ua.Email);
-            MainConsole.Instance.OutputFormat("Created: {0}", Utils.UnixTimeToDateTime(ua.Created));
-            MainConsole.Instance.OutputFormat("Level:   {0}", ua.UserLevel);
-            MainConsole.Instance.OutputFormat("Flags:   {0}", ua.UserFlags);
-            foreach (KeyValuePair<string, Object> kvp in ua.ServiceURLs)
-                MainConsole.Instance.OutputFormat("{0}: {1}", kvp.Key, kvp.Value);
         }
 
         protected void HandleResetUserPassword(string module, string[] cmdparams)
@@ -436,7 +402,8 @@ namespace OpenSim.Services.UserAccountService
             else lastName = cmdparams[4];
 
             UserAccount account = GetUserAccount(UUID.Zero, firstName, lastName);
-            if (account == null) {
+            if (account == null)
+            {
                 MainConsole.Instance.OutputFormat("No such user");
                 return;
             }
@@ -445,7 +412,8 @@ namespace OpenSim.Services.UserAccountService
                 rawLevel = MainConsole.Instance.CmdPrompt("User level");
             else rawLevel = cmdparams[5];
 
-            if(int.TryParse(rawLevel, out level) == false) {
+            if (int.TryParse(rawLevel, out level) == false)
+            {
                 MainConsole.Instance.OutputFormat("Invalid user level");
                 return;
             }
@@ -459,7 +427,36 @@ namespace OpenSim.Services.UserAccountService
                 MainConsole.Instance.OutputFormat("User level set for user {0} {1} to {2}", firstName, lastName, level);
         }
 
-        #endregion
+        protected void HandleShowAccount(string module, string[] cmdparams)
+        {
+            if (cmdparams.Length != 4)
+            {
+                MainConsole.Instance.Output("Usage: show account <first-name> <last-name>");
+                return;
+            }
+
+            string firstName = cmdparams[2];
+            string lastName = cmdparams[3];
+
+            UserAccount ua = GetUserAccount(UUID.Zero, firstName, lastName);
+
+            if (ua == null)
+            {
+                MainConsole.Instance.OutputFormat("No user named {0} {1}", firstName, lastName);
+                return;
+            }
+
+            MainConsole.Instance.OutputFormat("Name:    {0}", ua.Name);
+            MainConsole.Instance.OutputFormat("ID:      {0}", ua.PrincipalID);
+            MainConsole.Instance.OutputFormat("Title:   {0}", ua.UserTitle);
+            MainConsole.Instance.OutputFormat("E-mail:  {0}", ua.Email);
+            MainConsole.Instance.OutputFormat("Created: {0}", Utils.UnixTimeToDateTime(ua.Created));
+            MainConsole.Instance.OutputFormat("Level:   {0}", ua.UserLevel);
+            MainConsole.Instance.OutputFormat("Flags:   {0}", ua.UserFlags);
+            foreach (KeyValuePair<string, Object> kvp in ua.ServiceURLs)
+                MainConsole.Instance.OutputFormat("{0}: {1}", kvp.Key, kvp.Value);
+        }
+        #endregion Console commands
 
         /// <summary>
         /// Create a user

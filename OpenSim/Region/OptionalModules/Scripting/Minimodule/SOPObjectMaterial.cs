@@ -25,13 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Drawing;
 using OpenMetaverse;
 using OpenSim.Region.Framework.Scenes;
+using System.Drawing;
 
 namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
-    class SOPObjectMaterial : System.MarshalByRefObject, IObjectMaterial
+    internal class SOPObjectMaterial : System.MarshalByRefObject, IObjectMaterial
     {
         private readonly int m_face;
         private readonly SceneObjectPart m_parent;
@@ -42,18 +42,69 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             this.m_parent = m_parent;
         }
 
+        public double Bloom
+        {
+            get { return GetTexface().Glow; }
+            set
+            {
+                Primitive.TextureEntry tex = m_parent.Shape.Textures;
+                Primitive.TextureEntryFace texface = tex.CreateFace((uint)m_face);
+                texface.Glow = (float)value;
+                tex.FaceTextures[m_face] = texface;
+                m_parent.UpdateTextureEntry(tex.GetBytes());
+            }
+        }
+
+        public bool Bright
+        {
+            get { return GetTexface().Fullbright; }
+            set
+            {
+                Primitive.TextureEntry tex = m_parent.Shape.Textures;
+                Primitive.TextureEntryFace texface = tex.CreateFace((uint)m_face);
+                texface.Fullbright = value;
+                tex.FaceTextures[m_face] = texface;
+                m_parent.UpdateTextureEntry(tex.GetBytes());
+            }
+        }
+
+        public bool BumpMap
+        {
+            get { return GetTexface().Bump == Bumpiness.None; }
+            set { throw new System.NotImplementedException(); }
+        }
+
         public Color Color
         {
             get
             {
                 Color4 res = GetTexface().RGBA;
-                return Color.FromArgb((int) (res.A*255), (int) (res.R*255), (int) (res.G*255), (int) (res.B*255));
+                return Color.FromArgb((int)(res.A * 255), (int)(res.R * 255), (int)(res.G * 255), (int)(res.B * 255));
             }
             set
             {
                 Primitive.TextureEntry tex = m_parent.Shape.Textures;
                 Primitive.TextureEntryFace texface = tex.CreateFace((uint)m_face);
-                texface.RGBA = new Color4(value.R,value.G,value.B,value.A);
+                texface.RGBA = new Color4(value.R, value.G, value.B, value.A);
+                tex.FaceTextures[m_face] = texface;
+                m_parent.UpdateTextureEntry(tex.GetBytes());
+            }
+        }
+
+        public TextureMapping Mapping
+        {
+            get { throw new System.NotImplementedException(); }
+            set { throw new System.NotImplementedException(); }
+        }
+
+        public bool Shiny
+        {
+            get { return GetTexface().Shiny != Shininess.None; }
+            set
+            {
+                Primitive.TextureEntry tex = m_parent.Shape.Textures;
+                Primitive.TextureEntryFace texface = tex.CreateFace((uint)m_face);
+                texface.Shiny = value ? Shininess.High : Shininess.None;
                 tex.FaceTextures[m_face] = texface;
                 m_parent.UpdateTextureEntry(tex.GetBytes());
             }
@@ -80,57 +131,6 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
         {
             Primitive.TextureEntry tex = m_parent.Shape.Textures;
             return tex.GetFace((uint)m_face);
-        }
-
-        public TextureMapping Mapping
-        {
-            get { throw new System.NotImplementedException(); }
-            set { throw new System.NotImplementedException(); }
-        }
-
-        public bool Bright
-        {
-            get { return GetTexface().Fullbright; }
-            set
-            {
-                Primitive.TextureEntry tex = m_parent.Shape.Textures;
-                Primitive.TextureEntryFace texface = tex.CreateFace((uint)m_face);
-                texface.Fullbright = value;
-                tex.FaceTextures[m_face] = texface;
-                m_parent.UpdateTextureEntry(tex.GetBytes());
-            }
-        }
-
-        public double Bloom
-        {
-            get { return GetTexface().Glow; }
-            set
-            {
-                Primitive.TextureEntry tex = m_parent.Shape.Textures;
-                Primitive.TextureEntryFace texface = tex.CreateFace((uint)m_face);
-                texface.Glow = (float) value;
-                tex.FaceTextures[m_face] = texface;
-                m_parent.UpdateTextureEntry(tex.GetBytes());
-            }
-        }
-
-        public bool Shiny
-        {
-            get { return GetTexface().Shiny != Shininess.None; }
-            set
-            {
-                Primitive.TextureEntry tex = m_parent.Shape.Textures;
-                Primitive.TextureEntryFace texface = tex.CreateFace((uint)m_face);
-                texface.Shiny = value ? Shininess.High : Shininess.None;
-                tex.FaceTextures[m_face] = texface;
-                m_parent.UpdateTextureEntry(tex.GetBytes());
-            }
-        }
-
-        public bool BumpMap
-        {
-            get { return GetTexface().Bump == Bumpiness.None; }
-            set { throw new System.NotImplementedException(); }
         }
     }
 }

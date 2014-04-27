@@ -25,8 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenSim.Region.Framework.Interfaces;
+using System;
 
 namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
 {
@@ -36,13 +36,13 @@ namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
 
         public void PaintEffect(ITerrainChannel map, bool[,] mask, double rx, double ry, double rz, double strength, double duration)
         {
-            int s = (int) (Math.Pow(2, strength) + 0.5);
+            int s = (int)(Math.Pow(2, strength) + 0.5);
 
             int x;
-            int xFrom = (int)(rx-s+0.5);
-            int xTo   = (int)(rx+s+0.5) + 1;
-            int yFrom = (int)(ry-s+0.5);
-            int yTo   = (int)(ry+s+0.5) + 1;
+            int xFrom = (int)(rx - s + 0.5);
+            int xTo = (int)(rx + s + 0.5) + 1;
+            int yFrom = (int)(ry - s + 0.5);
+            int yTo = (int)(ry + s + 0.5) + 1;
 
             if (xFrom < 0)
                 xFrom = 0;
@@ -61,11 +61,11 @@ namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
                 int y;
                 for (y = yFrom; y < yTo; y++)
                 {
-                    if (!mask[x,y])
+                    if (!mask[x, y])
                         continue;
 
                     // Calculate a cos-sphere and add it to the heighmap
-                    double r = Math.Sqrt((x-rx) * (x-rx) + ((y-ry) * (y-ry)));
+                    double r = Math.Sqrt((x - rx) * (x - rx) + ((y - ry) * (y - ry)));
                     double z = Math.Cos(r * Math.PI / (s * 2));
                     if (z > 0.0)
                     {
@@ -74,11 +74,11 @@ namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
                             map[x, y] = 0.0;
                         else
                             map[x, y] = newz;
-                    } 
+                    }
                 }
             }
-
         }
-        #endregion
+
+        #endregion ITerrainPaintableEffect Members
     }
 }

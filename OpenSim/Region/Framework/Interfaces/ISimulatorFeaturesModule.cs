@@ -25,7 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
 
@@ -39,9 +38,13 @@ namespace OpenSim.Region.Framework.Interfaces
     public interface ISimulatorFeaturesModule
     {
         event SimulatorFeaturesRequestDelegate OnSimulatorFeaturesRequest;
+
         void AddFeature(string name, OSD value);
-        bool RemoveFeature(string name);
-        bool TryGetFeature(string name, out OSD value);
+
         OSDMap GetFeatures();
+
+        bool RemoveFeature(string name);
+
+        bool TryGetFeature(string name, out OSD value);
     }
 }

@@ -25,23 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Reflection;
-
-using OpenSim.Framework;
-using OpenSim.Services.Connectors.Friends;
-using OpenSim.Services.Connectors.Hypergrid;
-using OpenSim.Services.Interfaces;
-using OpenSim.Services.Connectors.InstantMessage;
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
-using OpenSim.Server.Base;
-using FriendInfo = OpenSim.Services.Interfaces.FriendInfo;
-
-using OpenMetaverse;
 using log4net;
 using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Server.Base;
+using OpenSim.Services.Connectors.InstantMessage;
+using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 
 namespace OpenSim.Services.HypergridService
 {
@@ -50,27 +44,30 @@ namespace OpenSim.Services.HypergridService
     /// </summary>
     public class HGInstantMessageService : IInstantMessage
     {
+        protected static IGridService m_GridService;
+
+        protected static IInstantMessageSimConnector m_IMSimConnector;
+
+        protected static IOfflineIMService m_OfflineIMService;
+
+        protected static IPresenceService m_PresenceService;
+
+        protected static IUserAgentService m_UserAgentService;
+
+        protected static Dictionary<UUID, object> m_UserLocationMap = new Dictionary<UUID, object>();
+
+        private const double CACHE_EXPIRATION_SECONDS = 120000.0;
+
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
-        private const double CACHE_EXPIRATION_SECONDS = 120000.0; // 33 hours
-
-        static bool m_Initialized = false;
-
-        protected static IGridService m_GridService;
-        protected static IPresenceService m_PresenceService;
-        protected static IUserAgentService m_UserAgentService;
-        protected static IOfflineIMService m_OfflineIMService;
-
-        protected static IInstantMessageSimConnector m_IMSimConnector;
-
-        protected static Dictionary<UUID, object> m_UserLocationMap = new Dictionary<UUID, object>();
-        private static ExpiringCache<UUID, GridRegion> m_RegionCache;
+         // 33 hours
 
         private static bool m_ForwardOfflineGroupMessages;
         private static bool m_InGatekeeper;
-
+        private static bool m_Initialized = false;
+        private static ExpiringCache<UUID, GridRegion> m_RegionCache;
         public HGInstantMessageService(IConfigSource config)
             : this(config, null)
         {
@@ -124,8 +121,8 @@ namespace OpenSim.Services.HypergridService
 
         public bool IncomingInstantMessage(GridInstantMessage im)
         {
-//            m_log.DebugFormat("[HG IM SERVICE]: Received message from {0} to {1}", im.fromAgentID, im.toAgentID);
-//            UUID toAgentID = new UUID(im.toAgentID);
+            //            m_log.DebugFormat("[HG IM SERVICE]: Received message from {0} to {1}", im.fromAgentID, im.toAgentID);
+            //            UUID toAgentID = new UUID(im.toAgentID);
 
             bool success = false;
             if (m_IMSimConnector != null)
@@ -146,7 +143,7 @@ namespace OpenSim.Services.HypergridService
 
         public bool OutgoingInstantMessage(GridInstantMessage im, string url, bool foreigner)
         {
-//            m_log.DebugFormat("[HG IM SERVICE]: Sending message from {0} to {1}@{2}", im.fromAgentID, im.toAgentID, url);
+            //            m_log.DebugFormat("[HG IM SERVICE]: Sending message from {0} to {1}@{2}", im.fromAgentID, im.toAgentID, url);
             if (url != string.Empty)
                 return TrySendInstantMessage(im, url, true, foreigner);
             else
@@ -155,7 +152,6 @@ namespace OpenSim.Services.HypergridService
                 upd.RegionID = UUID.Zero;
                 return TrySendInstantMessage(im, upd, true, foreigner);
             }
-
         }
 
         protected bool TrySendInstantMessage(GridInstantMessage im, object previousLocation, bool firstTime, bool foreigner)
@@ -177,7 +173,7 @@ namespace OpenSim.Services.HypergridService
                     else if (o is string)
                         url = (string)o;
 
-                    // We need to compare the current location with the previous 
+                    // We need to compare the current location with the previous
                     // or the recursive loop will never end because it will never try to lookup the agent again
                     if (!firstTime)
                     {
@@ -262,7 +258,35 @@ namespace OpenSim.Services.HypergridService
             return false;
         }
 
-        bool SendIMToRegion(PresenceInfo upd, GridInstantMessage im, UUID toAgentID, bool foreigner)
+        private bool ForwardIMToGrid(string url, GridInstantMessage im, UUID toAgentID, bool foreigner)
+        {
+            if (InstantMessageServiceConnector.SendInstantMessage(url, im))
+            {
+                // IM delivery successful, so store the Agent's location in our local cache.
+                lock (m_UserLocationMap)
+                {
+                    if (m_UserLocationMap.ContainsKey(toAgentID))
+                    {
+                        m_UserLocationMap[toAgentID] = url;
+                    }
+                    else
+                    {
+                        m_UserLocationMap.Add(toAgentID, url);
+                    }
+                }
+
+                return true;
+            }
+            else
+            {
+                // try again, but lookup user this time.
+
+                // This is recursive!!!!!
+                return TrySendInstantMessage(im, url, false, foreigner);
+            }
+        }
+
+        private bool SendIMToRegion(PresenceInfo upd, GridInstantMessage im, UUID toAgentID, bool foreigner)
         {
             bool imresult = false;
             GridRegion reginfo = null;
@@ -311,35 +335,6 @@ namespace OpenSim.Services.HypergridService
                 return TrySendInstantMessage(im, upd, false, foreigner);
             }
         }
-
-        bool ForwardIMToGrid(string url, GridInstantMessage im, UUID toAgentID, bool foreigner)
-        {
-            if (InstantMessageServiceConnector.SendInstantMessage(url, im))
-            {
-                // IM delivery successful, so store the Agent's location in our local cache.
-                lock (m_UserLocationMap)
-                {
-                    if (m_UserLocationMap.ContainsKey(toAgentID))
-                    {
-                        m_UserLocationMap[toAgentID] = url;
-                    }
-                    else
-                    {
-                        m_UserLocationMap.Add(toAgentID, url);
-                    }
-                }
-
-                return true;
-            }
-            else
-            {
-                // try again, but lookup user this time.
-
-                // This is recursive!!!!!
-                return TrySendInstantMessage(im, url, false, foreigner);
-            }
-        }
-
         private bool UndeliveredMessage(GridInstantMessage im)
         {
             if (m_OfflineIMService == null)
@@ -361,7 +356,7 @@ namespace OpenSim.Services.HypergridService
                     return false;
             }
 
-//                m_log.DebugFormat("[HG IM SERVICE]: Message saved");
+            //                m_log.DebugFormat("[HG IM SERVICE]: Message saved");
             string reason = string.Empty;
             return m_OfflineIMService.StoreMessage(im, out reason);
         }

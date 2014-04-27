@@ -31,16 +31,10 @@ namespace OpenSim.Region.Framework.Interfaces
 {
     public interface IWindModule : INonSharedRegionModule
     {
-        
         /// <summary>
-        /// Retrieves the current wind speed at the given Region Coordinates
+        /// Current active wind model plugin or String.Empty
         /// </summary>
-        Vector3 WindSpeed(int x, int y, int z);
-
-        /// <summary>
-        /// Set Wind Plugin Parameter
-        /// </summary>
-        void WindParamSet(string plugin, string param, float value);
+        string WindActiveModelPluginName { get; }
 
         /// <summary>
         /// Get Wind Plugin Parameter
@@ -48,8 +42,13 @@ namespace OpenSim.Region.Framework.Interfaces
         float WindParamGet(string plugin, string param);
 
         /// <summary>
-        /// Current active wind model plugin or String.Empty
+        /// Set Wind Plugin Parameter
         /// </summary>
-        string WindActiveModelPluginName { get; }
+        void WindParamSet(string plugin, string param, float value);
+
+        /// <summary>
+        /// Retrieves the current wind speed at the given Region Coordinates
+        /// </summary>
+        Vector3 WindSpeed(int x, int y, int z);
     }
 }

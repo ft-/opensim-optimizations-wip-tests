@@ -29,36 +29,55 @@ using OpenMetaverse;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
-    public interface IXmlRpcRequestInfo
-    {
-        bool IsProcessed();
-        UUID GetChannelKey();
-        void SetProcessed(bool processed);
-        void SetStrRetval(string resp);
-        string GetStrRetval();
-        void SetIntRetval(int resp);
-        int GetIntRetval();
-        uint GetLocalID();
-        UUID GetItemID();
-        string GetStrVal();
-        int GetIntValue();
-        UUID GetMessageID();
-    }
-
     public interface IXMLRPC
     {
-        UUID OpenXMLRPCChannel(uint localID, UUID itemID, UUID channelID);
-        void CloseXMLRPCChannel(UUID channelKey);
-        bool hasRequests();
-        void RemoteDataReply(string channel, string message_id, string sdata, int idata);
-        bool IsEnabled();
-        IXmlRpcRequestInfo GetNextCompletedRequest();
-        void RemoveCompletedRequest(UUID id);
-        void DeleteChannels(UUID itemID);
-        UUID SendRemoteData(uint localID, UUID itemID, string channel, string dest, int idata, string sdata);
-        IServiceRequest GetNextCompletedSRDRequest();
-        void RemoveCompletedSRDRequest(UUID id);
-        void CancelSRDRequests(UUID itemID);
         int Port { get; }
+
+        void CancelSRDRequests(UUID itemID);
+
+        void CloseXMLRPCChannel(UUID channelKey);
+
+        void DeleteChannels(UUID itemID);
+
+        IXmlRpcRequestInfo GetNextCompletedRequest();
+
+        IServiceRequest GetNextCompletedSRDRequest();
+
+        bool hasRequests();
+
+        bool IsEnabled();
+
+        UUID OpenXMLRPCChannel(uint localID, UUID itemID, UUID channelID);
+        void RemoteDataReply(string channel, string message_id, string sdata, int idata);
+        void RemoveCompletedRequest(UUID id);
+        void RemoveCompletedSRDRequest(UUID id);
+
+        UUID SendRemoteData(uint localID, UUID itemID, string channel, string dest, int idata, string sdata);
+    }
+
+    public interface IXmlRpcRequestInfo
+    {
+        UUID GetChannelKey();
+
+        int GetIntRetval();
+
+        int GetIntValue();
+
+        UUID GetItemID();
+
+        uint GetLocalID();
+
+        UUID GetMessageID();
+
+        string GetStrRetval();
+
+        string GetStrVal();
+
+        bool IsProcessed();
+        void SetIntRetval(int resp);
+
+        void SetProcessed(bool processed);
+
+        void SetStrRetval(string resp);
     }
 }

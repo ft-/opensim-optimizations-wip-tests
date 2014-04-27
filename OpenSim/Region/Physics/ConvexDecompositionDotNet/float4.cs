@@ -1,21 +1,21 @@
 ﻿/* The MIT License
- * 
+ *
  * Copyright (c) 2010 Intel Corporation.
  * All rights reserved.
  *
- * Based on the convexdecomposition library from 
+ * Based on the convexdecomposition library from
  * <http://codesuppository.googlecode.com> by John W. Ratcliff and Stan Melax.
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -31,11 +31,10 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
 {
     public class float4
     {
+        public float w;
         public float x;
         public float y;
         public float z;
-        public float w;
-
         public float4()
         {
             x = 0;
@@ -83,30 +82,9 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
             }
         }
 
-        public float3 xyz()
+        public static float4 cmul(float4 a, float4 b)
         {
-            return new float3(x, y, z);
-        }
-
-        public void setxyz(float3 xyz)
-        {
-            x = xyz.x;
-            y = xyz.y;
-            z = xyz.z;
-        }
-
-        public override int GetHashCode()
-        {
-            return x.GetHashCode() ^ y.GetHashCode() ^ z.GetHashCode() ^ w.GetHashCode();
-        }
-
-        public override bool Equals(object obj)
-        {
-            float4 f = obj as float4;
-            if (f == null)
-                return false;
-
-            return this == f;
+            return new float4(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w);
         }
 
         public static float4 Homogenize(float3 v3)
@@ -121,23 +99,34 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
             return new float4(v3.x, v3.y, v3.z, w);
         }
 
-        public static float4 cmul(float4 a, float4 b)
-        {
-            return new float4(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w);
-        }
-
-        public static float4 operator +(float4 a, float4 b)
-        {
-            return new float4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
-        }
         public static float4 operator -(float4 a, float4 b)
         {
             return new float4(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w);
         }
 
+        public static bool operator !=(float4 a, float4 b)
+        {
+            return !(a == b);
+        }
+
         public static float4 operator *(float4 v, float4x4 m)
         {
             return v.x * m.x + v.y * m.y + v.z * m.z + v.w * m.w; // yes this actually works
+        }
+
+        public static float4 operator *(float4 v, float s)
+        {
+            return new float4(v.x * s, v.y * s, v.z * s, v.w * s);
+        }
+
+        public static float4 operator *(float s, float4 v)
+        {
+            return new float4(v.x * s, v.y * s, v.z * s, v.w * s);
+        }
+
+        public static float4 operator +(float4 a, float4 b)
+        {
+            return new float4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
         }
 
         public static bool operator ==(float4 a, float4 b)
@@ -152,19 +141,30 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
             return (a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w);
         }
 
-        public static bool operator !=(float4 a, float4 b)
+        public override bool Equals(object obj)
         {
-            return !(a == b);
+            float4 f = obj as float4;
+            if (f == null)
+                return false;
+
+            return this == f;
         }
 
-        public static float4 operator *(float4 v, float s)
+        public override int GetHashCode()
         {
-            return new float4(v.x * s, v.y * s, v.z * s, v.w * s);
+            return x.GetHashCode() ^ y.GetHashCode() ^ z.GetHashCode() ^ w.GetHashCode();
         }
 
-        public static float4 operator *(float s, float4 v)
+        public void setxyz(float3 xyz)
         {
-            return new float4(v.x * s, v.y * s, v.z * s, v.w * s);
+            x = xyz.x;
+            y = xyz.y;
+            z = xyz.z;
+        }
+
+        public float3 xyz()
+        {
+            return new float3(x, y, z);
         }
     }
 }

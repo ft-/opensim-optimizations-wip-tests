@@ -25,19 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Reflection;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
+using OpenMetaverse;
+using OpenMetaverse.StructuredData;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
-using OpenMetaverse;
-using OpenMetaverse.StructuredData;
+using System;
+using System.Collections.Specialized;
+using System.Reflection;
 
 [assembly: Addin("SimianGrid", "1.0")]
 [assembly: AddinDependency("OpenSim", "0.5")]
@@ -47,25 +45,39 @@ namespace OpenSim.Services.Connectors.SimianGrid
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "SimianExternalCapsModule")]
     public class SimianGrid : ISharedRegionModule
     {
+        public static String SimulatorCapability = UUID.Zero.ToString();
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private IConfig m_config = null;
 
         private String m_simianURL;
-        
-#region IRegionModule Members
+
+        #region IRegionModule Members
 
         public string Name
         {
             get { return this.GetType().Name; }
         }
-           
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
+        public void AddRegion(Scene scene)
+        {
+        }
+
+        public void Close()
+        {
+        }
+
         public void Initialise(IConfigSource config)
         {
-            try 
+            try
             {
                 m_config = config.Configs["SimianGrid"];
-               
+
                 if (m_config != null)
                 {
                     m_simianURL = m_config.GetString("SimianServiceURL");
@@ -74,33 +86,32 @@ namespace OpenSim.Services.Connectors.SimianGrid
                         // m_log.DebugFormat("[SimianGrid] service URL is not defined");
                         return;
                     }
-                    
+
                     InitialiseSimCap();
                     SimulatorCapability = SimulatorCapability.Trim();
-                    m_log.InfoFormat("[SimianExternalCaps] using {0} as simulator capability",SimulatorCapability);
+                    m_log.InfoFormat("[SimianExternalCaps] using {0} as simulator capability", SimulatorCapability);
                 }
             }
             catch (Exception e)
             {
-                m_log.ErrorFormat("[SimianExternalCaps] initialization error: {0}",e.Message);
+                m_log.ErrorFormat("[SimianExternalCaps] initialization error: {0}", e.Message);
                 return;
             }
         }
 
-        public void PostInitialise() { }
-        public void Close() { }
-        public void AddRegion(Scene scene) { }
-        public void RemoveRegion(Scene scene) { }
-        public void RegionLoaded(Scene scene) { }
-
-        public Type ReplaceableInterface
+        public void PostInitialise()
         {
-            get { return null; }
+        }
+        public void RegionLoaded(Scene scene)
+        {
         }
 
+        public void RemoveRegion(Scene scene)
+        {
+        }
         ///<summary>
         /// Try a variety of methods for finding the simian simulator capability; first check the
-        /// configuration itself, then look for a file that contains the cap, then finally look 
+        /// configuration itself, then look for a file that contains the cap, then finally look
         /// for an environment variable that contains it.
         ///</summary>
         private void InitialiseSimCap()
@@ -110,7 +121,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
                 SimulatorCapability = m_config.GetString("SimulatorCapability");
                 return;
             }
-            
+
             if (m_config.Contains("SimulatorCapabilityFile"))
             {
                 String filename = m_config.GetString("SimulatorCapabilityFile");
@@ -120,7 +131,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
                     return;
                 }
             }
-            
+
             if (m_config.Contains("SimulatorCapabilityVariable"))
             {
                 String envname = m_config.GetString("SimulatorCapabilityVariable");
@@ -134,10 +145,8 @@ namespace OpenSim.Services.Connectors.SimianGrid
 
             m_log.WarnFormat("[SimianExternalCaps] no method specified for simulator capability");
         }
-        
-#endregion
 
-        public static String SimulatorCapability = UUID.Zero.ToString();
+        #endregion IRegionModule Members
         public static OSDMap PostToService(string url, NameValueCollection data)
         {
             data["cap"] = SimulatorCapability;

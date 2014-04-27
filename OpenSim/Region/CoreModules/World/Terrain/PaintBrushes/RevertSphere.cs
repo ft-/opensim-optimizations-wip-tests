@@ -45,7 +45,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
         {
             strength = TerrainUtil.MetersToSphericalStrength(strength);
             duration = 0.03; //MCP Should be read from ini file
- 
+
             if (duration > 1.0)
                 duration = 1.0;
             if (duration < 0)
@@ -57,7 +57,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
                 int y;
                 for (y = 0; y < map.Height; y++)
                 {
-                    if (!mask[x,y])
+                    if (!mask[x, y])
                         continue;
 
                     // Calculate a sphere and add it to the heighmap
@@ -74,6 +74,6 @@ namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
             }
         }
 
-        #endregion
+        #endregion ITerrainPaintableEffect Members
     }
 }

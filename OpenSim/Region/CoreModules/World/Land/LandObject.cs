@@ -25,14 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using log4net;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 using RegionFlags = OpenMetaverse.RegionFlags;
 
 namespace OpenSim.Region.CoreModules.World.Land
@@ -44,29 +44,41 @@ namespace OpenSim.Region.CoreModules.World.Land
     {
         #region Member Variables
 
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        protected ExpiringCache<UUID, bool> m_groupMemberCache = new ExpiringCache<UUID, bool>();
+        protected TimeSpan m_groupMemberCacheTimeout = TimeSpan.FromSeconds(30);
+        protected Dictionary<uint, UUID> m_listTransactions = new Dictionary<uint, UUID>();
+        protected Scene m_scene;
+        protected List<SceneObjectGroup> primsOverMe = new List<SceneObjectGroup>();
         private static readonly string LogHeader = "[LAND OBJECT]";
-
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private readonly int landUnit = 4;
 
         private int m_lastSeqId = 0;
-              
-        protected Scene m_scene;
-        protected List<SceneObjectGroup> primsOverMe = new List<SceneObjectGroup>();
-        protected Dictionary<uint, UUID> m_listTransactions = new Dictionary<uint, UUID>();
-
-        protected ExpiringCache<UUID, bool> m_groupMemberCache = new ExpiringCache<UUID, bool>();
-        protected TimeSpan m_groupMemberCacheTimeout = TimeSpan.FromSeconds(30);  // cache invalidation after 30 seconds
+          // cache invalidation after 30 seconds
 
         public bool[,] LandBitmap { get; set; }
 
-        #endregion
+        #endregion Member Variables
 
-        public int GetPrimsFree()
+        public Vector3 EndPoint
         {
-            m_scene.EventManager.TriggerParcelPrimCountUpdate();
-            int free = GetSimulatorMaxPrimCount() - LandData.SimwidePrims;
-            return free;
+            get
+            {
+                for (int y = LandBitmap.GetLength(1) - 1; y >= 0; y--)
+                {
+                    for (int x = LandBitmap.GetLength(0) - 1; x >= 0; x--)
+                    {
+                        if (LandBitmap[x, y])
+                        {
+                            return new Vector3(x * landUnit + landUnit, y * landUnit + landUnit, 0);
+                        }
+                    }
+                }
+
+                m_log.ErrorFormat("{0} EndPoint. No end point found. bitmapSize=<{1},{2}>",
+                                    LogHeader, LandBitmap.GetLength(0), LandBitmap.GetLength(1));
+                return new Vector3(-1, -1, -1);
+            }
         }
 
         public LandData LandData { get; set; }
@@ -97,27 +109,12 @@ namespace OpenSim.Region.CoreModules.World.Land
             }
         }
 
-        public Vector3 EndPoint
+        public int GetPrimsFree()
         {
-            get
-            {
-                for (int y = LandBitmap.GetLength(1) - 1; y >= 0; y--)
-                {
-                    for (int x = LandBitmap.GetLength(0) - 1; x >= 0; x--)
-                    {
-                        if (LandBitmap[x, y])
-                        {
-                            return new Vector3(x * landUnit + landUnit, y * landUnit + landUnit, 0);
-                        }
-                    }
-                }
-
-                m_log.ErrorFormat("{0} EndPoint. No end point found. bitmapSize=<{1},{2}>",
-                                    LogHeader, LandBitmap.GetLength(0), LandBitmap.GetLength(1));
-                return new Vector3(-1, -1, -1);
-            }
+            m_scene.EventManager.TriggerParcelPrimCountUpdate();
+            int free = GetSimulatorMaxPrimCount() - LandData.SimwidePrims;
+            return free;
         }
-
         #region Constructors
 
         public LandObject(LandData landData, Scene scene)
@@ -134,7 +131,7 @@ namespace OpenSim.Region.CoreModules.World.Land
             else
                 LandBitmap = new bool[m_scene.RegionInfo.RegionSizeX / landUnit, m_scene.RegionInfo.RegionSizeY / landUnit];
 
-            LandData = new LandData(); 
+            LandData = new LandData();
             LandData.OwnerID = owner_id;
             if (is_group_owned)
                 LandData.GroupID = owner_id;
@@ -143,12 +140,16 @@ namespace OpenSim.Region.CoreModules.World.Land
             LandData.IsGroupOwned = is_group_owned;
         }
 
-        #endregion
+        #endregion Constructors
 
         #region Member Functions
 
         #region General Functions
-        
+
+        private static overrideParcelMaxPrimCountDelegate overrideParcelMaxPrimCount;
+
+        private static overrideSimulatorMaxPrimCountDelegate overrideSimulatorMaxPrimCount;
+
         /// <summary>
         /// Checks to see if this land object contains a point
         /// </summary>
@@ -170,22 +171,9 @@ namespace OpenSim.Region.CoreModules.World.Land
         public ILandObject Copy()
         {
             ILandObject newLand = new LandObject(LandData, m_scene);
-            newLand.LandBitmap = (bool[,]) (LandBitmap.Clone());
+            newLand.LandBitmap = (bool[,])(LandBitmap.Clone());
             return newLand;
         }
-
-        static overrideParcelMaxPrimCountDelegate overrideParcelMaxPrimCount;
-        static overrideSimulatorMaxPrimCountDelegate overrideSimulatorMaxPrimCount;
-
-        public void SetParcelObjectMaxOverride(overrideParcelMaxPrimCountDelegate overrideDel)
-        {
-            overrideParcelMaxPrimCount = overrideDel;
-        }
-        public void SetSimulatorObjectMaxOverride(overrideSimulatorMaxPrimCountDelegate overrideDel)
-        {
-            overrideSimulatorMaxPrimCount = overrideDel;
-        }
-
         public int GetParcelMaxPrimCount()
         {
             if (overrideParcelMaxPrimCount != null)
@@ -217,217 +205,19 @@ namespace OpenSim.Region.CoreModules.World.Land
                 return simMax;
             }
         }
-        
-        #endregion
+
+        public void SetParcelObjectMaxOverride(overrideParcelMaxPrimCountDelegate overrideDel)
+        {
+            overrideParcelMaxPrimCount = overrideDel;
+        }
+
+        public void SetSimulatorObjectMaxOverride(overrideSimulatorMaxPrimCountDelegate overrideDel)
+        {
+            overrideSimulatorMaxPrimCount = overrideDel;
+        }
+        #endregion General Functions
 
         #region Packet Request Handling
-
-        public void SendLandProperties(int sequence_id, bool snap_selection, int request_result, IClientAPI remote_client)
-        {
-            IEstateModule estateModule = m_scene.RequestModuleInterface<IEstateModule>();
-            // uint regionFlags = 336723974 & ~((uint)(RegionFlags.AllowLandmark | RegionFlags.AllowSetHome));
-            uint regionFlags = (uint)(RegionFlags.PublicAllowed
-                                    | RegionFlags.AllowDirectTeleport
-                                    | RegionFlags.AllowParcelChanges
-                                    | RegionFlags.AllowVoice );
-
-            if (estateModule != null)
-                regionFlags = estateModule.GetRegionFlags();
-
-            int seq_id;
-            if (snap_selection && (sequence_id == 0))
-            {
-                seq_id = m_lastSeqId;
-            }
-            else
-            {
-                seq_id = sequence_id;
-                m_lastSeqId = seq_id;
-            }
-
-            remote_client.SendLandProperties(seq_id,
-                    snap_selection, request_result, this,
-                    (float)m_scene.RegionInfo.RegionSettings.ObjectBonus,
-                    GetParcelMaxPrimCount(),
-                    GetSimulatorMaxPrimCount(), regionFlags);
-        }
-
-        public void UpdateLandProperties(LandUpdateArgs args, IClientAPI remote_client)
-        {
-            //Needs later group support
-            bool snap_selection = false;
-            LandData newData = LandData.Copy();
-
-            uint allowedDelta = 0;
-
-            // These two are always blocked as no client can set them anyway
-            // ParcelFlags.ForSaleObjects
-            // ParcelFlags.LindenHome
-
-            if (m_scene.Permissions.CanEditParcelProperties(remote_client.AgentId, this, GroupPowers.LandOptions))
-            {
-                allowedDelta |= (uint)(ParcelFlags.AllowLandmark |
-                        ParcelFlags.AllowTerraform |
-                        ParcelFlags.AllowDamage |
-                        ParcelFlags.CreateObjects |
-                        ParcelFlags.RestrictPushObject |
-                        ParcelFlags.AllowOtherScripts |
-                        ParcelFlags.AllowGroupScripts |
-                        ParcelFlags.CreateGroupObjects |
-                        ParcelFlags.AllowAPrimitiveEntry |
-                        ParcelFlags.AllowGroupObjectEntry |
-                        ParcelFlags.AllowFly);
-            }
-
-            if (m_scene.Permissions.CanEditParcelProperties(remote_client.AgentId, this, GroupPowers.LandSetSale))
-            {
-                if (args.AuthBuyerID != newData.AuthBuyerID ||
-                    args.SalePrice != newData.SalePrice)
-                {
-                    snap_selection = true;
-                }
-
-                newData.AuthBuyerID = args.AuthBuyerID;
-                newData.SalePrice = args.SalePrice;
-
-                if (!LandData.IsGroupOwned)
-                {
-                    newData.GroupID = args.GroupID;
-
-                    allowedDelta |= (uint)(ParcelFlags.AllowDeedToGroup |
-                            ParcelFlags.ContributeWithDeed |
-                            ParcelFlags.SellParcelObjects);
-                }
-
-                allowedDelta |= (uint)ParcelFlags.ForSale;
-            }
-
-            if (m_scene.Permissions.CanEditParcelProperties(remote_client.AgentId,this, GroupPowers.FindPlaces))
-            {
-                newData.Category = args.Category;
-
-                allowedDelta |= (uint)(ParcelFlags.ShowDirectory |
-                        ParcelFlags.AllowPublish |
-                        ParcelFlags.MaturePublish);
-            }
-
-            if (m_scene.Permissions.CanEditParcelProperties(remote_client.AgentId,this, GroupPowers.LandChangeIdentity))
-            {
-                newData.Description = args.Desc;
-                newData.Name = args.Name;
-                newData.SnapshotID = args.SnapshotID;
-            }
-
-            if (m_scene.Permissions.CanEditParcelProperties(remote_client.AgentId,this, GroupPowers.SetLandingPoint))
-            {
-                newData.LandingType = args.LandingType;
-                newData.UserLocation = args.UserLocation;
-                newData.UserLookAt = args.UserLookAt;
-            }
-
-            if (m_scene.Permissions.CanEditParcelProperties(remote_client.AgentId,this, GroupPowers.ChangeMedia))
-            {
-                newData.MediaAutoScale = args.MediaAutoScale;
-                newData.MediaID = args.MediaID;
-                newData.MediaURL = args.MediaURL;
-                newData.MusicURL = args.MusicURL;
-                newData.MediaType = args.MediaType;
-                newData.MediaDescription = args.MediaDescription;
-                newData.MediaWidth = args.MediaWidth;
-                newData.MediaHeight = args.MediaHeight;
-                newData.MediaLoop = args.MediaLoop;
-                newData.ObscureMusic = args.ObscureMusic;
-                newData.ObscureMedia = args.ObscureMedia;
-
-                allowedDelta |= (uint)(ParcelFlags.SoundLocal |
-                        ParcelFlags.UrlWebPage |
-                        ParcelFlags.UrlRawHtml |
-                        ParcelFlags.AllowVoiceChat |
-                        ParcelFlags.UseEstateVoiceChan);
-            }
-
-            if (m_scene.Permissions.CanEditParcelProperties(remote_client.AgentId,this, GroupPowers.LandManagePasses))
-            {
-                newData.PassHours = args.PassHours;
-                newData.PassPrice = args.PassPrice;
-
-                allowedDelta |= (uint)ParcelFlags.UsePassList;
-            }
-
-            if (m_scene.Permissions.CanEditParcelProperties(remote_client.AgentId, this, GroupPowers.LandManageAllowed))
-            {
-                allowedDelta |= (uint)(ParcelFlags.UseAccessGroup |
-                        ParcelFlags.UseAccessList);
-            }
-
-            if (m_scene.Permissions.CanEditParcelProperties(remote_client.AgentId, this, GroupPowers.LandManageBanned))
-            {
-                allowedDelta |= (uint)(ParcelFlags.UseBanList |
-                        ParcelFlags.DenyAnonymous |
-                        ParcelFlags.DenyAgeUnverified);
-            }
-
-            if (allowedDelta != (uint)ParcelFlags.None)
-            {
-                uint preserve = LandData.Flags & ~allowedDelta;
-                newData.Flags = preserve | (args.ParcelFlags & allowedDelta);
-
-                m_scene.LandChannel.UpdateLandObject(LandData.LocalID, newData);
-                SendLandUpdateToAvatarsOverMe(snap_selection);
-            }
-        }
-
-        public void UpdateLandSold(UUID avatarID, UUID groupID, bool groupOwned, uint AuctionID, int claimprice, int area)
-        {
-            LandData newData = LandData.Copy();
-            newData.OwnerID = avatarID;
-            newData.GroupID = groupID;
-            newData.IsGroupOwned = groupOwned;
-            //newData.auctionID = AuctionID;
-            newData.ClaimDate = Util.UnixTimeSinceEpoch();
-            newData.ClaimPrice = claimprice;
-            newData.SalePrice = 0;
-            newData.AuthBuyerID = UUID.Zero;
-            newData.Flags &= ~(uint) (ParcelFlags.ForSale | ParcelFlags.ForSaleObjects | ParcelFlags.SellParcelObjects | ParcelFlags.ShowDirectory);
-
-            bool sellObjects = (LandData.Flags & (uint)(ParcelFlags.SellParcelObjects)) != 0
-                && !LandData.IsGroupOwned && !groupOwned;
-            UUID previousOwner = LandData.OwnerID;
-
-            m_scene.LandChannel.UpdateLandObject(LandData.LocalID, newData);
-            m_scene.EventManager.TriggerParcelPrimCountUpdate();
-            SendLandUpdateToAvatarsOverMe(true);
-
-            if (sellObjects) SellLandObjects(previousOwner);
-        }
-
-        public void DeedToGroup(UUID groupID)
-        {
-            LandData newData = LandData.Copy();
-            newData.OwnerID = groupID;
-            newData.GroupID = groupID;
-            newData.IsGroupOwned = true;
-
-            // Reset show in directory flag on deed
-            newData.Flags &= ~(uint) (ParcelFlags.ForSale | ParcelFlags.ForSaleObjects | ParcelFlags.SellParcelObjects | ParcelFlags.ShowDirectory);
-
-            m_scene.LandChannel.UpdateLandObject(LandData.LocalID, newData);
-            m_scene.EventManager.TriggerParcelPrimCountUpdate();
-            SendLandUpdateToAvatarsOverMe(true);
-        }
-
-        public bool IsEitherBannedOrRestricted(UUID avatar)
-        {
-            if (IsBannedFromLand(avatar))
-            {
-                return true;
-            }
-            else if (IsRestrictedFromLand(avatar))
-            {
-                return true;
-            }
-            return false;
-        }
 
         public bool CanBeOnThisLand(UUID avatar, float posHeight)
         {
@@ -440,6 +230,21 @@ namespace OpenSim.Region.CoreModules.World.Land
                 return false;
             }
             return true;
+        }
+
+        public void DeedToGroup(UUID groupID)
+        {
+            LandData newData = LandData.Copy();
+            newData.OwnerID = groupID;
+            newData.GroupID = groupID;
+            newData.IsGroupOwned = true;
+
+            // Reset show in directory flag on deed
+            newData.Flags &= ~(uint)(ParcelFlags.ForSale | ParcelFlags.ForSaleObjects | ParcelFlags.SellParcelObjects | ParcelFlags.ShowDirectory);
+
+            m_scene.LandChannel.UpdateLandObject(LandData.LocalID, newData);
+            m_scene.EventManager.TriggerParcelPrimCountUpdate();
+            SendLandUpdateToAvatarsOverMe(true);
         }
 
         public bool HasGroupAccess(UUID avatar)
@@ -497,7 +302,7 @@ namespace OpenSim.Region.CoreModules.World.Land
             if (avatar == LandData.OwnerID)
                 return false;
 
-            if ((LandData.Flags & (uint) ParcelFlags.UseBanList) > 0)
+            if ((LandData.Flags & (uint)ParcelFlags.UseBanList) > 0)
             {
                 if (LandData.ParcelAccessList.FindIndex(
                         delegate(LandAccessEntry e)
@@ -513,24 +318,17 @@ namespace OpenSim.Region.CoreModules.World.Land
             return false;
         }
 
-        public bool IsRestrictedFromLand(UUID avatar)
+        public bool IsEitherBannedOrRestricted(UUID avatar)
         {
-            if ((LandData.Flags & (uint) ParcelFlags.UseAccessList) == 0)
-                return false;
-
-            if (m_scene.Permissions.IsAdministrator(avatar))
-                return false;
-
-            if (m_scene.RegionInfo.EstateSettings.IsEstateManagerOrOwner(avatar))
-                return false;
-
-            if (avatar == LandData.OwnerID)
-                return false;
-
-            if (HasGroupAccess(avatar))
-                return false;
-
-            return !IsInLandAccessList(avatar);
+            if (IsBannedFromLand(avatar))
+            {
+                return true;
+            }
+            else if (IsRestrictedFromLand(avatar))
+            {
+                return true;
+            }
+            return false;
         }
 
         public bool IsInLandAccessList(UUID avatar)
@@ -550,15 +348,54 @@ namespace OpenSim.Region.CoreModules.World.Land
             return true;
         }
 
-        public void SendLandUpdateToClient(IClientAPI remote_client)
+        public bool IsRestrictedFromLand(UUID avatar)
         {
-            SendLandProperties(0, false, 0, remote_client);
+            if ((LandData.Flags & (uint)ParcelFlags.UseAccessList) == 0)
+                return false;
+
+            if (m_scene.Permissions.IsAdministrator(avatar))
+                return false;
+
+            if (m_scene.RegionInfo.EstateSettings.IsEstateManagerOrOwner(avatar))
+                return false;
+
+            if (avatar == LandData.OwnerID)
+                return false;
+
+            if (HasGroupAccess(avatar))
+                return false;
+
+            return !IsInLandAccessList(avatar);
         }
 
-        public void SendLandUpdateToClient(bool snap_selection, IClientAPI remote_client)
+        public void SendLandProperties(int sequence_id, bool snap_selection, int request_result, IClientAPI remote_client)
         {
-            m_scene.EventManager.TriggerParcelPrimCountUpdate();
-            SendLandProperties(0, snap_selection, 0, remote_client);
+            IEstateModule estateModule = m_scene.RequestModuleInterface<IEstateModule>();
+            // uint regionFlags = 336723974 & ~((uint)(RegionFlags.AllowLandmark | RegionFlags.AllowSetHome));
+            uint regionFlags = (uint)(RegionFlags.PublicAllowed
+                                    | RegionFlags.AllowDirectTeleport
+                                    | RegionFlags.AllowParcelChanges
+                                    | RegionFlags.AllowVoice);
+
+            if (estateModule != null)
+                regionFlags = estateModule.GetRegionFlags();
+
+            int seq_id;
+            if (snap_selection && (sequence_id == 0))
+            {
+                seq_id = m_lastSeqId;
+            }
+            else
+            {
+                seq_id = sequence_id;
+                m_lastSeqId = seq_id;
+            }
+
+            remote_client.SendLandProperties(seq_id,
+                    snap_selection, request_result, this,
+                    (float)m_scene.RegionInfo.RegionSettings.ObjectBonus,
+                    GetParcelMaxPrimCount(),
+                    GetSimulatorMaxPrimCount(), regionFlags);
         }
 
         public void SendLandUpdateToAvatarsOverMe()
@@ -599,11 +436,170 @@ namespace OpenSim.Region.CoreModules.World.Land
             });
         }
 
-        #endregion
+        public void SendLandUpdateToClient(IClientAPI remote_client)
+        {
+            SendLandProperties(0, false, 0, remote_client);
+        }
+
+        public void SendLandUpdateToClient(bool snap_selection, IClientAPI remote_client)
+        {
+            m_scene.EventManager.TriggerParcelPrimCountUpdate();
+            SendLandProperties(0, snap_selection, 0, remote_client);
+        }
+
+        public void UpdateLandProperties(LandUpdateArgs args, IClientAPI remote_client)
+        {
+            //Needs later group support
+            bool snap_selection = false;
+            LandData newData = LandData.Copy();
+
+            uint allowedDelta = 0;
+
+            // These two are always blocked as no client can set them anyway
+            // ParcelFlags.ForSaleObjects
+            // ParcelFlags.LindenHome
+
+            if (m_scene.Permissions.CanEditParcelProperties(remote_client.AgentId, this, GroupPowers.LandOptions))
+            {
+                allowedDelta |= (uint)(ParcelFlags.AllowLandmark |
+                        ParcelFlags.AllowTerraform |
+                        ParcelFlags.AllowDamage |
+                        ParcelFlags.CreateObjects |
+                        ParcelFlags.RestrictPushObject |
+                        ParcelFlags.AllowOtherScripts |
+                        ParcelFlags.AllowGroupScripts |
+                        ParcelFlags.CreateGroupObjects |
+                        ParcelFlags.AllowAPrimitiveEntry |
+                        ParcelFlags.AllowGroupObjectEntry |
+                        ParcelFlags.AllowFly);
+            }
+
+            if (m_scene.Permissions.CanEditParcelProperties(remote_client.AgentId, this, GroupPowers.LandSetSale))
+            {
+                if (args.AuthBuyerID != newData.AuthBuyerID ||
+                    args.SalePrice != newData.SalePrice)
+                {
+                    snap_selection = true;
+                }
+
+                newData.AuthBuyerID = args.AuthBuyerID;
+                newData.SalePrice = args.SalePrice;
+
+                if (!LandData.IsGroupOwned)
+                {
+                    newData.GroupID = args.GroupID;
+
+                    allowedDelta |= (uint)(ParcelFlags.AllowDeedToGroup |
+                            ParcelFlags.ContributeWithDeed |
+                            ParcelFlags.SellParcelObjects);
+                }
+
+                allowedDelta |= (uint)ParcelFlags.ForSale;
+            }
+
+            if (m_scene.Permissions.CanEditParcelProperties(remote_client.AgentId, this, GroupPowers.FindPlaces))
+            {
+                newData.Category = args.Category;
+
+                allowedDelta |= (uint)(ParcelFlags.ShowDirectory |
+                        ParcelFlags.AllowPublish |
+                        ParcelFlags.MaturePublish);
+            }
+
+            if (m_scene.Permissions.CanEditParcelProperties(remote_client.AgentId, this, GroupPowers.LandChangeIdentity))
+            {
+                newData.Description = args.Desc;
+                newData.Name = args.Name;
+                newData.SnapshotID = args.SnapshotID;
+            }
+
+            if (m_scene.Permissions.CanEditParcelProperties(remote_client.AgentId, this, GroupPowers.SetLandingPoint))
+            {
+                newData.LandingType = args.LandingType;
+                newData.UserLocation = args.UserLocation;
+                newData.UserLookAt = args.UserLookAt;
+            }
+
+            if (m_scene.Permissions.CanEditParcelProperties(remote_client.AgentId, this, GroupPowers.ChangeMedia))
+            {
+                newData.MediaAutoScale = args.MediaAutoScale;
+                newData.MediaID = args.MediaID;
+                newData.MediaURL = args.MediaURL;
+                newData.MusicURL = args.MusicURL;
+                newData.MediaType = args.MediaType;
+                newData.MediaDescription = args.MediaDescription;
+                newData.MediaWidth = args.MediaWidth;
+                newData.MediaHeight = args.MediaHeight;
+                newData.MediaLoop = args.MediaLoop;
+                newData.ObscureMusic = args.ObscureMusic;
+                newData.ObscureMedia = args.ObscureMedia;
+
+                allowedDelta |= (uint)(ParcelFlags.SoundLocal |
+                        ParcelFlags.UrlWebPage |
+                        ParcelFlags.UrlRawHtml |
+                        ParcelFlags.AllowVoiceChat |
+                        ParcelFlags.UseEstateVoiceChan);
+            }
+
+            if (m_scene.Permissions.CanEditParcelProperties(remote_client.AgentId, this, GroupPowers.LandManagePasses))
+            {
+                newData.PassHours = args.PassHours;
+                newData.PassPrice = args.PassPrice;
+
+                allowedDelta |= (uint)ParcelFlags.UsePassList;
+            }
+
+            if (m_scene.Permissions.CanEditParcelProperties(remote_client.AgentId, this, GroupPowers.LandManageAllowed))
+            {
+                allowedDelta |= (uint)(ParcelFlags.UseAccessGroup |
+                        ParcelFlags.UseAccessList);
+            }
+
+            if (m_scene.Permissions.CanEditParcelProperties(remote_client.AgentId, this, GroupPowers.LandManageBanned))
+            {
+                allowedDelta |= (uint)(ParcelFlags.UseBanList |
+                        ParcelFlags.DenyAnonymous |
+                        ParcelFlags.DenyAgeUnverified);
+            }
+
+            if (allowedDelta != (uint)ParcelFlags.None)
+            {
+                uint preserve = LandData.Flags & ~allowedDelta;
+                newData.Flags = preserve | (args.ParcelFlags & allowedDelta);
+
+                m_scene.LandChannel.UpdateLandObject(LandData.LocalID, newData);
+                SendLandUpdateToAvatarsOverMe(snap_selection);
+            }
+        }
+
+        public void UpdateLandSold(UUID avatarID, UUID groupID, bool groupOwned, uint AuctionID, int claimprice, int area)
+        {
+            LandData newData = LandData.Copy();
+            newData.OwnerID = avatarID;
+            newData.GroupID = groupID;
+            newData.IsGroupOwned = groupOwned;
+            //newData.auctionID = AuctionID;
+            newData.ClaimDate = Util.UnixTimeSinceEpoch();
+            newData.ClaimPrice = claimprice;
+            newData.SalePrice = 0;
+            newData.AuthBuyerID = UUID.Zero;
+            newData.Flags &= ~(uint)(ParcelFlags.ForSale | ParcelFlags.ForSaleObjects | ParcelFlags.SellParcelObjects | ParcelFlags.ShowDirectory);
+
+            bool sellObjects = (LandData.Flags & (uint)(ParcelFlags.SellParcelObjects)) != 0
+                && !LandData.IsGroupOwned && !groupOwned;
+            UUID previousOwner = LandData.OwnerID;
+
+            m_scene.LandChannel.UpdateLandObject(LandData.LocalID, newData);
+            m_scene.EventManager.TriggerParcelPrimCountUpdate();
+            SendLandUpdateToAvatarsOverMe(true);
+
+            if (sellObjects) SellLandObjects(previousOwner);
+        }
+        #endregion Packet Request Handling
 
         #region AccessList Functions
 
-        public List<LandAccessEntry>  CreateAccessListArrayByFlag(AccessList flag)
+        public List<LandAccessEntry> CreateAccessListArrayByFlag(AccessList flag)
         {
             ExpireAccessList();
 
@@ -611,7 +607,7 @@ namespace OpenSim.Region.CoreModules.World.Land
             foreach (LandAccessEntry entry in LandData.ParcelAccessList)
             {
                 if (entry.Flags == flag)
-                   list.Add(entry);
+                    list.Add(entry);
             }
             if (list.Count == 0)
             {
@@ -629,14 +625,13 @@ namespace OpenSim.Region.CoreModules.World.Land
         public void SendAccessList(UUID agentID, UUID sessionID, uint flags, int sequenceID,
                                    IClientAPI remote_client)
         {
-
-            if (flags == (uint) AccessList.Access || flags == (uint) AccessList.Both)
+            if (flags == (uint)AccessList.Access || flags == (uint)AccessList.Both)
             {
                 List<LandAccessEntry> accessEntries = CreateAccessListArrayByFlag(AccessList.Access);
-                remote_client.SendLandAccessListData(accessEntries,(uint) AccessList.Access,LandData.LocalID);
+                remote_client.SendLandAccessListData(accessEntries, (uint)AccessList.Access, LandData.LocalID);
             }
 
-            if (flags == (uint) AccessList.Ban || flags == (uint) AccessList.Both)
+            if (flags == (uint)AccessList.Ban || flags == (uint)AccessList.Both)
             {
                 List<LandAccessEntry> accessEntries = CreateAccessListArrayByFlag(AccessList.Ban);
                 remote_client.SendLandAccessListData(accessEntries, (uint)AccessList.Ban, LandData.LocalID);
@@ -694,14 +689,9 @@ namespace OpenSim.Region.CoreModules.World.Land
             m_scene.LandChannel.UpdateLandObject(LandData.LocalID, newData);
         }
 
-        #endregion
+        #endregion AccessList Functions
 
         #region Update Functions
-
-        public void UpdateLandBitmapByteArray()
-        {
-            LandData.Bitmap = ConvertLandBitmapToBytes();
-        }
 
         /// <summary>
         /// Update all settings in land such as area, bitmap byte array, etc
@@ -717,6 +707,10 @@ namespace OpenSim.Region.CoreModules.World.Land
             LandBitmap = ConvertBytesToLandBitmap();
         }
 
+        public void UpdateLandBitmapByteArray()
+        {
+            LandData.Bitmap = ConvertLandBitmapToBytes();
+        }
         /// <summary>
         /// Updates the AABBMin and AABBMax values after area/shape modification of the land object
         /// </summary>
@@ -760,26 +754,20 @@ namespace OpenSim.Region.CoreModules.World.Land
             if (ty > ((int)m_scene.RegionInfo.RegionSizeY - 1))
                 ty = ((int)m_scene.RegionInfo.RegionSizeY - 1);
 
-            LandData.AABBMax 
+            LandData.AABBMax
                 = new Vector3(
                     (float)(max_x * landUnit), (float)(max_y * landUnit), m_scene != null ? (float)m_scene.Heightmap[tx, ty] : 0);
 
             LandData.Area = tempArea;
         }
 
-        #endregion
+        #endregion Update Functions
 
         #region Land Bitmap Functions
 
-        /// <summary>
-        /// Sets the land's bitmap manually
-        /// </summary>
-        /// <param name="bitmap">block representing where this land is on a map mapped in a 4x4 meter grid</param>
-        public void SetLandBitmap(bool[,] bitmap)
+        public bool[,] BasicFullRegionLandBitmap()
         {
-            LandBitmap = bitmap;
-            // m_log.DebugFormat("{0} SetLandBitmap. BitmapSize=<{1},{2}>", LogHeader, LandBitmap.GetLength(0), LandBitmap.GetLength(1));
-            ForceUpdateLandInfo();
+            return GetSquareLandBitmap(0, 0, (int)m_scene.RegionInfo.RegionSizeX, (int)m_scene.RegionInfo.RegionSizeY);
         }
 
         /// <summary>
@@ -791,11 +779,6 @@ namespace OpenSim.Region.CoreModules.World.Land
             return LandBitmap;
         }
 
-        public bool[,] BasicFullRegionLandBitmap()
-        {
-            return GetSquareLandBitmap(0, 0, (int)m_scene.RegionInfo.RegionSizeX, (int) m_scene.RegionInfo.RegionSizeY);
-        }
-        
         public bool[,] GetSquareLandBitmap(int start_x, int start_y, int end_x, int end_y)
         {
             // Empty bitmap for the whole region
@@ -807,36 +790,6 @@ namespace OpenSim.Region.CoreModules.World.Land
             // m_log.DebugFormat("{0} GetSquareLandBitmap. tempBitmapSize=<{1},{2}>",
             //                         LogHeader, tempBitmap.GetLength(0), tempBitmap.GetLength(1));
             return tempBitmap;
-        }
-
-        /// <summary>
-        /// Change a land bitmap at within a square and set those points to a specific value
-        /// </summary>
-        /// <param name="land_bitmap"></param>
-        /// <param name="start_x"></param>
-        /// <param name="start_y"></param>
-        /// <param name="end_x"></param>
-        /// <param name="end_y"></param>
-        /// <param name="set_value"></param>
-        /// <returns></returns>
-        public bool[,] ModifyLandBitmapSquare(bool[,] land_bitmap, int start_x, int start_y, int end_x, int end_y,
-                                              bool set_value)
-        {
-            int x, y;
-            for (y = 0; y < land_bitmap.GetLength(1); y++)
-            {
-                for (x = 0; x < land_bitmap.GetLength(0); x++)
-                {
-                    if (x >= start_x / landUnit && x < end_x / landUnit
-                        && y >= start_y / landUnit && y < end_y / landUnit)
-                    {
-                        land_bitmap[x, y] = set_value;
-                    }
-                }
-            }
-            // m_log.DebugFormat("{0} ModifyLandBitmapSquare. startXY=<{1},{2}>, endXY=<{3},{4}>, val={5}, landBitmapSize=<{6},{7}>",
-            //                         LogHeader, start_x, start_y, end_x, end_y, set_value, land_bitmap.GetLength(0), land_bitmap.GetLength(1));
-            return land_bitmap;
         }
 
         /// <summary>
@@ -873,34 +826,45 @@ namespace OpenSim.Region.CoreModules.World.Land
         }
 
         /// <summary>
-        /// Converts the land bitmap to a packet friendly byte array
+        /// Change a land bitmap at within a square and set those points to a specific value
         /// </summary>
+        /// <param name="land_bitmap"></param>
+        /// <param name="start_x"></param>
+        /// <param name="start_y"></param>
+        /// <param name="end_x"></param>
+        /// <param name="end_y"></param>
+        /// <param name="set_value"></param>
         /// <returns></returns>
-        private byte[] ConvertLandBitmapToBytes()
+        public bool[,] ModifyLandBitmapSquare(bool[,] land_bitmap, int start_x, int start_y, int end_x, int end_y,
+                                              bool set_value)
         {
-            byte[] tempConvertArr = new byte[LandBitmap.GetLength(0) * LandBitmap.GetLength(1) / 8];
-            byte tempByte = 0;
-            int byteNum = 0;
-            int i = 0;
-            for (int y = 0; y < LandBitmap.GetLength(1); y++)
+            int x, y;
+            for (y = 0; y < land_bitmap.GetLength(1); y++)
             {
-                for (int x = 0; x < LandBitmap.GetLength(0); x++)
+                for (x = 0; x < land_bitmap.GetLength(0); x++)
                 {
-                    tempByte = Convert.ToByte(tempByte | Convert.ToByte(LandBitmap[x, y]) << (i++ % 8));
-                    if (i % 8 == 0)
+                    if (x >= start_x / landUnit && x < end_x / landUnit
+                        && y >= start_y / landUnit && y < end_y / landUnit)
                     {
-                        tempConvertArr[byteNum] = tempByte;
-                        tempByte = (byte) 0;
-                        i = 0;
-                        byteNum++;
+                        land_bitmap[x, y] = set_value;
                     }
                 }
             }
-            // m_log.DebugFormat("{0} ConvertLandBitmapToBytes. BitmapSize=<{1},{2}>",
-            //                         LogHeader, LandBitmap.GetLength(0), LandBitmap.GetLength(1));
-            return tempConvertArr;
+            // m_log.DebugFormat("{0} ModifyLandBitmapSquare. startXY=<{1},{2}>, endXY=<{3},{4}>, val={5}, landBitmapSize=<{6},{7}>",
+            //                         LogHeader, start_x, start_y, end_x, end_y, set_value, land_bitmap.GetLength(0), land_bitmap.GetLength(1));
+            return land_bitmap;
         }
 
+        /// <summary>
+        /// Sets the land's bitmap manually
+        /// </summary>
+        /// <param name="bitmap">block representing where this land is on a map mapped in a 4x4 meter grid</param>
+        public void SetLandBitmap(bool[,] bitmap)
+        {
+            LandBitmap = bitmap;
+            // m_log.DebugFormat("{0} SetLandBitmap. BitmapSize=<{1},{2}>", LogHeader, LandBitmap.GetLength(0), LandBitmap.GetLength(1));
+            ForceUpdateLandInfo();
+        }
         private bool[,] ConvertBytesToLandBitmap()
         {
             bool[,] tempConvertMap = new bool[m_scene.RegionInfo.RegionSizeX / landUnit, m_scene.RegionInfo.RegionSizeY / landUnit];
@@ -924,7 +888,7 @@ namespace OpenSim.Region.CoreModules.World.Land
                 tempByte = LandData.Bitmap[i];
                 for (int bitNum = 0; bitNum < 8; bitNum++)
                 {
-                    bool bit = Convert.ToBoolean(Convert.ToByte(tempByte >> bitNum) & (byte) 1);
+                    bool bit = Convert.ToBoolean(Convert.ToByte(tempByte >> bitNum) & (byte)1);
                     try
                     {
                         tempConvertMap[x, y] = bit;
@@ -945,9 +909,62 @@ namespace OpenSim.Region.CoreModules.World.Land
             return tempConvertMap;
         }
 
-        #endregion
+        /// <summary>
+        /// Converts the land bitmap to a packet friendly byte array
+        /// </summary>
+        /// <returns></returns>
+        private byte[] ConvertLandBitmapToBytes()
+        {
+            byte[] tempConvertArr = new byte[LandBitmap.GetLength(0) * LandBitmap.GetLength(1) / 8];
+            byte tempByte = 0;
+            int byteNum = 0;
+            int i = 0;
+            for (int y = 0; y < LandBitmap.GetLength(1); y++)
+            {
+                for (int x = 0; x < LandBitmap.GetLength(0); x++)
+                {
+                    tempByte = Convert.ToByte(tempByte | Convert.ToByte(LandBitmap[x, y]) << (i++ % 8));
+                    if (i % 8 == 0)
+                    {
+                        tempConvertArr[byteNum] = tempByte;
+                        tempByte = (byte)0;
+                        i = 0;
+                        byteNum++;
+                    }
+                }
+            }
+            // m_log.DebugFormat("{0} ConvertLandBitmapToBytes. BitmapSize=<{1},{2}>",
+            //                         LogHeader, LandBitmap.GetLength(0), LandBitmap.GetLength(1));
+            return tempConvertArr;
+        }
+        #endregion Land Bitmap Functions
 
         #region Object Select and Object Owner Listing
+
+        public Dictionary<UUID, int> GetLandObjectOwners()
+        {
+            Dictionary<UUID, int> ownersAndCount = new Dictionary<UUID, int>();
+
+            lock (primsOverMe)
+            {
+                try
+                {
+                    foreach (SceneObjectGroup obj in primsOverMe)
+                    {
+                        if (!ownersAndCount.ContainsKey(obj.OwnerID))
+                        {
+                            ownersAndCount.Add(obj.OwnerID, 0);
+                        }
+                        ownersAndCount[obj.OwnerID] += obj.PrimCount;
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    m_log.Error("[LAND]: Unable to enumerate land owners. arr.");
+                }
+            }
+            return ownersAndCount;
+        }
 
         public void SendForceObjectSelect(int local_id, int request_type, List<UUID> returnIDs, IClientAPI remote_client)
         {
@@ -982,7 +999,8 @@ namespace OpenSim.Region.CoreModules.World.Land
                             }
                         }
                     }
-                } catch (InvalidOperationException)
+                }
+                catch (InvalidOperationException)
                 {
                     m_log.Error("[LAND]: Unable to force select the parcel objects. Arr.");
                 }
@@ -1008,10 +1026,10 @@ namespace OpenSim.Region.CoreModules.World.Land
 
                 lock (primsOverMe)
                 {
-//                    m_log.DebugFormat(
-//                        "[LAND OBJECT]: Request for SendLandObjectOwners() from {0} with {1} known prims on region", 
-//                        remote_client.Name, primsOverMe.Count);
-                    
+                    //                    m_log.DebugFormat(
+                    //                        "[LAND OBJECT]: Request for SendLandObjectOwners() from {0} with {1} known prims on region",
+                    //                        remote_client.Name, primsOverMe.Count);
+
                     try
                     {
                         foreach (SceneObjectGroup obj in primsOverMe)
@@ -1048,35 +1066,7 @@ namespace OpenSim.Region.CoreModules.World.Land
                 remote_client.SendLandObjectOwners(LandData, groups, primCount);
             }
         }
-
-        public Dictionary<UUID, int> GetLandObjectOwners()
-        {
-            Dictionary<UUID, int> ownersAndCount = new Dictionary<UUID, int>();
-            
-            lock (primsOverMe)
-            {
-                try
-                {
-
-                    foreach (SceneObjectGroup obj in primsOverMe)
-                    {
-                        if (!ownersAndCount.ContainsKey(obj.OwnerID))
-                        {
-                            ownersAndCount.Add(obj.OwnerID, 0);
-                        }
-                        ownersAndCount[obj.OwnerID] += obj.PrimCount;
-                    }
-                }
-                catch (InvalidOperationException)
-                {
-                    m_log.Error("[LAND]: Unable to enumerate land owners. arr.");
-                }
-
-            }
-            return ownersAndCount;
-        }
-
-        #endregion
+        #endregion Object Select and Object Owner Listing
 
         #region Object Sales
 
@@ -1113,23 +1103,16 @@ namespace OpenSim.Region.CoreModules.World.Land
             }
         }
 
-        #endregion
+        #endregion Object Sales
 
         #region Object Returning
 
-        public void ReturnObject(SceneObjectGroup obj)
-        {
-            SceneObjectGroup[] objs = new SceneObjectGroup[1];
-            objs[0] = obj;
-            m_scene.returnObjects(objs, obj.OwnerID);
-        }
-
         public void ReturnLandObjects(uint type, UUID[] owners, UUID[] tasks, IClientAPI remote_client)
         {
-//            m_log.DebugFormat(
-//                "[LAND OBJECT]: Request to return objects in {0} from {1}", LandData.Name, remote_client.Name);
-            
-            Dictionary<UUID,List<SceneObjectGroup>> returns = new Dictionary<UUID,List<SceneObjectGroup>>();
+            //            m_log.DebugFormat(
+            //                "[LAND OBJECT]: Request to return objects in {0} from {1}", LandData.Name, remote_client.Name);
+
+            Dictionary<UUID, List<SceneObjectGroup>> returns = new Dictionary<UUID, List<SceneObjectGroup>>();
 
             lock (primsOverMe)
             {
@@ -1198,53 +1181,38 @@ namespace OpenSim.Region.CoreModules.World.Land
             }
         }
 
-        #endregion
+        public void ReturnObject(SceneObjectGroup obj)
+        {
+            SceneObjectGroup[] objs = new SceneObjectGroup[1];
+            objs[0] = obj;
+            m_scene.returnObjects(objs, obj.OwnerID);
+        }
+        #endregion Object Returning
 
         #region Object Adding/Removing from Parcel
 
-        public void ResetOverMeRecord()
-        {
-            lock (primsOverMe)
-                primsOverMe.Clear();
-        }
-
         public void AddPrimOverMe(SceneObjectGroup obj)
         {
-//            m_log.DebugFormat("[LAND OBJECT]: Adding scene object {0} {1} over {2}", obj.Name, obj.LocalId, LandData.Name);
-            
+            //            m_log.DebugFormat("[LAND OBJECT]: Adding scene object {0} {1} over {2}", obj.Name, obj.LocalId, LandData.Name);
+
             lock (primsOverMe)
                 primsOverMe.Add(obj);
         }
 
         public void RemovePrimFromOverMe(SceneObjectGroup obj)
         {
-//            m_log.DebugFormat("[LAND OBJECT]: Removing scene object {0} {1} from over {2}", obj.Name, obj.LocalId, LandData.Name);
-            
+            //            m_log.DebugFormat("[LAND OBJECT]: Removing scene object {0} {1} from over {2}", obj.Name, obj.LocalId, LandData.Name);
+
             lock (primsOverMe)
                 primsOverMe.Remove(obj);
         }
 
-        #endregion
-        
-        /// <summary>
-        /// Set the media url for this land parcel
-        /// </summary>
-        /// <param name="url"></param>
-        public void SetMediaUrl(string url)
+        public void ResetOverMeRecord()
         {
-            LandData.MediaURL = url;
-            SendLandUpdateToAvatarsOverMe();
+            lock (primsOverMe)
+                primsOverMe.Clear();
         }
-        
-        /// <summary>
-        /// Set the music url for this land parcel
-        /// </summary>
-        /// <param name="url"></param>
-        public void SetMusicUrl(string url)
-        {
-            LandData.MusicURL = url;
-            SendLandUpdateToAvatarsOverMe();
-        }
+        #endregion Object Adding/Removing from Parcel
 
         /// <summary>
         /// Get the music url for this land parcel
@@ -1255,7 +1223,26 @@ namespace OpenSim.Region.CoreModules.World.Land
             return LandData.MusicURL;
         }
 
-        #endregion
+        /// <summary>
+        /// Set the media url for this land parcel
+        /// </summary>
+        /// <param name="url"></param>
+        public void SetMediaUrl(string url)
+        {
+            LandData.MediaURL = url;
+            SendLandUpdateToAvatarsOverMe();
+        }
+
+        /// <summary>
+        /// Set the music url for this land parcel
+        /// </summary>
+        /// <param name="url"></param>
+        public void SetMusicUrl(string url)
+        {
+            LandData.MusicURL = url;
+            SendLandUpdateToAvatarsOverMe();
+        }
+        #endregion Member Functions
 
         private void ExpireAccessList()
         {

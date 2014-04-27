@@ -25,16 +25,63 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
+using OpenSim.Framework;
 using System;
 using System.Collections.Generic;
-using OpenMetaverse;
-
-using OpenSim.Framework;
 
 namespace OpenSim.Services.Interfaces
 {
+    public interface IUserAccountService
+    {
+        UserAccount GetUserAccount(UUID scopeID, UUID userID);
+
+        UserAccount GetUserAccount(UUID scopeID, string FirstName, string LastName);
+
+        UserAccount GetUserAccount(UUID scopeID, string Email);
+
+        /// <summary>
+        /// Returns the list of avatars that matches both the search criterion and the scope ID passed
+        /// </summary>
+        /// <param name="scopeID"></param>
+        /// <param name="query"></param>
+        /// <returns></returns>
+        List<UserAccount> GetUserAccounts(UUID scopeID, string query);
+
+        void InvalidateCache(UUID userID);
+
+        /// <summary>
+        /// Store the data given, wich replaces the stored data, therefore must be complete.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        bool StoreUserAccount(UserAccount data);
+    }
+
     public class UserAccount
     {
+        public int Created;
+
+        public string Email;
+
+        public string FirstName;
+
+        public string LastName;
+
+        public Boolean LocalToGrid = true;
+
+        public UUID PrincipalID;
+
+        public UUID ScopeID;
+
+        public Dictionary<string, object> ServiceURLs;
+
+        public int UserFlags;
+
+        public int UserLevel;
+
+        public string UserTitle;
+
         public UserAccount()
         {
         }
@@ -82,26 +129,6 @@ namespace OpenSim.Services.Interfaces
             ServiceURLs = new Dictionary<string, object>();
             Created = Util.UnixTimeSinceEpoch();
         }
-
-        public string FirstName;
-        public string LastName;
-        public string Email;
-        public UUID PrincipalID;
-        public UUID ScopeID;
-        public int UserLevel;
-        public int UserFlags;
-        public string UserTitle;
-        public Boolean LocalToGrid = true;
-
-        public Dictionary<string, object> ServiceURLs;
-
-        public int Created;
-
-        public string Name
-        {
-            get { return FirstName + " " + LastName; }
-        }
-
         public UserAccount(Dictionary<string, object> kvp)
         {
             if (kvp.ContainsKey("FirstName"))
@@ -132,7 +159,7 @@ namespace OpenSim.Services.Interfaces
                 if (str != string.Empty)
                 {
                     string[] parts = str.Split(new char[] { ';' });
-//                    Dictionary<string, object> dic = new Dictionary<string, object>();
+                    //                    Dictionary<string, object> dic = new Dictionary<string, object>();
                     foreach (string s in parts)
                     {
                         string[] parts2 = s.Split(new char[] { '*' });
@@ -143,6 +170,10 @@ namespace OpenSim.Services.Interfaces
             }
         }
 
+        public string Name
+        {
+            get { return FirstName + " " + LastName; }
+        }
         public Dictionary<string, object> ToKeyValuePairs()
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
@@ -166,30 +197,5 @@ namespace OpenSim.Services.Interfaces
 
             return result;
         }
-
     };
-
-    public interface IUserAccountService
-    {
-        UserAccount GetUserAccount(UUID scopeID, UUID userID);
-        UserAccount GetUserAccount(UUID scopeID, string FirstName, string LastName);
-        UserAccount GetUserAccount(UUID scopeID, string Email);
-
-        /// <summary>
-        /// Returns the list of avatars that matches both the search criterion and the scope ID passed
-        /// </summary>
-        /// <param name="scopeID"></param>
-        /// <param name="query"></param>
-        /// <returns></returns>
-        List<UserAccount> GetUserAccounts(UUID scopeID, string query);
-
-        /// <summary>
-        /// Store the data given, wich replaces the stored data, therefore must be complete.
-        /// </summary>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        bool StoreUserAccount(UserAccount data);
-
-        void InvalidateCache(UUID userID);
-    }
 }

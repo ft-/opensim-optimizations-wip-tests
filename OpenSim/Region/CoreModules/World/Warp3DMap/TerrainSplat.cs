@@ -25,34 +25,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Diagnostics;
-using System.Drawing;
-using System.Drawing.Imaging;
 using log4net;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Services.Interfaces;
+using System;
+using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
 
 namespace OpenSim.Region.CoreModules.World.Warp3DMap
 {
     public static class TerrainSplat
     {
         #region Constants
-
-        private static readonly UUID DIRT_DETAIL = new UUID("0bc58228-74a0-7e83-89bc-5c23464bcec5");
-        private static readonly UUID GRASS_DETAIL = new UUID("63338ede-0037-c4fd-855b-015d77112fc8");
-        private static readonly UUID MOUNTAIN_DETAIL = new UUID("303cd381-8560-7579-23f1-f0a880799740");
-        private static readonly UUID ROCK_DETAIL = new UUID("53a2f406-4895-1d13-d541-d2e3b86bc19c");
-
-        private static readonly UUID[] DEFAULT_TERRAIN_DETAIL = new UUID[]
-        {
-            DIRT_DETAIL,
-            GRASS_DETAIL,
-            MOUNTAIN_DETAIL,
-            ROCK_DETAIL
-        };
 
         private static readonly Color[] DEFAULT_TERRAIN_COLOR = new Color[]
         {
@@ -62,12 +49,35 @@ namespace OpenSim.Region.CoreModules.World.Warp3DMap
             Color.FromArgb(255, 125, 128, 130)
         };
 
+        private static readonly UUID[] DEFAULT_TERRAIN_DETAIL = new UUID[]
+        {
+            DIRT_DETAIL,
+            GRASS_DETAIL,
+            MOUNTAIN_DETAIL,
+            ROCK_DETAIL
+        };
+
+        private static readonly UUID DIRT_DETAIL = new UUID("0bc58228-74a0-7e83-89bc-5c23464bcec5");
+        private static readonly UUID GRASS_DETAIL = new UUID("63338ede-0037-c4fd-855b-015d77112fc8");
+        private static readonly UUID MOUNTAIN_DETAIL = new UUID("303cd381-8560-7579-23f1-f0a880799740");
+        private static readonly UUID ROCK_DETAIL = new UUID("53a2f406-4895-1d13-d541-d2e3b86bc19c");
         private static readonly UUID TERRAIN_CACHE_MAGIC = new UUID("2c0c7ef2-56be-4eb8-aacb-76712c535b4b");
 
         #endregion Constants
 
         private static readonly ILog m_log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType.Name);
         private static string LogHeader = "[WARP3D TERRAIN SPLAT]";
+
+        public static Bitmap ResizeBitmap(Bitmap b, int nWidth, int nHeight)
+        {
+            m_log.DebugFormat("{0} ResizeBitmap. From <{1},{2}> to <{3},{4}>",
+                                LogHeader, b.Width, b.Height, nWidth, nHeight);
+            Bitmap result = new Bitmap(nWidth, nHeight);
+            using (Graphics g = Graphics.FromImage(result))
+                g.DrawImage(b, 0, 0, nWidth, nHeight);
+            b.Dispose();
+            return result;
+        }
 
         /// <summary>
         /// Builds a composited terrain texture given the region texture
@@ -129,8 +139,8 @@ namespace OpenSim.Region.CoreModules.World.Warp3DMap
                             asset = assetService.Get(textureIDs[i].ToString());
                             if (asset != null)
                             {
-//                                    m_log.DebugFormat(
-//                                        "[TERRAIN SPLAT]: Got cached original JPEG2000 terrain texture {0} {1}", i, asset.ID);
+                                //                                    m_log.DebugFormat(
+                                //                                        "[TERRAIN SPLAT]: Got cached original JPEG2000 terrain texture {0} {1}", i, asset.ID);
 
                                 try { detailTexture[i] = (Bitmap)CSJ2K.J2kImage.FromBytes(asset.Data); }
                                 catch (Exception ex)
@@ -140,7 +150,7 @@ namespace OpenSim.Region.CoreModules.World.Warp3DMap
                             }
 
                             if (detailTexture[i] != null)
-                            {    
+                            {
                                 // Make sure this texture is the correct size, otherwise resize
                                 if (detailTexture[i].Width != 256 || detailTexture[i].Height != 256)
                                 {
@@ -225,7 +235,7 @@ namespace OpenSim.Region.CoreModules.World.Warp3DMap
                     float pctX = (float)x / 255f;
                     float pctY = (float)y / 255f;
 
-                    // Use bilinear interpolation between the four corners of start height and 
+                    // Use bilinear interpolation between the four corners of start height and
                     // height range to select the current values at this position
                     float startHeight = ImageUtils.Bilinear(
                         startHeights[0],
@@ -256,7 +266,7 @@ namespace OpenSim.Region.CoreModules.World.Warp3DMap
                     float highFreq = Perlin.turbulence2(vec.X, vec.Y, 2f) * 2.25f;
                     float noise = (lowFreq + highFreq) * 2f;
 
-                    // Combine the current height, generated noise, start height, and height range parameters, then scale all of it 
+                    // Combine the current height, generated noise, start height, and height range parameters, then scale all of it
                     float layer = ((height + noise - startHeight) / heightRange) * 4f;
                     if (Single.IsNaN(layer))
                         layer = 0f;
@@ -341,18 +351,6 @@ namespace OpenSim.Region.CoreModules.World.Warp3DMap
 
             return output;
         }
-
-        public static Bitmap ResizeBitmap(Bitmap b, int nWidth, int nHeight)
-        {
-            m_log.DebugFormat("{0} ResizeBitmap. From <{1},{2}> to <{3},{4}>",
-                                LogHeader, b.Width, b.Height, nWidth, nHeight);
-            Bitmap result = new Bitmap(nWidth, nHeight);
-            using (Graphics g = Graphics.FromImage(result))
-                g.DrawImage(b, 0, 0, nWidth, nHeight);
-            b.Dispose();
-            return result;
-        }
-
         public static Bitmap SplatSimple(float[] heightmap)
         {
             const float BASE_HSV_H = 93f / 360f;

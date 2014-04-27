@@ -25,10 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using OpenSim.Services.Interfaces;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
@@ -50,30 +50,6 @@ namespace OpenSim.Region.Framework.Interfaces
         /// Fired when an archive inventory save has been completed.
         /// </summary>
         event InventoryArchiveSaved OnInventoryArchiveSaved;
-
-        /// <summary>
-        /// Dearchive a user's inventory folder from the given stream
-        /// </summary>
-        /// <param name="firstName"></param>
-        /// <param name="lastName"></param>
-        /// <param name="invPath">The inventory path in which to place the loaded folders and items</param>
-        /// <param name="loadStream">The stream from which the inventory archive will be loaded</param>
-        /// <returns>true if the first stage of the operation succeeded, false otherwise</returns>
-        bool DearchiveInventory(string firstName, string lastName, string invPath, string pass, Stream loadStream);
-
-        /// <summary>
-        /// Dearchive a user's inventory folder from the given stream
-        /// </summary>
-        /// <param name="firstName"></param>
-        /// <param name="lastName"></param>
-        /// <param name="invPath">The inventory path in which to place the loaded folders and items</param>
-        /// <param name="loadStream">The stream from which the inventory archive will be loaded</param>
-        /// <param name="options">Dearchiving options.  At the moment, the only option is ("merge", true).  This merges
-        /// the loaded IAR with existing folders where possible.</param>
-        /// <returns>true if the first stage of the operation succeeded, false otherwise</returns>
-        bool DearchiveInventory(
-            string firstName, string lastName, string invPath, string pass, Stream loadStream,
-            Dictionary<string, object> options);
 
         /// <summary>
         /// Archive a user's inventory folder to the given stream
@@ -98,6 +74,30 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <returns>true if the first stage of the operation succeeded, false otherwise</returns>
         bool ArchiveInventory(
             Guid id, string firstName, string lastName, string invPath, string pass, Stream saveStream,
+            Dictionary<string, object> options);
+
+        /// <summary>
+        /// Dearchive a user's inventory folder from the given stream
+        /// </summary>
+        /// <param name="firstName"></param>
+        /// <param name="lastName"></param>
+        /// <param name="invPath">The inventory path in which to place the loaded folders and items</param>
+        /// <param name="loadStream">The stream from which the inventory archive will be loaded</param>
+        /// <returns>true if the first stage of the operation succeeded, false otherwise</returns>
+        bool DearchiveInventory(string firstName, string lastName, string invPath, string pass, Stream loadStream);
+
+        /// <summary>
+        /// Dearchive a user's inventory folder from the given stream
+        /// </summary>
+        /// <param name="firstName"></param>
+        /// <param name="lastName"></param>
+        /// <param name="invPath">The inventory path in which to place the loaded folders and items</param>
+        /// <param name="loadStream">The stream from which the inventory archive will be loaded</param>
+        /// <param name="options">Dearchiving options.  At the moment, the only option is ("merge", true).  This merges
+        /// the loaded IAR with existing folders where possible.</param>
+        /// <returns>true if the first stage of the operation succeeded, false otherwise</returns>
+        bool DearchiveInventory(
+            string firstName, string lastName, string invPath, string pass, Stream loadStream,
             Dictionary<string, object> options);
     }
 }

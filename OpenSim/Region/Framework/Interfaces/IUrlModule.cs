@@ -25,9 +25,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
 using OpenMetaverse;
-using OpenSim.Framework;
 using OpenSim.Region.Framework.Scenes;
 
 namespace OpenSim.Region.Framework.Interfaces
@@ -35,16 +33,22 @@ namespace OpenSim.Region.Framework.Interfaces
     public interface IUrlModule
     {
         string ExternalHostNameForLSL { get; }
-        UUID RequestURL(IScriptModule engine, SceneObjectPart host, UUID itemID);
-        UUID RequestSecureURL(IScriptModule engine, SceneObjectPart host, UUID itemID);
-        void ReleaseURL(string url);
-        void HttpResponse(UUID request, int status, string body);
-        void HttpContentType(UUID request, string type);
-        
-        string GetHttpHeader(UUID request, string header);
+
         int GetFreeUrls();
 
-        void ScriptRemoved(UUID itemID);
+        string GetHttpHeader(UUID request, string header);
+
+        void HttpContentType(UUID request, string type);
+
+        void HttpResponse(UUID request, int status, string body);
+
         void ObjectRemoved(UUID objectID);
+
+        void ReleaseURL(string url);
+
+        UUID RequestSecureURL(IScriptModule engine, SceneObjectPart host, UUID itemID);
+
+        UUID RequestURL(IScriptModule engine, SceneObjectPart host, UUID itemID);
+        void ScriptRemoved(UUID itemID);
     }
 }

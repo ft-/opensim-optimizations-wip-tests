@@ -49,6 +49,6 @@ namespace OpenSim.Region.CoreModules.World.Serialiser
             return "heightmap.r32";
         }
 
-        #endregion
+        #endregion IFileSerialiser Members
     }
 }

@@ -26,31 +26,23 @@
  */
 
 using OpenSim.Framework;
-using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 
 namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
-    class LOParcel : System.MarshalByRefObject, IParcel
+    internal class LOParcel : System.MarshalByRefObject, IParcel
     {
-        private readonly Scene m_scene;
         private readonly int m_parcelID;
-
+        private readonly Scene m_scene;
         public LOParcel(Scene m_scene, int m_parcelID)
         {
             this.m_scene = m_scene;
             this.m_parcelID = m_parcelID;
         }
 
-        private ILandObject GetLO()
+        public bool[,] Bitmap
         {
-            return m_scene.LandChannel.GetLandObject(m_parcelID);
-        }
-
-        public string Name
-        {
-            get { return GetLO().LandData.Name; }
-            set { GetLO().LandData.Name = value; }
+            get { return GetLO().LandBitmap; }
         }
 
         public string Description
@@ -59,15 +51,21 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             set { GetLO().LandData.Description = value; }
         }
 
+        public string Name
+        {
+            get { return GetLO().LandData.Name; }
+            set { GetLO().LandData.Name = value; }
+        }
+
         public ISocialEntity Owner
         {
             get { throw new System.NotImplementedException(); }
             set { throw new System.NotImplementedException(); }
         }
 
-        public bool[,] Bitmap
+        private ILandObject GetLO()
         {
-            get { return GetLO().LandBitmap; }
+            return m_scene.LandChannel.GetLandObject(m_parcelID);
         }
     }
 }

@@ -25,9 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 
@@ -35,7 +32,8 @@ namespace OpenSim.Groups
 {
     public class ForeignImporter
     {
-        IUserManagement m_UserManagement;
+        private IUserManagement m_UserManagement;
+
         public ForeignImporter(IUserManagement uman)
         {
             m_UserManagement = uman;
@@ -72,6 +70,5 @@ namespace OpenSim.Groups
 
             return rm;
         }
-
     }
 }

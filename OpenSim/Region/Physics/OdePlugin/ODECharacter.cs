@@ -25,14 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Ode.NET;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Region.Physics.Manager;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using OpenMetaverse;
-using Ode.NET;
-using OpenSim.Framework;
-using OpenSim.Region.Physics.Manager;
-using log4net;
 
 namespace OpenSim.Region.Physics.OdePlugin
 {
@@ -66,70 +66,31 @@ namespace OpenSim.Region.Physics.OdePlugin
 
     public class OdeCharacter : PhysicsActor
     {
+        internal bool bad = false;
+        internal bool m_avatarplanted = false;
+        internal float MinimumGroundFlightOffset = 3f;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private Vector3 _position;
-        private d.Vector3 _zeroPosition;
-        private bool _zeroFlag = false;
-        private bool m_lastUpdateSent = false;
-        private Vector3 _velocity;
-        private Vector3 m_taintTargetVelocity;
-        private Vector3 _target_velocity;
         private Vector3 _acceleration;
-        private Vector3 m_rotationalVelocity;
-        private float m_mass = 80f;
-        private float m_density = 60f;
-        private bool m_pidControllerActive = true;
-        private float PID_D = 800.0f;
-        private float PID_P = 900.0f;
+        private OdeScene _parent_scene;
+        private Vector3 _position;
+        private Vector3 _target_velocity;
+        private Vector3 _velocity;
+        private bool _zeroFlag = false;
+        private d.Vector3 _zeroPosition;
+        private IntPtr Amotor = IntPtr.Zero;
+        private float CAPSULE_LENGTH = 2.140599f;
         //private static float POSTURE_SERVO = 10000.0f;
         private float CAPSULE_RADIUS = 0.37f;
-        private float CAPSULE_LENGTH = 2.140599f;
-        private float m_tensor = 3800000f;
-//        private float heightFudgeFactor = 0.52f;
-        private float walkDivisor = 1.3f;
-        private float runDivisor = 0.8f;
+
+        private CollisionEventUpdate CollisionEventsThisFrame = new CollisionEventUpdate();
         private bool flying = false;
-        private bool m_iscolliding = false;
-        private bool m_iscollidingGround = false;
-        private bool m_wascolliding = false;
-        private bool m_wascollidingGround = false;
-        private bool m_iscollidingObj = false;
         private bool m_alwaysRun = false;
-        private bool m_hackSentFall = false;
-        private bool m_hackSentFly = false;
-        private int m_requestedUpdateFrequency = 0;
-        private Vector3 m_taintPosition;
-        internal bool m_avatarplanted = false;
-        /// <summary>
-        /// Hold set forces so we can process them outside physics calculations.  This prevents race conditions if we set force
-        /// while calculatios are going on
-        /// </summary>
-        private Vector3 m_taintForce;
-
-        // taints and their non-tainted counterparts
-        private bool m_isPhysical = false; // the current physical status
-        private bool m_tainted_isPhysical = false; // set when the physical status is tainted (false=not existing in physics engine, true=existing)
-        internal float MinimumGroundFlightOffset = 3f;
-
-        private float m_tainted_CAPSULE_LENGTH; // set when the capsule length changes.
-
-        /// <summary>
-        /// Base movement for calculating tilt.
-        /// </summary>
-        private float m_tiltBaseMovement = (float)Math.Sqrt(2);
-
-        /// <summary>
-        /// Used to introduce a fixed tilt because a straight-up capsule falls through terrain, probably a bug in terrain collider
-        /// </summary>
-        private float m_tiltMagnitudeWhenProjectedOnXYPlane = 0.1131371f;
-
         private float m_buoyancy = 0f;
-
         // private CollisionLocker ode;
         private bool[] m_colliderarr = new bool[11];
-        private bool[] m_colliderGroundarr = new bool[11];
 
+        private bool[] m_colliderGroundarr = new bool[11];
         // Default we're a Character
         private CollisionCategories m_collisionCategories = (CollisionCategories.Character);
 
@@ -139,28 +100,55 @@ namespace OpenSim.Region.Physics.OdePlugin
                                                         | CollisionCategories.Body
                                                         | CollisionCategories.Character
                                                         | CollisionCategories.Land);
-        /// <summary>
-        /// Body for dynamics simulation
-        /// </summary>
-        internal IntPtr Body { get; private set; }
 
-        private OdeScene _parent_scene;
+        private float m_density = 60f;
+        private int m_eventsubscription = 0;
+        private bool m_hackSentFall = false;
+        private bool m_hackSentFly = false;
+        private bool m_iscolliding = false;
+        private bool m_iscollidingGround = false;
+        private bool m_iscollidingObj = false;
+        // taints and their non-tainted counterparts
+        private bool m_isPhysical = false;
 
+        private bool m_lastUpdateSent = false;
+        private float m_mass = 80f;
+        private bool m_pidControllerActive = true;
+        private int m_requestedUpdateFrequency = 0;
+        private Vector3 m_rotationalVelocity;
+        private float m_tainted_CAPSULE_LENGTH;
+        private bool m_tainted_isPhysical = false;
         /// <summary>
-        /// Collision geometry
+        /// Hold set forces so we can process them outside physics calculations.  This prevents race conditions if we set force
+        /// while calculatios are going on
         /// </summary>
-        internal IntPtr Shell { get; private set; }
-        
-        private IntPtr Amotor = IntPtr.Zero;
+        private Vector3 m_taintForce;
+
+        private Vector3 m_taintPosition;
+        private Vector3 m_taintTargetVelocity;
+        private float m_tensor = 3800000f;
+        /// <summary>
+        /// Base movement for calculating tilt.
+        /// </summary>
+        private float m_tiltBaseMovement = (float)Math.Sqrt(2);
+
+        // set when the physical status is tainted (false=not existing in physics engine, true=existing)
+        // set when the capsule length changes.
+        /// <summary>
+        /// Used to introduce a fixed tilt because a straight-up capsule falls through terrain, probably a bug in terrain collider
+        /// </summary>
+        private float m_tiltMagnitudeWhenProjectedOnXYPlane = 0.1131371f;
+
+        private bool m_wascolliding = false;
+        private bool m_wascollidingGround = false;
+        private float PID_D = 800.0f;
+        private float PID_P = 900.0f;
+        private float runDivisor = 0.8f;
+
         private d.Mass ShellMass;
 
-        private int m_eventsubscription = 0;
-        private CollisionEventUpdate CollisionEventsThisFrame = new CollisionEventUpdate();
-
-        // unique UUID of this character object
-        internal UUID m_uuid { get; private set; }
-        internal bool bad = false;
-
+        //        private float heightFudgeFactor = 0.52f;
+        private float walkDivisor = 1.3f;
         /// <summary>
         /// ODE Avatar.
         /// </summary>
@@ -217,7 +205,7 @@ namespace OpenSim.Region.Physics.OdePlugin
             CAPSULE_RADIUS = capsule_radius;
             m_tensor = tensor;
             m_density = density;
-//            heightFudgeFactor = height_fudge_factor;
+            //            heightFudgeFactor = height_fudge_factor;
             walkDivisor = walk_divisor;
             runDivisor = rundivisor;
 
@@ -234,34 +222,23 @@ namespace OpenSim.Region.Physics.OdePlugin
             m_tainted_isPhysical = true; // new tainted status: need to create ODE information
 
             _parent_scene.AddPhysicsActorTaint(this);
-            
+
             Name = avName;
         }
 
-        public override int PhysicsActorType
+        public override Vector3 Acceleration
         {
-            get { return (int) ActorTypes.Agent; }
-            set { return; }
+            get { return _acceleration; }
+            set { _acceleration = value; }
         }
 
-        /// <summary>
-        /// If this is set, the avatar will move faster
-        /// </summary>
-        public override bool SetAlwaysRun
-        {
-            get { return m_alwaysRun; }
-            set { m_alwaysRun = value; }
-        }
+        public override bool APIDActive { set { return; } }
 
-        public override bool Grabbed
-        {
-            set { return; }
-        }
+        public override float APIDDamping { set { return; } }
 
-        public override bool Selected
-        {
-            set { return; }
-        }
+        public override float APIDStrength { set { return; } }
+
+        public override Quaternion APIDTarget { set { return; } }
 
         public override float Buoyancy
         {
@@ -269,85 +246,9 @@ namespace OpenSim.Region.Physics.OdePlugin
             set { m_buoyancy = value; }
         }
 
-        public override bool FloatOnWater
+        public override Vector3 CenterOfMass
         {
-            set { return; }
-        }
-
-        public override bool IsPhysical
-        {
-            get { return false; }
-            set { return; }
-        }
-
-        public override bool ThrottleUpdates
-        {
-            get { return false; }
-            set { return; }
-        }
-
-        public override bool Flying
-        {
-            get { return flying; }
-            set
-            {
-                flying = value;
-//                m_log.DebugFormat("[ODE CHARACTER]: Set OdeCharacter Flying to {0}", flying);
-            }
-        }
-
-        /// <summary>
-        /// Returns if the avatar is colliding in general.
-        /// This includes the ground and objects and avatar.
-        /// </summary>
-        public override bool IsColliding
-        {
-            get { return m_iscolliding; }
-            set
-            {
-                int i;
-                int truecount = 0;
-                int falsecount = 0;
-
-                if (m_colliderarr.Length >= 10)
-                {
-                    for (i = 0; i < 10; i++)
-                    {
-                        m_colliderarr[i] = m_colliderarr[i + 1];
-                    }
-                }
-                m_colliderarr[10] = value;
-
-                for (i = 0; i < 11; i++)
-                {
-                    if (m_colliderarr[i])
-                    {
-                        truecount++;
-                    }
-                    else
-                    {
-                        falsecount++;
-                    }
-                }
-
-                // Equal truecounts and false counts means we're colliding with something.
-
-                if (falsecount > 1.2*truecount)
-                {
-                    m_iscolliding = false;
-                }
-                else
-                {
-                    m_iscolliding = true;
-                }
-
-                if (m_wascolliding != m_iscolliding)
-                {
-                    //base.SendCollisionUpdate(new CollisionEventUpdate());
-                }
-
-                m_wascolliding = m_iscolliding;
-            }
+            get { return Vector3.Zero; }
         }
 
         /// <summary>
@@ -388,7 +289,7 @@ namespace OpenSim.Region.Physics.OdePlugin
 
                 // Equal truecounts and false counts means we're colliding with something.
 
-                if (falsecount > 1.2*truecount)
+                if (falsecount > 1.2 * truecount)
                 {
                     m_iscollidingGround = false;
                 }
@@ -420,20 +321,152 @@ namespace OpenSim.Region.Physics.OdePlugin
             }
         }
 
-        /// <summary>
-        /// turn the PID controller on or off.
-        /// The PID Controller will turn on all by itself in many situations
-        /// </summary>
-        /// <param name="status"></param>
-        public void SetPidStatus(bool status)
+        public override float CollisionScore
         {
-            m_pidControllerActive = status;
+            get { return 0f; }
+            set { }
         }
 
-        public override bool Stopped
+        public override bool FloatOnWater
         {
-            get { return _zeroFlag; }
+            set { return; }
         }
+
+        public override bool Flying
+        {
+            get { return flying; }
+            set
+            {
+                flying = value;
+                //                m_log.DebugFormat("[ODE CHARACTER]: Set OdeCharacter Flying to {0}", flying);
+            }
+        }
+
+        public override Vector3 Force
+        {
+            get { return _target_velocity; }
+            set { return; }
+        }
+
+        public override Vector3 GeometricCenter
+        {
+            get { return Vector3.Zero; }
+        }
+
+        public override bool Grabbed
+        {
+            set { return; }
+        }
+
+        /// <summary>
+        /// Returns if the avatar is colliding in general.
+        /// This includes the ground and objects and avatar.
+        /// </summary>
+        public override bool IsColliding
+        {
+            get { return m_iscolliding; }
+            set
+            {
+                int i;
+                int truecount = 0;
+                int falsecount = 0;
+
+                if (m_colliderarr.Length >= 10)
+                {
+                    for (i = 0; i < 10; i++)
+                    {
+                        m_colliderarr[i] = m_colliderarr[i + 1];
+                    }
+                }
+                m_colliderarr[10] = value;
+
+                for (i = 0; i < 11; i++)
+                {
+                    if (m_colliderarr[i])
+                    {
+                        truecount++;
+                    }
+                    else
+                    {
+                        falsecount++;
+                    }
+                }
+
+                // Equal truecounts and false counts means we're colliding with something.
+
+                if (falsecount > 1.2 * truecount)
+                {
+                    m_iscolliding = false;
+                }
+                else
+                {
+                    m_iscolliding = true;
+                }
+
+                if (m_wascolliding != m_iscolliding)
+                {
+                    //base.SendCollisionUpdate(new CollisionEventUpdate());
+                }
+
+                m_wascolliding = m_iscolliding;
+            }
+        }
+
+        public override bool IsPhysical
+        {
+            get { return false; }
+            set { return; }
+        }
+
+        public override bool Kinematic
+        {
+            get { return false; }
+            set { }
+        }
+
+        /// <summary>
+        /// Uses the capped cyllinder volume formula to calculate the avatar's mass.
+        /// This may be used in calculations in the scene/scenepresence
+        /// </summary>
+        public override float Mass
+        {
+            get
+            {
+                float AVvolume = (float)(Math.PI * Math.Pow(CAPSULE_RADIUS, 2) * CAPSULE_LENGTH);
+                return m_density * AVvolume;
+            }
+        }
+
+        public override Quaternion Orientation
+        {
+            get { return Quaternion.Identity; }
+            set
+            {
+                //Matrix3 or = Orientation.ToRotationMatrix();
+                //d.Matrix3 ord = new d.Matrix3(or.m00, or.m10, or.m20, or.m01, or.m11, or.m21, or.m02, or.m12, or.m22);
+                //d.BodySetRotation(Body, ref ord);
+            }
+        }
+
+        public override int PhysicsActorType
+        {
+            get { return (int)ActorTypes.Agent; }
+            set { return; }
+        }
+
+        public override bool PIDActive { set { return; } }
+
+        public override bool PIDHoverActive { set { return; } }
+
+        public override float PIDHoverHeight { set { return; } }
+
+        public override float PIDHoverTau { set { return; } }
+
+        public override PIDHoverType PIDHoverType { set { return; } }
+
+        public override Vector3 PIDTarget { set { return; } }
+
+        public override float PIDTau { set { return; } }
 
         /// <summary>
         /// This 'puts' an avatar somewhere in the physics space.
@@ -458,7 +491,7 @@ namespace OpenSim.Region.Physics.OdePlugin
                             value.Z = _parent_scene.GetTerrainHeightAtXY(127, 127) + 5;
                         }
 
-                        m_taintPosition = value;                        
+                        m_taintPosition = value;
                         _parent_scene.AddPhysicsActorTaint(this);
                     }
                     else
@@ -475,6 +508,25 @@ namespace OpenSim.Region.Physics.OdePlugin
             set { m_rotationalVelocity = value; }
         }
 
+        public override bool Selected
+        {
+            set { return; }
+        }
+
+        /// <summary>
+        /// If this is set, the avatar will move faster
+        /// </summary>
+        public override bool SetAlwaysRun
+        {
+            get { return m_alwaysRun; }
+            set { m_alwaysRun = value; }
+        }
+
+        public override PrimitiveBaseShape Shape
+        {
+            set { return; }
+        }
+
         /// <summary>
         /// This property sets the height of the avatar only.  We use the height to make sure the avatar stands up straight
         /// and use it to offset landings properly
@@ -486,179 +538,17 @@ namespace OpenSim.Region.Physics.OdePlugin
             {
                 SetTaintedCapsuleLength(value);
 
-                    // If we reset velocity here, then an avatar stalls when it crosses a border for the first time
-                    // (as the height of the new root agent is set).
-//                    Velocity = Vector3.Zero;
+                // If we reset velocity here, then an avatar stalls when it crosses a border for the first time
+                // (as the height of the new root agent is set).
+                //                    Velocity = Vector3.Zero;
 
                 _parent_scene.AddPhysicsActorTaint(this);
             }
         }
 
-        private void SetTaintedCapsuleLength(Vector3 size)
+        public override bool Stopped
         {
-            if (size.IsFinite())
-            {
-                m_pidControllerActive = true;
-
-                m_tainted_CAPSULE_LENGTH = (size.Z * 1.15f) - CAPSULE_RADIUS * 2.0f;
-//                    m_log.Info("[ODE CHARACTER]: " + CAPSULE_LENGTH);
-            }
-            else
-            {
-                m_log.WarnFormat("[ODE CHARACTER]: Got a NaN Size for {0} in {1}", Name, _parent_scene.Name);
-            }
-        }
-
-        private void AlignAvatarTiltWithCurrentDirectionOfMovement(Vector3 movementVector)
-        {
-            movementVector.Z = 0f;
-            float magnitude = (float)Math.Sqrt((double)(movementVector.X * movementVector.X + movementVector.Y * movementVector.Y));
-            if (magnitude < 0.1f) return;
-
-            // normalize the velocity vector
-            float invMagnitude = 1.0f / magnitude;
-            movementVector.X *= invMagnitude;
-            movementVector.Y *= invMagnitude;
-
-            // if we change the capsule heading too often, the capsule can fall down
-            // therefore we snap movement vector to just 1 of 4 predefined directions (ne, nw, se, sw),
-            // meaning only 4 possible capsule tilt orientations
-            if (movementVector.X > 0)
-            {
-                // east
-                if (movementVector.Y > 0)
-                {
-                    // northeast
-                    movementVector.X = m_tiltBaseMovement;
-                    movementVector.Y = m_tiltBaseMovement;
-                }
-                else
-                {
-                    // southeast
-                    movementVector.X = m_tiltBaseMovement;
-                    movementVector.Y = -m_tiltBaseMovement;
-                }
-            }
-            else
-            {
-                // west
-                if (movementVector.Y > 0)
-                {
-                    // northwest
-                    movementVector.X = -m_tiltBaseMovement;
-                    movementVector.Y = m_tiltBaseMovement;
-                }
-                else
-                {
-                    // southwest
-                    movementVector.X = -m_tiltBaseMovement;
-                    movementVector.Y = -m_tiltBaseMovement;
-                }
-            }
-
-            // movementVector.Z is zero
-
-            // calculate tilt components based on desired amount of tilt and current (snapped) heading.
-            // the "-" sign is to force the tilt to be OPPOSITE the direction of movement.
-            float xTiltComponent = -movementVector.X * m_tiltMagnitudeWhenProjectedOnXYPlane;
-            float yTiltComponent = -movementVector.Y * m_tiltMagnitudeWhenProjectedOnXYPlane;
-
-            //m_log.Debug("[ODE CHARACTER]: changing avatar tilt");
-            d.JointSetAMotorParam(Amotor, (int)dParam.LowStop, xTiltComponent);
-            d.JointSetAMotorParam(Amotor, (int)dParam.HiStop, xTiltComponent); // must be same as lowstop, else a different, spurious tilt is introduced
-            d.JointSetAMotorParam(Amotor, (int)dParam.LoStop2, yTiltComponent);
-            d.JointSetAMotorParam(Amotor, (int)dParam.HiStop2, yTiltComponent); // same as lowstop
-            d.JointSetAMotorParam(Amotor, (int)dParam.LoStop3, 0f);
-            d.JointSetAMotorParam(Amotor, (int)dParam.HiStop3, 0f); // same as lowstop
-        }
-
-        /// <summary>
-        /// Uses the capped cyllinder volume formula to calculate the avatar's mass.
-        /// This may be used in calculations in the scene/scenepresence
-        /// </summary>
-        public override float Mass
-        {
-            get
-            {
-                float AVvolume = (float)(Math.PI * Math.Pow(CAPSULE_RADIUS, 2) * CAPSULE_LENGTH);
-                return m_density * AVvolume;
-            }
-        }
-
-        public override void link(PhysicsActor obj) {}
-
-        public override void delink() {}
-
-        public override void LockAngularMotion(Vector3 axis) {}
-
-//      This code is very useful. Written by DanX0r. We're just not using it right now.
-//      Commented out to prevent a warning.
-//
-//         private void standupStraight()
-//         {
-//             // The purpose of this routine here is to quickly stabilize the Body while it's popped up in the air.
-//             // The amotor needs a few seconds to stabilize so without it, the avatar shoots up sky high when you
-//             // change appearance and when you enter the simulator
-//             // After this routine is done, the amotor stabilizes much quicker
-//             d.Vector3 feet;
-//             d.Vector3 head;
-//             d.BodyGetRelPointPos(Body, 0.0f, 0.0f, -1.0f, out feet);
-//             d.BodyGetRelPointPos(Body, 0.0f, 0.0f, 1.0f, out head);
-//             float posture = head.Z - feet.Z;
-
-//             // restoring force proportional to lack of posture:
-//             float servo = (2.5f - posture) * POSTURE_SERVO;
-//             d.BodyAddForceAtRelPos(Body, 0.0f, 0.0f, servo, 0.0f, 0.0f, 1.0f);
-//             d.BodyAddForceAtRelPos(Body, 0.0f, 0.0f, -servo, 0.0f, 0.0f, -1.0f);
-//             //d.Matrix3 bodyrotation = d.BodyGetRotation(Body);
-//             //m_log.Info("[PHYSICSAV]: Rotation: " + bodyrotation.M00 + " : " + bodyFArotation.M01 + " : " + bodyrotation.M02 + " : " + bodyrotation.M10 + " : " + bodyrotation.M11 + " : " + bodyrotation.M12 + " : " + bodyrotation.M20 + " : " + bodyrotation.M21 + " : " + bodyrotation.M22);
-//         }
-
-        public override Vector3 Force
-        {
-            get { return _target_velocity; }
-            set { return; }
-        }
-
-        public override int VehicleType
-        {
-            get { return 0; }
-            set { return; }
-        }
-
-        public override void VehicleFloatParam(int param, float value)
-        {
-        }
-
-        public override void VehicleVectorParam(int param, Vector3 value)
-        {
-        }
-
-        public override void VehicleRotationParam(int param, Quaternion rotation)
-        {
-        }
-
-        public override void VehicleFlags(int param, bool remove)
-        {
-        }
-
-        public override void SetVolumeDetect(int param)
-        {
-        }
-
-        public override Vector3 CenterOfMass
-        {
-            get { return Vector3.Zero; }
-        }
-
-        public override Vector3 GeometricCenter
-        {
-            get { return Vector3.Zero; }
-        }
-
-        public override PrimitiveBaseShape Shape
-        {
-            set { return; }
+            get { return _zeroFlag; }
         }
 
         public override Vector3 TargetVelocity
@@ -674,6 +564,30 @@ namespace OpenSim.Region.Physics.OdePlugin
             }
         }
 
+        public override bool ThrottleUpdates
+        {
+            get { return false; }
+            set { return; }
+        }
+
+        public override Vector3 Torque
+        {
+            get { return Vector3.Zero; }
+            set { return; }
+        }
+
+        //             // restoring force proportional to lack of posture:
+        //             float servo = (2.5f - posture) * POSTURE_SERVO;
+        //             d.BodyAddForceAtRelPos(Body, 0.0f, 0.0f, servo, 0.0f, 0.0f, 1.0f);
+        //             d.BodyAddForceAtRelPos(Body, 0.0f, 0.0f, -servo, 0.0f, 0.0f, -1.0f);
+        //             //d.Matrix3 bodyrotation = d.BodyGetRotation(Body);
+        //             //m_log.Info("[PHYSICSAV]: Rotation: " + bodyrotation.M00 + " : " + bodyFArotation.M01 + " : " + bodyrotation.M02 + " : " + bodyrotation.M10 + " : " + bodyrotation.M11 + " : " + bodyrotation.M12 + " : " + bodyrotation.M20 + " : " + bodyrotation.M21 + " : " + bodyrotation.M22);
+        //         }
+        public override int VehicleType
+        {
+            get { return 0; }
+            set { return; }
+        }
 
         public override Vector3 Velocity
         {
@@ -699,42 +613,24 @@ namespace OpenSim.Region.Physics.OdePlugin
                     m_log.WarnFormat("[ODE CHARACTER]: Got a NaN velocity from Scene for {0}", Name);
                 }
 
-//                m_log.DebugFormat("[PHYSICS]: Set target velocity of {0}", m_taintTargetVelocity);
+                //                m_log.DebugFormat("[PHYSICS]: Set target velocity of {0}", m_taintTargetVelocity);
             }
         }
 
-        public override Vector3 Torque
-        {
-            get { return Vector3.Zero; }
-            set { return; }
-        }
+        // the current physical status
+        /// <summary>
+        /// Body for dynamics simulation
+        /// </summary>
+        internal IntPtr Body { get; private set; }
+        // unique UUID of this character object
+        internal UUID m_uuid { get; private set; }
 
-        public override float CollisionScore
+        /// <summary>
+        /// Collision geometry
+        /// </summary>
+        internal IntPtr Shell { get; private set; }
+        public override void AddAngularForce(Vector3 force, bool pushforce)
         {
-            get { return 0f; }
-            set { }
-        }
-
-        public override bool Kinematic
-        {
-            get { return false; }
-            set { }
-        }
-
-        public override Quaternion Orientation
-        {
-            get { return Quaternion.Identity; }
-            set {
-                //Matrix3 or = Orientation.ToRotationMatrix();
-                //d.Matrix3 ord = new d.Matrix3(or.m00, or.m10, or.m20, or.m01, or.m11, or.m21, or.m02, or.m12, or.m22);
-                //d.BodySetRotation(Body, ref ord);
-            }
-        }
-
-        public override Vector3 Acceleration
-        {
-            get { return _acceleration; }
-            set { _acceleration = value; }
         }
 
         /// <summary>
@@ -773,12 +669,167 @@ namespace OpenSim.Region.Physics.OdePlugin
             //m_lastUpdateSent = false;
         }
 
-        public override void AddAngularForce(Vector3 force, bool pushforce)
+        public override void CrossingFailure()
+        {
+        }
+
+        public override void delink()
+        {
+        }
+
+        public override void link(PhysicsActor obj)
+        {
+        }
+
+        public override void LockAngularMotion(Vector3 axis)
         {
         }
 
         public override void SetMomentum(Vector3 momentum)
         {
+        }
+
+        /// <summary>
+        /// turn the PID controller on or off.
+        /// The PID Controller will turn on all by itself in many situations
+        /// </summary>
+        /// <param name="status"></param>
+        public void SetPidStatus(bool status)
+        {
+            m_pidControllerActive = status;
+        }
+        public override void SetVolumeDetect(int param)
+        {
+        }
+
+        public override bool SubscribedEvents()
+        {
+            if (m_eventsubscription > 0)
+                return true;
+            return false;
+        }
+
+        public override void SubscribeEvents(int ms)
+        {
+            m_requestedUpdateFrequency = ms;
+            m_eventsubscription = ms;
+
+            // Don't clear collision event reporting here.  This is called directly from scene code and so can lead
+            // to a race condition with the simulate loop
+
+            _parent_scene.AddCollisionEventReporting(this);
+        }
+
+        public override void UnSubscribeEvents()
+        {
+            _parent_scene.RemoveCollisionEventReporting(this);
+
+            // Don't clear collision event reporting here.  This is called directly from scene code and so can lead
+            // to a race condition with the simulate loop
+
+            m_requestedUpdateFrequency = 0;
+            m_eventsubscription = 0;
+        }
+
+        public override void VehicleFlags(int param, bool remove)
+        {
+        }
+
+        //      This code is very useful. Written by DanX0r. We're just not using it right now.
+        //      Commented out to prevent a warning.
+        //
+        //         private void standupStraight()
+        //         {
+        //             // The purpose of this routine here is to quickly stabilize the Body while it's popped up in the air.
+        //             // The amotor needs a few seconds to stabilize so without it, the avatar shoots up sky high when you
+        //             // change appearance and when you enter the simulator
+        //             // After this routine is done, the amotor stabilizes much quicker
+        //             d.Vector3 feet;
+        //             d.Vector3 head;
+        //             d.BodyGetRelPointPos(Body, 0.0f, 0.0f, -1.0f, out feet);
+        //             d.BodyGetRelPointPos(Body, 0.0f, 0.0f, 1.0f, out head);
+        //             float posture = head.Z - feet.Z;
+        public override void VehicleFloatParam(int param, float value)
+        {
+        }
+
+        public override void VehicleRotationParam(int param, Quaternion rotation)
+        {
+        }
+
+        public override void VehicleVectorParam(int param, Vector3 value)
+        {
+        }
+
+        internal void AddCollisionEvent(uint CollidedWith, ContactPoint contact)
+        {
+            if (m_eventsubscription > 0)
+            {
+                //                m_log.DebugFormat(
+                //                    "[PHYSICS]: Adding collision event for {0}, collidedWith {1}, contact {2}", "", CollidedWith, contact);
+
+                CollisionEventsThisFrame.AddCollider(CollidedWith, contact);
+            }
+        }
+
+        internal void AddCollisionFrameTime(int p)
+        {
+            // protect it from overflow crashing
+            if (m_eventsubscription + p >= int.MaxValue)
+                m_eventsubscription = 0;
+            m_eventsubscription += p;
+        }
+
+        /// <summary>
+        /// Cleanup the things we use in the scene.
+        /// </summary>
+        internal void Destroy()
+        {
+            m_tainted_isPhysical = false;
+            _parent_scene.AddPhysicsActorTaint(this);
+        }
+
+        /// <summary>
+        /// Used internally to destroy the ODE structures associated with this character.
+        /// </summary>
+        internal void DestroyOdeStructures()
+        {
+            // Create avatar capsule and related ODE data
+            if (Shell == IntPtr.Zero || Body == IntPtr.Zero || Amotor == IntPtr.Zero)
+            {
+                m_log.ErrorFormat(
+                    "[ODE CHARACTER]: Destroying ODE structures for {0} even though some are already null.  Shell = {1}, Body = {2}, Amotor = {3}",
+                    Name, Shell, Body, Amotor);
+            }
+
+            // destroy avatar capsule and related ODE data
+            if (Amotor != IntPtr.Zero)
+            {
+                // Kill the Amotor
+                d.JointDestroy(Amotor);
+                Amotor = IntPtr.Zero;
+            }
+
+            //kill the Geometry
+            //            _parent_scene.waitForSpaceUnlock(_parent_scene.space);
+
+            if (Body != IntPtr.Zero)
+            {
+                //kill the body
+                d.BodyDestroy(Body);
+                Body = IntPtr.Zero;
+            }
+
+            if (Shell != IntPtr.Zero)
+            {
+                //              lock (OdeScene.UniversalColliderSyncObject)
+                d.GeomDestroy(Shell);
+
+                _parent_scene.geom_name_map.Remove(Shell);
+                _parent_scene.actor_name_map.Remove(Shell);
+
+                Shell = IntPtr.Zero;
+            }
         }
 
         /// <summary>
@@ -791,7 +842,7 @@ namespace OpenSim.Region.Physics.OdePlugin
         internal void Move(List<OdeCharacter> defects)
         {
             //  no lock; for now it's only called from within Simulate()
-            
+
             // If the PID Controller isn't active then we set our force
             // calculating base velocity to the current position
 
@@ -806,7 +857,7 @@ namespace OpenSim.Region.Physics.OdePlugin
 
             d.Vector3 localpos = d.BodyGetPosition(Body);
             Vector3 localPos = new Vector3(localpos.X, localpos.Y, localpos.Z);
-            
+
             if (!localPos.IsFinite())
             {
                 m_log.WarnFormat(
@@ -821,9 +872,9 @@ namespace OpenSim.Region.Physics.OdePlugin
             Vector3 vec = Vector3.Zero;
             d.Vector3 vel = d.BodyGetLinearVel(Body);
 
-//            m_log.DebugFormat(
-//                "[ODE CHARACTER]: Current velocity in Move() is <{0},{1},{2}>, target {3} for {4}",
-//                vel.X, vel.Y, vel.Z, _target_velocity, Name);
+            //            m_log.DebugFormat(
+            //                "[ODE CHARACTER]: Current velocity in Move() is <{0},{1},{2}>, target {3} for {4}",
+            //                vel.X, vel.Y, vel.Z, _target_velocity, Name);
 
             float movementdivisor = 1f;
 
@@ -855,7 +906,7 @@ namespace OpenSim.Region.Physics.OdePlugin
 
                     d.Vector3 pos = d.BodyGetPosition(Body);
                     vec.X = (_target_velocity.X - vel.X) * (PID_D) + (_zeroPosition.X - pos.X) * (PID_P * 2);
-                    vec.Y = (_target_velocity.Y - vel.Y) * (PID_D) + (_zeroPosition.Y - pos.Y)* (PID_P * 2);
+                    vec.Y = (_target_velocity.Y - vel.Y) * (PID_D) + (_zeroPosition.Y - pos.Y) * (PID_P * 2);
                     if (flying)
                     {
                         vec.Z = (_target_velocity.Z - vel.Z) * (PID_D) + (_zeroPosition.Z - pos.Z) * PID_P;
@@ -885,9 +936,9 @@ namespace OpenSim.Region.Physics.OdePlugin
                     vec.X = ((_target_velocity.X / movementdivisor) - vel.X) * (PID_D / 6);
                     vec.Y = ((_target_velocity.Y / movementdivisor) - vel.Y) * (PID_D / 6);
 
-//                    m_log.DebugFormat(
-//                        "[ODE CHARACTER]: !m_iscolliding && flying, vec {0}, _target_velocity {1}, movementdivisor {2}, vel {3}",
-//                        vec, _target_velocity, movementdivisor, vel);
+                    //                    m_log.DebugFormat(
+                    //                        "[ODE CHARACTER]: !m_iscolliding && flying, vec {0}, _target_velocity {1}, movementdivisor {2}, vel {3}",
+                    //                        vec, _target_velocity, movementdivisor, vel);
                 }
 
                 if (m_iscolliding && !flying && _target_velocity.Z > 0.0f)
@@ -895,7 +946,7 @@ namespace OpenSim.Region.Physics.OdePlugin
                     // We're colliding with something and we're not flying but we're moving
                     // This means we're walking or running.
                     d.Vector3 pos = d.BodyGetPosition(Body);
-                    vec.Z = (_target_velocity.Z - vel.Z)*PID_D + (_zeroPosition.Z - pos.Z)*PID_P;
+                    vec.Z = (_target_velocity.Z - vel.Z) * PID_D + (_zeroPosition.Z - pos.Z) * PID_P;
                     if (_target_velocity.X > 0)
                     {
                         vec.X = ((_target_velocity.X - vel.X) / 1.2f) * PID_D;
@@ -966,8 +1017,8 @@ namespace OpenSim.Region.Physics.OdePlugin
             d.Vector3 newVel = d.BodyGetLinearVel(Body);
             if (newVel.X >= 256 || newVel.X <= 256 || newVel.Y >= 256 || newVel.Y <= 256 || newVel.Z >= 256 || newVel.Z <= 256)
             {
-//                m_log.DebugFormat(
-//                    "[ODE CHARACTER]: Limiting falling velocity from {0} to {1} for {2}", newVel.Z, -9.8, Name);
+                //                m_log.DebugFormat(
+                //                    "[ODE CHARACTER]: Limiting falling velocity from {0} to {1} for {2}", newVel.Z, -9.8, Name);
 
                 newVel.X = Util.Clamp<float>(newVel.X, -255f, 255f);
                 newVel.Y = Util.Clamp<float>(newVel.Y, -255f, 255f);
@@ -980,6 +1031,95 @@ namespace OpenSim.Region.Physics.OdePlugin
                     newVel.Z = Util.Clamp<float>(newVel.Z, -255f, 255f);
 
                 d.BodySetLinearVel(Body, newVel.X, newVel.Y, newVel.Z);
+            }
+        }
+
+        internal void ProcessTaints()
+        {
+            if (m_taintPosition != _position)
+            {
+                if (Body != IntPtr.Zero)
+                {
+                    d.BodySetPosition(Body, m_taintPosition.X, m_taintPosition.Y, m_taintPosition.Z);
+                    _position = m_taintPosition;
+                }
+            }
+
+            if (m_taintForce != Vector3.Zero)
+            {
+                if (Body != IntPtr.Zero)
+                {
+                    // FIXME: This is not a good solution since it's subject to a race condition if a force is another
+                    // thread sets a new force while we're in this loop (since it could be obliterated by
+                    // m_taintForce = Vector3.Zero.  Need to lock ProcessTaints() when we set a new tainted force.
+                    d.BodyAddForce(Body, m_taintForce.X, m_taintForce.Y, m_taintForce.Z);
+                }
+
+                m_taintForce = Vector3.Zero;
+            }
+
+            if (m_taintTargetVelocity != _target_velocity)
+                _target_velocity = m_taintTargetVelocity;
+
+            if (m_tainted_isPhysical != m_isPhysical)
+            {
+                if (m_tainted_isPhysical)
+                {
+                    CreateOdeStructures(_position.X, _position.Y, _position.Z, m_tensor);
+                    _parent_scene.AddCharacter(this);
+                }
+                else
+                {
+                    _parent_scene.RemoveCharacter(this);
+                    DestroyOdeStructures();
+                }
+
+                m_isPhysical = m_tainted_isPhysical;
+            }
+
+            if (m_tainted_CAPSULE_LENGTH != CAPSULE_LENGTH)
+            {
+                if (Shell != IntPtr.Zero && Body != IntPtr.Zero && Amotor != IntPtr.Zero)
+                {
+                    //                    m_log.DebugFormat(
+                    //                        "[ODE CHARACTER]: Changing capsule size from {0} to {1} for {2}",
+                    //                        CAPSULE_LENGTH, m_tainted_CAPSULE_LENGTH, Name);
+
+                    m_pidControllerActive = true;
+
+                    // no lock needed on _parent_scene.OdeLock because we are called from within the thread lock in OdePlugin's simulate()
+                    DestroyOdeStructures();
+
+                    float prevCapsule = CAPSULE_LENGTH;
+                    CAPSULE_LENGTH = m_tainted_CAPSULE_LENGTH;
+
+                    CreateOdeStructures(
+                        _position.X,
+                        _position.Y,
+                        _position.Z + (Math.Abs(CAPSULE_LENGTH - prevCapsule) * 2), m_tensor);
+
+                    // As with Size, we reset velocity.  However, this isn't strictly necessary since it doesn't
+                    // appear to stall initial region crossings when done here.  Being done for consistency.
+                    //                    Velocity = Vector3.Zero;
+                }
+                else
+                {
+                    m_log.Warn("[ODE CHARACTER]: trying to change capsule size for " + Name + ", but the following ODE data is missing - "
+                        + (Shell == IntPtr.Zero ? "Shell " : "")
+                        + (Body == IntPtr.Zero ? "Body " : "")
+                        + (Amotor == IntPtr.Zero ? "Amotor " : ""));
+                }
+            }
+        }
+
+        internal void SendCollisions()
+        {
+            if (m_eventsubscription > m_requestedUpdateFrequency)
+            {
+                base.SendCollisionUpdate(CollisionEventsThisFrame);
+
+                CollisionEventsThisFrame.Clear();
+                m_eventsubscription = 0;
             }
         }
 
@@ -1073,6 +1213,69 @@ namespace OpenSim.Region.Physics.OdePlugin
             }
         }
 
+        private void AlignAvatarTiltWithCurrentDirectionOfMovement(Vector3 movementVector)
+        {
+            movementVector.Z = 0f;
+            float magnitude = (float)Math.Sqrt((double)(movementVector.X * movementVector.X + movementVector.Y * movementVector.Y));
+            if (magnitude < 0.1f) return;
+
+            // normalize the velocity vector
+            float invMagnitude = 1.0f / magnitude;
+            movementVector.X *= invMagnitude;
+            movementVector.Y *= invMagnitude;
+
+            // if we change the capsule heading too often, the capsule can fall down
+            // therefore we snap movement vector to just 1 of 4 predefined directions (ne, nw, se, sw),
+            // meaning only 4 possible capsule tilt orientations
+            if (movementVector.X > 0)
+            {
+                // east
+                if (movementVector.Y > 0)
+                {
+                    // northeast
+                    movementVector.X = m_tiltBaseMovement;
+                    movementVector.Y = m_tiltBaseMovement;
+                }
+                else
+                {
+                    // southeast
+                    movementVector.X = m_tiltBaseMovement;
+                    movementVector.Y = -m_tiltBaseMovement;
+                }
+            }
+            else
+            {
+                // west
+                if (movementVector.Y > 0)
+                {
+                    // northwest
+                    movementVector.X = -m_tiltBaseMovement;
+                    movementVector.Y = m_tiltBaseMovement;
+                }
+                else
+                {
+                    // southwest
+                    movementVector.X = -m_tiltBaseMovement;
+                    movementVector.Y = -m_tiltBaseMovement;
+                }
+            }
+
+            // movementVector.Z is zero
+
+            // calculate tilt components based on desired amount of tilt and current (snapped) heading.
+            // the "-" sign is to force the tilt to be OPPOSITE the direction of movement.
+            float xTiltComponent = -movementVector.X * m_tiltMagnitudeWhenProjectedOnXYPlane;
+            float yTiltComponent = -movementVector.Y * m_tiltMagnitudeWhenProjectedOnXYPlane;
+
+            //m_log.Debug("[ODE CHARACTER]: changing avatar tilt");
+            d.JointSetAMotorParam(Amotor, (int)dParam.LowStop, xTiltComponent);
+            d.JointSetAMotorParam(Amotor, (int)dParam.HiStop, xTiltComponent); // must be same as lowstop, else a different, spurious tilt is introduced
+            d.JointSetAMotorParam(Amotor, (int)dParam.LoStop2, yTiltComponent);
+            d.JointSetAMotorParam(Amotor, (int)dParam.HiStop2, yTiltComponent); // same as lowstop
+            d.JointSetAMotorParam(Amotor, (int)dParam.LoStop3, 0f);
+            d.JointSetAMotorParam(Amotor, (int)dParam.HiStop3, 0f); // same as lowstop
+        }
+
         /// <summary>
         /// This creates the Avatar's physical Surrogate in ODE at the position supplied
         /// </summary>
@@ -1095,7 +1298,7 @@ namespace OpenSim.Region.Physics.OdePlugin
             }
 
             int dAMotorEuler = 1;
-//            _parent_scene.waitForSpaceUnlock(_parent_scene.space);
+            //            _parent_scene.waitForSpaceUnlock(_parent_scene.space);
             if (CAPSULE_LENGTH <= 0)
             {
                 m_log.Warn("[ODE CHARACTER]: The capsule size you specified in opensim.ini is invalid!  Setting it to the smallest possible size!");
@@ -1108,7 +1311,7 @@ namespace OpenSim.Region.Physics.OdePlugin
                 CAPSULE_RADIUS = 0.01f;
             }
 
-//          lock (OdeScene.UniversalColliderSyncObject)
+            //          lock (OdeScene.UniversalColliderSyncObject)
             Shell = d.CreateCapsule(_parent_scene.space, CAPSULE_RADIUS, CAPSULE_LENGTH);
 
             d.GeomSetCategoryBits(Shell, (int)m_collisionCategories);
@@ -1167,17 +1370,20 @@ namespace OpenSim.Region.Physics.OdePlugin
             else
             {
                 #region Documentation of capsule motor LowStop and HighStop parameters
+
                 // Intentionally introduce some tilt into the capsule by setting
                 // the motor stops to small epsilon values. This small tilt prevents
                 // the capsule from falling into the terrain; a straight-up capsule
                 // (with -0..0 motor stops) falls into the terrain for reasons yet
                 // to be comprehended in their entirety.
-                #endregion
+
+                #endregion Documentation of capsule motor LowStop and HighStop parameters
+
                 AlignAvatarTiltWithCurrentDirectionOfMovement(Vector3.Zero);
                 d.JointSetAMotorParam(Amotor, (int)dParam.LowStop, 0.08f);
                 d.JointSetAMotorParam(Amotor, (int)dParam.LoStop3, -0f);
                 d.JointSetAMotorParam(Amotor, (int)dParam.LoStop2, 0.08f);
-                d.JointSetAMotorParam(Amotor, (int)dParam.HiStop,  0.08f); // must be same as lowstop, else a different, spurious tilt is introduced
+                d.JointSetAMotorParam(Amotor, (int)dParam.HiStop, 0.08f); // must be same as lowstop, else a different, spurious tilt is introduced
                 d.JointSetAMotorParam(Amotor, (int)dParam.HiStop3, 0f); // same as lowstop
                 d.JointSetAMotorParam(Amotor, (int)dParam.HiStop2, 0.08f); // same as lowstop
             }
@@ -1198,214 +1404,19 @@ namespace OpenSim.Region.Physics.OdePlugin
             _parent_scene.actor_name_map[Shell] = this;
         }
 
-        /// <summary>
-        /// Cleanup the things we use in the scene.
-        /// </summary>
-        internal void Destroy()
+        private void SetTaintedCapsuleLength(Vector3 size)
         {
-            m_tainted_isPhysical = false;
-            _parent_scene.AddPhysicsActorTaint(this);
-        }
-
-        /// <summary>
-        /// Used internally to destroy the ODE structures associated with this character.
-        /// </summary>
-        internal void DestroyOdeStructures()
-        {
-            // Create avatar capsule and related ODE data
-            if (Shell == IntPtr.Zero || Body == IntPtr.Zero || Amotor == IntPtr.Zero)
+            if (size.IsFinite())
             {
-                m_log.ErrorFormat(
-                    "[ODE CHARACTER]: Destroying ODE structures for {0} even though some are already null.  Shell = {1}, Body = {2}, Amotor = {3}",
-                    Name, Shell, Body, Amotor);
-            }
+                m_pidControllerActive = true;
 
-            // destroy avatar capsule and related ODE data
-            if (Amotor != IntPtr.Zero)
+                m_tainted_CAPSULE_LENGTH = (size.Z * 1.15f) - CAPSULE_RADIUS * 2.0f;
+                //                    m_log.Info("[ODE CHARACTER]: " + CAPSULE_LENGTH);
+            }
+            else
             {
-                // Kill the Amotor
-                d.JointDestroy(Amotor);
-                Amotor = IntPtr.Zero;
+                m_log.WarnFormat("[ODE CHARACTER]: Got a NaN Size for {0} in {1}", Name, _parent_scene.Name);
             }
-
-            //kill the Geometry
-//            _parent_scene.waitForSpaceUnlock(_parent_scene.space);
-
-            if (Body != IntPtr.Zero)
-            {
-                //kill the body
-                d.BodyDestroy(Body);
-                Body = IntPtr.Zero;
-            }
-
-            if (Shell != IntPtr.Zero)
-            {
-//              lock (OdeScene.UniversalColliderSyncObject)
-                d.GeomDestroy(Shell);
-
-                _parent_scene.geom_name_map.Remove(Shell);
-                _parent_scene.actor_name_map.Remove(Shell);
-
-                Shell = IntPtr.Zero;
-            }
-        }
-
-        public override void CrossingFailure()
-        {
-        }
-
-        public override Vector3 PIDTarget { set { return; } }
-        public override bool PIDActive { set { return; } }
-        public override float PIDTau { set { return; } }
-
-        public override float PIDHoverHeight { set { return; } }
-        public override bool PIDHoverActive { set { return; } }
-        public override PIDHoverType PIDHoverType { set { return; } }
-        public override float PIDHoverTau { set { return; } }
-        
-        public override Quaternion APIDTarget{ set { return; } }
-
-        public override bool APIDActive{ set { return; } }
-
-        public override float APIDStrength{ set { return; } }
-
-        public override float APIDDamping{ set { return; } }
-
-        public override void SubscribeEvents(int ms)
-        {
-            m_requestedUpdateFrequency = ms;
-            m_eventsubscription = ms;
-
-            // Don't clear collision event reporting here.  This is called directly from scene code and so can lead
-            // to a race condition with the simulate loop
-
-            _parent_scene.AddCollisionEventReporting(this);
-        }
-
-        public override void UnSubscribeEvents()
-        {
-            _parent_scene.RemoveCollisionEventReporting(this);
-
-            // Don't clear collision event reporting here.  This is called directly from scene code and so can lead
-            // to a race condition with the simulate loop
-
-            m_requestedUpdateFrequency = 0;
-            m_eventsubscription = 0;
-        }
-
-        internal void AddCollisionEvent(uint CollidedWith, ContactPoint contact)
-        {
-            if (m_eventsubscription > 0)
-            {
-//                m_log.DebugFormat(
-//                    "[PHYSICS]: Adding collision event for {0}, collidedWith {1}, contact {2}", "", CollidedWith, contact);
-
-                CollisionEventsThisFrame.AddCollider(CollidedWith, contact);
-            }
-        }
-
-        internal void SendCollisions()
-        {
-            if (m_eventsubscription > m_requestedUpdateFrequency)
-            {
-                base.SendCollisionUpdate(CollisionEventsThisFrame);
-
-                CollisionEventsThisFrame.Clear();
-                m_eventsubscription = 0;
-            }
-        }
-
-        public override bool SubscribedEvents()
-        {
-            if (m_eventsubscription > 0)
-                return true;
-            return false;
-        }
-
-        internal void ProcessTaints()
-        {
-            if (m_taintPosition != _position)
-            {
-                if (Body != IntPtr.Zero)
-                {
-                    d.BodySetPosition(Body, m_taintPosition.X, m_taintPosition.Y, m_taintPosition.Z);
-                    _position = m_taintPosition;
-                }
-            }
-
-            if (m_taintForce != Vector3.Zero)
-            {
-                if (Body != IntPtr.Zero)
-                {
-                    // FIXME: This is not a good solution since it's subject to a race condition if a force is another
-                    // thread sets a new force while we're in this loop (since it could be obliterated by
-                    // m_taintForce = Vector3.Zero.  Need to lock ProcessTaints() when we set a new tainted force.
-                    d.BodyAddForce(Body, m_taintForce.X, m_taintForce.Y, m_taintForce.Z);
-                }
-
-                m_taintForce = Vector3.Zero;
-            }
-
-            if (m_taintTargetVelocity != _target_velocity)
-                _target_velocity = m_taintTargetVelocity;
-
-            if (m_tainted_isPhysical != m_isPhysical)
-            {
-                if (m_tainted_isPhysical)
-                {
-                    CreateOdeStructures(_position.X, _position.Y, _position.Z, m_tensor);
-                    _parent_scene.AddCharacter(this);
-                }
-                else
-                {
-                    _parent_scene.RemoveCharacter(this);
-                    DestroyOdeStructures();
-                }
-
-                m_isPhysical = m_tainted_isPhysical;
-            }
-
-            if (m_tainted_CAPSULE_LENGTH != CAPSULE_LENGTH)
-            {
-                if (Shell != IntPtr.Zero && Body != IntPtr.Zero && Amotor != IntPtr.Zero)
-                {
-//                    m_log.DebugFormat(
-//                        "[ODE CHARACTER]: Changing capsule size from {0} to {1} for {2}",
-//                        CAPSULE_LENGTH, m_tainted_CAPSULE_LENGTH, Name);
-                    
-                    m_pidControllerActive = true;
-
-                    // no lock needed on _parent_scene.OdeLock because we are called from within the thread lock in OdePlugin's simulate()
-                    DestroyOdeStructures();
-
-                    float prevCapsule = CAPSULE_LENGTH;
-                    CAPSULE_LENGTH = m_tainted_CAPSULE_LENGTH;
-
-                    CreateOdeStructures(
-                        _position.X,
-                        _position.Y,
-                        _position.Z + (Math.Abs(CAPSULE_LENGTH - prevCapsule) * 2), m_tensor);
-
-                    // As with Size, we reset velocity.  However, this isn't strictly necessary since it doesn't
-                    // appear to stall initial region crossings when done here.  Being done for consistency.
-//                    Velocity = Vector3.Zero;
-                }
-                else
-                {
-                    m_log.Warn("[ODE CHARACTER]: trying to change capsule size for " + Name + ", but the following ODE data is missing - "
-                        + (Shell==IntPtr.Zero ? "Shell ":"")
-                        + (Body==IntPtr.Zero ? "Body ":"")
-                        + (Amotor==IntPtr.Zero ? "Amotor ":""));
-                }
-            }
-        }
-
-        internal void AddCollisionFrameTime(int p)
-        {
-            // protect it from overflow crashing
-            if (m_eventsubscription + p >= int.MaxValue)
-                m_eventsubscription = 0;
-            m_eventsubscription += p;
         }
     }
 }

@@ -25,36 +25,34 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using Nini.Config;
 using log4net;
-using System.Reflection;
-using System;
-using System.Collections.Generic;
+using Nini.Config;
 using OpenSim.Framework.Servers;
 using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Server.Base;
 using OpenSim.Server.Handlers.Base;
-using Mono.Addins;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.Server
 {
     public class OpenSimServer
     {
-        private static readonly ILog m_log =
-                LogManager.GetLogger(
-                MethodBase.GetCurrentMethod().DeclaringType);
+        protected static PluginLoader loader;
 
         protected static HttpServerBase m_Server = null;
 
         protected static List<IServiceConnector> m_ServiceConnectors =
                 new List<IServiceConnector>();
 
-        protected static PluginLoader loader;
-
+        private static readonly ILog m_log =
+                LogManager.GetLogger(
+                MethodBase.GetCurrentMethod().DeclaringType);
         public static int Main(string[] args)
         {
             m_Server = new HttpServerBase("R.O.B.U.S.T.", args);
-            
+
             string registryLocation;
 
             IConfig serverConfig = m_Server.Config.Configs["Startup"];
@@ -65,8 +63,8 @@ namespace OpenSim.Server
             }
 
             string connList = serverConfig.GetString("ServiceConnectors", String.Empty);
-            
-            registryLocation = serverConfig.GetString("RegistryLocation",".");
+
+            registryLocation = serverConfig.GetString("RegistryLocation", ".");
 
             IConfig servicesConfig = m_Server.Config.Configs["ServiceList"];
             if (servicesConfig != null)
@@ -85,9 +83,9 @@ namespace OpenSim.Server
                 connList = String.Join(",", servicesList.ToArray());
             }
 
-            string[] conns = connList.Split(new char[] {',', ' ', '\n', '\r', '\t'});
+            string[] conns = connList.Split(new char[] { ',', ' ', '\n', '\r', '\t' });
 
-//            int i = 0;
+            //            int i = 0;
             foreach (string c in conns)
             {
                 if (c == String.Empty)
@@ -97,12 +95,12 @@ namespace OpenSim.Server
                 string conn = c;
                 uint port = 0;
 
-                string[] split1 = conn.Split(new char[] {'/'});
+                string[] split1 = conn.Split(new char[] { '/' });
                 if (split1.Length > 1)
                 {
                     conn = split1[1];
 
-                    string[] split2 = split1[0].Split(new char[] {'@'});
+                    string[] split2 = split1[0].Split(new char[] { '@' });
                     if (split2.Length > 1)
                     {
                         configName = split2[0];
@@ -113,7 +111,7 @@ namespace OpenSim.Server
                         port = Convert.ToUInt32(split1[0]);
                     }
                 }
-                string[] parts = conn.Split(new char[] {':'});
+                string[] parts = conn.Split(new char[] { ':' });
                 string friendlyName = parts[0];
                 if (parts.Length > 1)
                     friendlyName = parts[1];

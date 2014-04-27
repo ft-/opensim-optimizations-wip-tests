@@ -25,7 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 
@@ -45,7 +44,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
                 int y;
                 for (y = 0; y < map.Height; y++)
                 {
-                    if (!mask[x,y])
+                    if (!mask[x, y])
                         continue;
 
                     // Calculate a sphere and add it to the heighmap
@@ -53,7 +52,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
                     z *= z;
                     z -= ((x - rx) * (x - rx)) + ((y - ry) * (y - ry));
 
-                    double noise = TerrainUtil.PerlinNoise2D(x / (double) map.Width, y / (double) map.Height, 8, 1.0);
+                    double noise = TerrainUtil.PerlinNoise2D(x / (double)map.Width, y / (double)map.Height, 8, 1.0);
 
                     if (z > 0.0)
                         map[x, y] += noise * z * duration;
@@ -61,6 +60,6 @@ namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
             }
         }
 
-        #endregion
+        #endregion ITerrainPaintableEffect Members
     }
 }

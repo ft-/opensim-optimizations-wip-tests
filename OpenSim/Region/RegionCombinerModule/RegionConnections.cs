@@ -25,26 +25,26 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.RegionCombinerModule
 {
     public class RegionConnections
     {
+        public RegionCombinerClientEventForwarder ClientEventForwarder;
+
+        public List<RegionData> ConnectedRegions;
+
+        public RegionCombinerPermissionModule PermissionModule;
+
         /// <summary>
         /// Root Region ID
         /// </summary>
         public UUID RegionId;
-
-        /// <summary>
-        /// Root Region Scene
-        /// </summary>
-        public Scene RegionScene;
 
         /// <summary>
         /// LargeLandChannel for combined region
@@ -52,14 +52,28 @@ namespace OpenSim.Region.RegionCombinerModule
         public ILandChannel RegionLandChannel;
 
         /// <summary>
+        /// Root Region Scene
+        /// </summary>
+        public Scene RegionScene;
+        /// <summary>
         /// The x map co-ordinate for this region (where each co-ordinate is a Constants.RegionSize block).
         /// </summary>
         public uint X;
 
         /// <summary>
+        /// The size of the megaregion in meters.
+        /// </summary>
+        public uint XEnd;
+
+        /// <summary>
         /// The y co-ordinate for this region (where each cor-odinate is a Constants.RegionSize block).
         /// </summary>
         public uint Y;
+
+        /// <summary>
+        /// The size of the megaregion in meters.
+        /// </summary>
+        public uint YEnd;
 
         /// <summary>
         /// The X meters position of this connection.
@@ -70,21 +84,6 @@ namespace OpenSim.Region.RegionCombinerModule
         /// The Y meters co-ordinate of this connection.
         /// </summary>
         public uint PosY { get { return Util.RegionToWorldLoc(Y); } }
-
-        /// <summary>
-        /// The size of the megaregion in meters.
-        /// </summary>
-        public uint XEnd;
-
-        /// <summary>
-        /// The size of the megaregion in meters.
-        /// </summary>
-        public uint YEnd;
-
-        public List<RegionData> ConnectedRegions;
-        public RegionCombinerPermissionModule PermissionModule;
-        public RegionCombinerClientEventForwarder ClientEventForwarder;
-
         public void UpdateExtents(Vector3 extents)
         {
             XEnd = (uint)extents.X;

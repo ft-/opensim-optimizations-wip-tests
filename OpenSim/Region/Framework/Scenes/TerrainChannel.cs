@@ -25,20 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Region.Framework.Interfaces;
 using System;
 using System.IO;
-using System.Text;
 using System.Reflection;
 using System.Xml;
 using System.Xml.Serialization;
-
-using OpenSim.Data;
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Interfaces;
-
-using OpenMetaverse;
-
-using log4net;
 
 namespace OpenSim.Region.Framework.Scenes
 {
@@ -47,16 +42,9 @@ namespace OpenSim.Region.Framework.Scenes
     /// </summary>
     public class TerrainChannel : ITerrainChannel
     {
+        protected TerrainData m_terrainData;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private static string LogHeader = "[TERRAIN CHANNEL]";
-
-        protected TerrainData m_terrainData;
-
-        public int Width { get { return m_terrainData.SizeX; } }  // X dimension
-        // Unfortunately, for historical reasons, in this module 'Width' is X and 'Height' is Y
-        public int Height { get { return m_terrainData.SizeY; } } // Y dimension
-        public int Altitude { get { return m_terrainData.SizeZ; } } // Y dimension
-
         // Default, not-often-used builder
         public TerrainChannel()
         {
@@ -104,27 +92,34 @@ namespace OpenSim.Region.Framework.Scenes
             m_terrainData = pTerrData;
         }
 
+        public int Altitude { get { return m_terrainData.SizeZ; } }
+
+        // Unfortunately, for historical reasons, in this module 'Width' is X and 'Height' is Y
+        public int Height { get { return m_terrainData.SizeY; } }
+
+        public int Width { get { return m_terrainData.SizeX; } }  // X dimension
+
+ // Y dimension
+
+         // Y dimension
         #region ITerrainChannel Members
 
-        // ITerrainChannel.MakeCopy()
-        public ITerrainChannel MakeCopy()
+        // ITerrainChannel.this[x,y]
+        public double this[int x, int y]
         {
-            return this.Copy();
-        }
+            get
+            {
+                if (x < 0 || x >= Width || y < 0 || y >= Height)
+                    return 0;
+                return (double)m_terrainData[x, y];
+            }
+            set
+            {
+                if (Double.IsNaN(value) || Double.IsInfinity(value))
+                    return;
 
-        // ITerrainChannel.GetTerrainData()
-        public TerrainData GetTerrainData()
-        {
-            return m_terrainData;
-        }
-
-        // ITerrainChannel.GetFloatsSerialized()
-        // This one dimensional version is ordered so height = map[y*sizeX+x];
-        // DEPRECATED: don't use this function as it does not retain the dimensions of the terrain
-        //     and the caller will probably do the wrong thing if the terrain is not the legacy 256x256.
-        public float[] GetFloatsSerialised()
-        {
-            return m_terrainData.GetFloatsSerialized();
+                m_terrainData[x, y] = (float)value;
+            }
         }
 
         // ITerrainChannel.GetDoubles()
@@ -145,21 +140,13 @@ namespace OpenSim.Region.Framework.Scenes
             return heights;
         }
 
-        // ITerrainChannel.this[x,y]
-        public double this[int x, int y]
+        // ITerrainChannel.GetFloatsSerialized()
+        // This one dimensional version is ordered so height = map[y*sizeX+x];
+        // DEPRECATED: don't use this function as it does not retain the dimensions of the terrain
+        //     and the caller will probably do the wrong thing if the terrain is not the legacy 256x256.
+        public float[] GetFloatsSerialised()
         {
-            get {
-                if (x < 0 || x >= Width || y < 0 || y >= Height)
-                    return 0;
-                return (double)m_terrainData[x, y];
-            }
-            set
-            {
-                if (Double.IsNaN(value) || Double.IsInfinity(value))
-                    return;
-
-                m_terrainData[x, y] = (float)value;
-            }
+            return m_terrainData.GetFloatsSerialized();
         }
 
         // ITerrainChannel.GetHieghtAtXYZ(x, y, z)
@@ -170,26 +157,10 @@ namespace OpenSim.Region.Framework.Scenes
             return m_terrainData[(int)x, (int)y];
         }
 
-        // ITerrainChannel.Tainted()
-        public bool Tainted(int x, int y)
+        // ITerrainChannel.GetTerrainData()
+        public TerrainData GetTerrainData()
         {
-            return m_terrainData.IsTaintedAt(x, y);
-        }
-
-        // ITerrainChannel.SaveToXmlString()
-        public string SaveToXmlString()
-        {
-            XmlWriterSettings settings = new XmlWriterSettings();
-            settings.Encoding = Util.UTF8;
-            using (StringWriter sw = new StringWriter())
-            {
-                using (XmlWriter writer = XmlWriter.Create(sw, settings))
-                {
-                    WriteXml(writer);
-                }
-                string output = sw.ToString();
-                return output;
-            }
+            return m_terrainData;
         }
 
         // ITerrainChannel.LoadFromXmlString()
@@ -204,6 +175,11 @@ namespace OpenSim.Region.Framework.Scenes
             sr.Close();
         }
 
+        // ITerrainChannel.MakeCopy()
+        public ITerrainChannel MakeCopy()
+        {
+            return this.Copy();
+        }
         // ITerrainChannel.Merge
         public void Merge(ITerrainChannel newTerrain, Vector3 displacement, float radianRotation, Vector2 rotationDisplacement)
         {
@@ -235,11 +211,11 @@ namespace OpenSim.Region.Framework.Scenes
                         // First compute the rotation location for the new height.
                         dispX += (int)(rotationDisplacement.X
                             + ((float)xx - rotationDisplacement.X) * Math.Cos(radianRotation)
-                            - ((float)yy - rotationDisplacement.Y) * Math.Sin(radianRotation) );
+                            - ((float)yy - rotationDisplacement.Y) * Math.Sin(radianRotation));
 
                         dispY += (int)(rotationDisplacement.Y
                             + ((float)xx - rotationDisplacement.X) * Math.Sin(radianRotation)
-                            + ((float)yy - rotationDisplacement.Y) * Math.Cos(radianRotation) );
+                            + ((float)yy - rotationDisplacement.Y) * Math.Cos(radianRotation));
 
                         if (dispX >= 0 && dispX < m_terrainData.SizeX && dispY >= 0 && dispY < m_terrainData.SizeY)
                         {
@@ -278,7 +254,28 @@ namespace OpenSim.Region.Framework.Scenes
             }
         }
 
-        #endregion
+        // ITerrainChannel.SaveToXmlString()
+        public string SaveToXmlString()
+        {
+            XmlWriterSettings settings = new XmlWriterSettings();
+            settings.Encoding = Util.UTF8;
+            using (StringWriter sw = new StringWriter())
+            {
+                using (XmlWriter writer = XmlWriter.Create(sw, settings))
+                {
+                    WriteXml(writer);
+                }
+                string output = sw.ToString();
+                return output;
+            }
+        }
+
+        // ITerrainChannel.Tainted()
+        public bool Tainted(int x, int y)
+        {
+            return m_terrainData.IsTaintedAt(x, y);
+        }
+        #endregion ITerrainChannel Members
 
         public TerrainChannel Copy()
         {
@@ -287,22 +284,55 @@ namespace OpenSim.Region.Framework.Scenes
             return copy;
         }
 
-        private void WriteXml(XmlWriter writer)
+        private void FlatLand()
         {
-            if (Width == Constants.RegionSize && Height == Constants.RegionSize)
+            m_terrainData.ClearLand();
+        }
+
+        // Read legacy terrain map. Presumed to be 256x256 of data encoded as floats in a byte array.
+        private void FromXml(XmlReader xmlReader)
+        {
+            XmlSerializer serializer = new XmlSerializer(typeof(byte[]));
+            byte[] dataArray = (byte[])serializer.Deserialize(xmlReader);
+            int index = 0;
+
+            m_terrainData = new HeightmapTerrainData(Height, Width, (int)Constants.RegionHeight);
+
+            for (int y = 0; y < Height; y++)
             {
-                // Downward compatibility for legacy region terrain maps.
-                // If region is exactly legacy size, return the old format XML.
-                writer.WriteStartElement(String.Empty, "TerrainMap", String.Empty);
-                ToXml(writer);
-                writer.WriteEndElement();
+                for (int x = 0; x < Width; x++)
+                {
+                    float value;
+                    value = BitConverter.ToSingle(dataArray, index);
+                    index += 4;
+                    this[x, y] = (double)value;
+                }
             }
-            else
+        }
+
+        // New terrain serialization format that includes the width and length.
+        private void FromXml2(XmlReader xmlReader)
+        {
+            XmlSerializer serializer = new XmlSerializer(typeof(TerrainChannelXMLPackage));
+            TerrainChannelXMLPackage package = (TerrainChannelXMLPackage)serializer.Deserialize(xmlReader);
+            m_terrainData = new HeightmapTerrainData(package.Map, package.CompressionFactor, package.SizeX, package.SizeY, package.SizeZ);
+        }
+
+        // Fill the heightmap with the center bump terrain
+        private void PinHeadIsland()
+        {
+            for (int x = 0; x < Width; x++)
             {
-                // New format XML that includes width and length.
-                writer.WriteStartElement(String.Empty, "TerrainMap2", String.Empty);
-                ToXml2(writer);
-                writer.WriteEndElement();
+                for (int y = 0; y < Height; y++)
+                {
+                    m_terrainData[x, y] = (float)TerrainUtil.PerlinNoise2D(x, y, 2, 0.125) * 10;
+                    float spherFacA = (float)(TerrainUtil.SphericalFactor(x, y, m_terrainData.SizeX / 2.0, m_terrainData.SizeY / 2.0, 50) * 0.01d);
+                    float spherFacB = (float)(TerrainUtil.SphericalFactor(x, y, m_terrainData.SizeX / 2.0, m_terrainData.SizeY / 2.0, 100) * 0.001d);
+                    if (m_terrainData[x, y] < spherFacA)
+                        m_terrainData[x, y] = spherFacA;
+                    if (m_terrainData[x, y] < spherFacB)
+                        m_terrainData[x, y] = spherFacB;
+                }
             }
         }
 
@@ -335,46 +365,6 @@ namespace OpenSim.Region.Framework.Scenes
             serializer.Serialize(xmlWriter, buffer);
         }
 
-        // Read legacy terrain map. Presumed to be 256x256 of data encoded as floats in a byte array.
-        private void FromXml(XmlReader xmlReader)
-        {
-            XmlSerializer serializer = new XmlSerializer(typeof(byte[]));
-            byte[] dataArray = (byte[])serializer.Deserialize(xmlReader);
-            int index = 0;
-
-            m_terrainData = new HeightmapTerrainData(Height, Width, (int)Constants.RegionHeight);
-            
-            for (int y = 0; y < Height; y++)
-            {
-                for (int x = 0; x < Width; x++)
-                {
-                    float value;
-                    value = BitConverter.ToSingle(dataArray, index);
-                    index += 4;
-                    this[x, y] = (double)value;
-                }
-            }
-        }
-
-        private class TerrainChannelXMLPackage
-        {
-            public int Version;
-            public int SizeX;
-            public int SizeY;
-            public int SizeZ;
-            public float CompressionFactor;
-            public int[] Map;
-            public TerrainChannelXMLPackage(int pX, int pY, int pZ, float pCompressionFactor, int[] pMap)
-            {
-                Version = 1;
-                SizeX = pX;
-                SizeY = pY;
-                SizeZ = pZ;
-                CompressionFactor = pCompressionFactor;
-                Map = pMap;
-            }
-        }
-
         // New terrain serialization format that includes the width and length.
         private void ToXml2(XmlWriter xmlWriter)
         {
@@ -384,35 +374,41 @@ namespace OpenSim.Region.Framework.Scenes
             serializer.Serialize(xmlWriter, package);
         }
 
-        // New terrain serialization format that includes the width and length.
-        private void FromXml2(XmlReader xmlReader)
+        private void WriteXml(XmlWriter writer)
         {
-            XmlSerializer serializer = new XmlSerializer(typeof(TerrainChannelXMLPackage));
-            TerrainChannelXMLPackage package = (TerrainChannelXMLPackage)serializer.Deserialize(xmlReader);
-            m_terrainData = new HeightmapTerrainData(package.Map, package.CompressionFactor, package.SizeX, package.SizeY, package.SizeZ);
-        }
-
-        // Fill the heightmap with the center bump terrain
-        private void PinHeadIsland()
-        {
-            for (int x = 0; x < Width; x++)
+            if (Width == Constants.RegionSize && Height == Constants.RegionSize)
             {
-                for (int y = 0; y < Height; y++)
-                {
-                    m_terrainData[x, y] = (float)TerrainUtil.PerlinNoise2D(x, y, 2, 0.125) * 10;
-                    float spherFacA = (float)(TerrainUtil.SphericalFactor(x, y, m_terrainData.SizeX / 2.0, m_terrainData.SizeY / 2.0, 50) * 0.01d);
-                    float spherFacB = (float)(TerrainUtil.SphericalFactor(x, y, m_terrainData.SizeX / 2.0, m_terrainData.SizeY / 2.0, 100) * 0.001d);
-                    if (m_terrainData[x, y]< spherFacA)
-                        m_terrainData[x, y]= spherFacA;
-                    if (m_terrainData[x, y]< spherFacB)
-                        m_terrainData[x, y] = spherFacB;
-                }
+                // Downward compatibility for legacy region terrain maps.
+                // If region is exactly legacy size, return the old format XML.
+                writer.WriteStartElement(String.Empty, "TerrainMap", String.Empty);
+                ToXml(writer);
+                writer.WriteEndElement();
+            }
+            else
+            {
+                // New format XML that includes width and length.
+                writer.WriteStartElement(String.Empty, "TerrainMap2", String.Empty);
+                ToXml2(writer);
+                writer.WriteEndElement();
             }
         }
-
-        private void FlatLand()
+        private class TerrainChannelXMLPackage
         {
-            m_terrainData.ClearLand();
+            public float CompressionFactor;
+            public int[] Map;
+            public int SizeX;
+            public int SizeY;
+            public int SizeZ;
+            public int Version;
+            public TerrainChannelXMLPackage(int pX, int pY, int pZ, float pCompressionFactor, int[] pMap)
+            {
+                Version = 1;
+                SizeX = pX;
+                SizeY = pY;
+                SizeZ = pZ;
+                CompressionFactor = pCompressionFactor;
+                Map = pMap;
+            }
         }
     }
 }

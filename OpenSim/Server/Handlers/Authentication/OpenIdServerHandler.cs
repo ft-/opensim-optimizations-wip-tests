@@ -25,134 +25,39 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using DotNetOpenId;
+using DotNetOpenId.Provider;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Net;
 using System.Web;
-using DotNetOpenId;
-using DotNetOpenId.Provider;
-using OpenSim.Framework;
-using OpenSim.Framework.Servers;
-using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Server.Handlers.Base;
-using OpenSim.Services.Interfaces;
-using Nini.Config;
-using OpenMetaverse;
 
 namespace OpenSim.Server.Handlers.Authentication
 {
-    /// <summary>
-    /// Temporary, in-memory store for OpenID associations
-    /// </summary>
-    public class ProviderMemoryStore : IAssociationStore<AssociationRelyingPartyType>
-    {
-        private class AssociationItem
-        {
-            public AssociationRelyingPartyType DistinguishingFactor;
-            public string Handle;
-            public DateTime Expires;
-            public byte[] PrivateData;
-        }
-
-        Dictionary<string, AssociationItem> m_store = new Dictionary<string, AssociationItem>();
-        SortedList<DateTime, AssociationItem> m_sortedStore = new SortedList<DateTime, AssociationItem>();
-        object m_syncRoot = new object();
-
-        #region IAssociationStore<AssociationRelyingPartyType> Members
-
-        public void StoreAssociation(AssociationRelyingPartyType distinguishingFactor, Association assoc)
-        {
-            AssociationItem item = new AssociationItem();
-            item.DistinguishingFactor = distinguishingFactor;
-            item.Handle = assoc.Handle;
-            item.Expires = assoc.Expires.ToLocalTime();
-            item.PrivateData = assoc.SerializePrivateData();
-
-            lock (m_syncRoot)
-            {
-                m_store[item.Handle] = item;
-                m_sortedStore[item.Expires] = item;
-            }
-        }
-
-        public Association GetAssociation(AssociationRelyingPartyType distinguishingFactor)
-        {
-            lock (m_syncRoot)
-            {
-                if (m_sortedStore.Count > 0)
-                {
-                    AssociationItem item = m_sortedStore.Values[m_sortedStore.Count - 1];
-                    return Association.Deserialize(item.Handle, item.Expires.ToUniversalTime(), item.PrivateData);
-                }
-                else
-                {
-                    return null;
-                }
-            }
-        }
-
-        public Association GetAssociation(AssociationRelyingPartyType distinguishingFactor, string handle)
-        {
-            AssociationItem item;
-            bool success = false;
-            lock (m_syncRoot)
-                success = m_store.TryGetValue(handle, out item);
-
-            if (success)
-                return Association.Deserialize(item.Handle, item.Expires.ToUniversalTime(), item.PrivateData);
-            else
-                return null;
-        }
-
-        public bool RemoveAssociation(AssociationRelyingPartyType distinguishingFactor, string handle)
-        {
-            lock (m_syncRoot)
-            {
-                for (int i = 0; i < m_sortedStore.Values.Count; i++)
-                {
-                    AssociationItem item = m_sortedStore.Values[i];
-                    if (item.Handle == handle)
-                    {
-                        m_sortedStore.RemoveAt(i);
-                        break;
-                    }
-                }
-
-                return m_store.Remove(handle);
-            }
-        }
-
-        public void ClearExpiredAssociations()
-        {
-            lock (m_syncRoot)
-            {
-                List<AssociationItem> itemsCopy = new List<AssociationItem>(m_sortedStore.Values);
-                DateTime now = DateTime.Now;
-
-                for (int i = 0; i < itemsCopy.Count; i++)
-                {
-                    AssociationItem item = itemsCopy[i];
-
-                    if (item.Expires <= now)
-                    {
-                        m_sortedStore.RemoveAt(i);
-                        m_store.Remove(item.Handle);
-                    }
-                }
-            }
-        }
-
-        #endregion
-    }
-
     public class OpenIdStreamHandler : BaseOutputStreamHandler
     {
         #region HTML
 
+        /// <summary>Page shown if the OpenID endpoint is requested directly</summary>
+        private const string ENDPOINT_PAGE =
+@"<html><head><title>OpenID Endpoint</title></head><body>
+This is an OpenID server endpoint, not a human-readable resource.
+For more information, see <a href='http://openid.net/'>http://openid.net/</a>.
+</body></html>";
+
+        /// <summary>Page shown for an invalid OpenID identity</summary>
+        private const string INVALID_OPENID_PAGE =
+@"<html><head><title>Identity not found</title></head>
+<body>Invalid OpenID identity</body></html>";
+
         /// <summary>Login form used to authenticate OpenID requests</summary>
-        const string LOGIN_PAGE =
+        private const string LOGIN_PAGE =
 @"<html>
 <head><title>OpenSim OpenID Login</title></head>
 <body>
@@ -167,7 +72,7 @@ namespace OpenSim.Server.Handlers.Authentication
 </html>";
 
         /// <summary>Page shown for a valid OpenID identity</summary>
-        const string OPENID_PAGE =
+        private const string OPENID_PAGE =
 @"<html>
 <head>
 <title>{2} {3}</title>
@@ -176,27 +81,11 @@ namespace OpenSim.Server.Handlers.Authentication
 <body>OpenID identifier for {2} {3}</body>
 </html>
 ";
-
-        /// <summary>Page shown for an invalid OpenID identity</summary>
-        const string INVALID_OPENID_PAGE = 
-@"<html><head><title>Identity not found</title></head>
-<body>Invalid OpenID identity</body></html>";
-
-        /// <summary>Page shown if the OpenID endpoint is requested directly</summary>
-        const string ENDPOINT_PAGE =
-@"<html><head><title>OpenID Endpoint</title></head><body>
-This is an OpenID server endpoint, not a human-readable resource. 
-For more information, see <a href='http://openid.net/'>http://openid.net/</a>.
-</body></html>";
-
         #endregion HTML
 
-        IAuthenticationService m_authenticationService;
-        IUserAccountService m_userAccountService;
-        ProviderMemoryStore m_openidStore = new ProviderMemoryStore();
-
-        public override string ContentType { get { return "text/html"; } }
-
+        private IAuthenticationService m_authenticationService;
+        private ProviderMemoryStore m_openidStore = new ProviderMemoryStore();
+        private IUserAccountService m_userAccountService;
         /// <summary>
         /// Constructor
         /// </summary>
@@ -208,6 +97,7 @@ For more information, see <a href='http://openid.net/'>http://openid.net/</a>.
             m_userAccountService = userService;
         }
 
+        public override string ContentType { get { return "text/html"; } }
         /// <summary>
         /// Handles all GET and POST requests for OpenID identifier pages and endpoint
         /// server communication
@@ -241,8 +131,8 @@ For more information, see <a href='http://openid.net/'>http://openid.net/</a>.
                             // Check for form POST data
                             if (passwordValues != null && passwordValues.Length == 1)
                             {
-                                if (account != null && 
-                                    (m_authenticationService.Authenticate(account.PrincipalID,Util.Md5Hash(passwordValues[0]), 30) != string.Empty))
+                                if (account != null &&
+                                    (m_authenticationService.Authenticate(account.PrincipalID, Util.Md5Hash(passwordValues[0]), 30) != string.Empty))
                                     authRequest.IsAuthenticated = true;
                                 else
                                     authRequest.IsAuthenticated = false;
@@ -317,7 +207,7 @@ For more information, see <a href='http://openid.net/'>http://openid.net/</a>.
         /// <param name="requestUrl">URL to parse for an avatar name</param>
         /// <param name="profile">Profile data for the avatar</param>
         /// <returns>True if the parse and lookup were successful, otherwise false</returns>
-        bool TryGetAccount(Uri requestUrl, out UserAccount account)
+        private bool TryGetAccount(Uri requestUrl, out UserAccount account)
         {
             if (requestUrl.Segments.Length == 3 && requestUrl.Segments[1] == "users/")
             {
@@ -335,5 +225,109 @@ For more information, see <a href='http://openid.net/'>http://openid.net/</a>.
             account = null;
             return false;
         }
+    }
+
+    /// <summary>
+    /// Temporary, in-memory store for OpenID associations
+    /// </summary>
+    public class ProviderMemoryStore : IAssociationStore<AssociationRelyingPartyType>
+    {
+        private SortedList<DateTime, AssociationItem> m_sortedStore = new SortedList<DateTime, AssociationItem>();
+
+        private Dictionary<string, AssociationItem> m_store = new Dictionary<string, AssociationItem>();
+
+        private object m_syncRoot = new object();
+
+        private class AssociationItem
+        {
+            public AssociationRelyingPartyType DistinguishingFactor;
+            public DateTime Expires;
+            public string Handle;
+            public byte[] PrivateData;
+        }
+        #region IAssociationStore<AssociationRelyingPartyType> Members
+
+        public void ClearExpiredAssociations()
+        {
+            lock (m_syncRoot)
+            {
+                List<AssociationItem> itemsCopy = new List<AssociationItem>(m_sortedStore.Values);
+                DateTime now = DateTime.Now;
+
+                for (int i = 0; i < itemsCopy.Count; i++)
+                {
+                    AssociationItem item = itemsCopy[i];
+
+                    if (item.Expires <= now)
+                    {
+                        m_sortedStore.RemoveAt(i);
+                        m_store.Remove(item.Handle);
+                    }
+                }
+            }
+        }
+
+        public Association GetAssociation(AssociationRelyingPartyType distinguishingFactor)
+        {
+            lock (m_syncRoot)
+            {
+                if (m_sortedStore.Count > 0)
+                {
+                    AssociationItem item = m_sortedStore.Values[m_sortedStore.Count - 1];
+                    return Association.Deserialize(item.Handle, item.Expires.ToUniversalTime(), item.PrivateData);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+        }
+
+        public Association GetAssociation(AssociationRelyingPartyType distinguishingFactor, string handle)
+        {
+            AssociationItem item;
+            bool success = false;
+            lock (m_syncRoot)
+                success = m_store.TryGetValue(handle, out item);
+
+            if (success)
+                return Association.Deserialize(item.Handle, item.Expires.ToUniversalTime(), item.PrivateData);
+            else
+                return null;
+        }
+
+        public bool RemoveAssociation(AssociationRelyingPartyType distinguishingFactor, string handle)
+        {
+            lock (m_syncRoot)
+            {
+                for (int i = 0; i < m_sortedStore.Values.Count; i++)
+                {
+                    AssociationItem item = m_sortedStore.Values[i];
+                    if (item.Handle == handle)
+                    {
+                        m_sortedStore.RemoveAt(i);
+                        break;
+                    }
+                }
+
+                return m_store.Remove(handle);
+            }
+        }
+
+        public void StoreAssociation(AssociationRelyingPartyType distinguishingFactor, Association assoc)
+        {
+            AssociationItem item = new AssociationItem();
+            item.DistinguishingFactor = distinguishingFactor;
+            item.Handle = assoc.Handle;
+            item.Expires = assoc.Expires.ToLocalTime();
+            item.PrivateData = assoc.SerializePrivateData();
+
+            lock (m_syncRoot)
+            {
+                m_store[item.Handle] = item;
+                m_sortedStore[item.Expires] = item;
+            }
+        }
+        #endregion IAssociationStore<AssociationRelyingPartyType> Members
     }
 }

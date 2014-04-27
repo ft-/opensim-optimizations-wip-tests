@@ -25,28 +25,28 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Xml;
 using log4net;
 using OpenMetaverse;
 using OpenSim.Framework;
-
 using OpenSim.Region.CoreModules.World.Land;
 using OpenSim.Region.DataSnapshot.Interfaces;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Xml;
 
 namespace OpenSim.Region.DataSnapshot.Providers
 {
     public class LandSnapshot : IDataSnapshotProvider
     {
-        private Scene m_scene = null;
-        private DataSnapshotManager m_parent = null;
         //private Dictionary<int, Land> m_landIndexed = new Dictionary<int, Land>();
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        private DataSnapshotManager m_parent = null;
+        private Scene m_scene = null;
         private bool m_stale = true;
 
         #region Dead code
@@ -57,6 +57,7 @@ namespace OpenSim.Region.DataSnapshot.Providers
          * conditional in RequestSnapshotData
          *
         //Revise this, look for more direct way of checking for change in land
+
         #region Client hooks
 
         public void OnNewClient(IClientAPI client)
@@ -77,7 +78,7 @@ namespace OpenSim.Region.DataSnapshot.Providers
             PrepareData();
         }
 
-        #endregion
+        #endregion Client hooks
 
         public void PrepareData()
         {
@@ -100,9 +101,36 @@ namespace OpenSim.Region.DataSnapshot.Providers
         }
         */
 
-        #endregion
+        #endregion Dead code
 
         #region IDataSnapshotProvider members
+
+        public event ProviderStale OnStale;
+
+        public Scene GetParentScene
+        {
+            get { return m_scene; }
+        }
+
+        public String Name
+        {
+            get { return "LandSnapshot"; }
+        }
+
+        public bool Stale
+        {
+            get
+            {
+                return m_stale;
+            }
+            set
+            {
+                m_stale = value;
+
+                if (m_stale)
+                    OnStale(this);
+            }
+        }
 
         public void Initialize(Scene scene, DataSnapshotManager parent)
         {
@@ -112,12 +140,6 @@ namespace OpenSim.Region.DataSnapshot.Providers
             //Brought back from the dead for staleness checks.
             m_scene.EventManager.OnNewClient += OnNewClient;
         }
-
-        public Scene GetParentScene
-        {
-            get { return m_scene; }
-        }
-
         public XmlNode RequestSnapshotData(XmlDocument nodeFactory)
         {
             ILandChannel landChannel = m_scene.LandChannel;
@@ -128,7 +150,6 @@ namespace OpenSim.Region.DataSnapshot.Providers
             XmlNode parent = nodeFactory.CreateNode(XmlNodeType.Element, "parceldata", "");
             if (parcels != null)
             {
-
                 //foreach (KeyValuePair<int, Land> curParcel in m_landIndexed)
                 foreach (ILandObject parcel_interface in parcels)
                 {
@@ -140,10 +161,9 @@ namespace OpenSim.Region.DataSnapshot.Providers
 
                     LandData parcel = land.LandData;
                     if (m_parent.ExposureLevel.Equals("all") ||
-                        (m_parent.ExposureLevel.Equals("minimum") && 
+                        (m_parent.ExposureLevel.Equals("minimum") &&
                         (parcel.Flags & (uint)ParcelFlags.ShowDirectory) == (uint)ParcelFlags.ShowDirectory))
                     {
-
                         //TODO: make better method of marshalling data from LandData to XmlNode
                         XmlNode xmlparcel = nodeFactory.CreateNode(XmlNodeType.Element, "parcel", "");
 
@@ -175,7 +195,6 @@ namespace OpenSim.Region.DataSnapshot.Providers
                         xmlparcel.Attributes.Append(forsale_attr);
                         xmlparcel.Attributes.Append(sales_attr);
                         //xmlparcel.Attributes.Append(entities_attr);
-
 
                         //name, description, area, and UUID
                         XmlNode name = nodeFactory.CreateNode(XmlNodeType.Element, "name", "");
@@ -272,7 +291,6 @@ namespace OpenSim.Region.DataSnapshot.Providers
                             {
                                 //m_log.Info("[DATASNAPSHOT]: Cannot find owner name; ignoring this parcel");
                             }
-
                         }
                         else
                         {
@@ -292,59 +310,9 @@ namespace OpenSim.Region.DataSnapshot.Providers
             this.Stale = false;
             return parent;
         }
-
-        public String Name
-        {
-            get { return "LandSnapshot"; }
-        }
-
-        public bool Stale
-        {
-            get
-            {
-                return m_stale;
-            }
-            set
-            {
-                m_stale = value;
-
-                if (m_stale)
-                    OnStale(this);
-            }
-        }
-
-        public event ProviderStale OnStale;
-
-        #endregion
+        #endregion IDataSnapshotProvider members
 
         #region Helper functions
-
-        private string GetScriptsPermissions(LandData parcel)
-        {
-            if ((parcel.Flags & (uint)ParcelFlags.AllowOtherScripts) == (uint)ParcelFlags.AllowOtherScripts)
-                return "true";
-            else
-                return "false";
-
-        }
-
-        private string GetPublicPermissions(LandData parcel)
-        {
-            if ((parcel.Flags & (uint)ParcelFlags.UseAccessList) == (uint)ParcelFlags.UseAccessList)
-                return "false";
-            else
-                return "true";
-
-        }
-
-        private string GetBuildPermissions(LandData parcel)
-        {
-            if ((parcel.Flags & (uint)ParcelFlags.CreateObjects) == (uint)ParcelFlags.CreateObjects)
-                return "true";
-            else
-                return "false";
-
-        }
 
         private string CheckForSale(LandData parcel)
         {
@@ -354,16 +322,38 @@ namespace OpenSim.Region.DataSnapshot.Providers
                 return "false";
         }
 
+        private string GetBuildPermissions(LandData parcel)
+        {
+            if ((parcel.Flags & (uint)ParcelFlags.CreateObjects) == (uint)ParcelFlags.CreateObjects)
+                return "true";
+            else
+                return "false";
+        }
+
+        private string GetPublicPermissions(LandData parcel)
+        {
+            if ((parcel.Flags & (uint)ParcelFlags.UseAccessList) == (uint)ParcelFlags.UseAccessList)
+                return "false";
+            else
+                return "true";
+        }
+
+        private string GetScriptsPermissions(LandData parcel)
+        {
+            if ((parcel.Flags & (uint)ParcelFlags.AllowOtherScripts) == (uint)ParcelFlags.AllowOtherScripts)
+                return "true";
+            else
+                return "false";
+        }
         private string GetShowInSearch(LandData parcel)
         {
             if ((parcel.Flags & (uint)ParcelFlags.ShowDirectory) == (uint)ParcelFlags.ShowDirectory)
                 return "true";
             else
                 return "false";
-
         }
 
-        #endregion
+        #endregion Helper functions
 
         #region Change detection hooks
 
@@ -381,17 +371,16 @@ namespace OpenSim.Region.DataSnapshot.Providers
             { this.Stale = true; };
         }
 
-        public void ParcelSplitHook(int west, int south, int east, int north, IClientAPI remote_client)
-        {
-            this.Stale = true;
-        }
-
         public void ParcelPropsHook(LandUpdateArgs args, int local_id, IClientAPI remote_client)
         {
             this.Stale = true;
         }
 
-        #endregion
+        public void ParcelSplitHook(int west, int south, int east, int north, IClientAPI remote_client)
+        {
+            this.Stale = true;
+        }
+        #endregion Change detection hooks
 
         // this is needed for non-convex parcels (example: rectangular parcel, and in the exact center
         // another, smaller rectangular parcel). Both will have the same initial coordinates.
@@ -430,4 +419,3 @@ namespace OpenSim.Region.DataSnapshot.Providers
         }
     }
 }
-

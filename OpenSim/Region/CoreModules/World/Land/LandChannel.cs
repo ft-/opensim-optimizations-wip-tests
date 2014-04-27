@@ -25,11 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.CoreModules.World.Land
 {
@@ -40,15 +40,18 @@ namespace OpenSim.Region.CoreModules.World.Land
         //Land types set with flags in ParcelOverlay.
         //Only one of these can be used.
         public const float BAN_LINE_SAFETY_HIEGHT = 100;
+
         public const byte LAND_FLAG_PROPERTY_BORDER_SOUTH = 128; //Equals 10000000
         public const byte LAND_FLAG_PROPERTY_BORDER_WEST = 64; //Equals 01000000
 
         //RequestResults (I think these are right, they seem to work):
         public const int LAND_RESULT_MULTIPLE = 1; // The request they made contained more than a single peice of land
+
         public const int LAND_RESULT_SINGLE = 0; // The request they made contained only a single piece of land
 
         //ParcelSelectObjects
         public const int LAND_SELECT_OBJECTS_GROUP = 4;
+
         public const int LAND_SELECT_OBJECTS_OTHER = 8;
         public const int LAND_SELECT_OBJECTS_OWNER = 2;
         public const byte LAND_TYPE_IS_BEING_AUCTIONED = 5; //Equals 00000101
@@ -61,11 +64,10 @@ namespace OpenSim.Region.CoreModules.World.Land
         //These are other constants. Yay!
         public const int START_LAND_LOCAL_ID = 1;
 
-        #endregion
+        #endregion Constants
 
+        private readonly LandManagementModule m_landManagementModule;
         private readonly Scene m_scene;
-        private readonly LandManagementModule m_landManagementModule;        
-
         public LandChannel(Scene scene, LandManagementModule landManagementMod)
         {
             m_scene = scene;
@@ -74,13 +76,29 @@ namespace OpenSim.Region.CoreModules.World.Land
 
         #region ILandChannel Members
 
+        public List<ILandObject> AllParcels()
+        {
+            if (m_landManagementModule != null)
+            {
+                return m_landManagementModule.AllParcels();
+            }
+
+            return new List<ILandObject>();
+        }
+
+        public void Clear(bool setupDefaultParcel)
+        {
+            if (m_landManagementModule != null)
+                m_landManagementModule.Clear(setupDefaultParcel);
+        }
+
         public ILandObject GetLandObject(float x_float, float y_float)
         {
             if (m_landManagementModule != null)
             {
                 return m_landManagementModule.GetLandObject(x_float, y_float);
             }
-            
+
             ILandObject obj = new LandObject(UUID.Zero, false, m_scene);
             obj.LandData.Name = "NO LAND";
             return obj;
@@ -106,26 +124,27 @@ namespace OpenSim.Region.CoreModules.World.Land
             {
                 return m_landManagementModule.GetLandObject(x, y);
             }
-            
+
             ILandObject obj = new LandObject(UUID.Zero, false, m_scene);
             obj.LandData.Name = "NO LAND";
             return obj;
         }
-
-        public List<ILandObject> AllParcels()
+        public bool IsForcefulBansAllowed()
         {
             if (m_landManagementModule != null)
             {
-                return m_landManagementModule.AllParcels();
+                return m_landManagementModule.AllowedForcefulBans;
             }
 
-            return new List<ILandObject>();
+            return false;
         }
-        
-        public void Clear(bool setupDefaultParcel)
+
+        public void Join(int start_x, int start_y, int end_x, int end_y, UUID attempting_user_id)
         {
             if (m_landManagementModule != null)
-                m_landManagementModule.Clear(setupDefaultParcel);
+            {
+                m_landManagementModule.Join(start_x, start_y, end_x, end_y, attempting_user_id);
+            }
         }
 
         public List<ILandObject> ParcelsNearPoint(Vector3 position)
@@ -137,41 +156,6 @@ namespace OpenSim.Region.CoreModules.World.Land
 
             return new List<ILandObject>();
         }
-
-        public bool IsForcefulBansAllowed()
-        {
-            if (m_landManagementModule != null)
-            {
-                return m_landManagementModule.AllowedForcefulBans;
-            }
-
-            return false;
-        }
-
-        public void UpdateLandObject(int localID, LandData data)
-        {
-            if (m_landManagementModule != null)
-            {
-                m_landManagementModule.UpdateLandObject(localID, data);
-            }
-        }
-
-        public void Join(int start_x, int start_y, int end_x, int end_y, UUID attempting_user_id)
-        {
-            if (m_landManagementModule != null)
-            {
-                m_landManagementModule.Join(start_x, start_y, end_x, end_y, attempting_user_id);
-            }
-        }
-
-        public void Subdivide(int start_x, int start_y, int end_x, int end_y, UUID attempting_user_id)
-        {
-            if (m_landManagementModule != null)
-            {
-                m_landManagementModule.Subdivide(start_x, start_y, end_x, end_y, attempting_user_id);
-            }
-        }
-        
         public void ReturnObjectsInParcel(int localID, uint returnType, UUID[] agentIDs, UUID[] taskIDs, IClientAPI remoteClient)
         {
             if (m_landManagementModule != null)
@@ -188,14 +172,6 @@ namespace OpenSim.Region.CoreModules.World.Land
             }
         }
 
-        public void setSimulatorObjectMaxOverride(overrideSimulatorMaxPrimCountDelegate overrideDel)
-        {
-            if (m_landManagementModule != null)
-            {
-                m_landManagementModule.setSimulatorObjectMaxOverride(overrideDel);
-            }
-        }
-
         public void SetParcelOtherCleanTime(IClientAPI remoteClient, int localID, int otherCleanTime)
         {
             if (m_landManagementModule != null)
@@ -204,6 +180,29 @@ namespace OpenSim.Region.CoreModules.World.Land
             }
         }
 
-        #endregion
+        public void setSimulatorObjectMaxOverride(overrideSimulatorMaxPrimCountDelegate overrideDel)
+        {
+            if (m_landManagementModule != null)
+            {
+                m_landManagementModule.setSimulatorObjectMaxOverride(overrideDel);
+            }
+        }
+
+        public void Subdivide(int start_x, int start_y, int end_x, int end_y, UUID attempting_user_id)
+        {
+            if (m_landManagementModule != null)
+            {
+                m_landManagementModule.Subdivide(start_x, start_y, end_x, end_y, attempting_user_id);
+            }
+        }
+
+        public void UpdateLandObject(int localID, LandData data)
+        {
+            if (m_landManagementModule != null)
+            {
+                m_landManagementModule.UpdateLandObject(localID, data);
+            }
+        }
+        #endregion ILandChannel Members
     }
 }

@@ -25,24 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
+using OpenSim.Framework;
 using System;
 using System.Collections.Generic;
-using OpenSim.Framework;
-using OpenMetaverse;
 
 namespace OpenSim.Region.Physics.Manager
 {
-    public interface IMesher
-    {
-        IMesh CreateMesh(String primName, PrimitiveBaseShape primShape, Vector3 size, float lod);
-        IMesh CreateMesh(String primName, PrimitiveBaseShape primShape, Vector3 size, float lod, bool isPhysical);
-        IMesh CreateMesh(String primName, PrimitiveBaseShape primShape, Vector3 size, float lod, bool isPhysical, bool shouldCache);
-    }
-
     // Values for level of detail to be passed to the mesher.
     // Values origionally chosen for the LOD of sculpties (the sqrt(width*heigth) of sculpt texture)
     // Lower level of detail reduces the number of vertices used to represent the meshed shape.
-    public enum LevelOfDetail 
+    public enum LevelOfDetail
     {
         High = 32,
         Medium = 16,
@@ -50,22 +43,37 @@ namespace OpenSim.Region.Physics.Manager
         VeryLow = 4
     }
 
-    public interface IVertex
-    {
-    }
-
     public interface IMesh
     {
-        List<Vector3> getVertexList();
-        int[] getIndexListAsInt();
-        int[] getIndexListAsIntLocked();
-        float[] getVertexListAsFloat();
-        float[] getVertexListAsFloatLocked();
-        void getIndexListAsPtrToIntArray(out IntPtr indices, out int triStride, out int indexCount);
-        void getVertexListAsPtrToFloatArray(out IntPtr vertexList, out int vertexStride, out int vertexCount);
-        void releaseSourceMeshData();
-        void releasePinned();
         void Append(IMesh newMesh);
+
+        int[] getIndexListAsInt();
+
+        int[] getIndexListAsIntLocked();
+
+        void getIndexListAsPtrToIntArray(out IntPtr indices, out int triStride, out int indexCount);
+
+        List<Vector3> getVertexList();
+        float[] getVertexListAsFloat();
+
+        float[] getVertexListAsFloatLocked();
+        void getVertexListAsPtrToFloatArray(out IntPtr vertexList, out int vertexStride, out int vertexCount);
+
+        void releasePinned();
+
+        void releaseSourceMeshData();
         void TransformLinear(float[,] matrix, float[] offset);
+    }
+
+    public interface IMesher
+    {
+        IMesh CreateMesh(String primName, PrimitiveBaseShape primShape, Vector3 size, float lod);
+
+        IMesh CreateMesh(String primName, PrimitiveBaseShape primShape, Vector3 size, float lod, bool isPhysical);
+
+        IMesh CreateMesh(String primName, PrimitiveBaseShape primShape, Vector3 size, float lod, bool isPhysical, bool shouldCache);
+    }
+    public interface IVertex
+    {
     }
 }

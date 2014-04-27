@@ -25,31 +25,35 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-
-using log4net;
 using Nini.Config;
-
-using OpenSim.Framework;
 using OpenMetaverse;
+using OpenSim.Framework;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Physics.Manager
 {
-    public delegate void physicsCrash();
+    public delegate void AssetReceivedDelegate(AssetBase asset);
 
-    public delegate void RaycastCallback(bool hitYN, Vector3 collisionPoint, uint localid, float distance, Vector3 normal);
-    public delegate void RayCallback(List<ContactResult> list);
+    public delegate void JointDeactivated(PhysicsJoint joint);
+
+    public delegate void JointErrorMessage(PhysicsJoint joint, string message);
 
     public delegate void JointMoved(PhysicsJoint joint);
-    public delegate void JointDeactivated(PhysicsJoint joint);
-    public delegate void JointErrorMessage(PhysicsJoint joint, string message); // this refers to an "error message due to a problem", not "amount of joint constraint violation"
+
+    public delegate void physicsCrash();
+
+    public delegate void RayCallback(List<ContactResult> list);
+
+    public delegate void RaycastCallback(bool hitYN, Vector3 collisionPoint, uint localid, float distance, Vector3 normal);
+     // this refers to an "error message due to a problem", not "amount of joint constraint violation"
+
+    public delegate void RequestAssetDelegate(UUID assetID, AssetReceivedDelegate callback);
 
     public enum RayFilterFlags : ushort
     {
         // the flags
         water = 0x01,
+
         land = 0x02,
         agent = 0x04,
         nonphysical = 0x08,
@@ -59,11 +63,13 @@ namespace OpenSim.Region.Physics.Manager
 
         // ray cast colision control (may only work for meshs)
         ContactsUnImportant = 0x2000,
+
         BackFaceCull = 0x4000,
         ClosestHit = 0x8000,
 
         // some combinations
         LSLPhantom = phantom | volumedtc,
+
         PrimsNonPhantom = nonphysical | physical,
         PrimsNonPhantomAgents = nonphysical | physical | agent,
 
@@ -74,37 +80,26 @@ namespace OpenSim.Region.Physics.Manager
 
         All = 0x3f
     }
-
-    public delegate void RequestAssetDelegate(UUID assetID, AssetReceivedDelegate callback);
-    public delegate void AssetReceivedDelegate(AssetBase asset);
-
     /// <summary>
     /// Contact result from a raycast.
     /// </summary>
     public struct ContactResult
     {
-        public Vector3 Pos;
-        public float Depth;
         public uint ConsumerID;
+        public float Depth;
         public Vector3 Normal;
+        public Vector3 Pos;
     }
 
     public abstract class PhysicsScene
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        /// <summary>
-        /// A unique identifying string for this instance of the physics engine.
-        /// Useful in debug messages to distinguish one OdeScene instance from another.
-        /// Usually set to include the region name that the physics engine is acting for.
-        /// </summary>
-        public string Name { get; protected set; }
+        public event JointDeactivated OnJointDeactivated;
 
-        /// <summary>
-        /// A string identifying the family of this physics engine. Most common values returned
-        /// are "OpenDynamicsEngine" and "BulletSim" but others are possible.
-        /// </summary>
-        public string EngineType { get; protected set; }
+        public event JointErrorMessage OnJointErrorMessage;
+
+        public event JointMoved OnJointMoved;
 
         // The only thing that should register for this event is the SceneGraph
         // Anything else could cause problems.
@@ -115,26 +110,30 @@ namespace OpenSim.Region.Physics.Manager
             get { return new NullPhysicsScene(); }
         }
 
+        /// <summary>
+        /// A string identifying the family of this physics engine. Most common values returned
+        /// are "OpenDynamicsEngine" and "BulletSim" but others are possible.
+        /// </summary>
+        public string EngineType { get; protected set; }
+
+        public abstract bool IsThreaded { get; }
+
+        /// <summary>
+        /// A unique identifying string for this instance of the physics engine.
+        /// Useful in debug messages to distinguish one OdeScene instance from another.
+        /// Usually set to include the region name that the physics engine is acting for.
+        /// </summary>
+        public string Name { get; protected set; }
         public RequestAssetDelegate RequestAssetMethod { get; set; }
 
-        public virtual void TriggerPhysicsBasedRestart()
+        public virtual bool SupportsNINJAJoints
         {
-            physicsCrash handler = OnPhysicsCrash;
-            if (handler != null)
-            {
-                OnPhysicsCrash();
-            }
+            get { return false; }
         }
 
-        // Deprecated. Do not use this for new physics engines.
-        public abstract void Initialise(IMesher meshmerizer, IConfigSource config);
-
-        // For older physics engines that do not implement non-legacy region sizes.
-        // If the physics engine handles the region extent feature, it overrides this function.
-        public virtual void Initialise(IMesher meshmerizer, IConfigSource config, Vector3 regionExtent)
+        public virtual float TimeDilation
         {
-            // If not overridden, call the old initialization entry.
-            Initialise(meshmerizer, config);
+            get { return 1.0f; }
         }
 
         /// <summary>
@@ -163,17 +162,7 @@ namespace OpenSim.Region.Physics.Manager
             return ret;
         }
 
-        /// <summary>
-        /// Remove an avatar.
-        /// </summary>
-        /// <param name="actor"></param>
-        public abstract void RemoveAvatar(PhysicsActor actor);
-
-        /// <summary>
-        /// Remove a prim.
-        /// </summary>
-        /// <param name="prim"></param>
-        public abstract void RemovePrim(PhysicsActor prim);
+        public abstract void AddPhysicsActorTaint(PhysicsActor prim);
 
         public abstract PhysicsActor AddPrimShape(string primName, PrimitiveBaseShape pbs, Vector3 position,
                                                   Vector3 size, Quaternion rotation, bool isPhysical, uint localid);
@@ -184,63 +173,22 @@ namespace OpenSim.Region.Physics.Manager
             return AddPrimShape(primName, pbs, position, size, rotation, isPhysical, localid);
         }
 
-        public virtual float TimeDilation
+        public virtual void Combine(PhysicsScene pScene, Vector3 offset, Vector3 extents)
         {
-            get { return 1.0f; }
         }
 
-        public virtual bool SupportsNINJAJoints
-        {
-            get { return false; }
-        }
+        public abstract void DeleteTerrain();
 
-        public virtual PhysicsJoint RequestJointCreation(string objectNameInScene, PhysicsJointType jointType, Vector3 position,
-                                            Quaternion rotation, string parms, List<string> bodyNames, string trackedBodyName, Quaternion localRotation)
-        { return null; }
-
-        public virtual void RequestJointDeletion(string objectNameInScene)
-        { return; }
-
-        public virtual void RemoveAllJointsConnectedToActorThreadLocked(PhysicsActor actor)
-        { return; }
+        public abstract void Dispose();
 
         public virtual void DumpJointInfo()
         { return; }
 
-        public event JointMoved OnJointMoved;
-
-        protected virtual void DoJointMoved(PhysicsJoint joint)
+        // Extendable interface for new, physics engine specific operations
+        public virtual object Extension(string pFunct, params object[] pParams)
         {
-            // We need this to allow subclasses (but not other classes) to invoke the event; C# does
-            // not allow subclasses to invoke the parent class event.
-            if (OnJointMoved != null)
-            {
-                OnJointMoved(joint);
-            }
-        }
-
-        public event JointDeactivated OnJointDeactivated;
-
-        protected virtual void DoJointDeactivated(PhysicsJoint joint)
-        {
-            // We need this to allow subclasses (but not other classes) to invoke the event; C# does
-            // not allow subclasses to invoke the parent class event.
-            if (OnJointDeactivated != null)
-            {
-                OnJointDeactivated(joint);
-            }
-        }
-
-        public event JointErrorMessage OnJointErrorMessage;
-
-        protected virtual void DoJointErrorMessage(PhysicsJoint joint, string message)
-        {
-            // We need this to allow subclasses (but not other classes) to invoke the event; C# does
-            // not allow subclasses to invoke the parent class event.
-            if (OnJointErrorMessage != null)
-            {
-                OnJointErrorMessage(joint, message);
-            }
+            // A NOP if the extension thing is not implemented by the physics engine
+            return null;
         }
 
         public virtual Vector3 GetJointAnchor(PhysicsJoint joint)
@@ -249,14 +197,7 @@ namespace OpenSim.Region.Physics.Manager
         public virtual Vector3 GetJointAxis(PhysicsJoint joint)
         { return Vector3.Zero; }
 
-        public abstract void AddPhysicsActorTaint(PhysicsActor prim);
-
-        /// <summary>
-        /// Perform a simulation of the current physics scene over the given timestep.
-        /// </summary>
-        /// <param name="timeStep"></param>
-        /// <returns>The number of frames simulated over that period.</returns>
-        public abstract float Simulate(float timeStep);
+        public abstract void GetResults();
 
         /// <summary>
         /// Get statistics about this scene.
@@ -265,52 +206,37 @@ namespace OpenSim.Region.Physics.Manager
         /// <returns>
         /// A dictionary where the key is the statistic name.  If no statistics are supplied then returns null.
         /// </returns>
-        public virtual Dictionary<string, float> GetStats() { return null; }
-
-        public abstract void GetResults();
-
-        public abstract void SetTerrain(float[] heightMap);
-
-        public abstract void SetWaterLevel(float baseheight);
-
-        public abstract void DeleteTerrain();
-
-        public abstract void Dispose();
+        public virtual Dictionary<string, float> GetStats()
+        {
+            return null;
+        }
 
         public abstract Dictionary<uint, float> GetTopColliders();
 
-        public abstract bool IsThreaded { get; }
+        // Deprecated. Do not use this for new physics engines.
+        public abstract void Initialise(IMesher meshmerizer, IConfigSource config);
 
-        /// <summary>
-        /// True if the physics plugin supports raycasting against the physics scene
-        /// </summary>
-        public virtual bool SupportsRayCast()
+        // For older physics engines that do not implement non-legacy region sizes.
+        // If the physics engine handles the region extent feature, it overrides this function.
+        public virtual void Initialise(IMesher meshmerizer, IConfigSource config, Vector3 regionExtent)
         {
-            return false;
+            // If not overridden, call the old initialization entry.
+            Initialise(meshmerizer, config);
         }
-
-        public virtual bool SupportsCombining()
-        {
-            return false;
-        }
-
-        public virtual void Combine(PhysicsScene pScene, Vector3 offset, Vector3 extents) {}
-
-        public virtual void UnCombine(PhysicsScene pScene) {}
 
         /// <summary>
         /// Queue a raycast against the physics scene.
         /// The provided callback method will be called when the raycast is complete
-        /// 
-        /// Many physics engines don't support collision testing at the same time as 
-        /// manipulating the physics scene, so we queue the request up and callback 
+        ///
+        /// Many physics engines don't support collision testing at the same time as
+        /// manipulating the physics scene, so we queue the request up and callback
         /// a custom method when the raycast is complete.
         /// This allows physics engines that give an immediate result to callback immediately
         /// and ones that don't, to callback when it gets a result back.
-        /// 
+        ///
         /// ODE for example will not allow you to change the scene while collision testing or
         /// it asserts, 'opteration not valid for locked space'.  This includes adding a ray to the scene.
-        /// 
+        ///
         /// This is named RayCastWorld to not conflict with modrex's Raycast method.
         /// </summary>
         /// <param name="position">Origin of the ray</param>
@@ -339,16 +265,97 @@ namespace OpenSim.Region.Physics.Manager
             return null;
         }
 
+        public virtual void RemoveAllJointsConnectedToActorThreadLocked(PhysicsActor actor)
+        { return; }
+
+        /// <summary>
+        /// Remove an avatar.
+        /// </summary>
+        /// <param name="actor"></param>
+        public abstract void RemoveAvatar(PhysicsActor actor);
+
+        /// <summary>
+        /// Remove a prim.
+        /// </summary>
+        /// <param name="prim"></param>
+        public abstract void RemovePrim(PhysicsActor prim);
+
+        public virtual PhysicsJoint RequestJointCreation(string objectNameInScene, PhysicsJointType jointType, Vector3 position,
+                                            Quaternion rotation, string parms, List<string> bodyNames, string trackedBodyName, Quaternion localRotation)
+        { return null; }
+
+        public virtual void RequestJointDeletion(string objectNameInScene)
+        { return; }
+
+        public abstract void SetTerrain(float[] heightMap);
+
+        public abstract void SetWaterLevel(float baseheight);
+
+        /// <summary>
+        /// Perform a simulation of the current physics scene over the given timestep.
+        /// </summary>
+        /// <param name="timeStep"></param>
+        /// <returns>The number of frames simulated over that period.</returns>
+        public abstract float Simulate(float timeStep);
+
+        public virtual bool SupportsCombining()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// True if the physics plugin supports raycasting against the physics scene
+        /// </summary>
+        public virtual bool SupportsRayCast()
+        {
+            return false;
+        }
+
         public virtual bool SupportsRaycastWorldFiltered()
         {
             return false;
         }
 
-        // Extendable interface for new, physics engine specific operations
-        public virtual object Extension(string pFunct, params object[] pParams)
+        public virtual void TriggerPhysicsBasedRestart()
         {
-            // A NOP if the extension thing is not implemented by the physics engine
-            return null;
+            physicsCrash handler = OnPhysicsCrash;
+            if (handler != null)
+            {
+                OnPhysicsCrash();
+            }
+        }
+        public virtual void UnCombine(PhysicsScene pScene)
+        {
+        }
+
+        protected virtual void DoJointDeactivated(PhysicsJoint joint)
+        {
+            // We need this to allow subclasses (but not other classes) to invoke the event; C# does
+            // not allow subclasses to invoke the parent class event.
+            if (OnJointDeactivated != null)
+            {
+                OnJointDeactivated(joint);
+            }
+        }
+
+        protected virtual void DoJointErrorMessage(PhysicsJoint joint, string message)
+        {
+            // We need this to allow subclasses (but not other classes) to invoke the event; C# does
+            // not allow subclasses to invoke the parent class event.
+            if (OnJointErrorMessage != null)
+            {
+                OnJointErrorMessage(joint, message);
+            }
+        }
+
+        protected virtual void DoJointMoved(PhysicsJoint joint)
+        {
+            // We need this to allow subclasses (but not other classes) to invoke the event; C# does
+            // not allow subclasses to invoke the parent class event.
+            if (OnJointMoved != null)
+            {
+                OnJointMoved(joint);
+            }
         }
     }
 }

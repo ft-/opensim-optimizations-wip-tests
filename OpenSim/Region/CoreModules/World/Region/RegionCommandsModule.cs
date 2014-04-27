@@ -25,21 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
-using System.Text.RegularExpressions;
-using log4net;
 using Mono.Addins;
-using NDesk.Options;
 using Nini.Config;
-using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Framework.Console;
-using OpenSim.Framework.Monitoring;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Text;
 
 namespace OpenSim.Region.CoreModules.World.Objects.Commands
 {
@@ -49,31 +42,15 @@ namespace OpenSim.Region.CoreModules.World.Objects.Commands
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "RegionCommandsModule")]
     public class RegionCommandsModule : INonSharedRegionModule
     {
-        private Scene m_scene;
         private ICommandConsole m_console;
-
+        private Scene m_scene;
         public string Name { get { return "Region Commands Module"; } }
-        
+
         public Type ReplaceableInterface { get { return null; } }
-        
-        public void Initialise(IConfigSource source)
-        {
-//            m_log.DebugFormat("[REGION COMMANDS MODULE]: INITIALIZED MODULE");
-        }
-        
-        public void PostInitialise()
-        {
-//            m_log.DebugFormat("[REGION COMMANDS MODULE]: POST INITIALIZED MODULE");
-        }
-        
-        public void Close()
-        {
-//            m_log.DebugFormat("[REGION COMMANDS MODULE]: CLOSED MODULE");
-        }
-        
+
         public void AddRegion(Scene scene)
         {
-//            m_log.DebugFormat("[REGION COMMANDS MODULE]: REGION {0} ADDED", scene.RegionInfo.RegionName);
+            //            m_log.DebugFormat("[REGION COMMANDS MODULE]: REGION {0} ADDED", scene.RegionInfo.RegionName);
 
             m_scene = scene;
             m_console = MainConsole.Instance;
@@ -84,16 +61,29 @@ namespace OpenSim.Region.CoreModules.World.Objects.Commands
                 "Show live scene information for the currently selected region.", HandleShowScene);
         }
 
-        public void RemoveRegion(Scene scene)
+        public void Close()
         {
-//            m_log.DebugFormat("[REGION COMMANDS MODULE]: REGION {0} REMOVED", scene.RegionInfo.RegionName);
+            //            m_log.DebugFormat("[REGION COMMANDS MODULE]: CLOSED MODULE");
         }
 
+        public void Initialise(IConfigSource source)
+        {
+            //            m_log.DebugFormat("[REGION COMMANDS MODULE]: INITIALIZED MODULE");
+        }
+
+        public void PostInitialise()
+        {
+            //            m_log.DebugFormat("[REGION COMMANDS MODULE]: POST INITIALIZED MODULE");
+        }
         public void RegionLoaded(Scene scene)
         {
-//            m_log.DebugFormat("[REGION COMMANDS MODULE]: REGION {0} LOADED", scene.RegionInfo.RegionName);
+            //            m_log.DebugFormat("[REGION COMMANDS MODULE]: REGION {0} LOADED", scene.RegionInfo.RegionName);
         }
 
+        public void RemoveRegion(Scene scene)
+        {
+            //            m_log.DebugFormat("[REGION COMMANDS MODULE]: REGION {0} REMOVED", scene.RegionInfo.RegionName);
+        }
         private void HandleShowScene(string module, string[] cmd)
         {
             if (!(MainConsole.Instance.ConsoleScene == null || MainConsole.Instance.ConsoleScene == m_scene))
@@ -102,27 +92,27 @@ namespace OpenSim.Region.CoreModules.World.Objects.Commands
             SimStatsReporter r = m_scene.StatsReporter;
             float[] stats = r.LastReportedSimStats;
 
-            float timeDilation            = stats[0];
-            float simFps                  = stats[1];
-            float physicsFps              = stats[2];
-            float agentUpdates            = stats[3];
-            float rootAgents              = stats[4];
-            float childAgents             = stats[5];
-            float totalPrims              = stats[6];
-            float activePrims             = stats[7];
-            float totalFrameTime          = stats[8];
-//            float netFrameTime            = stats.StatsBlock[9].StatValue; // Ignored - not used by OpenSimulator
-            float physicsFrameTime        = stats[10];
-            float otherFrameTime          = stats[11];
-//            float imageFrameTime          = stats.StatsBlock[12].StatValue; // Ignored
-            float inPacketsPerSecond      = stats[13];
-            float outPacketsPerSecond     = stats[14];
-            float unackedBytes            = stats[15];
-//            float agentFrameTime          = stats.StatsBlock[16].StatValue; // Not really used
-            float pendingDownloads        = stats[17];
-            float pendingUploads          = stats[18];
-            float activeScripts           = stats[19];
-            float scriptLinesPerSecond    = stats[20];
+            float timeDilation = stats[0];
+            float simFps = stats[1];
+            float physicsFps = stats[2];
+            float agentUpdates = stats[3];
+            float rootAgents = stats[4];
+            float childAgents = stats[5];
+            float totalPrims = stats[6];
+            float activePrims = stats[7];
+            float totalFrameTime = stats[8];
+            //            float netFrameTime            = stats.StatsBlock[9].StatValue; // Ignored - not used by OpenSimulator
+            float physicsFrameTime = stats[10];
+            float otherFrameTime = stats[11];
+            //            float imageFrameTime          = stats.StatsBlock[12].StatValue; // Ignored
+            float inPacketsPerSecond = stats[13];
+            float outPacketsPerSecond = stats[14];
+            float unackedBytes = stats[15];
+            //            float agentFrameTime          = stats.StatsBlock[16].StatValue; // Not really used
+            float pendingDownloads = stats[17];
+            float pendingUploads = stats[18];
+            float activeScripts = stats[19];
+            float scriptLinesPerSecond = stats[20];
 
             StringBuilder sb = new StringBuilder();
             sb.AppendFormat("Scene statistics for {0}\n", m_scene.RegionInfo.RegionName);

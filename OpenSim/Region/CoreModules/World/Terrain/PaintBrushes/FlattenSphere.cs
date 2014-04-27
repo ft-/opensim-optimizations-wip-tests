@@ -25,9 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
 
 namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
 {
@@ -46,7 +46,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
             {
                 for (y = 0; y < map.Height; y++)
                 {
-                    if (!mask[x,y])
+                    if (!mask[x, y])
                         continue;
 
                     double z;
@@ -54,7 +54,8 @@ namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
                     {
                         z = TerrainUtil.SphericalFactor(x, y, rx, ry, strength) * duration * 0.25;
                     }
-                    else {
+                    else
+                    {
                         z = 1.0;
                     }
 
@@ -76,11 +77,10 @@ namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
                     {
                         map[x, y] += delta;
                     }
- 
                 }
             }
         }
 
-        #endregion
+        #endregion ITerrainPaintableEffect Members
     }
 }

@@ -25,24 +25,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Reflection;
-using System.IO;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
 using OpenMetaverse;
-using OpenMetaverse.Imaging;
-using OpenSim.Framework;
 using OpenSim.Framework.Servers;
+using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Server.Base;
-using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Services.Interfaces;
+using System;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
+using System.Reflection;
 
 namespace OpenSim.Region.OptionalModules.World.WorldView
 {
@@ -52,48 +47,8 @@ namespace OpenSim.Region.OptionalModules.World.WorldView
         private static readonly ILog m_log =
             LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-
         private bool m_Enabled = false;
         private IMapImageGenerator m_Generator;
-
-        public void Initialise(IConfigSource config)
-        {
-            IConfig moduleConfig = config.Configs["Modules"];
-            if (moduleConfig == null)
-                return;
-
-            if (moduleConfig.GetString("WorldViewModule", String.Empty) != Name)
-                return;
-
-            m_Enabled = true;
-        }
-
-        public void AddRegion(Scene scene)
-        {
-        }
-
-        public void RegionLoaded(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-            m_Generator = scene.RequestModuleInterface<IMapImageGenerator>();
-            if (m_Generator == null)
-            {
-                m_Enabled = false;
-                return;
-            }
-
-            m_log.Info("[WORLDVIEW]: Configured and enabled");
-
-            IHttpServer server = MainServer.GetHttpServer(0);
-            server.AddStreamHandler(new WorldViewRequestHandler(this,
-                    scene.RegionInfo.RegionID.ToString()));
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-        }
 
         public string Name
         {
@@ -103,6 +58,10 @@ namespace OpenSim.Region.OptionalModules.World.WorldView
         public Type ReplaceableInterface
         {
             get { return null; }
+        }
+
+        public void AddRegion(Scene scene)
+        {
         }
 
         public void Close()
@@ -124,6 +83,40 @@ namespace OpenSim.Region.OptionalModules.World.WorldView
                     return str.ToArray();
                 }
             }
+        }
+
+        public void Initialise(IConfigSource config)
+        {
+            IConfig moduleConfig = config.Configs["Modules"];
+            if (moduleConfig == null)
+                return;
+
+            if (moduleConfig.GetString("WorldViewModule", String.Empty) != Name)
+                return;
+
+            m_Enabled = true;
+        }
+        public void RegionLoaded(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+
+            m_Generator = scene.RequestModuleInterface<IMapImageGenerator>();
+            if (m_Generator == null)
+            {
+                m_Enabled = false;
+                return;
+            }
+
+            m_log.Info("[WORLDVIEW]: Configured and enabled");
+
+            IHttpServer server = MainServer.GetHttpServer(0);
+            server.AddStreamHandler(new WorldViewRequestHandler(this,
+                    scene.RegionInfo.RegionID.ToString()));
+        }
+
+        public void RemoveRegion(Scene scene)
+        {
         }
     }
 }

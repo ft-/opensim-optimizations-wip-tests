@@ -31,15 +31,17 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
     public abstract class MRMBase : System.MarshalByRefObject
     {
-        private IWorld m_world;
         private IHost m_host;
         private UUID m_id;
-
-        public void InitMiniModule(IWorld world, IHost host, UUID uniqueID)
+        private IWorld m_world;
+        public UUID ID
         {
-            m_world = world;
-            m_host = host;
-            m_id = uniqueID;
+            get { return m_id; }
+        }
+
+        protected IHost Host
+        {
+            get { return m_host; }
         }
 
         protected IWorld World
@@ -47,17 +49,14 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             get { return m_world; }
         }
 
-        protected  IHost Host
+        public void InitMiniModule(IWorld world, IHost host, UUID uniqueID)
         {
-            get { return m_host; }
+            m_world = world;
+            m_host = host;
+            m_id = uniqueID;
         }
-
-        public UUID ID
-        {
-            get { return m_id; }
-        }
-
         public abstract void Start();
+
         public abstract void Stop();
     }
 }

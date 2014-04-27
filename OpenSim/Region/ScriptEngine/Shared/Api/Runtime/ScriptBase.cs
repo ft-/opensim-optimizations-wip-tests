@@ -25,45 +25,29 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Runtime.Remoting;
-using System.Runtime.Remoting.Lifetime;
-using System.Security.Permissions;
-using System.Threading;
-using System.Reflection;
-using System.Collections;
-using System.Collections.Generic;
 using OpenSim.Region.ScriptEngine.Interfaces;
-using OpenSim.Region.ScriptEngine.Shared;
-using OpenSim.Region.ScriptEngine.Shared.Api.Runtime;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Runtime.Remoting.Lifetime;
 
 namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
 {
     public partial class ScriptBaseClass : MarshalByRefObject, IScript
     {
-        private Dictionary<string, MethodInfo> inits = new Dictionary<string, MethodInfo>();
-//        private ScriptSponsor m_sponser;
-
-        public override Object InitializeLifetimeService()
-        {
-            ILease lease = (ILease)base.InitializeLifetimeService();
-            if (lease.CurrentState == LeaseState.Initial)
-            {
-                // Infinite
-                lease.InitialLeaseTime = TimeSpan.FromMinutes(0);
-//                lease.RenewOnCallTime = TimeSpan.FromSeconds(10.0);
-//                lease.SponsorshipTimeout = TimeSpan.FromMinutes(1.0);
-            }
-            return lease;
-        }
-#if DEBUG
         // For tracing GC while debugging
         public static bool GCDummy = false;
-        ~ScriptBaseClass()
-        {
-            GCDummy = true;
-        }
-#endif
+
+        private Dictionary<string, MethodInfo> inits = new Dictionary<string, MethodInfo>();
+        //        private ScriptSponsor m_sponser;
+
+        private Executor m_Executor = null;
+
+        private Dictionary<string, FieldInfo> m_Fields =
+                new Dictionary<string, FieldInfo>();
+
+        private Dictionary<string, object> m_InitialValues =
+                new Dictionary<string, object>();
 
         public ScriptBaseClass()
         {
@@ -80,14 +64,17 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
                 }
             }
 
-//            m_sponser = new ScriptSponsor();
+            //            m_sponser = new ScriptSponsor();
         }
 
-        private Executor m_Executor = null;
-
-        public int GetStateEventFlags(string state)
+        ~ScriptBaseClass()
         {
-            return (int)m_Executor.GetStateEventFlags(state);
+            GCDummy = true;
+        }
+
+        public void Close()
+        {
+            //            m_sponser.Close();
         }
 
         public void ExecuteEvent(string state, string FunctionName, object[] args)
@@ -102,37 +89,9 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
             return apis;
         }
 
-        private Dictionary<string, object> m_InitialValues =
-                new Dictionary<string, object>();
-        private Dictionary<string, FieldInfo> m_Fields =
-                new Dictionary<string, FieldInfo>();
-
-        public void InitApi(string api, IScriptApi data)
+        public int GetStateEventFlags(string state)
         {
-            if (!inits.ContainsKey(api))
-                return;
-
-            //ILease lease = (ILease)RemotingServices.GetLifetimeService(data as MarshalByRefObject);
-            //RemotingServices.GetLifetimeService(data as MarshalByRefObject);
-//            lease.Register(m_sponser);
-
-            MethodInfo mi = inits[api];
-
-            Object[] args = new Object[1];
-            args[0] = data;
-
-            mi.Invoke(this, args);
-
-            m_InitialValues = GetVars();
-        }
-
-        public virtual void StateChange(string newState)
-        {
-        }
-
-        public void Close()
-        {
-//            m_sponser.Close();
+            return (int)m_Executor.GetStateEventFlags(state);
         }
 
         public Dictionary<string, object> GetVars()
@@ -183,6 +142,52 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
             return vars;
         }
 
+        public void InitApi(string api, IScriptApi data)
+        {
+            if (!inits.ContainsKey(api))
+                return;
+
+            //ILease lease = (ILease)RemotingServices.GetLifetimeService(data as MarshalByRefObject);
+            //RemotingServices.GetLifetimeService(data as MarshalByRefObject);
+            //            lease.Register(m_sponser);
+
+            MethodInfo mi = inits[api];
+
+            Object[] args = new Object[1];
+            args[0] = data;
+
+            mi.Invoke(this, args);
+
+            m_InitialValues = GetVars();
+        }
+
+        public override Object InitializeLifetimeService()
+        {
+            ILease lease = (ILease)base.InitializeLifetimeService();
+            if (lease.CurrentState == LeaseState.Initial)
+            {
+                // Infinite
+                lease.InitialLeaseTime = TimeSpan.FromMinutes(0);
+                //                lease.RenewOnCallTime = TimeSpan.FromSeconds(10.0);
+                //                lease.SponsorshipTimeout = TimeSpan.FromMinutes(1.0);
+            }
+            return lease;
+        }
+
+#if DEBUG
+#endif
+        public void NoOp()
+        {
+            // Does what is says on the packet. Nowt, nada, nothing.
+            // Required for insertion after a jump label to do what it says on the packet!
+            // With a bit of luck the compiler may even optimize it out.
+        }
+
+        public void ResetVars()
+        {
+            SetVars(m_InitialValues);
+        }
+
         public void SetVars(Dictionary<string, object> vars)
         {
             foreach (KeyValuePair<string, object> var in vars)
@@ -216,16 +221,8 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
             }
         }
 
-        public void ResetVars()
+        public virtual void StateChange(string newState)
         {
-            SetVars(m_InitialValues);
-        }
-
-        public void NoOp()
-        {
-            // Does what is says on the packet. Nowt, nada, nothing.
-            // Required for insertion after a jump label to do what it says on the packet!
-            // With a bit of luck the compiler may even optimize it out.
         }
     }
 }

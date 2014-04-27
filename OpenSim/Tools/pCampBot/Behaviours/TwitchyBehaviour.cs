@@ -25,36 +25,31 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using OpenMetaverse;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using log4net;
-using pCampBot.Interfaces;
+using OpenMetaverse;
+using System.Reflection;
 
 namespace pCampBot
 {
     /// <summary>
     /// This behavior is for the systematic study of some performance improvements made
     /// for OSCC'13.
-    /// Do nothing, but send AgentUpdate packets all the time that have only slightly 
+    /// Do nothing, but send AgentUpdate packets all the time that have only slightly
     /// different state. The delta of difference will be filtered by OpenSim early on
     /// in the packet processing pipeline. These filters did not exist before OSCC'13.
     /// </summary>
     public class TwitchyBehaviour : AbstractBehaviour
     {
+        private const float TWITCH = 0.0001f;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        public TwitchyBehaviour() 
-        { 
-            AbbreviatedName = "tw";
-            Name = "Twitchy"; 
-        }
-
-        private const float TWITCH = 0.0001f;
         private int direction = 1;
 
+        public TwitchyBehaviour()
+        {
+            AbbreviatedName = "tw";
+            Name = "Twitchy";
+        }
         public override void Action()
         {
             Bot.Client.Self.Movement.BodyRotation = new Quaternion(Bot.Client.Self.Movement.BodyRotation.X + direction * TWITCH,
@@ -66,8 +61,6 @@ namespace pCampBot
             direction = -direction;
 
             Bot.Client.Self.Movement.SendUpdate();
-
         }
-
     }
 }

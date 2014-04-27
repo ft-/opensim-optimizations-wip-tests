@@ -1,11 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-
-using log4net;
 using OpenMetaverse;
-
 using OpenSim.Services.Interfaces;
+using System.Collections.Generic;
 
 namespace OpenSim.Services.HypergridService
 {
@@ -13,15 +8,18 @@ namespace OpenSim.Services.HypergridService
     {
         private const double CACHE_EXPIRATION_SECONDS = 120000.0; // 33 hours!
 
-//        private static readonly ILog m_log =
-//                LogManager.GetLogger(
-//                MethodBase.GetCurrentMethod().DeclaringType);
-        
-        private ExpiringCache<UUID, UserAccount> m_UUIDCache;
-
-        private IUserAccountService m_UserAccountService;
+        //        private static readonly ILog m_log =
+        //                LogManager.GetLogger(
+        //                MethodBase.GetCurrentMethod().DeclaringType);
 
         private static UserAccountCache m_Singleton;
+        private IUserAccountService m_UserAccountService;
+        private ExpiringCache<UUID, UserAccount> m_UUIDCache;
+        private UserAccountCache(IUserAccountService u)
+        {
+            m_UUIDCache = new ExpiringCache<UUID, UserAccount>();
+            m_UserAccountService = u;
+        }
 
         public static UserAccountCache CreateUserAccountCache(IUserAccountService u)
         {
@@ -30,13 +28,6 @@ namespace OpenSim.Services.HypergridService
 
             return m_Singleton;
         }
-
-        private UserAccountCache(IUserAccountService u)
-        {
-            m_UUIDCache = new ExpiringCache<UUID, UserAccount>();
-            m_UserAccountService = u;
-        }
-
         public void Cache(UUID userID, UserAccount account)
         {
             // Cache even null accounts
@@ -75,6 +66,7 @@ namespace OpenSim.Services.HypergridService
         }
 
         #region IUserAccountService
+
         public UserAccount GetUserAccount(UUID scopeID, UUID userID)
         {
             return GetUser(userID.ToString());
@@ -104,8 +96,7 @@ namespace OpenSim.Services.HypergridService
         {
             return false;
         }
-        #endregion
 
+        #endregion IUserAccountService
     }
-
 }

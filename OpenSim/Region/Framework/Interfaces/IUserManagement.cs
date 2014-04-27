@@ -25,9 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-
 using OpenMetaverse;
 
 namespace OpenSim.Region.Framework.Interfaces
@@ -37,26 +34,6 @@ namespace OpenSim.Region.Framework.Interfaces
     /// </summary>
     public interface IUserManagement
     {
-        string GetUserName(UUID uuid);
-        string GetUserHomeURL(UUID uuid);
-        string GetUserUUI(UUID uuid);
-        string GetUserServerURL(UUID uuid, string serverType);
-
-        /// <summary>
-        /// Get user ID by the given name.
-        /// </summary>
-        /// <param name="name"></param>
-        /// <returns>UUID.Zero if no user with that name is found or if the name is "Unknown User"</returns>
-        UUID GetUserIdByName(string name);
-
-        /// <summary>
-        /// Get user ID by the given name.
-        /// </summary>
-        /// <param name="firstName"></param>
-        /// <param name="lastName"></param>
-        /// <returns>UUID.Zero if no user with that name is found or if the name is "Unknown User"</returns>
-        UUID GetUserIdByName(string firstName, string lastName);
-
         /// <summary>
         /// Add a user.
         /// </summary>
@@ -91,6 +68,27 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="profileURL"></param>
         void AddUser(UUID uuid, string firstName, string lastName, string homeURL);
 
+        string GetUserHomeURL(UUID uuid);
+
+        /// <summary>
+        /// Get user ID by the given name.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns>UUID.Zero if no user with that name is found or if the name is "Unknown User"</returns>
+        UUID GetUserIdByName(string name);
+
+        /// <summary>
+        /// Get user ID by the given name.
+        /// </summary>
+        /// <param name="firstName"></param>
+        /// <param name="lastName"></param>
+        /// <returns>UUID.Zero if no user with that name is found or if the name is "Unknown User"</returns>
+        UUID GetUserIdByName(string firstName, string lastName);
+
+        string GetUserName(UUID uuid);
+        string GetUserServerURL(UUID uuid, string serverType);
+
+        string GetUserUUI(UUID uuid);
         bool IsLocalGridUser(UUID uuid);
     }
 }

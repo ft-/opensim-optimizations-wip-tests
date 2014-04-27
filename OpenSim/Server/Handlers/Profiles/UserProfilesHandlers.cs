@@ -25,41 +25,34 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
+using log4net;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
-using log4net;
-using OpenSim.Services.Interfaces;
-using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Framework;
+using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Services.Interfaces;
+using System.Reflection;
 
 namespace OpenSim.Server.Handlers
 {
-    public class UserProfilesHandlers
-    {
-        public UserProfilesHandlers ()
-        {
-        }
-    }
-
     public class JsonRpcProfileHandlers
     {
-        static readonly ILog m_log =
+        private static readonly ILog m_log =
             LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
-        
-        public IUserProfilesService Service
-        {
-            get; private set;
-        }
-        
+
         public JsonRpcProfileHandlers(IUserProfilesService service)
         {
             Service = service;
         }
-        
+
+        public IUserProfilesService Service
+        {
+            get;
+            private set;
+        }
         #region Classifieds
+
         /// <summary>
         /// Request avatar's classified ads.
         /// </summary>
@@ -74,201 +67,200 @@ namespace OpenSim.Server.Handlers
         /// </param>
         public bool AvatarClassifiedsRequest(OSDMap json, ref JsonRpcResponse response)
         {
-            if(!json.ContainsKey("params"))
+            if (!json.ContainsKey("params"))
             {
                 response.Error.Code = ErrorCode.ParseError;
-                m_log.DebugFormat ("Classified Request");
+                m_log.DebugFormat("Classified Request");
                 return false;
             }
-            
+
             OSDMap request = (OSDMap)json["params"];
             UUID creatorId = new UUID(request["creatorId"].AsString());
-            
-            
-            OSDArray data = (OSDArray) Service.AvatarClassifiedsRequest(creatorId);
+
+            OSDArray data = (OSDArray)Service.AvatarClassifiedsRequest(creatorId);
             response.Result = data;
-            
+
             return true;
         }
-        
-        public bool ClassifiedUpdate(OSDMap json, ref JsonRpcResponse response)
+
+        public bool ClassifiedDelete(OSDMap json, ref JsonRpcResponse response)
         {
-            if(!json.ContainsKey("params"))
+            if (!json.ContainsKey("params"))
             {
                 response.Error.Code = ErrorCode.ParseError;
-                response.Error.Message = "Error parsing classified update request";
-                m_log.DebugFormat ("Classified Update Request");
+                m_log.DebugFormat("Classified Delete Request");
                 return false;
             }
-            
+
+            OSDMap request = (OSDMap)json["params"];
+            UUID classifiedId = new UUID(request["classifiedID"].AsString());
+
+            OSDMap res = new OSDMap();
+            res["result"] = OSD.FromString("success");
+            response.Result = res;
+
+            return true;
+        }
+
+        public bool ClassifiedInfoRequest(OSDMap json, ref JsonRpcResponse response)
+        {
+            if (!json.ContainsKey("params"))
+            {
+                response.Error.Code = ErrorCode.ParseError;
+                response.Error.Message = "no parameters supplied";
+                m_log.DebugFormat("Classified Info Request");
+                return false;
+            }
+
             string result = string.Empty;
             UserClassifiedAdd ad = new UserClassifiedAdd();
             object Ad = (object)ad;
             OSD.DeserializeMembers(ref Ad, (OSDMap)json["params"]);
-            if(Service.ClassifiedUpdate(ad, ref result))
+            if (Service.ClassifiedInfoRequest(ref ad, ref result))
             {
                 response.Result = OSD.SerializeMembers(ad);
                 return true;
             }
-            
+
             response.Error.Code = ErrorCode.InternalError;
             response.Error.Message = string.Format("{0}", result);
             return false;
         }
-        
-        public bool ClassifiedDelete(OSDMap json, ref JsonRpcResponse response)
+
+        public bool ClassifiedUpdate(OSDMap json, ref JsonRpcResponse response)
         {
-            if(!json.ContainsKey("params"))
+            if (!json.ContainsKey("params"))
             {
                 response.Error.Code = ErrorCode.ParseError;
-                m_log.DebugFormat ("Classified Delete Request");
+                response.Error.Message = "Error parsing classified update request";
+                m_log.DebugFormat("Classified Update Request");
                 return false;
             }
-            
-            OSDMap request = (OSDMap)json["params"];
-            UUID classifiedId = new UUID(request["classifiedID"].AsString());
-            
-            OSDMap res = new OSDMap();
-            res["result"] = OSD.FromString("success");
-            response.Result = res;
-            
-            return true;
-            
-        }
-        
-        public bool ClassifiedInfoRequest(OSDMap json, ref JsonRpcResponse response)
-        {
-            if(!json.ContainsKey("params"))
-            {
-                response.Error.Code = ErrorCode.ParseError;
-                response.Error.Message = "no parameters supplied";
-                m_log.DebugFormat ("Classified Info Request");
-                return false;
-            }
-            
+
             string result = string.Empty;
             UserClassifiedAdd ad = new UserClassifiedAdd();
             object Ad = (object)ad;
             OSD.DeserializeMembers(ref Ad, (OSDMap)json["params"]);
-            if(Service.ClassifiedInfoRequest(ref ad, ref result))
+            if (Service.ClassifiedUpdate(ad, ref result))
             {
                 response.Result = OSD.SerializeMembers(ad);
                 return true;
             }
-            
+
             response.Error.Code = ErrorCode.InternalError;
             response.Error.Message = string.Format("{0}", result);
             return false;
         }
         #endregion Classifieds
-        
+
         #region Picks
+
         public bool AvatarPicksRequest(OSDMap json, ref JsonRpcResponse response)
         {
-            if(!json.ContainsKey("params"))
+            if (!json.ContainsKey("params"))
             {
                 response.Error.Code = ErrorCode.ParseError;
-                m_log.DebugFormat ("Avatar Picks Request");
+                m_log.DebugFormat("Avatar Picks Request");
                 return false;
             }
-            
+
             OSDMap request = (OSDMap)json["params"];
             UUID creatorId = new UUID(request["creatorId"].AsString());
-            
-            
-            OSDArray data = (OSDArray) Service.AvatarPicksRequest(creatorId);
+
+            OSDArray data = (OSDArray)Service.AvatarPicksRequest(creatorId);
             response.Result = data;
-            
+
             return true;
         }
-        
+
         public bool PickInfoRequest(OSDMap json, ref JsonRpcResponse response)
         {
-            if(!json.ContainsKey("params"))
+            if (!json.ContainsKey("params"))
             {
                 response.Error.Code = ErrorCode.ParseError;
                 response.Error.Message = "no parameters supplied";
-                m_log.DebugFormat ("Avatar Picks Info Request");
+                m_log.DebugFormat("Avatar Picks Info Request");
                 return false;
             }
-            
+
             string result = string.Empty;
             UserProfilePick pick = new UserProfilePick();
             object Pick = (object)pick;
             OSD.DeserializeMembers(ref Pick, (OSDMap)json["params"]);
-            if(Service.PickInfoRequest(ref pick, ref result))
+            if (Service.PickInfoRequest(ref pick, ref result))
             {
                 response.Result = OSD.SerializeMembers(pick);
                 return true;
             }
-            
+
             response.Error.Code = ErrorCode.InternalError;
             response.Error.Message = string.Format("{0}", result);
             return false;
         }
-        
-        public bool PicksUpdate(OSDMap json, ref JsonRpcResponse response)
-        {
-            if(!json.ContainsKey("params"))
-            {
-                response.Error.Code = ErrorCode.ParseError;
-                response.Error.Message = "no parameters supplied";
-                m_log.DebugFormat ("Avatar Picks Update Request");
-                return false;
-            }
-            
-            string result = string.Empty;
-            UserProfilePick pick = new UserProfilePick();
-            object Pick = (object)pick;
-            OSD.DeserializeMembers(ref Pick, (OSDMap)json["params"]);
-            if(Service.PicksUpdate(ref pick, ref result))
-            {
-                response.Result = OSD.SerializeMembers(pick);
-                return true;
-            }
-            
-            response.Error.Code = ErrorCode.InternalError;
-            response.Error.Message = "unable to update pick";
-            
-            return false;
-        }
-        
+
         public bool PicksDelete(OSDMap json, ref JsonRpcResponse response)
         {
-            if(!json.ContainsKey("params"))
+            if (!json.ContainsKey("params"))
             {
                 response.Error.Code = ErrorCode.ParseError;
-                m_log.DebugFormat ("Avatar Picks Delete Request");
+                m_log.DebugFormat("Avatar Picks Delete Request");
                 return false;
             }
-            
+
             OSDMap request = (OSDMap)json["params"];
             UUID pickId = new UUID(request["pickId"].AsString());
-            if(Service.PicksDelete(pickId))
+            if (Service.PicksDelete(pickId))
                 return true;
-            
+
             response.Error.Code = ErrorCode.InternalError;
             response.Error.Message = "data error removing record";
             return false;
         }
+
+        public bool PicksUpdate(OSDMap json, ref JsonRpcResponse response)
+        {
+            if (!json.ContainsKey("params"))
+            {
+                response.Error.Code = ErrorCode.ParseError;
+                response.Error.Message = "no parameters supplied";
+                m_log.DebugFormat("Avatar Picks Update Request");
+                return false;
+            }
+
+            string result = string.Empty;
+            UserProfilePick pick = new UserProfilePick();
+            object Pick = (object)pick;
+            OSD.DeserializeMembers(ref Pick, (OSDMap)json["params"]);
+            if (Service.PicksUpdate(ref pick, ref result))
+            {
+                response.Result = OSD.SerializeMembers(pick);
+                return true;
+            }
+
+            response.Error.Code = ErrorCode.InternalError;
+            response.Error.Message = "unable to update pick";
+
+            return false;
+        }
         #endregion Picks
-        
+
         #region Notes
+
         public bool AvatarNotesRequest(OSDMap json, ref JsonRpcResponse response)
         {
-            if(!json.ContainsKey("params"))
+            if (!json.ContainsKey("params"))
             {
                 response.Error.Code = ErrorCode.ParseError;
                 response.Error.Message = "Params missing";
-                m_log.DebugFormat ("Avatar Notes Request");
+                m_log.DebugFormat("Avatar Notes Request");
                 return false;
             }
-            
+
             string result = string.Empty;
             UserProfileNotes note = new UserProfileNotes();
             object Note = (object)note;
             OSD.DeserializeMembers(ref Note, (OSDMap)json["params"]);
-            if(Service.AvatarNotesRequest(ref note))
+            if (Service.AvatarNotesRequest(ref note))
             {
                 response.Result = OSD.SerializeMembers(note);
                 return true;
@@ -278,116 +270,122 @@ namespace OpenSim.Server.Handlers
             response.Error.Message = "Error reading notes";
             return false;
         }
-        
+
         public bool NotesUpdate(OSDMap json, ref JsonRpcResponse response)
         {
-            if(!json.ContainsKey("params"))
+            if (!json.ContainsKey("params"))
             {
                 response.Error.Code = ErrorCode.ParseError;
                 response.Error.Message = "No parameters";
-                m_log.DebugFormat ("Avatar Notes Update Request");
+                m_log.DebugFormat("Avatar Notes Update Request");
                 return false;
             }
-            
+
             string result = string.Empty;
             UserProfileNotes note = new UserProfileNotes();
-            object Notes = (object) note;
+            object Notes = (object)note;
             OSD.DeserializeMembers(ref Notes, (OSDMap)json["params"]);
-            if(Service.NotesUpdate(ref note, ref result))
+            if (Service.NotesUpdate(ref note, ref result))
             {
                 response.Result = OSD.SerializeMembers(note);
                 return true;
             }
             return true;
         }
+
         #endregion Notes
-        
+
         #region Profile Properties
+
         public bool AvatarPropertiesRequest(OSDMap json, ref JsonRpcResponse response)
         {
-            if(!json.ContainsKey("params"))
+            if (!json.ContainsKey("params"))
             {
                 response.Error.Code = ErrorCode.ParseError;
                 response.Error.Message = "no parameters supplied";
-                m_log.DebugFormat ("Avatar Properties Request");
+                m_log.DebugFormat("Avatar Properties Request");
                 return false;
             }
-            
+
             string result = string.Empty;
             UserProfileProperties props = new UserProfileProperties();
             object Props = (object)props;
             OSD.DeserializeMembers(ref Props, (OSDMap)json["params"]);
-            if(Service.AvatarPropertiesRequest(ref props, ref result))
+            if (Service.AvatarPropertiesRequest(ref props, ref result))
             {
                 response.Result = OSD.SerializeMembers(props);
                 return true;
             }
-            
+
             response.Error.Code = ErrorCode.InternalError;
             response.Error.Message = string.Format("{0}", result);
             return false;
         }
-        
+
         public bool AvatarPropertiesUpdate(OSDMap json, ref JsonRpcResponse response)
         {
-            if(!json.ContainsKey("params"))
+            if (!json.ContainsKey("params"))
             {
                 response.Error.Code = ErrorCode.ParseError;
                 response.Error.Message = "no parameters supplied";
-                m_log.DebugFormat ("Avatar Properties Update Request");
+                m_log.DebugFormat("Avatar Properties Update Request");
                 return false;
             }
-            
+
             string result = string.Empty;
             UserProfileProperties props = new UserProfileProperties();
             object Props = (object)props;
             OSD.DeserializeMembers(ref Props, (OSDMap)json["params"]);
-            if(Service.AvatarPropertiesUpdate(ref props, ref result))
+            if (Service.AvatarPropertiesUpdate(ref props, ref result))
             {
                 response.Result = OSD.SerializeMembers(props);
                 return true;
             }
-            
+
             response.Error.Code = ErrorCode.InternalError;
             response.Error.Message = string.Format("{0}", result);
             return false;
         }
+
         #endregion Profile Properties
-        
+
         #region Interests
+
         public bool AvatarInterestsUpdate(OSDMap json, ref JsonRpcResponse response)
         {
-            if(!json.ContainsKey("params"))
+            if (!json.ContainsKey("params"))
             {
                 response.Error.Code = ErrorCode.ParseError;
                 response.Error.Message = "no parameters supplied";
-                m_log.DebugFormat ("Avatar Interests Update Request");
+                m_log.DebugFormat("Avatar Interests Update Request");
                 return false;
             }
-            
+
             string result = string.Empty;
             UserProfileProperties props = new UserProfileProperties();
             object Props = (object)props;
             OSD.DeserializeMembers(ref Props, (OSDMap)json["params"]);
-            if(Service.AvatarInterestsUpdate(props, ref result))
+            if (Service.AvatarInterestsUpdate(props, ref result))
             {
                 response.Result = OSD.SerializeMembers(props);
                 return true;
             }
-            
+
             response.Error.Code = ErrorCode.InternalError;
             response.Error.Message = string.Format("{0}", result);
             return false;
         }
+
         #endregion Interests
 
         #region User Preferences
+
         public bool UserPreferencesRequest(OSDMap json, ref JsonRpcResponse response)
         {
-            if(!json.ContainsKey("params"))
+            if (!json.ContainsKey("params"))
             {
                 response.Error.Code = ErrorCode.ParseError;
-                m_log.DebugFormat ("User Preferences Request");
+                m_log.DebugFormat("User Preferences Request");
                 return false;
             }
 
@@ -395,12 +393,12 @@ namespace OpenSim.Server.Handlers
             UserPreferences prefs = new UserPreferences();
             object Prefs = (object)prefs;
             OSD.DeserializeMembers(ref Prefs, (OSDMap)json["params"]);
-            if(Service.UserPreferencesRequest(ref prefs, ref result))
+            if (Service.UserPreferencesRequest(ref prefs, ref result))
             {
                 response.Result = OSD.SerializeMembers(prefs);
                 return true;
             }
-            
+
             response.Error.Code = ErrorCode.InternalError;
             response.Error.Message = string.Format("{0}", result);
             m_log.InfoFormat("[PROFILES]: User preferences request error - {0}", response.Error.Message);
@@ -409,106 +407,117 @@ namespace OpenSim.Server.Handlers
 
         public bool UserPreferenecesUpdate(OSDMap json, ref JsonRpcResponse response)
         {
-            if(!json.ContainsKey("params"))
+            if (!json.ContainsKey("params"))
             {
                 response.Error.Code = ErrorCode.ParseError;
                 response.Error.Message = "no parameters supplied";
-                m_log.DebugFormat ("User Preferences Update Request");
+                m_log.DebugFormat("User Preferences Update Request");
                 return false;
             }
-            
+
             string result = string.Empty;
             UserPreferences prefs = new UserPreferences();
             object Prefs = (object)prefs;
             OSD.DeserializeMembers(ref Prefs, (OSDMap)json["params"]);
-            if(Service.UserPreferencesUpdate(ref prefs, ref result))
+            if (Service.UserPreferencesUpdate(ref prefs, ref result))
             {
                 response.Result = OSD.SerializeMembers(prefs);
                 return true;
             }
-            
+
             response.Error.Code = ErrorCode.InternalError;
             response.Error.Message = string.Format("{0}", result);
             m_log.InfoFormat("[PROFILES]: User preferences update error - {0}", response.Error.Message);
             return false;
         }
+
         #endregion User Preferences
 
         #region Utility
+
         public bool AvatarImageAssetsRequest(OSDMap json, ref JsonRpcResponse response)
         {
-            if(!json.ContainsKey("params"))
+            if (!json.ContainsKey("params"))
             {
                 response.Error.Code = ErrorCode.ParseError;
-                m_log.DebugFormat ("Avatar Image Assets Request");
+                m_log.DebugFormat("Avatar Image Assets Request");
                 return false;
             }
-            
+
             OSDMap request = (OSDMap)json["params"];
             UUID avatarId = new UUID(request["avatarId"].AsString());
 
-            OSDArray data = (OSDArray) Service.AvatarImageAssetsRequest(avatarId);
+            OSDArray data = (OSDArray)Service.AvatarImageAssetsRequest(avatarId);
             response.Result = data;
-            
+
             return true;
         }
-        #endregion Utiltiy
+
+        #endregion Utility
 
         #region UserData
+
         public bool RequestUserAppData(OSDMap json, ref JsonRpcResponse response)
         {
-            if(!json.ContainsKey("params"))
+            if (!json.ContainsKey("params"))
             {
                 response.Error.Code = ErrorCode.ParseError;
                 response.Error.Message = "no parameters supplied";
-                m_log.DebugFormat ("User Application Service URL Request: No Parameters!");
+                m_log.DebugFormat("User Application Service URL Request: No Parameters!");
                 return false;
             }
-            
+
             string result = string.Empty;
             UserAppData props = new UserAppData();
             object Props = (object)props;
             OSD.DeserializeMembers(ref Props, (OSDMap)json["params"]);
-            if(Service.RequestUserAppData(ref props, ref result))
+            if (Service.RequestUserAppData(ref props, ref result))
             {
                 OSDMap res = new OSDMap();
                 res["result"] = OSD.FromString("success");
-                res["token"] = OSD.FromString (result);
+                res["token"] = OSD.FromString(result);
                 response.Result = res;
-                
+
                 return true;
             }
-            
+
             response.Error.Code = ErrorCode.InternalError;
             response.Error.Message = string.Format("{0}", result);
             return false;
         }
-        
+
         public bool UpdateUserAppData(OSDMap json, ref JsonRpcResponse response)
         {
-            if(!json.ContainsKey("params"))
+            if (!json.ContainsKey("params"))
             {
                 response.Error.Code = ErrorCode.ParseError;
                 response.Error.Message = "no parameters supplied";
-                m_log.DebugFormat ("User App Data Update Request");
+                m_log.DebugFormat("User App Data Update Request");
                 return false;
             }
-            
+
             string result = string.Empty;
             UserAppData props = new UserAppData();
             object Props = (object)props;
             OSD.DeserializeMembers(ref Props, (OSDMap)json["params"]);
-            if(Service.SetUserAppData(props, ref result))
+            if (Service.SetUserAppData(props, ref result))
             {
                 response.Result = OSD.SerializeMembers(props);
                 return true;
             }
-            
+
             response.Error.Code = ErrorCode.InternalError;
             response.Error.Message = string.Format("{0}", result);
             return false;
         }
+
         #endregion UserData
     }
-}
 
+    public class UserProfilesHandlers
+    {
+        public UserProfilesHandlers()
+        {
+        }
+    }
+}

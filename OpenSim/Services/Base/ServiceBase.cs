@@ -25,27 +25,26 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Nini.Config;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using log4net;
-using Nini.Config;
-using OpenSim.Services.Interfaces;
 
 namespace OpenSim.Services.Base
 {
     public class ServiceBase
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        
-        public T LoadPlugin<T>(string dllName) where T:class
+
+        public T LoadPlugin<T>(string dllName) where T : class
         {
             return LoadPlugin<T>(dllName, new Object[0]);
         }
 
-        public T LoadPlugin<T>(string dllName, Object[] args) where T:class
+        public T LoadPlugin<T>(string dllName, Object[] args) where T : class
         {
-            string[] parts = dllName.Split(new char[] {':'});
+            string[] parts = dllName.Split(new char[] { ':' });
 
             dllName = parts[0];
 
@@ -57,7 +56,7 @@ namespace OpenSim.Services.Base
             return LoadPlugin<T>(dllName, className, args);
         }
 
-        public T LoadPlugin<T>(string dllName, string className, Object[] args) where T:class
+        public T LoadPlugin<T>(string dllName, string className, Object[] args) where T : class
         {
             string interfaceName = typeof(T).ToString();
 
@@ -65,11 +64,11 @@ namespace OpenSim.Services.Base
             {
                 Assembly pluginAssembly = Assembly.LoadFrom(dllName);
 
-//                m_log.DebugFormat("[SERVICE BASE]: Found assembly {0}", dllName);
+                //                m_log.DebugFormat("[SERVICE BASE]: Found assembly {0}", dllName);
 
                 foreach (Type pluginType in pluginAssembly.GetTypes())
                 {
-//                    m_log.DebugFormat("[SERVICE BASE]: Found type {0}", pluginType);
+                    //                    m_log.DebugFormat("[SERVICE BASE]: Found type {0}", pluginType);
 
                     if (pluginType.IsPublic)
                     {
@@ -97,12 +96,12 @@ namespace OpenSim.Services.Base
                 List<string> strArgs = new List<string>();
                 foreach (Object arg in args)
                     strArgs.Add(arg.ToString());
-                
+
                 m_log.Error(
                     string.Format(
-                        "[SERVICE BASE]: Failed to load plugin {0} from {1} with args {2}", 
+                        "[SERVICE BASE]: Failed to load plugin {0} from {1} with args {2}",
                         interfaceName, dllName, string.Join(", ", strArgs.ToArray())), e);
-                
+
                 return null;
             }
         }

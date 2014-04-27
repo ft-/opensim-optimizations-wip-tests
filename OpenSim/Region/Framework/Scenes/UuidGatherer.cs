@@ -25,12 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using System.Text.RegularExpressions;
-using System.Threading;
 using log4net;
 using OpenMetaverse;
 using OpenMetaverse.Assets;
@@ -38,10 +32,55 @@ using OpenMetaverse.StructuredData;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Scenes.Serialization;
 using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Text.RegularExpressions;
 using OpenSimAssetType = OpenSim.Framework.SLUtil.OpenSimAssetType;
 
 namespace OpenSim.Region.Framework.Scenes
 {
+    public class HGUuidGatherer : UuidGatherer
+    {
+        protected string m_assetServerURL;
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        public HGUuidGatherer(IAssetService assetService, string assetServerURL)
+            : base(assetService)
+        {
+            m_assetServerURL = assetServerURL;
+            if (!m_assetServerURL.EndsWith("/") && !m_assetServerURL.EndsWith("="))
+                m_assetServerURL = m_assetServerURL + "/";
+        }
+
+        public AssetBase FetchAsset(UUID assetID)
+        {
+            // Test if it's already here
+            AssetBase asset = m_assetService.Get(assetID.ToString());
+            if (asset == null)
+            {
+                // It's not, so fetch it from abroad
+                asset = m_assetService.Get(m_assetServerURL + assetID.ToString());
+                if (asset != null)
+                    m_log.DebugFormat("[HGUUIDGatherer]: Copied asset {0} from {1} to local asset server", assetID, m_assetServerURL);
+                else
+                    m_log.DebugFormat("[HGUUIDGatherer]: Failed to fetch asset {0} from {1}", assetID, m_assetServerURL);
+            }
+            //else
+            //    m_log.DebugFormat("[HGUUIDGatherer]: Asset {0} from {1} was already here", assetID, m_assetServerURL);
+
+            return asset;
+        }
+
+        protected override AssetBase GetAsset(UUID uuid)
+        {
+            if (string.Empty == m_assetServerURL)
+                return base.GetAsset(uuid);
+            else
+                return FetchAsset(uuid);
+        }
+    }
+
     /// <summary>
     /// Gather uuids for a given entity.
     /// </summary>
@@ -53,26 +92,24 @@ namespace OpenSim.Region.Framework.Scenes
     /// </remarks>
     public class UuidGatherer
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
         protected IAssetService m_assetService;
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        /// <summary>
+        //        /// Used as a temporary store of an asset which represents an object.  This can be a null if no appropriate
+        //        /// asset was found by the asset service.
+        //        /// </summary>
+        //        private AssetBase m_requestedObjectAsset;
+        //
+        //        /// <summary>
+        //        /// Signal whether we are currently waiting for the asset service to deliver an asset.
+        //        /// </summary>
+        //        private bool m_waitingForObjectAsset;
 
-//        /// <summary>
-//        /// Used as a temporary store of an asset which represents an object.  This can be a null if no appropriate
-//        /// asset was found by the asset service.
-//        /// </summary>
-//        private AssetBase m_requestedObjectAsset;
-//
-//        /// <summary>
-//        /// Signal whether we are currently waiting for the asset service to deliver an asset.
-//        /// </summary>
-//        private bool m_waitingForObjectAsset;
-                
         public UuidGatherer(IAssetService assetService)
         {
             m_assetService = assetService;
         }
-                
+
         /// <summary>
         /// Gather all the asset uuids associated with the asset referenced by a given uuid
         /// </summary>
@@ -91,9 +128,9 @@ namespace OpenSim.Region.Framework.Scenes
                 return;
 
             try
-            {               
+            {
                 assetUuids[assetUuid] = assetType;
-    
+
                 if ((sbyte)AssetType.Bodypart == assetType || (sbyte)AssetType.Clothing == assetType)
                 {
                     GetWearableAssetUuids(assetUuid, assetUuids);
@@ -122,7 +159,7 @@ namespace OpenSim.Region.Framework.Scenes
             catch (Exception)
             {
                 m_log.ErrorFormat(
-                    "[UUID GATHERER]: Failed to gather uuids for asset id {0}, type {1}", 
+                    "[UUID GATHERER]: Failed to gather uuids for asset id {0}, type {1}",
                     assetUuid, assetType);
                 throw;
             }
@@ -143,16 +180,16 @@ namespace OpenSim.Region.Framework.Scenes
         /// </param>
         public void GatherAssetUuids(SceneObjectGroup sceneObject, IDictionary<UUID, sbyte> assetUuids)
         {
-//            m_log.DebugFormat(
-//                "[ASSET GATHERER]: Getting assets for object {0}, {1}", sceneObject.Name, sceneObject.UUID);
+            //            m_log.DebugFormat(
+            //                "[ASSET GATHERER]: Getting assets for object {0}, {1}", sceneObject.Name, sceneObject.UUID);
 
             SceneObjectPart[] parts = sceneObject.Parts;
             for (int i = 0; i < parts.Length; i++)
             {
                 SceneObjectPart part = parts[i];
 
-//                m_log.DebugFormat(
-//                    "[ARCHIVER]: Getting part {0}, {1} for object {2}", part.Name, part.UUID, sceneObject.UUID);
+                //                m_log.DebugFormat(
+                //                    "[ARCHIVER]: Getting part {0}, {1} for object {2}", part.Name, part.UUID, sceneObject.UUID);
 
                 try
                 {
@@ -173,7 +210,7 @@ namespace OpenSim.Region.Framework.Scenes
                             }
                         }
                     }
-                    
+
                     // If the prim is a sculpt then preserve this information too
                     if (part.Shape.SculptTexture != UUID.Zero)
                         assetUuids[part.Shape.SculptTexture] = (sbyte)AssetType.Texture;
@@ -195,19 +232,19 @@ namespace OpenSim.Region.Framework.Scenes
                         catch (Exception)
                         {
                             m_log.WarnFormat(
-                                "[UUID GATHERER]: Could not check particle system for part {0} {1} in object {2} {3} since it is corrupt.  Continuing.", 
+                                "[UUID GATHERER]: Could not check particle system for part {0} {1} in object {2} {3} since it is corrupt.  Continuing.",
                                 part.Name, part.UUID, sceneObject.Name, sceneObject.UUID);
                         }
                     }
 
                     TaskInventoryDictionary taskDictionary = (TaskInventoryDictionary)part.TaskInventory.Clone();
-                    
+
                     // Now analyze this prim's inventory items to preserve all the uuids that they reference
                     foreach (TaskInventoryItem tii in taskDictionary.Values)
                     {
-//                        m_log.DebugFormat(
-//                            "[ARCHIVER]: Analysing item {0} asset type {1} in {2} {3}", 
-//                            tii.Name, tii.Type, part.Name, part.UUID);
+                        //                        m_log.DebugFormat(
+                        //                            "[ARCHIVER]: Analysing item {0} asset type {1} in {2} {3}",
+                        //                            tii.Name, tii.Type, part.Name, part.UUID);
 
                         if (!assetUuids.ContainsKey(tii.AssetID))
                             GatherAssetUuids(tii.AssetID, (sbyte)tii.Type, assetUuids);
@@ -215,49 +252,22 @@ namespace OpenSim.Region.Framework.Scenes
 
                     // FIXME: We need to make gathering modular but we cannot yet, since gatherers are not guaranteed
                     // to be called with scene objects that are in a scene (e.g. in the case of hg asset mapping and
-                    // inventory transfer.  There needs to be a way for a module to register a method without assuming a 
+                    // inventory transfer.  There needs to be a way for a module to register a method without assuming a
                     // Scene.EventManager is present.
-//                    part.ParentGroup.Scene.EventManager.TriggerGatherUuids(part, assetUuids);
-
+                    //                    part.ParentGroup.Scene.EventManager.TriggerGatherUuids(part, assetUuids);
 
                     // still needed to retrieve textures used as materials for any parts containing legacy materials stored in DynAttrs
-                    GatherMaterialsUuids(part, assetUuids); 
+                    GatherMaterialsUuids(part, assetUuids);
                 }
                 catch (Exception e)
                 {
                     m_log.ErrorFormat("[UUID GATHERER]: Failed to get part - {0}", e);
                     m_log.DebugFormat(
-                        "[UUID GATHERER]: Texture entry length for prim was {0} (min is 46)", 
+                        "[UUID GATHERER]: Texture entry length for prim was {0} (min is 46)",
                         part.Shape.TextureEntry.Length);
                 }
             }
         }
-
-        /// <summary>
-        /// Gather all the asset uuids found in one face of a Texture Entry.
-        /// </summary>
-        private void GatherTextureEntryAssets(Primitive.TextureEntryFace texture, IDictionary<UUID, sbyte> assetUuids)
-        {
-            assetUuids[texture.TextureID] = (sbyte)AssetType.Texture;
-
-            if (texture.MaterialID != UUID.Zero)
-            {
-                GatherAssetUuids(texture.MaterialID, (sbyte)OpenSimAssetType.Material, assetUuids);
-            }
-        }
-
-//        /// <summary>
-//        /// The callback made when we request the asset for an object from the asset service.
-//        /// </summary>
-//        private void AssetReceived(string id, Object sender, AssetBase asset)
-//        {
-//            lock (this)
-//            {
-//                m_requestedObjectAsset = asset;
-//                m_waitingForObjectAsset = false;
-//                Monitor.Pulse(this);
-//            }
-//        }
 
         /// <summary>
         /// Gather all of the texture asset UUIDs used to reference "Materials" such as normal and specular maps
@@ -316,7 +326,6 @@ namespace OpenSim.Region.Framework.Scenes
                                         }
                                     }
                                 }
-
                             }
                             catch (Exception e)
                             {
@@ -327,7 +336,19 @@ namespace OpenSim.Region.Framework.Scenes
                 }
             }
         }
-       
+
+        //        /// <summary>
+        //        /// The callback made when we request the asset for an object from the asset service.
+        //        /// </summary>
+        //        private void AssetReceived(string id, Object sender, AssetBase asset)
+        //        {
+        //            lock (this)
+        //            {
+        //                m_requestedObjectAsset = asset;
+        //                m_waitingForObjectAsset = false;
+        //                Monitor.Pulse(this);
+        //            }
+        //        }
         /// <summary>
         /// Get an asset synchronously, potentially using an asynchronous callback.  If the
         /// asynchronous callback is used, we will wait for it to complete.
@@ -340,113 +361,39 @@ namespace OpenSim.Region.Framework.Scenes
 
             // XXX: Switching to do this synchronously where the call was async before but we always waited for it
             // to complete anyway!
-//            m_waitingForObjectAsset = true;
-//            m_assetCache.Get(uuid.ToString(), this, AssetReceived);
-//
-//            // The asset cache callback can either
-//            //
-//            // 1. Complete on the same thread (if the asset is already in the cache) or
-//            // 2. Come in via a different thread (if we need to go fetch it).
-//            //
-//            // The code below handles both these alternatives.
-//            lock (this)
-//            {
-//                if (m_waitingForObjectAsset)
-//                {
-//                    Monitor.Wait(this);
-//                    m_waitingForObjectAsset = false;
-//                }
-//            }
-//
-//            return m_requestedObjectAsset;
+            //            m_waitingForObjectAsset = true;
+            //            m_assetCache.Get(uuid.ToString(), this, AssetReceived);
+            //
+            //            // The asset cache callback can either
+            //            //
+            //            // 1. Complete on the same thread (if the asset is already in the cache) or
+            //            // 2. Come in via a different thread (if we need to go fetch it).
+            //            //
+            //            // The code below handles both these alternatives.
+            //            lock (this)
+            //            {
+            //                if (m_waitingForObjectAsset)
+            //                {
+            //                    Monitor.Wait(this);
+            //                    m_waitingForObjectAsset = false;
+            //                }
+            //            }
+            //
+            //            return m_requestedObjectAsset;
         }
 
         /// <summary>
-        /// Record the asset uuids embedded within the given script.
+        /// Gather all the asset uuids found in one face of a Texture Entry.
         /// </summary>
-        /// <param name="scriptUuid"></param>
-        /// <param name="assetUuids">Dictionary in which to record the references</param>
-        private void GetTextEmbeddedAssetUuids(UUID embeddingAssetId, IDictionary<UUID, sbyte> assetUuids)
+        private void GatherTextureEntryAssets(Primitive.TextureEntryFace texture, IDictionary<UUID, sbyte> assetUuids)
         {
-//            m_log.DebugFormat("[ASSET GATHERER]: Getting assets for uuid references in asset {0}", embeddingAssetId);
+            assetUuids[texture.TextureID] = (sbyte)AssetType.Texture;
 
-            AssetBase embeddingAsset = GetAsset(embeddingAssetId);
-
-            if (null != embeddingAsset)
+            if (texture.MaterialID != UUID.Zero)
             {
-                string script = Utils.BytesToString(embeddingAsset.Data);
-//                m_log.DebugFormat("[ARCHIVER]: Script {0}", script);
-                MatchCollection uuidMatches = Util.PermissiveUUIDPattern.Matches(script);
-//                m_log.DebugFormat("[ARCHIVER]: Found {0} matches in text", uuidMatches.Count);
-
-                foreach (Match uuidMatch in uuidMatches)
-                {
-                    UUID uuid = new UUID(uuidMatch.Value);
-//                    m_log.DebugFormat("[ARCHIVER]: Recording {0} in text", uuid);
-
-                    // Embedded asset references (if not false positives) could be for many types of asset, so we will
-                    // label these as unknown.
-                    assetUuids[uuid] = (sbyte)AssetType.Unknown;
-                }
+                GatherAssetUuids(texture.MaterialID, (sbyte)OpenSimAssetType.Material, assetUuids);
             }
         }
-
-        /// <summary>
-        /// Record the uuids referenced by the given wearable asset
-        /// </summary>
-        /// <param name="wearableAssetUuid"></param>
-        /// <param name="assetUuids">Dictionary in which to record the references</param>
-        private void GetWearableAssetUuids(UUID wearableAssetUuid, IDictionary<UUID, sbyte> assetUuids)
-        {
-            AssetBase assetBase = GetAsset(wearableAssetUuid);
-
-            if (null != assetBase)
-            {
-                //m_log.Debug(new System.Text.ASCIIEncoding().GetString(bodypartAsset.Data));
-                AssetWearable wearableAsset = new AssetBodypart(wearableAssetUuid, assetBase.Data);
-                wearableAsset.Decode();
-    
-                //m_log.DebugFormat(
-                //    "[ARCHIVER]: Wearable asset {0} references {1} assets", wearableAssetUuid, wearableAsset.Textures.Count);
-    
-                foreach (UUID uuid in wearableAsset.Textures.Values)
-                {
-                    assetUuids[uuid] = (sbyte)AssetType.Texture;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Get all the asset uuids associated with a given object.  This includes both those directly associated with
-        /// it (e.g. face textures) and recursively, those of items within it's inventory (e.g. objects contained
-        /// within this object).
-        /// </summary>
-        /// <param name="sceneObject"></param>
-        /// <param name="assetUuids"></param>
-        private void GetSceneObjectAssetUuids(UUID sceneObjectUuid, IDictionary<UUID, sbyte> assetUuids)
-        {
-            AssetBase objectAsset = GetAsset(sceneObjectUuid);
-
-            if (null != objectAsset)
-            {
-                string xml = Utils.BytesToString(objectAsset.Data);
-                
-                CoalescedSceneObjects coa;
-                if (CoalescedSceneObjectsSerializer.TryFromXml(xml, out coa))
-                {
-                    foreach (SceneObjectGroup sog in coa.Objects)
-                        GatherAssetUuids(sog, assetUuids);
-                }
-                else
-                {
-                    SceneObjectGroup sog = SceneObjectSerializer.FromOriginalXmlFormat(xml);
-    
-                    if (null != sog)
-                        GatherAssetUuids(sog, assetUuids);
-                }
-            }
-        }
-
         /// <summary>
         /// Get the asset uuid associated with a gesture
         /// </summary>
@@ -468,7 +415,7 @@ namespace OpenSim.Region.Framework.Scenes
             sr.ReadLine(); // Comment ?
             int count = Convert.ToInt32(sr.ReadLine()); // Item count
 
-            for (int i = 0 ; i < count ; i++)
+            for (int i = 0; i < count; i++)
             {
                 string type = sr.ReadLine();
                 if (type == null)
@@ -509,48 +456,91 @@ namespace OpenSim.Region.Framework.Scenes
             if (specMap != UUID.Zero)
                 assetUuids[specMap] = (sbyte)AssetType.Texture;
         }
-    }
 
-    public class HGUuidGatherer : UuidGatherer
-    {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        protected string m_assetServerURL;
-
-        public HGUuidGatherer(IAssetService assetService, string assetServerURL)
-            : base(assetService)
+        /// <summary>
+        /// Get all the asset uuids associated with a given object.  This includes both those directly associated with
+        /// it (e.g. face textures) and recursively, those of items within it's inventory (e.g. objects contained
+        /// within this object).
+        /// </summary>
+        /// <param name="sceneObject"></param>
+        /// <param name="assetUuids"></param>
+        private void GetSceneObjectAssetUuids(UUID sceneObjectUuid, IDictionary<UUID, sbyte> assetUuids)
         {
-            m_assetServerURL = assetServerURL;
-            if (!m_assetServerURL.EndsWith("/") && !m_assetServerURL.EndsWith("="))
-                m_assetServerURL = m_assetServerURL + "/";
-        }
+            AssetBase objectAsset = GetAsset(sceneObjectUuid);
 
-        protected override AssetBase GetAsset(UUID uuid)
-        {
-            if (string.Empty == m_assetServerURL)
-                return base.GetAsset(uuid);
-            else
-                return FetchAsset(uuid);
-        }
-
-        public AssetBase FetchAsset(UUID assetID)
-        {
-
-            // Test if it's already here
-            AssetBase asset = m_assetService.Get(assetID.ToString());
-            if (asset == null)
+            if (null != objectAsset)
             {
-                // It's not, so fetch it from abroad
-                asset = m_assetService.Get(m_assetServerURL + assetID.ToString());
-                if (asset != null)
-                    m_log.DebugFormat("[HGUUIDGatherer]: Copied asset {0} from {1} to local asset server", assetID, m_assetServerURL);
-                else
-                    m_log.DebugFormat("[HGUUIDGatherer]: Failed to fetch asset {0} from {1}", assetID, m_assetServerURL);
-            }
-            //else
-            //    m_log.DebugFormat("[HGUUIDGatherer]: Asset {0} from {1} was already here", assetID, m_assetServerURL);
+                string xml = Utils.BytesToString(objectAsset.Data);
 
-            return asset;
+                CoalescedSceneObjects coa;
+                if (CoalescedSceneObjectsSerializer.TryFromXml(xml, out coa))
+                {
+                    foreach (SceneObjectGroup sog in coa.Objects)
+                        GatherAssetUuids(sog, assetUuids);
+                }
+                else
+                {
+                    SceneObjectGroup sog = SceneObjectSerializer.FromOriginalXmlFormat(xml);
+
+                    if (null != sog)
+                        GatherAssetUuids(sog, assetUuids);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Record the asset uuids embedded within the given script.
+        /// </summary>
+        /// <param name="scriptUuid"></param>
+        /// <param name="assetUuids">Dictionary in which to record the references</param>
+        private void GetTextEmbeddedAssetUuids(UUID embeddingAssetId, IDictionary<UUID, sbyte> assetUuids)
+        {
+            //            m_log.DebugFormat("[ASSET GATHERER]: Getting assets for uuid references in asset {0}", embeddingAssetId);
+
+            AssetBase embeddingAsset = GetAsset(embeddingAssetId);
+
+            if (null != embeddingAsset)
+            {
+                string script = Utils.BytesToString(embeddingAsset.Data);
+                //                m_log.DebugFormat("[ARCHIVER]: Script {0}", script);
+                MatchCollection uuidMatches = Util.PermissiveUUIDPattern.Matches(script);
+                //                m_log.DebugFormat("[ARCHIVER]: Found {0} matches in text", uuidMatches.Count);
+
+                foreach (Match uuidMatch in uuidMatches)
+                {
+                    UUID uuid = new UUID(uuidMatch.Value);
+                    //                    m_log.DebugFormat("[ARCHIVER]: Recording {0} in text", uuid);
+
+                    // Embedded asset references (if not false positives) could be for many types of asset, so we will
+                    // label these as unknown.
+                    assetUuids[uuid] = (sbyte)AssetType.Unknown;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Record the uuids referenced by the given wearable asset
+        /// </summary>
+        /// <param name="wearableAssetUuid"></param>
+        /// <param name="assetUuids">Dictionary in which to record the references</param>
+        private void GetWearableAssetUuids(UUID wearableAssetUuid, IDictionary<UUID, sbyte> assetUuids)
+        {
+            AssetBase assetBase = GetAsset(wearableAssetUuid);
+
+            if (null != assetBase)
+            {
+                //m_log.Debug(new System.Text.ASCIIEncoding().GetString(bodypartAsset.Data));
+                AssetWearable wearableAsset = new AssetBodypart(wearableAssetUuid, assetBase.Data);
+                wearableAsset.Decode();
+
+                //m_log.DebugFormat(
+                //    "[ARCHIVER]: Wearable asset {0} references {1} assets", wearableAssetUuid, wearableAsset.Textures.Count);
+
+                foreach (UUID uuid in wearableAsset.Textures.Values)
+                {
+                    assetUuids[uuid] = (sbyte)AssetType.Texture;
+                }
+            }
         }
     }
 }

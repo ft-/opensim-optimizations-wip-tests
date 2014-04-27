@@ -38,12 +38,6 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             m_scene = scene;
         }
 
-        public double this[int x, int y]
-        {
-            get { return Get(x, y); }
-            set { Set(x, y, value); }
-        }
-
         public int Length
         {
             get { return m_scene.Heightmap.Height; }
@@ -54,6 +48,11 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             get { return m_scene.Heightmap.Width; }
         }
 
+        public double this[int x, int y]
+        {
+            get { return Get(x, y); }
+            set { Set(x, y, value); }
+        }
         protected double Get(int x, int y)
         {
             return m_scene.Heightmap[x, y];

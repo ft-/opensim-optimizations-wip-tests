@@ -25,7 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
 using OpenSim.Region.Framework.Scenes;
 
@@ -37,6 +36,16 @@ namespace OpenSim.Region.Framework.Interfaces
     public interface IMoapModule
     {
         /// <summary>
+        /// Clear the media entry for a given prim face.
+        /// </summary>
+        ///
+        /// This is the equivalent of setting a media entry of null
+        ///
+        /// <param name="part"></param>
+        /// <param name="face">/param>
+        void ClearMediaEntry(SceneObjectPart part, int face);
+
+        /// <summary>
         /// Get the media entry for a given prim face.
         /// </summary>
         /// A copy of the media entry is returned rather than the original, so this can be altered at will without
@@ -45,7 +54,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="face"></param>
         /// <returns></returns>
         MediaEntry GetMediaEntry(SceneObjectPart part, int face);
-        
+
         /// <summary>
         /// Set the media entry for a given prim face.
         /// </summary>
@@ -53,15 +62,5 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="face"></param>
         /// <param name="me"></param>
         void SetMediaEntry(SceneObjectPart part, int face, MediaEntry me);
-        
-        /// <summary>
-        /// Clear the media entry for a given prim face.
-        /// </summary>
-        /// 
-        /// This is the equivalent of setting a media entry of null
-        /// 
-        /// <param name="part"></param>
-        /// <param name="face">/param>
-        void ClearMediaEntry(SceneObjectPart part, int face);
     }
 }

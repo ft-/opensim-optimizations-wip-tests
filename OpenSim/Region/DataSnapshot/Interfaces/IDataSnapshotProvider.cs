@@ -26,9 +26,9 @@
 *
 */
 
+using OpenSim.Region.Framework.Scenes;
 using System;
 using System.Xml;
-using OpenSim.Region.Framework.Scenes;
 
 namespace OpenSim.Region.DataSnapshot.Interfaces
 {
@@ -36,11 +36,16 @@ namespace OpenSim.Region.DataSnapshot.Interfaces
 
     public interface IDataSnapshotProvider
     {
-        XmlNode RequestSnapshotData(XmlDocument document);
-        void Initialize(Scene scene, DataSnapshotManager parent);
-        Scene GetParentScene { get; }
-        String Name { get; }
-        bool Stale { get; set; }
         event ProviderStale OnStale;
+
+        Scene GetParentScene { get; }
+
+        String Name { get; }
+
+        bool Stale { get; set; }
+
+        void Initialize(Scene scene, DataSnapshotManager parent);
+
+        XmlNode RequestSnapshotData(XmlDocument document);
     }
 }

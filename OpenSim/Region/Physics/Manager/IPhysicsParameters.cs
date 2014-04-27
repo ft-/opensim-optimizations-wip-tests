@@ -25,49 +25,43 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using OpenSim.Framework;
-using OpenMetaverse;
-
 namespace OpenSim.Region.Physics.Manager
 {
-    public struct PhysParameterEntry
-    {
-        // flags to say to apply to all or no instances (I wish one could put consts into interfaces)
-        public const uint APPLY_TO_ALL = 0xfffffff3;
-        public const uint APPLY_TO_NONE = 0xfffffff4;
-
-        // values that denote true and false values
-        public const float NUMERIC_TRUE = 1f;
-        public const float NUMERIC_FALSE = 0f;
-
-        public string name;
-        public string desc;
-
-        public PhysParameterEntry(string n, string d)
-        {
-            name = n;
-            desc = d;
-        }
-    }
-
     // Interface for a physics scene that implements the runtime setting and getting of physics parameters
     public interface IPhysicsParameters
     {
         // Get the list of parameters this physics engine supports
         PhysParameterEntry[] GetParameterList();
 
-        // Set parameter on a specific or all instances.
-        // Return 'false' if not able to set the parameter.
-        bool SetPhysicsParameter(string parm, string value, uint localID);
-
         // Get parameter.
         // Return 'false' if not able to get the parameter.
         bool GetPhysicsParameter(string parm, out string value);
 
+        // Set parameter on a specific or all instances.
+        // Return 'false' if not able to set the parameter.
+        bool SetPhysicsParameter(string parm, string value, uint localID);
         // Get parameter from a particular object
         // TODO:
         // bool GetPhysicsParameter(string parm, out string value, uint localID);
+    }
+
+    public struct PhysParameterEntry
+    {
+        // flags to say to apply to all or no instances (I wish one could put consts into interfaces)
+        public const uint APPLY_TO_ALL = 0xfffffff3;
+
+        public const uint APPLY_TO_NONE = 0xfffffff4;
+
+        public const float NUMERIC_FALSE = 0f;
+
+        // values that denote true and false values
+        public const float NUMERIC_TRUE = 1f;
+        public string desc;
+        public string name;
+        public PhysParameterEntry(string n, string d)
+        {
+            name = n;
+            desc = d;
+        }
     }
 }

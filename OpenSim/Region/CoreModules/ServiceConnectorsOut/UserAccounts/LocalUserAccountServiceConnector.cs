@@ -25,18 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
+using OpenMetaverse;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Server.Base;
 using OpenSim.Services.Interfaces;
-
-using OpenMetaverse;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts
 {
@@ -47,26 +46,40 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
+        private UserAccountCache m_Cache;
+
+        private bool m_Enabled = false;
+
         /// <summary>
         /// This is not on the IUserAccountService.  It's only being used so that standalone scenes can punch through
         /// to a local UserAccountService when setting up an estate manager.
         /// </summary>
         public IUserAccountService UserAccountService { get; private set; }
-
-        private UserAccountCache m_Cache;
-
-        private bool m_Enabled = false;
-
         #region ISharedRegionModule
-
-        public Type ReplaceableInterface 
-        {
-            get { return null; }
-        }
 
         public string Name
         {
             get { return "LocalUserAccountServicesConnector"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+        public void AddRegion(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+
+            // FIXME: Why do we bother setting this module and caching up if we just end up registering the inner
+            // user account service?!
+            scene.RegisterModuleInterface<IUserAccountService>(UserAccountService);
+        }
+
+        public void Close()
+        {
+            if (!m_Enabled)
+                return;
         }
 
         public void Initialise(IConfigSource source)
@@ -114,29 +127,6 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts
             if (!m_Enabled)
                 return;
         }
-
-        public void Close()
-        {
-            if (!m_Enabled)
-                return;
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-            // FIXME: Why do we bother setting this module and caching up if we just end up registering the inner
-            // user account service?!
-            scene.RegisterModuleInterface<IUserAccountService>(UserAccountService);
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-        }
-
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -145,7 +135,12 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts
             m_log.InfoFormat("[LOCAL USER ACCOUNT SERVICE CONNECTOR]: Enabled local user accounts for region {0}", scene.RegionInfo.RegionName);
         }
 
-        #endregion
+        public void RemoveRegion(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+        }
+        #endregion ISharedRegionModule
 
         #region IUserAccountService
 
@@ -186,6 +181,11 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts
             return UserAccountService.GetUserAccounts(scopeID, query);
         }
 
+        public void InvalidateCache(UUID userID)
+        {
+            m_Cache.Invalidate(userID);
+        }
+
         // Update all updatable fields
         //
         public bool StoreUserAccount(UserAccount data)
@@ -195,12 +195,6 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts
                 m_Cache.Cache(data.PrincipalID, data);
             return ret;
         }
-
-        public void InvalidateCache(UUID userID)
-        {
-            m_Cache.Invalidate(userID);
-        }
-
-        #endregion
+        #endregion IUserAccountService
     }
 }

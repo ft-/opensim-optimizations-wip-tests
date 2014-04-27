@@ -25,28 +25,26 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
 using Nini.Config;
-using OpenSim.Framework;
 using OpenSim.Data;
-using OpenSim.Services.Interfaces;
+using OpenSim.Framework;
 using OpenSim.Services.Base;
+using System;
 
 namespace OpenSim.Services.AssetService
 {
     public class AssetServiceBase : ServiceBase
     {
-        protected IAssetDataPlugin m_Database = null;
         protected IAssetLoader m_AssetLoader = null;
         protected string m_ConfigName = "AssetService";
-
+        protected IAssetDataPlugin m_Database = null;
         public AssetServiceBase(IConfigSource config)
             : this(config, "AssetService")
         {
         }
 
-        public AssetServiceBase(IConfigSource config, string configName) : base(config)
+        public AssetServiceBase(IConfigSource config, string configName)
+            : base(config)
         {
             if (configName != string.Empty)
                 m_ConfigName = configName;

@@ -25,74 +25,50 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Region.Framework.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
-using OpenMetaverse;
-using log4net;
-using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Framework.Console;
-
-using OpenSim.Region.Framework.Interfaces;
 using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 
 namespace OpenSim.Region.Framework.Scenes
 {
     public abstract class SceneBase : IScene
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
 #pragma warning disable 414
         private static readonly string LogHeader = "[SCENE]";
 #pragma warning restore 414
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
 
         #region Events
 
         public event restart OnRestart;
 
-        #endregion
+        #endregion Events
 
         #region Fields
 
-        public string Name { get { return RegionInfo.RegionName; } }
-        
-        public IConfigSource Config
-        {
-            get { return GetConfig(); }
-        }
-
-        protected virtual IConfigSource GetConfig()
-        {
-            return null;
-        }
+        public ITerrainChannel Heightmap;
 
         /// <value>
-        /// All the region modules attached to this scene.
+        /// Allows retrieval of land information for this scene.
         /// </value>
-        public Dictionary<string, IRegionModuleBase> RegionModules
-        {
-            get { return m_regionModules; }
-        }
-        private Dictionary<string, IRegionModuleBase> m_regionModules = new Dictionary<string, IRegionModuleBase>();
+        public ILandChannel LandChannel;
 
-        /// <value>
-        /// The module interfaces available from this scene.
-        /// </value>
-        protected Dictionary<Type, List<object>> ModuleInterfaces = new Dictionary<Type, List<object>>();
+        protected readonly ClientManager m_clientManager = new ClientManager();
 
-        protected Dictionary<string, object> ModuleAPIMethods = new Dictionary<string, object>();
-
-        /// <value>
-        /// The module commanders available from this scene
-        /// </value>
-        protected Dictionary<string, ICommander> m_moduleCommanders = new Dictionary<string, ICommander>();
-        
         /// <value>
         /// Registered classes that are capable of creating entities.
         /// </value>
         protected Dictionary<PCode, IEntityCreator> m_entityCreators = new Dictionary<PCode, IEntityCreator>();
+
+        protected EventManager m_eventManager;
 
         /// <summary>
         /// The last allocated local prim id.  When a new local id is requested, the next number in the sequence is
@@ -100,9 +76,49 @@ namespace OpenSim.Region.Framework.Scenes
         /// </summary>
         protected uint m_lastAllocatedLocalId = 720000;
 
+        /// <value>
+        /// The module commanders available from this scene
+        /// </value>
+        protected Dictionary<string, ICommander> m_moduleCommanders = new Dictionary<string, ICommander>();
+
+        protected ScenePermissions m_permissions;
+
+        protected RegionInfo m_regInfo;
+
+        protected ulong m_regionHandle;
+
+        protected string m_regionName;
+
+        protected RegionStatus m_regStatus;
+
+        protected Dictionary<string, object> ModuleAPIMethods = new Dictionary<string, object>();
+
+        /// <value>
+        /// The module interfaces available from this scene.
+        /// </value>
+        protected Dictionary<Type, List<object>> ModuleInterfaces = new Dictionary<Type, List<object>>();
+
         private readonly Mutex _primAllocateMutex = new Mutex(false);
-        
-        protected readonly ClientManager m_clientManager = new ClientManager();
+
+        private bool m_loginsEnabled;
+
+        private bool m_ready;
+
+        private Dictionary<string, IRegionModuleBase> m_regionModules = new Dictionary<string, IRegionModuleBase>();
+
+        public IConfigSource Config
+        {
+            get { return GetConfig(); }
+        }
+
+        /// <value>
+        /// Manage events that occur in this scene (avatar movement, script rez, etc.).  Commonly used by region modules
+        /// to subscribe to scene events.
+        /// </value>
+        public EventManager EventManager
+        {
+            get { return m_eventManager; }
+        }
 
         public bool LoginsEnabled
         {
@@ -120,7 +136,12 @@ namespace OpenSim.Region.Framework.Scenes
                 }
             }
         }
-        private bool m_loginsEnabled;
+
+        public string Name { get { return RegionInfo.RegionName; } }
+        public ScenePermissions Permissions
+        {
+            get { return m_permissions; }
+        }
 
         public bool Ready
         {
@@ -138,49 +159,32 @@ namespace OpenSim.Region.Framework.Scenes
                 }
             }
         }
-        private bool m_ready;
-
-        public float TimeDilation
-        {
-            get { return 1.0f; }
-        }
-
-        protected ulong m_regionHandle;
-        protected string m_regionName;
-        protected RegionInfo m_regInfo;
-
-        public ITerrainChannel Heightmap;
 
         /// <value>
-        /// Allows retrieval of land information for this scene.
+        /// All the region modules attached to this scene.
         /// </value>
-        public ILandChannel LandChannel;
-
-        /// <value>
-        /// Manage events that occur in this scene (avatar movement, script rez, etc.).  Commonly used by region modules
-        /// to subscribe to scene events.
-        /// </value>
-        public EventManager EventManager
+        public Dictionary<string, IRegionModuleBase> RegionModules
         {
-            get { return m_eventManager; }
-        }
-        protected EventManager m_eventManager;
-
-        protected ScenePermissions m_permissions;
-        public ScenePermissions Permissions
-        {
-            get { return m_permissions; }
+            get { return m_regionModules; }
         }
 
-         /* Used by the loadbalancer plugin on GForge */
-        protected RegionStatus m_regStatus;
         public RegionStatus RegionStatus
         {
             get { return m_regStatus; }
             set { m_regStatus = value; }
         }
 
-        #endregion
+        public float TimeDilation
+        {
+            get { return 1.0f; }
+        }
+
+        protected virtual IConfigSource GetConfig()
+        {
+            return null;
+        }
+        /* Used by the loadbalancer plugin on GForge */
+        #endregion Fields
 
         public SceneBase(RegionInfo regInfo)
         {
@@ -198,7 +202,7 @@ namespace OpenSim.Region.Framework.Scenes
         /// </param>
         public abstract void Update(int frames);
 
-        #endregion
+        #endregion Update Methods
 
         #region Terrain Methods
 
@@ -216,7 +220,7 @@ namespace OpenSim.Region.Framework.Scenes
             RemoteClient.SendLayerData(Heightmap.GetFloatsSerialised());
         }
 
-        #endregion
+        #endregion Terrain Methods
 
         #region Add/Remove Agent/Avatar
 
@@ -245,7 +249,12 @@ namespace OpenSim.Region.Framework.Scenes
         /// <returns>true if there was a scene presence with the given id, false otherwise.</returns>
         public abstract bool TryGetScenePresence(UUID agentID, out ScenePresence scenePresence);
 
-        #endregion
+        #endregion Add/Remove Agent/Avatar
+
+        public virtual bool AllowScriptCrossings
+        {
+            get { return false; }
+        }
 
         /// <summary>
         ///
@@ -254,15 +263,14 @@ namespace OpenSim.Region.Framework.Scenes
         public virtual RegionInfo RegionInfo { get; private set; }
 
         #region admin stuff
-        
-        public abstract void OtherRegionUp(GridRegion otherRegion);
 
         public virtual string GetSimulatorVersion()
         {
             return "OpenSimulator Server";
         }
 
-        #endregion
+        public abstract void OtherRegionUp(GridRegion otherRegion);
+        #endregion admin stuff
 
         #region Shutdown
 
@@ -281,201 +289,8 @@ namespace OpenSim.Region.Framework.Scenes
             }
         }
 
-        #endregion
+        #endregion Shutdown
 
-        /// <summary>
-        /// Returns a new unallocated local ID
-        /// </summary>
-        /// <returns>A brand new local ID</returns>
-        public uint AllocateLocalId()
-        {
-            uint myID;
-
-            _primAllocateMutex.WaitOne();
-            myID = ++m_lastAllocatedLocalId;
-            _primAllocateMutex.ReleaseMutex();
-
-            return myID;
-        }
-        
-        #region Module Methods
-
-        /// <summary>
-        /// Add a region-module to this scene. TODO: This will replace AddModule in the future.
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="module"></param>
-        public void AddRegionModule(string name, IRegionModuleBase module)
-        {
-            if (!RegionModules.ContainsKey(name))
-            {
-                RegionModules.Add(name, module);
-            }
-        }
-
-        public void RemoveRegionModule(string name)
-        {
-            RegionModules.Remove(name);
-        }
-
-        /// <summary>
-        /// Register a module commander.
-        /// </summary>
-        /// <param name="commander"></param>
-        public void RegisterModuleCommander(ICommander commander)
-        {
-            lock (m_moduleCommanders)
-            {
-                m_moduleCommanders.Add(commander.Name, commander);
-            }
-        }
-
-        /// <summary>
-        /// Unregister a module commander and all its commands
-        /// </summary>
-        /// <param name="name"></param>
-        public void UnregisterModuleCommander(string name)
-        {
-            lock (m_moduleCommanders)
-            {
-                ICommander commander;
-                if (m_moduleCommanders.TryGetValue(name, out commander))
-                    m_moduleCommanders.Remove(name);
-            }
-        }
-
-        /// <summary>
-        /// Get a module commander
-        /// </summary>
-        /// <param name="name"></param>
-        /// <returns>The module commander, null if no module commander with that name was found</returns>
-        public ICommander GetCommander(string name)
-        {
-            lock (m_moduleCommanders)
-            {
-                if (m_moduleCommanders.ContainsKey(name))
-                    return m_moduleCommanders[name];
-            }
-            
-            return null;
-        }
-
-        public Dictionary<string, ICommander> GetCommanders()
-        {
-            return m_moduleCommanders;
-        }
-
-        /// <summary>
-        /// Register an interface to a region module.  This allows module methods to be called directly as
-        /// well as via events.  If there is already a module registered for this interface, it is not replaced
-        /// (is this the best behaviour?)
-        /// </summary>
-        /// <param name="mod"></param>
-        public void RegisterModuleInterface<M>(M mod)
-        {
-//            m_log.DebugFormat("[SCENE BASE]: Registering interface {0}", typeof(M));
-            
-            List<Object> l = null;
-            if (!ModuleInterfaces.TryGetValue(typeof(M), out l))
-            {
-                l = new List<Object>();
-                ModuleInterfaces.Add(typeof(M), l);
-            }
-
-            if (l.Count > 0)
-                return;
-
-            l.Add(mod);
-
-            if (mod is IEntityCreator)
-            {
-                IEntityCreator entityCreator = (IEntityCreator)mod;
-                foreach (PCode pcode in entityCreator.CreationCapabilities)
-                {
-                    m_entityCreators[pcode] = entityCreator;
-                }
-            }
-        }
-
-        public void UnregisterModuleInterface<M>(M mod)
-        {
-            List<Object> l;
-            if (ModuleInterfaces.TryGetValue(typeof(M), out l))
-            {
-                if (l.Remove(mod))
-                {
-                    if (mod is IEntityCreator)
-                    {
-                        IEntityCreator entityCreator = (IEntityCreator)mod;
-                        foreach (PCode pcode in entityCreator.CreationCapabilities)
-                        {
-                            m_entityCreators[pcode] = null;
-                        }
-                    }
-                }
-            }
-        }
-
-        public void StackModuleInterface<M>(M mod)
-        {
-            List<Object> l;
-            if (ModuleInterfaces.ContainsKey(typeof(M)))
-                l = ModuleInterfaces[typeof(M)];
-            else
-                l = new List<Object>();
-
-            if (l.Contains(mod))
-                return;
-
-            l.Add(mod);
-
-            if (mod is IEntityCreator)
-            {
-                IEntityCreator entityCreator = (IEntityCreator)mod;
-                foreach (PCode pcode in entityCreator.CreationCapabilities)
-                {
-                    m_entityCreators[pcode] = entityCreator;
-                }
-            }
-
-            ModuleInterfaces[typeof(M)] = l;
-        }
-
-        /// <summary>
-        /// For the given interface, retrieve the region module which implements it.
-        /// </summary>
-        /// <returns>null if there is no registered module implementing that interface</returns>
-        public T RequestModuleInterface<T>()
-        {
-            if (ModuleInterfaces.ContainsKey(typeof(T)) &&
-                    (ModuleInterfaces[typeof(T)].Count > 0))
-                return (T)ModuleInterfaces[typeof(T)][0];
-            else
-                return default(T);
-        }
-
-        /// <summary>
-        /// For the given interface, retrieve an array of region modules that implement it.
-        /// </summary>
-        /// <returns>an empty array if there are no registered modules implementing that interface</returns>
-        public T[] RequestModuleInterfaces<T>()
-        {
-            if (ModuleInterfaces.ContainsKey(typeof(T)))
-            {
-                List<T> ret = new List<T>();
-
-                foreach (Object o in ModuleInterfaces[typeof(T)])
-                    ret.Add((T)o);
-                return ret.ToArray();
-            }
-            else
-            {
-                return new T[] {};
-            }
-        }
-        
-        #endregion
-        
         /// <summary>
         /// Call this from a region module to add a command to the OpenSim console.
         /// </summary>
@@ -556,20 +371,201 @@ namespace OpenSim.Region.Framework.Scenes
                 category, shared, command, shorthelp, longhelp, descriptivehelp, callback);
         }
 
+        /// <summary>
+        /// Returns a new unallocated local ID
+        /// </summary>
+        /// <returns>A brand new local ID</returns>
+        public uint AllocateLocalId()
+        {
+            uint myID;
+
+            _primAllocateMutex.WaitOne();
+            myID = ++m_lastAllocatedLocalId;
+            _primAllocateMutex.ReleaseMutex();
+
+            return myID;
+        }
+
+        #region Module Methods
+
+        /// <summary>
+        /// Add a region-module to this scene. TODO: This will replace AddModule in the future.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="module"></param>
+        public void AddRegionModule(string name, IRegionModuleBase module)
+        {
+            if (!RegionModules.ContainsKey(name))
+            {
+                RegionModules.Add(name, module);
+            }
+        }
+
+        /// <summary>
+        /// Get a module commander
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns>The module commander, null if no module commander with that name was found</returns>
+        public ICommander GetCommander(string name)
+        {
+            lock (m_moduleCommanders)
+            {
+                if (m_moduleCommanders.ContainsKey(name))
+                    return m_moduleCommanders[name];
+            }
+
+            return null;
+        }
+
+        public Dictionary<string, ICommander> GetCommanders()
+        {
+            return m_moduleCommanders;
+        }
+
+        /// <summary>
+        /// Register a module commander.
+        /// </summary>
+        /// <param name="commander"></param>
+        public void RegisterModuleCommander(ICommander commander)
+        {
+            lock (m_moduleCommanders)
+            {
+                m_moduleCommanders.Add(commander.Name, commander);
+            }
+        }
+
+        /// <summary>
+        /// Register an interface to a region module.  This allows module methods to be called directly as
+        /// well as via events.  If there is already a module registered for this interface, it is not replaced
+        /// (is this the best behaviour?)
+        /// </summary>
+        /// <param name="mod"></param>
+        public void RegisterModuleInterface<M>(M mod)
+        {
+            //            m_log.DebugFormat("[SCENE BASE]: Registering interface {0}", typeof(M));
+
+            List<Object> l = null;
+            if (!ModuleInterfaces.TryGetValue(typeof(M), out l))
+            {
+                l = new List<Object>();
+                ModuleInterfaces.Add(typeof(M), l);
+            }
+
+            if (l.Count > 0)
+                return;
+
+            l.Add(mod);
+
+            if (mod is IEntityCreator)
+            {
+                IEntityCreator entityCreator = (IEntityCreator)mod;
+                foreach (PCode pcode in entityCreator.CreationCapabilities)
+                {
+                    m_entityCreators[pcode] = entityCreator;
+                }
+            }
+        }
+
+        public void RemoveRegionModule(string name)
+        {
+            RegionModules.Remove(name);
+        }
+        /// <summary>
+        /// For the given interface, retrieve the region module which implements it.
+        /// </summary>
+        /// <returns>null if there is no registered module implementing that interface</returns>
+        public T RequestModuleInterface<T>()
+        {
+            if (ModuleInterfaces.ContainsKey(typeof(T)) &&
+                    (ModuleInterfaces[typeof(T)].Count > 0))
+                return (T)ModuleInterfaces[typeof(T)][0];
+            else
+                return default(T);
+        }
+
+        /// <summary>
+        /// For the given interface, retrieve an array of region modules that implement it.
+        /// </summary>
+        /// <returns>an empty array if there are no registered modules implementing that interface</returns>
+        public T[] RequestModuleInterfaces<T>()
+        {
+            if (ModuleInterfaces.ContainsKey(typeof(T)))
+            {
+                List<T> ret = new List<T>();
+
+                foreach (Object o in ModuleInterfaces[typeof(T)])
+                    ret.Add((T)o);
+                return ret.ToArray();
+            }
+            else
+            {
+                return new T[] { };
+            }
+        }
+
+        public void StackModuleInterface<M>(M mod)
+        {
+            List<Object> l;
+            if (ModuleInterfaces.ContainsKey(typeof(M)))
+                l = ModuleInterfaces[typeof(M)];
+            else
+                l = new List<Object>();
+
+            if (l.Contains(mod))
+                return;
+
+            l.Add(mod);
+
+            if (mod is IEntityCreator)
+            {
+                IEntityCreator entityCreator = (IEntityCreator)mod;
+                foreach (PCode pcode in entityCreator.CreationCapabilities)
+                {
+                    m_entityCreators[pcode] = entityCreator;
+                }
+            }
+
+            ModuleInterfaces[typeof(M)] = l;
+        }
+
+        /// <summary>
+        /// Unregister a module commander and all its commands
+        /// </summary>
+        /// <param name="name"></param>
+        public void UnregisterModuleCommander(string name)
+        {
+            lock (m_moduleCommanders)
+            {
+                ICommander commander;
+                if (m_moduleCommanders.TryGetValue(name, out commander))
+                    m_moduleCommanders.Remove(name);
+            }
+        }
+        public void UnregisterModuleInterface<M>(M mod)
+        {
+            List<Object> l;
+            if (ModuleInterfaces.TryGetValue(typeof(M), out l))
+            {
+                if (l.Remove(mod))
+                {
+                    if (mod is IEntityCreator)
+                    {
+                        IEntityCreator entityCreator = (IEntityCreator)mod;
+                        foreach (PCode pcode in entityCreator.CreationCapabilities)
+                        {
+                            m_entityCreators[pcode] = null;
+                        }
+                    }
+                }
+            }
+        }
+        #endregion Module Methods
+        public abstract bool CheckClient(UUID agentID, System.Net.IPEndPoint ep);
+
         public virtual ISceneObject DeserializeObject(string representation)
         {
             return null;
         }
-
-        public virtual bool AllowScriptCrossings
-        {
-            get { return false; }
-        }
-
-        public virtual void Start()
-        {
-        }
-
         public void Restart()
         {
             // This has to be here to fire the event
@@ -578,6 +574,8 @@ namespace OpenSim.Region.Framework.Scenes
                 handlerPhysicsCrash(RegionInfo);
         }
 
-        public abstract bool CheckClient(UUID agentID, System.Net.IPEndPoint ep);
+        public virtual void Start()
+        {
+        }
     }
 }

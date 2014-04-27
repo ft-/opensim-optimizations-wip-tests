@@ -35,11 +35,13 @@ namespace OpenSim.Region.CoreModules.World.Terrain
         {
         }
 
-        public TerrainException(string msg) : base(msg)
+        public TerrainException(string msg)
+            : base(msg)
         {
         }
 
-        public TerrainException(string msg, Exception e) : base(msg, e)
+        public TerrainException(string msg, Exception e)
+            : base(msg, e)
         {
         }
     }

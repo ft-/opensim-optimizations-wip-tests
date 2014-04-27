@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Contributors 
+ * Copyright (c) Contributors
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,12 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
 using OpenMetaverse;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
+    public delegate void TakeValueCallback(string s);
+
     // these could be expanded at some point to provide more type information
     // for now value accounts for all base types
     public enum JsonStoreNodeType
@@ -40,7 +40,7 @@ namespace OpenSim.Region.Framework.Interfaces
         Array = 2,
         Value = 3
     }
-    
+
     public enum JsonStoreValueType
     {
         Undefined = 0,
@@ -50,34 +50,37 @@ namespace OpenSim.Region.Framework.Interfaces
         String = 4,
         UUID = 5
     }
-    
-    public struct JsonStoreStats
-    {
-        public int StoreCount;
-    }
-
-    public delegate void TakeValueCallback(string s);
 
     public interface IJsonStoreModule
     {
-        JsonStoreStats GetStoreStats();
-
         bool AttachObjectStore(UUID objectID);
+
         bool CreateStore(string value, ref UUID result);
+
         bool DestroyStore(UUID storeID);
 
+        int GetArrayLength(UUID storeID, string path);
+
         JsonStoreNodeType GetNodeType(UUID storeID, string path);
-        JsonStoreValueType GetValueType(UUID storeID, string path);
 
-        bool TestStore(UUID storeID);
-
-        bool SetValue(UUID storeID, string path, string value, bool useJson);
-        bool RemoveValue(UUID storeID, string path);
+        JsonStoreStats GetStoreStats();
         bool GetValue(UUID storeID, string path, bool useJson, out string value);
 
-        void TakeValue(UUID storeID, string path, bool useJson, TakeValueCallback cback);
+        JsonStoreValueType GetValueType(UUID storeID, string path);
+
         void ReadValue(UUID storeID, string path, bool useJson, TakeValueCallback cback);
 
-        int GetArrayLength(UUID storeID, string path);
+        bool RemoveValue(UUID storeID, string path);
+
+        bool SetValue(UUID storeID, string path, string value, bool useJson);
+
+        void TakeValue(UUID storeID, string path, bool useJson, TakeValueCallback cback);
+
+        bool TestStore(UUID storeID);
+    }
+
+    public struct JsonStoreStats
+    {
+        public int StoreCount;
     }
 }

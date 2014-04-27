@@ -1,5 +1,7 @@
+using log4net;
+
 /*
- * Copyright (c) Contributors 
+ * Copyright (c) Contributors
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,29 +26,20 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-using Mono.Addins;
 
-using System;
-using System.Reflection;
-using System.Threading;
-using System.Text;
-using System.Net;
-using System.Net.Sockets;
-using log4net;
+using Mono.Addins;
 using Nini.Config;
 using OpenMetaverse;
-using OpenMetaverse.StructuredData;
-using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
+using System.Reflection;
 
 namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "JsonStoreModule")]
-
-    public class JsonStoreModule  : INonSharedRegionModule, IJsonStoreModule
+    public class JsonStoreModule : INonSharedRegionModule, IJsonStoreModule
     {
         private static readonly ILog m_log =
             LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
@@ -54,15 +47,13 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
         private IConfig m_config = null;
         private bool m_enabled = false;
         private bool m_enableObjectStore = false;
+        private Dictionary<UUID, JsonStore> m_JsonValueStore;
         private int m_maxStringSpace = Int32.MaxValue;
 
         private Scene m_scene = null;
-
-        private Dictionary<UUID,JsonStore> m_JsonValueStore;
-
         private UUID m_sharedStore;
 
-#region Region Module interface
+        #region Region Module interface
 
         // -----------------------------------------------------------------
         /// <summary>
@@ -74,6 +65,43 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
             get { return this.GetType().Name; }
         }
 
+        /// -----------------------------------------------------------------
+        /// <summary>
+        /// </summary>
+        // -----------------------------------------------------------------
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
+        // -----------------------------------------------------------------
+        /// <summary>
+        /// </summary>
+        // -----------------------------------------------------------------
+        public void AddRegion(Scene scene)
+        {
+            if (m_enabled)
+            {
+                m_scene = scene;
+                m_scene.RegisterModuleInterface<IJsonStoreModule>(this);
+
+                m_sharedStore = UUID.Zero;
+                m_JsonValueStore = new Dictionary<UUID, JsonStore>();
+                m_JsonValueStore.Add(m_sharedStore, new JsonStore(""));
+
+                scene.EventManager.OnObjectBeingRemovedFromScene += EventManagerOnObjectBeingRemovedFromScene;
+            }
+        }
+
+        // -----------------------------------------------------------------
+        /// <summary>
+        /// Nothing to do on close
+        /// </summary>
+        // -----------------------------------------------------------------
+        public void Close()
+        {
+        }
+
         // -----------------------------------------------------------------
         /// <summary>
         /// Initialise this shared module
@@ -83,7 +111,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
         // -----------------------------------------------------------------
         public void Initialise(IConfigSource config)
         {
-            try 
+            try
             {
                 if ((m_config = config.Configs["JsonStore"]) == null)
                 {
@@ -116,32 +144,16 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
         public void PostInitialise()
         {
         }
-
         // -----------------------------------------------------------------
         /// <summary>
-        /// Nothing to do on close
+        /// Called when all modules have been added for a region. This is
+        /// where we hook up events
         /// </summary>
         // -----------------------------------------------------------------
-        public void Close()
-        {
-        }
-
-        // -----------------------------------------------------------------
-        /// <summary>
-        /// </summary>
-        // -----------------------------------------------------------------
-        public void AddRegion(Scene scene)
+        public void RegionLoaded(Scene scene)
         {
             if (m_enabled)
             {
-                m_scene = scene;
-                m_scene.RegisterModuleInterface<IJsonStoreModule>(this);
-
-                m_sharedStore = UUID.Zero;
-                m_JsonValueStore = new Dictionary<UUID,JsonStore>();
-                m_JsonValueStore.Add(m_sharedStore,new JsonStore(""));
-
-                scene.EventManager.OnObjectBeingRemovedFromScene += EventManagerOnObjectBeingRemovedFromScene;
             }
         }
 
@@ -156,73 +168,33 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
             // need to remove all references to the scene in the subscription
             // list to enable full garbage collection of the scene object
         }
+        #endregion Region Module interface
+
+        #region SceneEvents
 
         // -----------------------------------------------------------------
         /// <summary>
-        /// Called when all modules have been added for a region. This is 
-        /// where we hook up events
-        /// </summary>
-        // -----------------------------------------------------------------
-        public void RegionLoaded(Scene scene)
-        {
-            if (m_enabled)
-            {
-            }
-        }
-
-        /// -----------------------------------------------------------------
-        /// <summary>
-        /// </summary>
-        // -----------------------------------------------------------------
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
-#endregion
-
-#region SceneEvents
-        // -----------------------------------------------------------------
-        /// <summary>
-        /// 
+        ///
         /// </summary>
         // -----------------------------------------------------------------
         public void EventManagerOnObjectBeingRemovedFromScene(SceneObjectGroup obj)
         {
-            obj.ForEachPart(delegate(SceneObjectPart sop) { DestroyStore(sop.UUID); } );
+            obj.ForEachPart(delegate(SceneObjectPart sop) { DestroyStore(sop.UUID); });
         }
 
-#endregion
+        #endregion SceneEvents
 
-#region ScriptInvocationInteface
+        #region ScriptInvocationInteface
 
-        
         // -----------------------------------------------------------------
         /// <summary>
-        /// 
-        /// </summary>
-        // -----------------------------------------------------------------
-        public JsonStoreStats GetStoreStats()
-        {
-            JsonStoreStats stats;
-
-            lock (m_JsonValueStore)
-            {
-                stats.StoreCount = m_JsonValueStore.Count;
-            }
-            
-            return stats;
-        }
-        
-        // -----------------------------------------------------------------
-        /// <summary>
-        /// 
+        ///
         /// </summary>
         // -----------------------------------------------------------------
         public bool AttachObjectStore(UUID objectID)
         {
-            if (! m_enabled) return false;
-            if (! m_enableObjectStore) return false;
+            if (!m_enabled) return false;
+            if (!m_enableObjectStore) return false;
 
             SceneObjectPart sop = m_scene.GetSceneObjectPart(objectID);
             if (sop == null)
@@ -235,17 +207,17 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
             {
                 if (m_JsonValueStore.ContainsKey(objectID))
                     return true;
-                
-                JsonStore map = new JsonObjectStore(m_scene,objectID);
-                m_JsonValueStore.Add(objectID,map);
+
+                JsonStore map = new JsonObjectStore(m_scene, objectID);
+                m_JsonValueStore.Add(objectID, map);
             }
-            
+
             return true;
         }
-        
+
         // -----------------------------------------------------------------
         /// <summary>
-        /// 
+        ///
         /// </summary>
         // -----------------------------------------------------------------
         public bool CreateStore(string value, ref UUID result)
@@ -254,12 +226,11 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
                 result = UUID.Random();
 
             JsonStore map = null;
-            
-            if (! m_enabled) return false;
-            
+
+            if (!m_enabled) return false;
 
             try
-            { 
+            {
                 map = new JsonStore(value);
             }
             catch (Exception)
@@ -269,19 +240,19 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
             }
 
             lock (m_JsonValueStore)
-                m_JsonValueStore.Add(result,map);
-            
+                m_JsonValueStore.Add(result, map);
+
             return true;
         }
 
         // -----------------------------------------------------------------
         /// <summary>
-        /// 
+        ///
         /// </summary>
         // -----------------------------------------------------------------
         public bool DestroyStore(UUID storeID)
         {
-            if (! m_enabled) return false;
+            if (!m_enabled) return false;
 
             lock (m_JsonValueStore)
                 return m_JsonValueStore.Remove(storeID);
@@ -289,36 +260,54 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
 
         // -----------------------------------------------------------------
         /// <summary>
-        /// 
+        ///
         /// </summary>
         // -----------------------------------------------------------------
-        public bool TestStore(UUID storeID)
+        public int GetArrayLength(UUID storeID, string path)
         {
-            if (! m_enabled) return false;
-
-            lock (m_JsonValueStore)
-                return m_JsonValueStore.ContainsKey(storeID);
-        }
-
-        // -----------------------------------------------------------------
-        /// <summary>
-        /// 
-        /// </summary>
-        // -----------------------------------------------------------------
-        public JsonStoreNodeType GetNodeType(UUID storeID, string path)
-        {
-            if (! m_enabled) return JsonStoreNodeType.Undefined;
+            if (!m_enabled) return -1;
 
             JsonStore map = null;
             lock (m_JsonValueStore)
             {
-                if (! m_JsonValueStore.TryGetValue(storeID,out map))
+                if (!m_JsonValueStore.TryGetValue(storeID, out map))
+                    return -1;
+            }
+
+            try
+            {
+                lock (map)
                 {
-                    m_log.InfoFormat("[JsonStore] Missing store {0}",storeID);
+                    return map.ArrayLength(path);
+                }
+            }
+            catch (Exception e)
+            {
+                m_log.Error("[JsonStore]: unable to retrieve value", e);
+            }
+
+            return -1;
+        }
+
+        // -----------------------------------------------------------------
+        /// <summary>
+        ///
+        /// </summary>
+        // -----------------------------------------------------------------
+        public JsonStoreNodeType GetNodeType(UUID storeID, string path)
+        {
+            if (!m_enabled) return JsonStoreNodeType.Undefined;
+
+            JsonStore map = null;
+            lock (m_JsonValueStore)
+            {
+                if (!m_JsonValueStore.TryGetValue(storeID, out map))
+                {
+                    m_log.InfoFormat("[JsonStore] Missing store {0}", storeID);
                     return JsonStoreNodeType.Undefined;
                 }
             }
-            
+
             try
             {
                 lock (map)
@@ -334,23 +323,72 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
 
         // -----------------------------------------------------------------
         /// <summary>
-        /// 
+        ///
         /// </summary>
         // -----------------------------------------------------------------
-        public JsonStoreValueType GetValueType(UUID storeID, string path)
+        public JsonStoreStats GetStoreStats()
         {
-            if (! m_enabled) return JsonStoreValueType.Undefined;
+            JsonStoreStats stats;
+
+            lock (m_JsonValueStore)
+            {
+                stats.StoreCount = m_JsonValueStore.Count;
+            }
+
+            return stats;
+        }
+        // -----------------------------------------------------------------
+        /// <summary>
+        ///
+        /// </summary>
+        // -----------------------------------------------------------------
+        public bool GetValue(UUID storeID, string path, bool useJson, out string value)
+        {
+            value = String.Empty;
+
+            if (!m_enabled) return false;
 
             JsonStore map = null;
             lock (m_JsonValueStore)
             {
-                if (! m_JsonValueStore.TryGetValue(storeID,out map))
+                if (!m_JsonValueStore.TryGetValue(storeID, out map))
+                    return false;
+            }
+
+            try
+            {
+                lock (map)
                 {
-                    m_log.InfoFormat("[JsonStore] Missing store {0}",storeID);
+                    return map.GetValue(path, out value, useJson);
+                }
+            }
+            catch (Exception e)
+            {
+                m_log.Error("[JsonStore]: unable to retrieve value", e);
+            }
+
+            return false;
+        }
+
+        // -----------------------------------------------------------------
+        /// <summary>
+        ///
+        /// </summary>
+        // -----------------------------------------------------------------
+        public JsonStoreValueType GetValueType(UUID storeID, string path)
+        {
+            if (!m_enabled) return JsonStoreValueType.Undefined;
+
+            JsonStore map = null;
+            lock (m_JsonValueStore)
+            {
+                if (!m_JsonValueStore.TryGetValue(storeID, out map))
+                {
+                    m_log.InfoFormat("[JsonStore] Missing store {0}", storeID);
                     return JsonStoreValueType.Undefined;
                 }
             }
-            
+
             try
             {
                 lock (map)
@@ -366,188 +404,12 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
 
         // -----------------------------------------------------------------
         /// <summary>
-        /// 
-        /// </summary>
-        // -----------------------------------------------------------------
-        public bool SetValue(UUID storeID, string path, string value, bool useJson)
-        {
-            if (! m_enabled) return false;
-
-            JsonStore map = null;
-            lock (m_JsonValueStore)
-            {
-                if (! m_JsonValueStore.TryGetValue(storeID,out map))
-                {
-                    m_log.InfoFormat("[JsonStore] Missing store {0}",storeID);
-                    return false;
-                }
-            }
-            
-            try
-            {
-                lock (map)
-                {
-                    if (map.StringSpace > m_maxStringSpace)
-                    {
-                        m_log.WarnFormat("[JsonStore] {0} exceeded string size; {1} bytes used of {2} limit",
-                                         storeID,map.StringSpace,m_maxStringSpace);
-                        return false;
-                    }
-                    
-                    return map.SetValue(path,value,useJson);
-                }
-            }
-            catch (Exception e)
-            {
-                m_log.Error(string.Format("[JsonStore]: Unable to assign {0} to {1} in {2}", value, path, storeID), e);
-            }
-
-            return false;
-        }
-        
-        // -----------------------------------------------------------------
-        /// <summary>
-        /// 
-        /// </summary>
-        // -----------------------------------------------------------------
-        public bool RemoveValue(UUID storeID, string path)
-        {
-            if (! m_enabled) return false;
-
-            JsonStore map = null;
-            lock (m_JsonValueStore)
-            {
-                if (! m_JsonValueStore.TryGetValue(storeID,out map))
-                {
-                    m_log.InfoFormat("[JsonStore] Missing store {0}",storeID);
-                    return false;
-                }
-            }
-            
-            try
-            {
-                lock (map)
-                    return map.RemoveValue(path);
-            }
-            catch (Exception e)
-            {
-                m_log.Error(string.Format("[JsonStore]: Unable to remove {0} in {1}", path, storeID), e);
-            }
-
-            return false;
-        }
-        
-        // -----------------------------------------------------------------
-        /// <summary>
-        /// 
-        /// </summary>
-        // -----------------------------------------------------------------
-        public int GetArrayLength(UUID storeID, string path)
-        {
-            if (! m_enabled) return -1;
-
-            JsonStore map = null;
-            lock (m_JsonValueStore)
-            {
-                if (! m_JsonValueStore.TryGetValue(storeID,out map))
-                    return -1;
-            }
-
-            try
-            {
-                lock (map)
-                {
-                    return map.ArrayLength(path);
-                }
-            }
-            catch (Exception e)
-            {
-                m_log.Error("[JsonStore]: unable to retrieve value", e);
-            }
-            
-            return -1;
-        }
-
-        // -----------------------------------------------------------------
-        /// <summary>
-        /// 
-        /// </summary>
-        // -----------------------------------------------------------------
-        public bool GetValue(UUID storeID, string path, bool useJson, out string value)
-        {
-            value = String.Empty;
-            
-            if (! m_enabled) return false;
-
-            JsonStore map = null;
-            lock (m_JsonValueStore)
-            {
-                if (! m_JsonValueStore.TryGetValue(storeID,out map))
-                    return false;
-            }
-
-            try
-            {
-                lock (map)
-                {
-                    return map.GetValue(path, out value, useJson);
-                }
-            }
-            catch (Exception e)
-            {
-                m_log.Error("[JsonStore]: unable to retrieve value", e);
-            }
-            
-            return false;
-        }
-
-        // -----------------------------------------------------------------
-        /// <summary>
-        /// 
-        /// </summary>
-        // -----------------------------------------------------------------
-        public void TakeValue(UUID storeID, string path, bool useJson, TakeValueCallback cback)
-        {
-            if (! m_enabled)
-            {
-                cback(String.Empty);
-                return;
-            }
-
-            JsonStore map = null;
-            lock (m_JsonValueStore)
-            {
-                if (! m_JsonValueStore.TryGetValue(storeID,out map))
-                {
-                    cback(String.Empty);
-                    return;
-                }
-            }
-
-            try
-            {
-                lock (map)
-                {
-                    map.TakeValue(path, useJson, cback);
-                    return;
-                }
-            }
-            catch (Exception e)
-            {
-                m_log.Error("[JsonStore] unable to retrieve value", e);
-            }
-            
-            cback(String.Empty);
-        }
-
-        // -----------------------------------------------------------------
-        /// <summary>
-        /// 
+        ///
         /// </summary>
         // -----------------------------------------------------------------
         public void ReadValue(UUID storeID, string path, bool useJson, TakeValueCallback cback)
         {
-            if (! m_enabled)
+            if (!m_enabled)
             {
                 cback(String.Empty);
                 return;
@@ -556,7 +418,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
             JsonStore map = null;
             lock (m_JsonValueStore)
             {
-                if (! m_JsonValueStore.TryGetValue(storeID,out map))
+                if (!m_JsonValueStore.TryGetValue(storeID, out map))
                 {
                     cback(String.Empty);
                     return;
@@ -575,10 +437,134 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
             {
                 m_log.Error("[JsonStore]: unable to retrieve value", e);
             }
-            
+
             cback(String.Empty);
         }
 
-#endregion
+        // -----------------------------------------------------------------
+        /// <summary>
+        ///
+        /// </summary>
+        // -----------------------------------------------------------------
+        public bool RemoveValue(UUID storeID, string path)
+        {
+            if (!m_enabled) return false;
+
+            JsonStore map = null;
+            lock (m_JsonValueStore)
+            {
+                if (!m_JsonValueStore.TryGetValue(storeID, out map))
+                {
+                    m_log.InfoFormat("[JsonStore] Missing store {0}", storeID);
+                    return false;
+                }
+            }
+
+            try
+            {
+                lock (map)
+                    return map.RemoveValue(path);
+            }
+            catch (Exception e)
+            {
+                m_log.Error(string.Format("[JsonStore]: Unable to remove {0} in {1}", path, storeID), e);
+            }
+
+            return false;
+        }
+
+        // -----------------------------------------------------------------
+        /// <summary>
+        ///
+        /// </summary>
+        // -----------------------------------------------------------------
+        public bool SetValue(UUID storeID, string path, string value, bool useJson)
+        {
+            if (!m_enabled) return false;
+
+            JsonStore map = null;
+            lock (m_JsonValueStore)
+            {
+                if (!m_JsonValueStore.TryGetValue(storeID, out map))
+                {
+                    m_log.InfoFormat("[JsonStore] Missing store {0}", storeID);
+                    return false;
+                }
+            }
+
+            try
+            {
+                lock (map)
+                {
+                    if (map.StringSpace > m_maxStringSpace)
+                    {
+                        m_log.WarnFormat("[JsonStore] {0} exceeded string size; {1} bytes used of {2} limit",
+                                         storeID, map.StringSpace, m_maxStringSpace);
+                        return false;
+                    }
+
+                    return map.SetValue(path, value, useJson);
+                }
+            }
+            catch (Exception e)
+            {
+                m_log.Error(string.Format("[JsonStore]: Unable to assign {0} to {1} in {2}", value, path, storeID), e);
+            }
+
+            return false;
+        }
+
+        // -----------------------------------------------------------------
+        /// <summary>
+        ///
+        /// </summary>
+        // -----------------------------------------------------------------
+        public void TakeValue(UUID storeID, string path, bool useJson, TakeValueCallback cback)
+        {
+            if (!m_enabled)
+            {
+                cback(String.Empty);
+                return;
+            }
+
+            JsonStore map = null;
+            lock (m_JsonValueStore)
+            {
+                if (!m_JsonValueStore.TryGetValue(storeID, out map))
+                {
+                    cback(String.Empty);
+                    return;
+                }
+            }
+
+            try
+            {
+                lock (map)
+                {
+                    map.TakeValue(path, useJson, cback);
+                    return;
+                }
+            }
+            catch (Exception e)
+            {
+                m_log.Error("[JsonStore] unable to retrieve value", e);
+            }
+
+            cback(String.Empty);
+        }
+
+        // -----------------------------------------------------------------
+        /// <summary>
+        ///
+        /// </summary>
+        // -----------------------------------------------------------------
+        public bool TestStore(UUID storeID)
+        {
+            if (!m_enabled) return false;
+
+            lock (m_JsonValueStore)
+                return m_JsonValueStore.ContainsKey(storeID);
+        }
+        #endregion ScriptInvocationInteface
     }
 }

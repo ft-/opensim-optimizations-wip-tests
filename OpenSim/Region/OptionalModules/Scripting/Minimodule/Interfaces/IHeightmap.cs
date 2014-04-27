@@ -25,14 +25,26 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-
 namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
     public interface IHeightmap
     {
+        /// <summary>
+        /// The maximum length of the region (Y axis), exclusive. (eg Height = 256, max Y = 255). Minimum is always 0 inclusive.
+        /// </summary>
+        /// <example>
+        /// Host.Console.Info("The terrain length of this region is " + World.Heightmap.Length);
+        /// </example>
+        int Length { get; }
+
+        /// <summary>
+        /// The maximum width of the region (X axis), exclusive. (eg Width = 256, max X = 255). Minimum is always 0 inclusive.
+        /// </summary>
+        /// <example>
+        /// Host.Console.Info("The terrain width of this region is " + World.Heightmap.Width);
+        /// </example>
+        int Width { get; }
+
         /// <summary>
         /// Returns [or sets] the heightmap value at specified coordinates.
         /// </summary>
@@ -49,21 +61,5 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             get;
             set;
         }
-
-        /// <summary>
-        /// The maximum length of the region (Y axis), exclusive. (eg Height = 256, max Y = 255). Minimum is always 0 inclusive.
-        /// </summary>
-        /// <example>
-        /// Host.Console.Info("The terrain length of this region is " + World.Heightmap.Length);
-        /// </example>
-        int Length { get; }
-
-        /// <summary>
-        /// The maximum width of the region (X axis), exclusive. (eg Width = 256, max X = 255). Minimum is always 0 inclusive.
-        /// </summary>
-        /// <example>
-        /// Host.Console.Info("The terrain width of this region is " + World.Heightmap.Width);
-        /// </example>
-        int Width { get; }
     }
 }

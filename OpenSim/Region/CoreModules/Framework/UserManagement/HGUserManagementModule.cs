@@ -24,24 +24,18 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
 
+using log4net;
+using Mono.Addins;
+using Nini.Config;
+using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Framework.Console;
-using OpenSim.Region.Framework;
 using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
 using OpenSim.Services.Connectors.Hypergrid;
 
-using OpenMetaverse;
-using OpenMetaverse.Packets;
-using log4net;
-using Nini.Config;
-using Mono.Addins;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.Framework.UserManagement
 {
@@ -51,6 +45,11 @@ namespace OpenSim.Region.CoreModules.Framework.UserManagement
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         #region ISharedRegionModule
+
+        public override string Name
+        {
+            get { return "HGUserManagementModule"; }
+        }
 
         public new void Initialise(IConfigSource config)
         {
@@ -62,12 +61,6 @@ namespace OpenSim.Region.CoreModules.Framework.UserManagement
                 m_log.DebugFormat("[USER MANAGEMENT MODULE]: {0} is enabled", Name);
             }
         }
-
-        public override string Name
-        {
-            get { return "HGUserManagementModule"; }
-        }
-
         #endregion ISharedRegionModule
 
         protected override void AddAdditionalUsers(string query, List<UserData> users)
@@ -111,12 +104,11 @@ namespace OpenSim.Region.CoreModules.Framework.UserManagement
                 }
 
                 // This is it! Let's ask the other world
-                if (words[0].Contains(".")) 
+                if (words[0].Contains("."))
                 {
                     string[] names = words[0].Split(new char[] { '.' });
                     if (names.Length >= 2)
                     {
-
                         string uriStr = "http://" + words[1];
                         // Let's check that the last name is a valid address
                         try
@@ -130,7 +122,7 @@ namespace OpenSim.Region.CoreModules.Framework.UserManagement
                         }
 
                         UserAgentServiceConnector uasConn = new UserAgentServiceConnector(uriStr);
-                        
+
                         UUID userID = UUID.Zero;
                         try
                         {
@@ -140,7 +132,7 @@ namespace OpenSim.Region.CoreModules.Framework.UserManagement
                         {
                             m_log.Debug("[USER MANAGEMENT MODULE]: GetUUID call failed ", e);
                         }
-                        
+
                         if (!userID.Equals(UUID.Zero))
                         {
                             UserData ud = new UserData();
@@ -163,13 +155,12 @@ namespace OpenSim.Region.CoreModules.Framework.UserManagement
             //{
             //    foreach (UserData d in m_UserCache.Values)
             //    {
-            //        if (d.LastName.StartsWith("@") && 
-            //            (d.FirstName.ToLower().StartsWith(query.ToLower()) || 
+            //        if (d.LastName.StartsWith("@") &&
+            //            (d.FirstName.ToLower().StartsWith(query.ToLower()) ||
             //             d.LastName.ToLower().StartsWith(query.ToLower())))
             //            users.Add(d);
             //    }
             //}
         }
-
     }
 }

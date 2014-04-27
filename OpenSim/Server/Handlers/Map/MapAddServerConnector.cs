@@ -25,22 +25,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Server.Base;
+using OpenSim.Server.Handlers.Base;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Xml;
-
-using Nini.Config;
-using log4net;
-using OpenMetaverse;
-
-using OpenSim.Framework;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
-using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Server.Handlers.Base;
-
 using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 
 namespace OpenSim.Server.Handlers.MapImage
@@ -49,12 +46,11 @@ namespace OpenSim.Server.Handlers.MapImage
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private IMapImageService m_MapService;
-        private IGridService m_GridService;
         private string m_ConfigName = "MapImageService";
-
+        private IGridService m_GridService;
+        private IMapImageService m_MapService;
         public MapAddServiceConnector(IConfigSource config, IHttpServer server, string configName) :
-                base(config, server, configName)
+            base(config, server, configName)
         {
             IConfig serverConfig = config.Configs[m_ConfigName];
             if (serverConfig == null)
@@ -80,16 +76,15 @@ namespace OpenSim.Server.Handlers.MapImage
 
             bool proxy = serverConfig.GetBoolean("HasProxy", false);
             server.AddStreamHandler(new MapServerPostHandler(m_MapService, m_GridService, proxy));
-
         }
     }
 
-    class MapServerPostHandler : BaseStreamHandler
+    internal class MapServerPostHandler : BaseStreamHandler
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        private IMapImageService m_MapService;
         private IGridService m_GridService;
-        bool m_Proxy;
+        private IMapImageService m_MapService;
+        private bool m_Proxy;
 
         public MapServerPostHandler(IMapImageService service, IGridService grid, bool proxy) :
             base("POST", "/map")
@@ -101,7 +96,7 @@ namespace OpenSim.Server.Handlers.MapImage
 
         protected override byte[] ProcessRequest(string path, Stream requestData, IOSHttpRequest httpRequest, IOSHttpResponse httpResponse)
         {
-//            m_log.DebugFormat("[MAP SERVICE IMAGE HANDLER]: Received {0}", path);
+            //            m_log.DebugFormat("[MAP SERVICE IMAGE HANDLER]: Received {0}", path);
             StreamReader sr = new StreamReader(requestData);
             string body = sr.ReadToEnd();
             sr.Close();
@@ -122,10 +117,10 @@ namespace OpenSim.Server.Handlers.MapImage
 
                 m_log.DebugFormat("[MAP ADD SERVER CONNECTOR]: Received map data for region at {0}-{1}", x, y);
 
-//                string type = "image/jpeg";
-//
-//                if (request.ContainsKey("TYPE"))
-//                    type = request["TYPE"].ToString();
+                //                string type = "image/jpeg";
+                //
+                //                if (request.ContainsKey("TYPE"))
+                //                    type = request["TYPE"].ToString();
 
                 if (m_GridService != null)
                 {
@@ -138,11 +133,10 @@ namespace OpenSim.Server.Handlers.MapImage
                             m_log.WarnFormat("[MAP IMAGE HANDLER]: IP address {0} may be trying to impersonate region in IP {1}", ipAddr, r.ExternalEndPoint.Address);
                             return FailureResult("IP address of caller does not match IP address of registered region");
                         }
-
                     }
                     else
                     {
-                        m_log.WarnFormat("[MAP IMAGE HANDLER]: IP address {0} may be rogue. Region not found at coordinates {1}-{2}", 
+                        m_log.WarnFormat("[MAP IMAGE HANDLER]: IP address {0} may be rogue. Region not found at coordinates {1}-{2}",
                             ipAddr, x, y);
                         return FailureResult("Region not found at given coordinates");
                     }
@@ -157,7 +151,6 @@ namespace OpenSim.Server.Handlers.MapImage
                     return SuccessResult();
                 else
                     return FailureResult(reason);
-
             }
             catch (Exception e)
             {
@@ -167,26 +160,15 @@ namespace OpenSim.Server.Handlers.MapImage
             return FailureResult("Unexpected server error");
         }
 
-        private byte[] SuccessResult()
+        private byte[] DocToBytes(XmlDocument doc)
         {
-            XmlDocument doc = new XmlDocument();
+            MemoryStream ms = new MemoryStream();
+            XmlTextWriter xw = new XmlTextWriter(ms, null);
+            xw.Formatting = Formatting.Indented;
+            doc.WriteTo(xw);
+            xw.Flush();
 
-            XmlNode xmlnode = doc.CreateNode(XmlNodeType.XmlDeclaration,
-                    "", "");
-
-            doc.AppendChild(xmlnode);
-
-            XmlElement rootElement = doc.CreateElement("", "ServerResponse",
-                    "");
-
-            doc.AppendChild(rootElement);
-
-            XmlElement result = doc.CreateElement("", "Result", "");
-            result.AppendChild(doc.CreateTextNode("Success"));
-
-            rootElement.AppendChild(result);
-
-            return DocToBytes(doc);
+            return ms.ToArray();
         }
 
         private byte[] FailureResult(string msg)
@@ -216,17 +198,6 @@ namespace OpenSim.Server.Handlers.MapImage
             return DocToBytes(doc);
         }
 
-        private byte[] DocToBytes(XmlDocument doc)
-        {
-            MemoryStream ms = new MemoryStream();
-            XmlTextWriter xw = new XmlTextWriter(ms, null);
-            xw.Formatting = Formatting.Indented;
-            doc.WriteTo(xw);
-            xw.Flush();
-
-            return ms.ToArray();
-        }
-
         private System.Net.IPAddress GetCallerIP(IOSHttpRequest request)
         {
             if (!m_Proxy)
@@ -252,5 +223,26 @@ namespace OpenSim.Server.Handlers.MapImage
             return request.RemoteIPEndPoint.Address;
         }
 
+        private byte[] SuccessResult()
+        {
+            XmlDocument doc = new XmlDocument();
+
+            XmlNode xmlnode = doc.CreateNode(XmlNodeType.XmlDeclaration,
+                    "", "");
+
+            doc.AppendChild(xmlnode);
+
+            XmlElement rootElement = doc.CreateElement("", "ServerResponse",
+                    "");
+
+            doc.AppendChild(rootElement);
+
+            XmlElement result = doc.CreateElement("", "Result", "");
+            result.AppendChild(doc.CreateTextNode("Success"));
+
+            rootElement.AppendChild(result);
+
+            return DocToBytes(doc);
+        }
     }
 }

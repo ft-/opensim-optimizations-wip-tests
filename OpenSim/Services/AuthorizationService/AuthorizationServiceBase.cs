@@ -25,13 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
 using Nini.Config;
-using OpenSim.Framework;
 using OpenSim.Data;
-using OpenSim.Services.Interfaces;
 using OpenSim.Services.Base;
+using System;
 
 namespace OpenSim.Services.AuthorizationService
 {
@@ -39,7 +36,8 @@ namespace OpenSim.Services.AuthorizationService
     {
         protected IAssetDataPlugin m_Database = null;
 
-        public AuthorizationServiceBase(IConfigSource config) : base(config)
+        public AuthorizationServiceBase(IConfigSource config)
+            : base(config)
         {
             string dllName = String.Empty;
             string connString = String.Empty;
@@ -77,7 +75,6 @@ namespace OpenSim.Services.AuthorizationService
                 throw new Exception("Could not find a storage interface in the given module");
 
             m_Database.Initialise(connString);
-
         }
     }
 }

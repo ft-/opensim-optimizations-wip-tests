@@ -26,16 +26,12 @@
  */
 
 using log4net;
-using System;
-using System.IO;
-using System.Collections;
-using System.Reflection;
 using Nini.Config;
 using OpenSim.Framework;
-using OpenSim.Framework.Communications;
 using OpenSim.Services.Interfaces;
-using OpenSim.Server.Base;
-using OpenMetaverse;
+using System;
+using System.Collections;
+using System.Reflection;
 
 namespace OpenSim.Services.Connectors
 {
@@ -61,6 +57,25 @@ namespace OpenSim.Services.Connectors
             Initialise(source);
         }
 
+        public string GetJsonConfig()
+        {
+            m_log.DebugFormat("[FREESWITCH CONNECTOR]: Requesting config from {0}", m_ServerURI);
+            return SynchronousRestFormsRequester.MakeRequest("GET",
+                    m_ServerURI, String.Empty);
+        }
+
+        public Hashtable HandleDialplanRequest(Hashtable requestBody)
+        {
+            // not used here
+            return new Hashtable();
+        }
+
+        public Hashtable HandleDirectoryRequest(Hashtable requestBody)
+        {
+            // not used here
+            return new Hashtable();
+        }
+
         public virtual void Initialise(IConfigSource source)
         {
             IConfig freeswitchConfig = source.Configs["FreeSwitchVoice"];
@@ -79,25 +94,6 @@ namespace OpenSim.Services.Connectors
                 throw new Exception("Freeswitch connector init error");
             }
             m_ServerURI = serviceURI.TrimEnd('/') + "/region-config";
-        }
-
-        public Hashtable HandleDirectoryRequest(Hashtable requestBody)
-        {
-            // not used here
-            return new Hashtable();
-        }
-
-        public Hashtable HandleDialplanRequest(Hashtable requestBody)
-        {
-            // not used here
-            return new Hashtable();
-        }
-
-        public string GetJsonConfig()
-        {
-            m_log.DebugFormat("[FREESWITCH CONNECTOR]: Requesting config from {0}", m_ServerURI);
-            return SynchronousRestFormsRequester.MakeRequest("GET",
-                    m_ServerURI, String.Empty);
         }
     }
 }

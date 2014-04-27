@@ -25,15 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
 using OpenMetaverse;
 using OpenSim.Region.Framework.Scenes;
 
 namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
-    class SecurityCredential : ISecurityCredential
+    internal class SecurityCredential : ISecurityCredential
     {
         private readonly ISocialEntity m_owner;
         private readonly Scene m_scene;

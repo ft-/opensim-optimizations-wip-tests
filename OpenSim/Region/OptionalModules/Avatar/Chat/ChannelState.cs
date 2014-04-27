@@ -25,97 +25,87 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Nini.Config;
+using OpenSim.Framework;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using log4net;
-using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
 
 namespace OpenSim.Region.OptionalModules.Avatar.Chat
 {
-
-    // An instance of this class exists for each unique combination of 
+    // An instance of this class exists for each unique combination of
     // IRC chat interface characteristics, as determined by the supplied
     // configuration file.
 
     internal class ChannelState
     {
+        internal string _accessPassword = String.Empty;
+
+        internal Regex AccessPasswordRegex = null;
+
+        internal string BaseNickname = "OSimBot";
+
+        internal List<RegionState> clientregions = new List<RegionState>();
+
+        internal bool ClientReporting = true;
+
+        internal int CommandChannel = -1;
+
+        internal bool CommandsEnabled = false;
+
+        internal int ConnectDelay = 10;
+
+        internal string DefaultZone = "Sim";
+
+        internal List<string> ExcludeList = new List<string>();
+
+        internal int idn = _idk_++;
+
+        internal IRCConnector irc = null;
+
+        internal string IrcChannel = null;
+
+        internal string NoticeMessageFormat = "PRIVMSG {0} :<{2}> {3}";
+
+        internal string Password = null;
+
+        internal int PingDelay = 15;
+
+        internal uint Port = 6667;
+
+        internal string PrivateMessageFormat = "PRIVMSG {0} :<{2}> {1} {3}";
+
+        internal bool RandomizeNickname = true;
+
+        internal int RelayChannel = 1;
+
+        // Connector agnostic parameters. These values are NOT shared with the
+        // connector and do not differentiate at an IRC level
+        internal int RelayChannelOut = -1;
+
+        internal bool RelayChat = true;
+
+        internal bool RelayPrivateChannels = false;
+
+        internal string Server = null;
+
+        // These are the IRC Connector configurable parameters with hard-wired
+        // default values (retained for compatability).
+        internal string User = null;
+
+        internal List<int> ValidInWorldChannels = new List<int>();
 
         private static readonly ILog m_log =
             LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private static Regex arg = new Regex(@"\[[^\[\]]*\]");
         private static int _idk_ = 0;
+        private static Regex arg = new Regex(@"\[[^\[\]]*\]");
         private static int DEBUG_CHANNEL = 2147483647;
-
-        // These are the IRC Connector configurable parameters with hard-wired
-        // default values (retained for compatability).
-
-        internal string Server = null;
-        internal string Password = null;
-        internal string IrcChannel = null;
-        internal string BaseNickname = "OSimBot";
-        internal uint Port = 6667;
-        internal string User = null;
-
-        internal bool ClientReporting = true;
-        internal bool RelayChat = true;
-        internal bool RelayPrivateChannels = false;
-        internal int RelayChannel = 1;
-        internal List<int> ValidInWorldChannels = new List<int>();
-
-        // Connector agnostic parameters. These values are NOT shared with the
-        // connector and do not differentiate at an IRC level
-
-        internal string PrivateMessageFormat = "PRIVMSG {0} :<{2}> {1} {3}";
-        internal string NoticeMessageFormat = "PRIVMSG {0} :<{2}> {3}";
-        internal int RelayChannelOut = -1;
-        internal bool RandomizeNickname = true;
-        internal bool CommandsEnabled = false;
-        internal int CommandChannel = -1;
-        internal int ConnectDelay = 10;
-        internal int PingDelay = 15;
-        internal string DefaultZone = "Sim";
-
-        internal string _accessPassword = String.Empty;
-        internal Regex AccessPasswordRegex = null;
-        internal List<string> ExcludeList = new List<string>();
-        internal string AccessPassword
-        {
-            get { return _accessPassword; }
-            set
-            {
-                _accessPassword = value;
-                AccessPasswordRegex = new Regex(String.Format(@"^{0},\s*(?<avatar>[^,]+),\s*(?<message>.+)$", _accessPassword),
-                                                RegexOptions.Compiled);
-            }
-        }
-
-
-
-        // IRC connector reference
-
-        internal IRCConnector irc = null;
-
-        internal int idn = _idk_++;
-
-        // List of regions dependent upon this connection
-
-        internal List<RegionState> clientregions = new List<RegionState>();
-
-        // Needed by OpenChannel
-
         internal ChannelState()
         {
         }
-
-        // This constructor is used by the Update* methods. A copy of the
-        // existing channel state is created, and distinguishing characteristics
-        // are copied across.
 
         internal ChannelState(ChannelState model)
         {
@@ -142,14 +132,134 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
             PingDelay = model.PingDelay;
         }
 
+        internal string AccessPassword
+        {
+            get { return _accessPassword; }
+            set
+            {
+                _accessPassword = value;
+                AccessPasswordRegex = new Regex(String.Format(@"^{0},\s*(?<avatar>[^,]+),\s*(?<message>.+)$", _accessPassword),
+                                                RegexOptions.Compiled);
+            }
+        }
+
+        // IRC connector reference
+        // List of regions dependent upon this connection
+        // Needed by OpenChannel
+        // This constructor is used by the Update* methods. A copy of the
+        // existing channel state is created, and distinguishing characteristics
+        // are copied across.
         // Read the configuration file, performing variable substitution and any
         // necessary aliasing. See accompanying documentation for how this works.
         // If you don't need variables, then this works exactly as before.
         // If either channel or server are not specified, the request fails.
 
+        public static void OSChat(IRCConnector p_irc, OSChatMessage c, bool cmsg)
+        {
+            // m_log.DebugFormat("[IRC-OSCHAT] from {0}:{1}", p_irc.Server, p_irc.IrcChannel);
+
+            try
+            {
+                // Scan through the set of unique channel configuration for those
+                // that belong to this connector. And then forward the message to
+                // all regions known to those channels.
+                // Note that this code is responsible for completing some of the
+                // settings for the inbound OSChatMessage
+
+                lock (IRCBridgeModule.m_channels)
+                {
+                    foreach (ChannelState cs in IRCBridgeModule.m_channels)
+                    {
+                        if (p_irc == cs.irc)
+                        {
+                            // This non-IRC differentiator moved to here
+
+                            if (cmsg && !cs.ClientReporting)
+                                continue;
+
+                            // This non-IRC differentiator moved to here
+
+                            c.Channel = (cs.RelayPrivateChannels ? cs.RelayChannel : 0);
+
+                            foreach (RegionState region in cs.clientregions)
+                            {
+                                region.OSChat(cs.irc, c);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                m_log.ErrorFormat("[IRC-OSCHAT]: BroadcastSim Exception: {0}", ex.Message);
+                m_log.Debug(ex);
+            }
+        }
+
+        public void AddRegion(RegionState rs)
+        {
+            m_log.InfoFormat("[IRC-Channel-{0}] Adding region {1} to channel <{2}> to server <{3}:{4}>",
+                             idn, rs.Region, IrcChannel, Server, Port);
+            if (!clientregions.Contains(rs))
+            {
+                clientregions.Add(rs);
+                lock (irc) irc.depends++;
+            }
+        }
+
+        public void Close()
+        {
+            m_log.InfoFormat("[IRC-Channel-{0}] Closing channel <{1}> to server <{2}:{3}>",
+                             idn, IrcChannel, Server, Port);
+            m_log.InfoFormat("[IRC-Channel-{0}] There are {1} active clients",
+                             idn, clientregions.Count);
+            irc.Close();
+        }
+
+        public void Close(RegionState rs)
+        {
+            RemoveRegion(rs);
+            lock (IRCBridgeModule.m_channels)
+            {
+                if (clientregions.Count == 0)
+                {
+                    Close();
+                    IRCBridgeModule.m_channels.Remove(this);
+                    m_log.InfoFormat("[IRC-Channel-{0}] Region {1} is last user of channel <{2}> to server <{3}:{4}>",
+                             idn, rs.Region, IrcChannel, Server, Port);
+                    m_log.InfoFormat("[IRC-Channel-{0}] Removed", idn);
+                }
+            }
+        }
+
+        public void Open()
+        {
+            m_log.InfoFormat("[IRC-Channel-{0}] Opening channel <{1}> to server <{2}:{3}>",
+                             idn, IrcChannel, Server, Port);
+
+            irc.Open();
+        }
+
+        public void Open(RegionState rs)
+        {
+            AddRegion(rs);
+            Open();
+        }
+
+        public void RemoveRegion(RegionState rs)
+        {
+            m_log.InfoFormat("[IRC-Channel-{0}] Removing region {1} from channel <{2} to server <{3}:{4}>",
+                             idn, rs.Region, IrcChannel, Server, Port);
+
+            if (clientregions.Contains(rs))
+            {
+                clientregions.Remove(rs);
+                lock (irc) irc.depends--;
+            }
+        }
+
         internal static void OpenChannel(RegionState rs, IConfig config)
         {
-
             // Create a new instance of a channel. This may not actually
             // get used if an equivalent channel already exists.
 
@@ -248,7 +358,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
                 cs.ValidInWorldChannels.Add(cs.RelayChannelOut);
 
             rs.cs = Integrate(rs, cs);
-
         }
 
         // An initialized channel state instance is passed in. If an identical
@@ -260,22 +369,90 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
         // If there is no match, then the supplied instance is completed by
         // creating and assigning an instance of an IRC connector.
 
+        internal ChannelState UpdateChannel(RegionState rs, string channel)
+        {
+            RemoveRegion(rs);
+            ChannelState cs = new ChannelState(this);
+            cs.IrcChannel = channel;
+            cs = Integrate(rs, cs);
+            cs.AddRegion(rs);
+            return cs;
+        }
+
+        internal ChannelState UpdateClientReporting(RegionState rs, string cr)
+        {
+            RemoveRegion(rs);
+            ChannelState cs = new ChannelState(this);
+            cs.ClientReporting = Convert.ToBoolean(cr);
+            cs = Integrate(rs, cs);
+            cs.AddRegion(rs);
+            return cs;
+        }
+
+        internal ChannelState UpdateNickname(RegionState rs, string nickname)
+        {
+            RemoveRegion(rs);
+            ChannelState cs = new ChannelState(this);
+            cs.BaseNickname = nickname;
+            cs = Integrate(rs, cs);
+            cs.AddRegion(rs);
+            return cs;
+        }
+
+        internal ChannelState UpdatePort(RegionState rs, string port)
+        {
+            RemoveRegion(rs);
+            ChannelState cs = new ChannelState(this);
+            cs.Port = Convert.ToUInt32(port);
+            cs = Integrate(rs, cs);
+            cs.AddRegion(rs);
+            return cs;
+        }
+
+        internal ChannelState UpdateRelayIn(RegionState rs, string channel)
+        {
+            RemoveRegion(rs);
+            ChannelState cs = new ChannelState(this);
+            cs.RelayChannel = Convert.ToInt32(channel);
+            cs = Integrate(rs, cs);
+            cs.AddRegion(rs);
+            return cs;
+        }
+
+        internal ChannelState UpdateRelayOut(RegionState rs, string channel)
+        {
+            RemoveRegion(rs);
+            ChannelState cs = new ChannelState(this);
+            cs.RelayChannelOut = Convert.ToInt32(channel);
+            cs = Integrate(rs, cs);
+            cs.AddRegion(rs);
+            return cs;
+        }
+
+        internal ChannelState UpdateServer(RegionState rs, string server)
+        {
+            RemoveRegion(rs);
+            ChannelState cs = new ChannelState(this);
+            cs.Server = server;
+            cs = Integrate(rs, cs);
+            cs.AddRegion(rs);
+            return cs;
+        }
+
         private static ChannelState Integrate(RegionState rs, ChannelState p_cs)
         {
-
             ChannelState cs = p_cs;
 
             // Check to see if we have an existing server/channel setup that can be used
-            // In the absence of variable substitution this will always resolve to the 
-            // same ChannelState instance, and the table will only contains a single 
-            // entry, so the performance considerations for the existing behavior are 
+            // In the absence of variable substitution this will always resolve to the
+            // same ChannelState instance, and the table will only contains a single
+            // entry, so the performance considerations for the existing behavior are
             // zero. Only the IRC connector is shared, the ChannelState still contains
-            // values that, while independent of the IRC connetion, do still distinguish 
+            // values that, while independent of the IRC connetion, do still distinguish
             // this region's behavior.
 
             lock (IRCBridgeModule.m_channels)
             {
-
                 foreach (ChannelState xcs in IRCBridgeModule.m_channels)
                 {
                     if (cs.IsAPerfectMatchFor(xcs))
@@ -291,19 +468,16 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
                         break;
                     }
                 }
-
             }
 
             // No entry was found, so this is going to be a new entry.
 
             if (cs.irc == null)
             {
-
                 m_log.DebugFormat("[IRC-Channel-{0}]  New channel required", cs.idn);
 
                 if ((cs.irc = new IRCConnector(cs)) != null)
                 {
-
                     IRCBridgeModule.m_channels.Add(cs);
 
                     m_log.InfoFormat("[IRC-Channel-{0}] New channel initialized for {1}, nick: {2}, commands {3}, private channels {4}",
@@ -330,89 +504,66 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
 
             // We're finally ready to commit ourselves
 
-
             return cs;
-
         }
 
-        // These routines allow differentiating changes to 
+        // These routines allow differentiating changes to
         // the underlying channel state. If necessary, a
         // new channel state will be created.
-
-        internal ChannelState UpdateServer(RegionState rs, string server)
-        {
-            RemoveRegion(rs);
-            ChannelState cs = new ChannelState(this);
-            cs.Server = server;
-            cs = Integrate(rs, cs);
-            cs.AddRegion(rs);
-            return cs;
-        }
-
-        internal ChannelState UpdatePort(RegionState rs, string port)
-        {
-            RemoveRegion(rs);
-            ChannelState cs = new ChannelState(this);
-            cs.Port = Convert.ToUInt32(port);
-            cs = Integrate(rs, cs);
-            cs.AddRegion(rs);
-            return cs;
-        }
-
-        internal ChannelState UpdateChannel(RegionState rs, string channel)
-        {
-            RemoveRegion(rs);
-            ChannelState cs = new ChannelState(this);
-            cs.IrcChannel = channel;
-            cs = Integrate(rs, cs);
-            cs.AddRegion(rs);
-            return cs;
-        }
-
-        internal ChannelState UpdateNickname(RegionState rs, string nickname)
-        {
-            RemoveRegion(rs);
-            ChannelState cs = new ChannelState(this);
-            cs.BaseNickname = nickname;
-            cs = Integrate(rs, cs);
-            cs.AddRegion(rs);
-            return cs;
-        }
-
-        internal ChannelState UpdateClientReporting(RegionState rs, string cr)
-        {
-            RemoveRegion(rs);
-            ChannelState cs = new ChannelState(this);
-            cs.ClientReporting = Convert.ToBoolean(cr);
-            cs = Integrate(rs, cs);
-            cs.AddRegion(rs);
-            return cs;
-        }
-
-        internal ChannelState UpdateRelayIn(RegionState rs, string channel)
-        {
-            RemoveRegion(rs);
-            ChannelState cs = new ChannelState(this);
-            cs.RelayChannel = Convert.ToInt32(channel);
-            cs = Integrate(rs, cs);
-            cs.AddRegion(rs);
-            return cs;
-        }
-
-        internal ChannelState UpdateRelayOut(RegionState rs, string channel)
-        {
-            RemoveRegion(rs);
-            ChannelState cs = new ChannelState(this);
-            cs.RelayChannelOut = Convert.ToInt32(channel);
-            cs = Integrate(rs, cs);
-            cs.AddRegion(rs);
-            return cs;
-        }
-
         // Determine whether or not this is a 'new' channel. Only those
         // attributes that uniquely distinguish an IRC connection should
         // be included here (and only those attributes should really be
         // in the ChannelState structure)
+
+        private static string Substitute(RegionState rs, string instr)
+        {
+            string result = instr;
+
+            if (string.IsNullOrEmpty(result))
+                return result;
+
+            // Repeatedly scan the string until all possible
+            // substitutions have been performed.
+
+            // m_log.DebugFormat("[IRC-Channel] Parse[1]: {0}", result);
+
+            while (arg.IsMatch(result))
+            {
+                string vvar = arg.Match(result).ToString();
+                string var = vvar.Substring(1, vvar.Length - 2).Trim();
+
+                switch (var.ToLower())
+                {
+                    case "%region":
+                        result = result.Replace(vvar, rs.Region);
+                        break;
+
+                    case "%host":
+                        result = result.Replace(vvar, rs.Host);
+                        break;
+
+                    case "%locx":
+                        result = result.Replace(vvar, rs.LocX);
+                        break;
+
+                    case "%locy":
+                        result = result.Replace(vvar, rs.LocY);
+                        break;
+
+                    case "%k":
+                        result = result.Replace(vvar, rs.IDK);
+                        break;
+
+                    default:
+                        result = result.Replace(vvar, rs.config.GetString(var, var));
+                        break;
+                }
+                // m_log.DebugFormat("[IRC-Channel] Parse[2]: {0}", result);
+            }
+
+            // m_log.DebugFormat("[IRC-Channel] Parse[3]: {0}", result);
+            return result;
+        }
 
         private bool IsAConnectionMatchFor(ChannelState cs)
         {
@@ -426,7 +577,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
         }
 
         // This level of obsessive matching allows us to produce
-        // a minimal overhead int he case of a server which does 
+        // a minimal overhead int he case of a server which does
         // need to differentiate IRC at a region level.
 
         private bool IsAPerfectMatchFor(ChannelState cs)
@@ -447,189 +598,25 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
             );
         }
 
-        // This function implements the variable substitution mechanism 
-        // for the configuration values. Each string read from the 
+        // This function implements the variable substitution mechanism
+        // for the configuration values. Each string read from the
         // configuration file is scanned for '[...]' enclosures. Each
         // one that is found is replaced by either a runtime variable
         // (%xxx) or an existing configuration key. When no further
         // substitution is possible, the remaining string is returned
         // to the caller. This allows for arbitrarily nested
         // enclosures.
-
-        private static string Substitute(RegionState rs, string instr)
-        {
-
-            string result = instr;
-
-            if (string.IsNullOrEmpty(result))
-                return result;
-
-            // Repeatedly scan the string until all possible
-            // substitutions have been performed.
-
-            // m_log.DebugFormat("[IRC-Channel] Parse[1]: {0}", result);
-
-            while (arg.IsMatch(result))
-            {
-
-                string vvar = arg.Match(result).ToString();
-                string var = vvar.Substring(1, vvar.Length - 2).Trim();
-
-                switch (var.ToLower())
-                {
-                    case "%region":
-                        result = result.Replace(vvar, rs.Region);
-                        break;
-                    case "%host":
-                        result = result.Replace(vvar, rs.Host);
-                        break;
-                    case "%locx":
-                        result = result.Replace(vvar, rs.LocX);
-                        break;
-                    case "%locy":
-                        result = result.Replace(vvar, rs.LocY);
-                        break;
-                    case "%k":
-                        result = result.Replace(vvar, rs.IDK);
-                        break;
-                    default:
-                        result = result.Replace(vvar, rs.config.GetString(var, var));
-                        break;
-                }
-                // m_log.DebugFormat("[IRC-Channel] Parse[2]: {0}", result);
-            }
-
-            // m_log.DebugFormat("[IRC-Channel] Parse[3]: {0}", result);
-            return result;
-
-        }
-
-        public void Close()
-        {
-            m_log.InfoFormat("[IRC-Channel-{0}] Closing channel <{1}> to server <{2}:{3}>",
-                             idn, IrcChannel, Server, Port);
-            m_log.InfoFormat("[IRC-Channel-{0}] There are {1} active clients",
-                             idn, clientregions.Count);
-            irc.Close();
-        }
-
-        public void Open()
-        {
-            m_log.InfoFormat("[IRC-Channel-{0}] Opening channel <{1}> to server <{2}:{3}>",
-                             idn, IrcChannel, Server, Port);
-
-            irc.Open();
-
-        }
-
         // These are called by each region that attaches to this channel. The call affects
         // only the relationship of the region with the channel. Not the channel to IRC
         // relationship (unless it is closed and we want it open).
-
-        public void Open(RegionState rs)
-        {
-            AddRegion(rs);
-            Open();
-        }
-
         // Close is called to ensure that the IRC session is terminated if this is the
         // only client.
-
-        public void Close(RegionState rs)
-        {
-            RemoveRegion(rs);
-            lock (IRCBridgeModule.m_channels)
-            {
-                if (clientregions.Count == 0)
-                {
-                    Close();
-                    IRCBridgeModule.m_channels.Remove(this);
-                    m_log.InfoFormat("[IRC-Channel-{0}] Region {1} is last user of channel <{2}> to server <{3}:{4}>",
-                             idn, rs.Region, IrcChannel, Server, Port);
-                    m_log.InfoFormat("[IRC-Channel-{0}] Removed", idn);
-                }
-            }
-        }
-
         // Add a client region to this channel if it is not already known
-
-        public void AddRegion(RegionState rs)
-        {
-            m_log.InfoFormat("[IRC-Channel-{0}] Adding region {1} to channel <{2}> to server <{3}:{4}>",
-                             idn, rs.Region, IrcChannel, Server, Port);
-            if (!clientregions.Contains(rs))
-            {
-                clientregions.Add(rs);
-                lock (irc) irc.depends++;
-            }
-        }
-
         // Remove a client region from the channel. If this is the last
         // region, then clean up the channel. The connector will clean itself
         // up if it finds itself about to be GC'd.
-
-        public void RemoveRegion(RegionState rs)
-        {
-
-            m_log.InfoFormat("[IRC-Channel-{0}] Removing region {1} from channel <{2} to server <{3}:{4}>",
-                             idn, rs.Region, IrcChannel, Server, Port);
-
-            if (clientregions.Contains(rs))
-            {
-                clientregions.Remove(rs);
-                lock (irc) irc.depends--;
-            }
-
-        }
-
-        // This function is lifted from the IRCConnector because it 
+        // This function is lifted from the IRCConnector because it
         // contains information that is not differentiating from an
         // IRC point-of-view.
-
-        public static void OSChat(IRCConnector p_irc, OSChatMessage c, bool cmsg)
-        {
-
-            // m_log.DebugFormat("[IRC-OSCHAT] from {0}:{1}", p_irc.Server, p_irc.IrcChannel);
-
-            try
-            {
-
-                // Scan through the set of unique channel configuration for those
-                // that belong to this connector. And then forward the message to 
-                // all regions known to those channels.
-                // Note that this code is responsible for completing some of the
-                // settings for the inbound OSChatMessage
-
-                lock (IRCBridgeModule.m_channels)
-                {
-                    foreach (ChannelState cs in IRCBridgeModule.m_channels)
-                    {
-                        if (p_irc == cs.irc)
-                        {
-
-                            // This non-IRC differentiator moved to here
-
-                            if (cmsg && !cs.ClientReporting)
-                                continue;
-
-                            // This non-IRC differentiator moved to here
-
-                            c.Channel = (cs.RelayPrivateChannels ? cs.RelayChannel : 0);
-
-                            foreach (RegionState region in cs.clientregions)
-                            {
-                                region.OSChat(cs.irc, c);
-                            }
-
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                m_log.ErrorFormat("[IRC-OSCHAT]: BroadcastSim Exception: {0}", ex.Message);
-                m_log.Debug(ex);
-            }
-        }
     }
 }

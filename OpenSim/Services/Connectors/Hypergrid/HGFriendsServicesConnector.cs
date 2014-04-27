@@ -26,17 +26,14 @@
  */
 
 using log4net;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Server.Base;
+using OpenSim.Services.Connectors.Friends;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
-using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Services.Interfaces;
-using OpenSim.Services.Connectors.Friends;
 using FriendInfo = OpenSim.Services.Interfaces.FriendInfo;
-using OpenSim.Server.Base;
-using OpenMetaverse;
 
 namespace OpenSim.Services.Connectors.Hypergrid
 {
@@ -73,6 +70,51 @@ namespace OpenSim.Services.Connectors.Hypergrid
 
         #region IFriendsService
 
+        public bool DeleteFriendship(UUID PrincipalID, UUID Friend, string secret)
+        {
+            FriendInfo finfo = new FriendInfo();
+            finfo.PrincipalID = PrincipalID;
+            finfo.Friend = Friend.ToString();
+
+            Dictionary<string, object> sendData = finfo.ToKeyValuePairs();
+
+            sendData["METHOD"] = "deletefriendship";
+            sendData["SECRET"] = secret;
+
+            string reply = string.Empty;
+            string uri = m_ServerURI + "/hgfriends";
+            try
+            {
+                reply = SynchronousRestFormsRequester.MakeRequest("POST",
+                        uri,
+                        ServerUtils.BuildQueryString(sendData));
+            }
+            catch (Exception e)
+            {
+                m_log.DebugFormat("[HGFRIENDS CONNECTOR]: Exception when contacting friends server at {0}: {1}", uri, e.Message);
+                return false;
+            }
+
+            if (reply != string.Empty)
+            {
+                Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
+
+                if (replyData.ContainsKey("RESULT"))
+                {
+                    if (replyData["RESULT"].ToString().ToLower() == "true")
+                        return true;
+                    else
+                        return false;
+                }
+                else
+                    m_log.DebugFormat("[HGFRIENDS CONNECTOR]: reply data does not contain result field");
+            }
+            else
+                m_log.DebugFormat("[HGFRIENDS CONNECTOR]: received empty reply");
+
+            return false;
+        }
+
         public uint GetFriendPerms(UUID PrincipalID, UUID friendID)
         {
             Dictionary<string, object> sendData = new Dictionary<string, object>();
@@ -104,7 +146,6 @@ namespace OpenSim.Services.Connectors.Hypergrid
                     else
                         m_log.DebugFormat("[HGFRIENDS CONNECTOR]: GetFriendPerms {0} received null response",
                             PrincipalID);
-
                 }
             }
             catch (Exception e)
@@ -113,7 +154,6 @@ namespace OpenSim.Services.Connectors.Hypergrid
             }
 
             return 0;
-
         }
 
         public bool NewFriendship(UUID PrincipalID, string Friend)
@@ -160,102 +200,7 @@ namespace OpenSim.Services.Connectors.Hypergrid
                 m_log.DebugFormat("[HGFRIENDS CONNECTOR]: StoreFriend received null reply");
 
             return false;
-
         }
-
-        public bool DeleteFriendship(UUID PrincipalID, UUID Friend, string secret)
-        {
-            FriendInfo finfo = new FriendInfo();
-            finfo.PrincipalID = PrincipalID;
-            finfo.Friend = Friend.ToString();
-
-            Dictionary<string, object> sendData = finfo.ToKeyValuePairs();
-
-            sendData["METHOD"] = "deletefriendship";
-            sendData["SECRET"] = secret;
-
-            string reply = string.Empty;
-            string uri = m_ServerURI + "/hgfriends";
-            try
-            {
-                reply = SynchronousRestFormsRequester.MakeRequest("POST",
-                        uri,
-                        ServerUtils.BuildQueryString(sendData));
-            }
-            catch (Exception e)
-            {
-                m_log.DebugFormat("[HGFRIENDS CONNECTOR]: Exception when contacting friends server at {0}: {1}", uri, e.Message);
-                return false;
-            }
-
-            if (reply != string.Empty)
-            {
-                Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
-
-                if (replyData.ContainsKey("RESULT"))
-                {
-                    if (replyData["RESULT"].ToString().ToLower() == "true")
-                        return true;
-                    else
-                        return false;
-                }
-                else
-                    m_log.DebugFormat("[HGFRIENDS CONNECTOR]: reply data does not contain result field");
-
-            }
-            else
-                m_log.DebugFormat("[HGFRIENDS CONNECTOR]: received empty reply");
-
-            return false;
-
-        }
-
-        public bool ValidateFriendshipOffered(UUID fromID, UUID toID)
-        {
-            FriendInfo finfo = new FriendInfo();
-            finfo.PrincipalID = fromID;
-            finfo.Friend = toID.ToString();
-
-            Dictionary<string, object> sendData = finfo.ToKeyValuePairs();
-
-            sendData["METHOD"] = "validate_friendship_offered";
-
-            string reply = string.Empty;
-            string uri = m_ServerURI + "/hgfriends";
-            try
-            {
-                reply = SynchronousRestFormsRequester.MakeRequest("POST",
-                        uri,
-                        ServerUtils.BuildQueryString(sendData));
-            }
-            catch (Exception e)
-            {
-                m_log.DebugFormat("[HGFRIENDS CONNECTOR]: Exception when contacting friends server at {0}: {1}", uri, e.Message);
-                return false;
-            }
-
-            if (reply != string.Empty)
-            {
-                Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
-
-                if (replyData.ContainsKey("RESULT"))
-                {
-                    if (replyData["RESULT"].ToString().ToLower() == "true")
-                        return true;
-                    else
-                        return false;
-                }
-                else
-                    m_log.DebugFormat("[HGFRIENDS CONNECTOR]: reply data does not contain result field");
-
-            }
-            else
-                m_log.DebugFormat("[HGFRIENDS CONNECTOR]: received empty reply");
-
-            return false;
-
-        }
-
         public List<UUID> StatusNotification(List<string> friends, UUID userID, bool online)
         {
             Dictionary<string, object> sendData = new Dictionary<string, object>();
@@ -304,9 +249,51 @@ namespace OpenSim.Services.Connectors.Hypergrid
                 m_log.DebugFormat("[HGFRIENDS CONNECTOR]: Received empty reply from remote StatusNotify");
 
             return friendsOnline;
-
         }
 
-        #endregion
+        public bool ValidateFriendshipOffered(UUID fromID, UUID toID)
+        {
+            FriendInfo finfo = new FriendInfo();
+            finfo.PrincipalID = fromID;
+            finfo.Friend = toID.ToString();
+
+            Dictionary<string, object> sendData = finfo.ToKeyValuePairs();
+
+            sendData["METHOD"] = "validate_friendship_offered";
+
+            string reply = string.Empty;
+            string uri = m_ServerURI + "/hgfriends";
+            try
+            {
+                reply = SynchronousRestFormsRequester.MakeRequest("POST",
+                        uri,
+                        ServerUtils.BuildQueryString(sendData));
+            }
+            catch (Exception e)
+            {
+                m_log.DebugFormat("[HGFRIENDS CONNECTOR]: Exception when contacting friends server at {0}: {1}", uri, e.Message);
+                return false;
+            }
+
+            if (reply != string.Empty)
+            {
+                Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
+
+                if (replyData.ContainsKey("RESULT"))
+                {
+                    if (replyData["RESULT"].ToString().ToLower() == "true")
+                        return true;
+                    else
+                        return false;
+                }
+                else
+                    m_log.DebugFormat("[HGFRIENDS CONNECTOR]: reply data does not contain result field");
+            }
+            else
+                m_log.DebugFormat("[HGFRIENDS CONNECTOR]: received empty reply");
+
+            return false;
+        }
+        #endregion IFriendsService
     }
 }

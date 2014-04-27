@@ -25,7 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
 using OpenMetaverse;
 using OpenSim.Framework;
 using FriendInfo = OpenSim.Services.Interfaces.FriendInfo;
@@ -34,6 +33,17 @@ namespace OpenSim.Region.Framework.Interfaces
 {
     public interface IFriendsModule
     {
+        /// <summary>
+        /// Add a friendship between two users.
+        /// </summary>
+        /// <remarks>
+        /// Ultimately, it would be more useful to take in a user account here rather than having to have a user
+        /// present in the scene.
+        /// </remarks>
+        /// <param name="client"></param>
+        /// <param name="friendID"></param>
+        void AddFriendship(IClientAPI client, UUID friendID);
+
         /// <summary>
         /// Are friends cached on this simulator for a particular user?
         /// </summary>
@@ -49,29 +59,6 @@ namespace OpenSim.Region.Framework.Interfaces
         /// An empty array if the user has no friends or friends have not been cached.
         /// </returns>
         FriendInfo[] GetFriendsFromCache(UUID userID);
-
-        /// <summary>
-        /// Add a friendship between two users.
-        /// </summary>
-        /// <remarks>
-        /// Ultimately, it would be more useful to take in a user account here rather than having to have a user
-        /// present in the scene.
-        /// </remarks>
-        /// <param name="client"></param>
-        /// <param name="friendID"></param>
-        void AddFriendship(IClientAPI client, UUID friendID);
-
-        /// <summary>
-        /// Remove a friendship between two users.
-        /// </summary>
-        /// <remarks>
-        /// Ultimately, it would be more useful to take in a user account here rather than having to have a user
-        /// present in the scene.
-        /// </remarks>
-        /// <param name="client"></param>
-        /// <param name="exFriendID"></param>
-        void RemoveFriendship(IClientAPI client, UUID exFriendID);
-
         /// <summary>
         /// Get permissions granted by a friend.
         /// </summary>
@@ -93,6 +80,16 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="perms">These come from the FriendRights enum.</param>
         void GrantRights(IClientAPI remoteClient, UUID friendID, int perms);
 
+        /// <summary>
+        /// Remove a friendship between two users.
+        /// </summary>
+        /// <remarks>
+        /// Ultimately, it would be more useful to take in a user account here rather than having to have a user
+        /// present in the scene.
+        /// </remarks>
+        /// <param name="client"></param>
+        /// <param name="exFriendID"></param>
+        void RemoveFriendship(IClientAPI client, UUID exFriendID);
         bool SendFriendsOnlineIfNeeded(IClientAPI client);
     }
 }

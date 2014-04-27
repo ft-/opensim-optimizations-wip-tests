@@ -25,24 +25,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using Nini.Config;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
 using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Server.Base;
 using OpenSim.Server.Handlers.Base;
-using OpenMetaverse;
+using OpenSim.Services.Interfaces;
+using System;
 
 namespace OpenSim.Capabilities.Handlers
 {
     public class WebFetchInvDescServerConnector : ServiceConnector
     {
+        private string m_ConfigName = "CapsService";
         private IInventoryService m_InventoryService;
         private ILibraryService m_LibraryService;
-        private string m_ConfigName = "CapsService";
-
         public WebFetchInvDescServerConnector(IConfigSource config, IHttpServer server, string configName) :
-                base(config, server, configName)
+            base(config, server, configName)
         {
             if (configName != String.Empty)
                 m_ConfigName = configName;
@@ -77,6 +75,5 @@ namespace OpenSim.Capabilities.Handlers
                     null);
             server.AddStreamHandler(reqHandler);
         }
-
     }
 }

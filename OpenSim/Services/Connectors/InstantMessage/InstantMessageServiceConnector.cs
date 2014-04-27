@@ -1,4 +1,9 @@
-﻿/*
+﻿using log4net;
+using Nwc.XmlRpc;
+using OpenMetaverse;
+using OpenSim.Framework;
+
+/*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
  *
@@ -24,17 +29,11 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Net;
 using System.Reflection;
-
-using OpenMetaverse;
-using Nwc.XmlRpc;
-using log4net;
-
-using OpenSim.Framework;
 
 namespace OpenSim.Services.Connectors.InstantMessage
 {
@@ -60,7 +59,6 @@ namespace OpenSim.Services.Connectors.InstantMessage
             XmlRpcRequest GridReq = new XmlRpcRequest("grid_instant_message", SendParams);
             try
             {
-
                 XmlRpcResponse GridResp = GridReq.Send(url, 10000);
 
                 Hashtable responseData = (Hashtable)GridResp.Value;
@@ -127,6 +125,5 @@ namespace OpenSim.Services.Connectors.InstantMessage
 
             return gim;
         }
-
     }
 }

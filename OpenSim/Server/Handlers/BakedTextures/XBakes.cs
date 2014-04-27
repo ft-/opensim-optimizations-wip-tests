@@ -25,36 +25,29 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Diagnostics;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using System.Threading;
-using System.Reflection;
+using log4net;
+using Nini.Config;
 using OpenSim.Framework;
-using OpenSim.Framework.Console;
-using OpenSim.Server.Base;
 using OpenSim.Services.Base;
 using OpenSim.Services.Interfaces;
-using Nini.Config;
-using log4net;
-using OpenMetaverse;
+using System;
+using System.IO;
+using System.Reflection;
 
 namespace OpenSim.Server.Handlers.BakedTextures
 {
     public class XBakes : ServiceBase, IBakedTextureService
     {
+        protected string m_FSBase;
+
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
-
-        protected string m_FSBase;
-
         private System.Text.UTF8Encoding utf8encoding =
                 new System.Text.UTF8Encoding();
 
-        public XBakes(IConfigSource config) : base(config)
+        public XBakes(IConfigSource config)
+            : base(config)
         {
             MainConsole.Instance.Commands.AddCommand("fs", false,
                     "delete bakes", "delete bakes <ID>",
@@ -97,6 +90,19 @@ namespace OpenSim.Server.Handlers.BakedTextures
             return String.Empty;
         }
 
+        public string HashToFile(string hash)
+        {
+            return Path.Combine(HashToPath(hash), hash);
+        }
+
+        public string HashToPath(string hash)
+        {
+            return Path.Combine(hash.Substring(0, 2),
+                   Path.Combine(hash.Substring(2, 2),
+                   Path.Combine(hash.Substring(4, 2),
+                   hash.Substring(6, 4))));
+        }
+
         public void Store(string id, string sdata)
         {
             string file = HashToFile(id);
@@ -132,19 +138,6 @@ namespace OpenSim.Server.Handlers.BakedTextures
                 return;
             }
             MainConsole.Instance.Output("Bakes not found");
-        }
-
-        public string HashToPath(string hash)
-        {
-            return Path.Combine(hash.Substring(0, 2),
-                   Path.Combine(hash.Substring(2, 2),
-                   Path.Combine(hash.Substring(4, 2),
-                   hash.Substring(6, 4))));
-        }
-
-        public string HashToFile(string hash)
-        {
-            return Path.Combine(HashToPath(hash), hash);
         }
     }
 }

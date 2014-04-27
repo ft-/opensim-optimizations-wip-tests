@@ -25,24 +25,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
-using System.Reflection;
 using log4net;
 using Nini.Config;
-using OpenSim.Framework;
 using OpenMetaverse;
+using OpenSim.Framework;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.Region.Physics.Manager
 {
-    class NullPhysicsScene : PhysicsScene
+    internal class NullPhysicsScene : PhysicsScene
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        
+
         private static int m_workIndicator;
 
-        public override void Initialise(IMesher meshmerizer, IConfigSource config)
+        public override bool IsThreaded
         {
-            // Does nothing right now
+            get { return false; }
         }
 
         public override PhysicsActor AddAvatar(string avName, Vector3 position, Vector3 size, bool isFlying)
@@ -51,25 +51,9 @@ namespace OpenSim.Region.Physics.Manager
             return PhysicsActor.Null;
         }
 
-        public override void RemoveAvatar(PhysicsActor actor)
+        public override void AddPhysicsActorTaint(PhysicsActor prim)
         {
         }
-
-        public override void RemovePrim(PhysicsActor prim)
-        {
-        }
-        public override void SetWaterLevel(float baseheight)
-        {
-
-        }
-
-/*
-        public override PhysicsActor AddPrim(Vector3 position, Vector3 size, Quaternion rotation)
-        {
-            m_log.InfoFormat("NullPhysicsScene : AddPrim({0},{1})", position, size);
-            return PhysicsActor.Null;
-        }
-*/
 
         public override PhysicsActor AddPrimShape(string primName, PrimitiveBaseShape pbs, Vector3 position,
                                                   Vector3 size, Quaternion rotation, bool isPhysical, uint localid)
@@ -78,15 +62,12 @@ namespace OpenSim.Region.Physics.Manager
             return PhysicsActor.Null;
         }
 
-        public override void AddPhysicsActorTaint(PhysicsActor prim)
+        public override void DeleteTerrain()
         {
         }
 
-        public override float Simulate(float timeStep)
+        public override void Dispose()
         {
-            m_workIndicator = (m_workIndicator + 1) % 10;
-
-            return 0f;
         }
 
         public override void GetResults()
@@ -94,28 +75,45 @@ namespace OpenSim.Region.Physics.Manager
             m_log.Info("[PHYSICS]: NullPhysicsScene : GetResults()");
         }
 
+        public override Dictionary<uint, float> GetTopColliders()
+        {
+            Dictionary<uint, float> returncolliders = new Dictionary<uint, float>();
+            return returncolliders;
+        }
+
+        public override void Initialise(IMesher meshmerizer, IConfigSource config)
+        {
+            // Does nothing right now
+        }
+        public override void RemoveAvatar(PhysicsActor actor)
+        {
+        }
+
+        public override void RemovePrim(PhysicsActor prim)
+        {
+        }
+
         public override void SetTerrain(float[] heightMap)
         {
             m_log.InfoFormat("[PHYSICS]: NullPhysicsScene : SetTerrain({0} items)", heightMap.Length);
         }
 
-        public override void DeleteTerrain()
+        public override void SetWaterLevel(float baseheight)
         {
         }
 
-        public override bool IsThreaded
+        /*
+                public override PhysicsActor AddPrim(Vector3 position, Vector3 size, Quaternion rotation)
+                {
+                    m_log.InfoFormat("NullPhysicsScene : AddPrim({0},{1})", position, size);
+                    return PhysicsActor.Null;
+                }
+        */
+        public override float Simulate(float timeStep)
         {
-            get { return false; }
-        }
+            m_workIndicator = (m_workIndicator + 1) % 10;
 
-        public override void Dispose()
-        {
-        }
-
-        public override Dictionary<uint,float> GetTopColliders()
-        {
-            Dictionary<uint, float> returncolliders = new Dictionary<uint, float>();
-            return returncolliders;
+            return 0f;
         }
     }
 }

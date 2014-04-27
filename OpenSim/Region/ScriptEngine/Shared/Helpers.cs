@@ -25,87 +25,53 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.IO;
-using System.Threading;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.Serialization;
 using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Region.CoreModules;
-using OpenSim.Region.Framework.Scenes;
 using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Runtime.Serialization;
 
 namespace OpenSim.Region.ScriptEngine.Shared
 {
-    [Serializable]
-    public class EventAbortException : Exception
-    {
-        public EventAbortException()
-        {
-        }
-
-        protected EventAbortException(
-                SerializationInfo info, 
-                StreamingContext context)
-        {
-        }
-    }
-
-    [Serializable]
-    public class SelfDeleteException : Exception
-    {
-        public SelfDeleteException()
-        {
-        }
-
-        protected SelfDeleteException(
-                SerializationInfo info, 
-                StreamingContext context)
-        {
-        }
-    }
-
-    [Serializable]
-    public class ScriptDeleteException : Exception
-    {
-        public ScriptDeleteException()
-        {
-        }
-
-        protected ScriptDeleteException(
-                SerializationInfo info, 
-                StreamingContext context)
-        {
-        }
-    }
-
-    /// <summary>
-    /// Used to signal when the script is stopping in co-operation with the script engine 
-    /// (instead of through Thread.Abort()).
-    /// </summary>
-    [Serializable]
-    public class ScriptCoopStopException : Exception
-    {
-        public ScriptCoopStopException()
-        {
-        }
-
-        protected ScriptCoopStopException(
-                SerializationInfo info, 
-                StreamingContext context)
-        {
-        }
-    }
-
     public class DetectParams
     {
-        public const int AGENT = 1;
         public const int ACTIVE = 2;
+        public const int AGENT = 1;
+        public const int OS_NPC = 0x01000000;
         public const int PASSIVE = 4;
         public const int SCRIPTED = 8;
-        public const int OS_NPC = 0x01000000;
+        public UUID Group;
+
+        public UUID Key;
+
+        public int LinkNum;
+
+        public string Name;
+
+        public LSL_Types.Vector3 OffsetPos;
+
+        public UUID Owner;
+
+        public LSL_Types.Vector3 Position;
+
+        public LSL_Types.Quaternion Rotation;
+
+        public int Type;
+
+        public LSL_Types.Vector3 Velocity;
+
+        private LSL_Types.Vector3 touchBinormal;
+
+        private int touchFace;
+
+        private LSL_Types.Vector3 touchNormal;
+
+        private LSL_Types.Vector3 touchPos;
+
+        private LSL_Types.Vector3 touchST;
+
+        private LSL_Types.Vector3 touchUV;
 
         public DetectParams()
         {
@@ -121,51 +87,6 @@ namespace OpenSim.Region.ScriptEngine.Shared
             Velocity = new LSL_Types.Vector3();
             initializeSurfaceTouch();
         }
-
-        public UUID Key;
-        public LSL_Types.Vector3 OffsetPos;
-        public int LinkNum;
-        public UUID Group;
-        public string Name;
-        public UUID Owner;
-        public LSL_Types.Vector3 Position;
-        public LSL_Types.Quaternion Rotation;
-        public int Type;
-        public LSL_Types.Vector3 Velocity;
-
-        private LSL_Types.Vector3 touchST;
-        public LSL_Types.Vector3 TouchST { get { return touchST; } }
-
-        private LSL_Types.Vector3 touchNormal;
-        public LSL_Types.Vector3 TouchNormal { get { return touchNormal; } }
-
-        private LSL_Types.Vector3 touchBinormal;
-        public LSL_Types.Vector3 TouchBinormal { get { return touchBinormal; } }
-
-        private LSL_Types.Vector3 touchPos;
-        public LSL_Types.Vector3 TouchPos { get { return touchPos; } }
-
-        private LSL_Types.Vector3 touchUV;
-        public LSL_Types.Vector3 TouchUV { get { return touchUV; } }
-
-        private int touchFace;
-        public int TouchFace { get { return touchFace; } }
-
-        // This can be done in two places including the constructor
-        // so be carefull what gets added here
-        private void initializeSurfaceTouch()
-        {
-            touchST = new LSL_Types.Vector3(-1.0, -1.0, 0.0);
-            touchNormal = new LSL_Types.Vector3();
-            touchBinormal = new LSL_Types.Vector3();
-            touchPos = new LSL_Types.Vector3();
-            touchUV = new LSL_Types.Vector3(-1.0, -1.0, 0.0);
-            touchFace = -1;
-        }
-
-        /*
-         * Set up the surface touch detected values
-         */
         public SurfaceTouchEventArgs SurfaceTouchArgs
         {
             set
@@ -188,6 +109,16 @@ namespace OpenSim.Region.ScriptEngine.Shared
             }
         }
 
+        public LSL_Types.Vector3 TouchBinormal { get { return touchBinormal; } }
+
+        public int TouchFace { get { return touchFace; } }
+
+        public LSL_Types.Vector3 TouchNormal { get { return touchNormal; } }
+
+        public LSL_Types.Vector3 TouchPos { get { return touchPos; } }
+
+        public LSL_Types.Vector3 TouchST { get { return touchST; } }
+        public LSL_Types.Vector3 TouchUV { get { return touchUV; } }
         public void Populate(Scene scene)
         {
             SceneObjectPart part = scene.GetSceneObjectPart(Key);
@@ -260,6 +191,36 @@ namespace OpenSim.Region.ScriptEngine.Shared
 
             Velocity = new LSL_Types.Vector3(part.Velocity);
         }
+
+        // This can be done in two places including the constructor
+        // so be carefull what gets added here
+        private void initializeSurfaceTouch()
+        {
+            touchST = new LSL_Types.Vector3(-1.0, -1.0, 0.0);
+            touchNormal = new LSL_Types.Vector3();
+            touchBinormal = new LSL_Types.Vector3();
+            touchPos = new LSL_Types.Vector3();
+            touchUV = new LSL_Types.Vector3(-1.0, -1.0, 0.0);
+            touchFace = -1;
+        }
+
+        /*
+         * Set up the surface touch detected values
+         */
+    }
+
+    [Serializable]
+    public class EventAbortException : Exception
+    {
+        public EventAbortException()
+        {
+        }
+
+        protected EventAbortException(
+                SerializationInfo info,
+                StreamingContext context)
+        {
+        }
     }
 
     /// <summary>
@@ -267,15 +228,63 @@ namespace OpenSim.Region.ScriptEngine.Shared
     /// </summary>
     public class EventParams
     {
+        public DetectParams[] DetectParams;
+
+        public string EventName;
+
+        public Object[] Params;
+
         public EventParams(string eventName, Object[] eventParams, DetectParams[] detectParams)
         {
             EventName = eventName;
             Params = eventParams;
             DetectParams = detectParams;
         }
+    }
 
-        public string EventName;
-        public Object[] Params;
-        public DetectParams[] DetectParams;
+    /// <summary>
+    /// Used to signal when the script is stopping in co-operation with the script engine
+    /// (instead of through Thread.Abort()).
+    /// </summary>
+    [Serializable]
+    public class ScriptCoopStopException : Exception
+    {
+        public ScriptCoopStopException()
+        {
+        }
+
+        protected ScriptCoopStopException(
+                SerializationInfo info,
+                StreamingContext context)
+        {
+        }
+    }
+
+    [Serializable]
+    public class ScriptDeleteException : Exception
+    {
+        public ScriptDeleteException()
+        {
+        }
+
+        protected ScriptDeleteException(
+                SerializationInfo info,
+                StreamingContext context)
+        {
+        }
+    }
+
+    [Serializable]
+    public class SelfDeleteException : Exception
+    {
+        public SelfDeleteException()
+        {
+        }
+
+        protected SelfDeleteException(
+                SerializationInfo info,
+                StreamingContext context)
+        {
+        }
     }
 }

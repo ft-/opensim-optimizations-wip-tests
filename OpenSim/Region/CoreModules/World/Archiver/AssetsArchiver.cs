@@ -25,14 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using System.Xml;
 using log4net;
-using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Framework.Serialization;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.World.Archiver
 {
@@ -41,20 +37,18 @@ namespace OpenSim.Region.CoreModules.World.Archiver
     /// </summary>
     public class AssetsArchiver
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
         /// <value>
         /// Post a message to the log every x assets as a progress bar
         /// </value>
         protected static int LOG_ASSET_LOAD_NOTIFICATION_INTERVAL = 50;
 
+        protected TarArchiveWriter m_archiveWriter;
         /// <value>
         /// Keep a count of the number of assets written so that we can provide status updates
         /// </value>
-        protected int m_assetsWritten; 
-        
-        protected TarArchiveWriter m_archiveWriter;
+        protected int m_assetsWritten;
 
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         public AssetsArchiver(TarArchiveWriter archiveWriter)
         {
             m_archiveWriter = archiveWriter;
@@ -74,47 +68,47 @@ namespace OpenSim.Region.CoreModules.World.Archiver
         /// Write an assets metadata file to the given archive
         /// </summary>
         /// <param name="archive"></param>
-//        protected void WriteMetadata(TarArchiveWriter archive)
-//        {
-//            StringWriter sw = new StringWriter();
-//            XmlTextWriter xtw = new XmlTextWriter(sw);
-//
-//            xtw.Formatting = Formatting.Indented;
-//            xtw.WriteStartDocument();
-//
-//            xtw.WriteStartElement("assets");
-//
-//            foreach (UUID uuid in m_assets.Keys)
-//            {
-//                AssetBase asset = m_assets[uuid];
-//
-//                if (asset != null)
-//                {
-//                    xtw.WriteStartElement("asset");
-//
-//                    string extension = string.Empty;
-//
-//                    if (ArchiveConstants.ASSET_TYPE_TO_EXTENSION.ContainsKey(asset.Type))
-//                    {
-//                        extension = ArchiveConstants.ASSET_TYPE_TO_EXTENSION[asset.Type];
-//                    }
-//
-//                    xtw.WriteElementString("filename", uuid.ToString() + extension);
-//
-//                    xtw.WriteElementString("name", asset.Name);
-//                    xtw.WriteElementString("description", asset.Description);
-//                    xtw.WriteElementString("asset-type", asset.Type.ToString());
-//
-//                    xtw.WriteEndElement();
-//                }
-//            }
-//
-//            xtw.WriteEndElement();
-//
-//            xtw.WriteEndDocument();
-//
-//            archive.WriteFile("assets.xml", sw.ToString());
-//        }
+        //        protected void WriteMetadata(TarArchiveWriter archive)
+        //        {
+        //            StringWriter sw = new StringWriter();
+        //            XmlTextWriter xtw = new XmlTextWriter(sw);
+        //
+        //            xtw.Formatting = Formatting.Indented;
+        //            xtw.WriteStartDocument();
+        //
+        //            xtw.WriteStartElement("assets");
+        //
+        //            foreach (UUID uuid in m_assets.Keys)
+        //            {
+        //                AssetBase asset = m_assets[uuid];
+        //
+        //                if (asset != null)
+        //                {
+        //                    xtw.WriteStartElement("asset");
+        //
+        //                    string extension = string.Empty;
+        //
+        //                    if (ArchiveConstants.ASSET_TYPE_TO_EXTENSION.ContainsKey(asset.Type))
+        //                    {
+        //                        extension = ArchiveConstants.ASSET_TYPE_TO_EXTENSION[asset.Type];
+        //                    }
+        //
+        //                    xtw.WriteElementString("filename", uuid.ToString() + extension);
+        //
+        //                    xtw.WriteElementString("name", asset.Name);
+        //                    xtw.WriteElementString("description", asset.Description);
+        //                    xtw.WriteElementString("asset-type", asset.Type.ToString());
+        //
+        //                    xtw.WriteEndElement();
+        //                }
+        //            }
+        //
+        //            xtw.WriteEndElement();
+        //
+        //            xtw.WriteEndDocument();
+        //
+        //            archive.WriteFile("assets.xml", sw.ToString());
+        //        }
 
         /// <summary>
         /// Write asset data files to the given archive
@@ -145,10 +139,9 @@ namespace OpenSim.Region.CoreModules.World.Archiver
             m_assetsWritten++;
 
             //m_log.DebugFormat("[ARCHIVER]: Added asset {0}", m_assetsWritten);
-            
+
             if (m_assetsWritten % LOG_ASSET_LOAD_NOTIFICATION_INTERVAL == 0)
                 m_log.InfoFormat("[ARCHIVER]: Added {0} assets to archive", m_assetsWritten);
         }
-
     }
 }

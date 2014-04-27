@@ -25,25 +25,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Net;
-using System.IO;
-using System.Timers;
-using System.Drawing;
-using System.Drawing.Imaging;
-
 using log4net;
 using Mono.Addins;
 using Nini.Config;
+using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
 using OpenSim.Server.Base;
-using OpenMetaverse;
-using OpenMetaverse.StructuredData;
+using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
+using System.Reflection;
+using System.Timers;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.MapImage
 {
@@ -57,24 +54,40 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.MapImage
     {
         private static readonly ILog m_log =
             LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         private static string LogHeader = "[MAP IMAGE SERVICE MODULE]";
 
         private bool m_enabled = false;
+        private int m_lastrefresh = 0;
         private IMapImageService m_MapService;
 
-        private Dictionary<UUID, Scene> m_scenes = new Dictionary<UUID, Scene>();
-
         private int m_refreshtime = 0;
-        private int m_lastrefresh = 0;
         private System.Timers.Timer m_refreshTimer;
-        
+        private Dictionary<UUID, Scene> m_scenes = new Dictionary<UUID, Scene>();
         #region ISharedRegionModule
-        
+
+        public string Name { get { return "MapImageServiceModule"; } }
+
         public Type ReplaceableInterface { get { return null; } }
-        public string Name { get { return "MapImageServiceModule"; } }        
-        public void RegionLoaded(Scene scene) { }
-        public void Close() { }
-        public void PostInitialise() { }
+        ///<summary>
+        ///
+        ///</summary>
+        public void AddRegion(Scene scene)
+        {
+            if (!m_enabled)
+                return;
+
+            // Every shared region module has to maintain an indepedent list of
+            // currently running regions
+            lock (m_scenes)
+                m_scenes[scene.RegionInfo.RegionID] = scene;
+
+            scene.EventManager.OnRegionReadyStatusChange += s => { if (s.Ready) UploadMapTile(s); };
+        }
+
+        public void Close()
+        {
+        }
 
         ///<summary>
         ///
@@ -94,7 +107,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.MapImage
                 return;
 
             int refreshminutes = Convert.ToInt32(config.GetString("RefreshTime"));
-            
+
             // if refresh is less than zero, disable the module
             if (refreshminutes < 0)
             {
@@ -116,12 +129,12 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.MapImage
                 m_log.WarnFormat("[MAP IMAGE SERVICE MODULE]: Unable to load LocalServiceModule from {0}. MapService module disabled. Please fix the configuration.", service);
                 return;
             }
-   
+
             // we don't want the timer if the interval is zero, but we still want this module enables
-            if(refreshminutes > 0)
+            if (refreshminutes > 0)
             {
                 m_refreshtime = refreshminutes * 60 * 1000; // convert from minutes to ms
-   
+
                 m_refreshTimer = new System.Timers.Timer();
                 m_refreshTimer.Enabled = true;
                 m_refreshTimer.AutoReset = true;
@@ -131,35 +144,26 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.MapImage
                 m_log.InfoFormat("[MAP IMAGE SERVICE MODULE]: enabled with refresh time {0} min and service object {1}",
                              refreshminutes, service);
             }
-            else 
+            else
             {
                 m_log.InfoFormat("[MAP IMAGE SERVICE MODULE]: enabled with no refresh and service object {0}", service);
             }
             m_enabled = true;
         }
 
-        ///<summary>
-        ///
-        ///</summary>
-        public void AddRegion(Scene scene)
+        public void PostInitialise()
         {
-            if (!m_enabled)
-                return;
-
-            // Every shared region module has to maintain an indepedent list of
-            // currently running regions
-            lock (m_scenes)
-                m_scenes[scene.RegionInfo.RegionID] = scene;
-
-            scene.EventManager.OnRegionReadyStatusChange += s => { if (s.Ready) UploadMapTile(s); };
         }
 
+        public void RegionLoaded(Scene scene)
+        {
+        }
         ///<summary>
         ///
         ///</summary>
         public void RemoveRegion(Scene scene)
         {
-            if (! m_enabled)
+            if (!m_enabled)
                 return;
 
             lock (m_scenes)
@@ -167,7 +171,31 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.MapImage
         }
 
         #endregion ISharedRegionModule
-        
+
+        private void ConvertAndUploadMaptile(Image tileImage, uint locX, uint locY, string regionName)
+        {
+            byte[] jpgData = Utils.EmptyBytes;
+
+            using (MemoryStream stream = new MemoryStream())
+            {
+                tileImage.Save(stream, ImageFormat.Jpeg);
+                jpgData = stream.ToArray();
+            }
+            if (jpgData != Utils.EmptyBytes)
+            {
+                string reason = string.Empty;
+                if (!m_MapService.AddMapTile((int)locX, (int)locY, jpgData, out reason))
+                {
+                    m_log.DebugFormat("{0} Unable to upload tile image for {1} at {2}-{3}: {4}", LogHeader,
+                        regionName, locX, locY, reason);
+                }
+            }
+            else
+            {
+                m_log.WarnFormat("{0} Tile image generation failed for region {1}", LogHeader, regionName);
+            }
+        }
+
         ///<summary>
         ///
         ///</summary>
@@ -258,30 +286,6 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.MapImage
                 {
                     m_log.WarnFormat("{0} Tile image generation failed", LogHeader);
                 }
-            }
-        }
-
-        private void ConvertAndUploadMaptile(Image tileImage, uint locX, uint locY, string regionName)
-        {
-            byte[] jpgData = Utils.EmptyBytes;
-
-            using (MemoryStream stream = new MemoryStream())
-            {
-                tileImage.Save(stream, ImageFormat.Jpeg);
-                jpgData = stream.ToArray();
-            }
-            if (jpgData != Utils.EmptyBytes)
-            {
-                string reason = string.Empty;
-                if (!m_MapService.AddMapTile((int)locX, (int)locY, jpgData, out reason))
-                {
-                    m_log.DebugFormat("{0} Unable to upload tile image for {1} at {2}-{3}: {4}", LogHeader,
-                        regionName, locX, locY, reason);
-                }
-            }
-            else
-            {
-                m_log.WarnFormat("{0} Tile image generation failed for region {1}", LogHeader, regionName);
             }
         }
     }

@@ -25,58 +25,33 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using OpenMetaverse;
 using OpenSim.Framework;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
 {
     public interface IGroupsServicesConnector
     {
-        UUID CreateGroup(UUID RequestingAgentID, string name, string charter, bool showInList, UUID insigniaID, int membershipFee, bool openEnrollment, bool allowPublish, bool maturePublish, UUID founderID);
-        void UpdateGroup(UUID RequestingAgentID, UUID groupID, string charter, bool showInList, UUID insigniaID, int membershipFee, bool openEnrollment, bool allowPublish, bool maturePublish);
-
-        /// <summary>
-        /// Get the group record.
-        /// </summary>
-        /// <returns></returns>
-        /// <param name='RequestingAgentID'>The UUID of the user making the request.</param>
-        /// <param name='GroupID'>
-        /// The ID of the record to retrieve.  
-        /// GroupName may be specified instead, in which case this parameter will be UUID.Zero
-        /// </param>
-        /// <param name='GroupName'>
-        /// The name of the group to retrieve.
-        /// GroupID may be specified instead, in which case this parmeter will be null.
-        /// </param>
-        GroupRecord GetGroupRecord(UUID RequestingAgentID, UUID GroupID, string GroupName);
-       
-        List<DirGroupsReplyData> FindGroups(UUID RequestingAgentID, string search);
-        List<GroupMembersData> GetGroupMembers(UUID RequestingAgentID, UUID GroupID);
-
-        void AddGroupRole(UUID RequestingAgentID, UUID groupID, UUID roleID, string name, string description, string title, ulong powers);
-        void UpdateGroupRole(UUID RequestingAgentID, UUID groupID, UUID roleID, string name, string description, string title, ulong powers);
-        void RemoveGroupRole(UUID RequestingAgentID, UUID groupID, UUID roleID);
-        List<GroupRolesData> GetGroupRoles(UUID RequestingAgentID, UUID GroupID);
-        List<GroupRoleMembersData> GetGroupRoleMembers(UUID RequestingAgentID, UUID GroupID);
-
         void AddAgentToGroup(UUID RequestingAgentID, UUID AgentID, UUID GroupID, UUID RoleID);
-        void RemoveAgentFromGroup(UUID RequestingAgentID, UUID AgentID, UUID GroupID);
 
         void AddAgentToGroupInvite(UUID RequestingAgentID, UUID inviteID, UUID groupID, UUID roleID, UUID agentID);
-        GroupInviteInfo GetAgentToGroupInvite(UUID RequestingAgentID, UUID inviteID);
-        void RemoveAgentToGroupInvite(UUID RequestingAgentID, UUID inviteID);
 
         void AddAgentToGroupRole(UUID RequestingAgentID, UUID AgentID, UUID GroupID, UUID RoleID);
-        void RemoveAgentFromGroupRole(UUID RequestingAgentID, UUID AgentID, UUID GroupID, UUID RoleID);
-        List<GroupRolesData> GetAgentGroupRoles(UUID RequestingAgentID, UUID AgentID, UUID GroupID);
 
-        void SetAgentActiveGroup(UUID RequestingAgentID, UUID AgentID, UUID GroupID);
+        void AddGroupNotice(UUID RequestingAgentID, UUID groupID, UUID noticeID, string fromName, string subject, string message, byte[] binaryBucket);
+
+        void AddGroupRole(UUID RequestingAgentID, UUID groupID, UUID roleID, string name, string description, string title, ulong powers);
+
+        void AgentDroppedFromGroupChatSession(UUID agentID, UUID groupID);
+
+        void AgentInvitedToGroupChatSession(UUID agentID, UUID groupID);
+
+        UUID CreateGroup(UUID RequestingAgentID, string name, string charter, bool showInList, UUID insigniaID, int membershipFee, bool openEnrollment, bool allowPublish, bool maturePublish, UUID founderID);
+
+        List<DirGroupsReplyData> FindGroups(UUID RequestingAgentID, string search);
+
         GroupMembershipData GetAgentActiveMembership(UUID RequestingAgentID, UUID AgentID);
-
-        void SetAgentActiveGroupRole(UUID RequestingAgentID, UUID AgentID, UUID GroupID, UUID RoleID);
-        void SetAgentGroupInfo(UUID RequestingAgentID, UUID AgentID, UUID GroupID, bool AcceptNotices, bool ListInProfile);
 
         /// <summary>
         /// Get information about a specific group to which the user belongs.
@@ -88,7 +63,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
         /// If the user is a member of the group then the data structure is returned.  If not, then null is returned.
         /// </returns>
         GroupMembershipData GetAgentGroupMembership(UUID RequestingAgentID, UUID AgentID, UUID GroupID);
-        
+
         /// <summary>
         /// Get information about the groups to which a user belongs.
         /// </summary>
@@ -100,22 +75,64 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
         /// </returns>
         List<GroupMembershipData> GetAgentGroupMemberships(UUID RequestingAgentID, UUID AgentID);
 
-        void AddGroupNotice(UUID RequestingAgentID, UUID groupID, UUID noticeID, string fromName, string subject, string message, byte[] binaryBucket);
+        List<GroupRolesData> GetAgentGroupRoles(UUID RequestingAgentID, UUID AgentID, UUID GroupID);
+
+        GroupInviteInfo GetAgentToGroupInvite(UUID RequestingAgentID, UUID inviteID);
+
+        List<GroupMembersData> GetGroupMembers(UUID RequestingAgentID, UUID GroupID);
+
         GroupNoticeInfo GetGroupNotice(UUID RequestingAgentID, UUID noticeID);
+
         List<GroupNoticeData> GetGroupNotices(UUID RequestingAgentID, UUID GroupID);
 
-        void ResetAgentGroupChatSessions(UUID agentID);
+        /// <summary>
+        /// Get the group record.
+        /// </summary>
+        /// <returns></returns>
+        /// <param name='RequestingAgentID'>The UUID of the user making the request.</param>
+        /// <param name='GroupID'>
+        /// The ID of the record to retrieve.
+        /// GroupName may be specified instead, in which case this parameter will be UUID.Zero
+        /// </param>
+        /// <param name='GroupName'>
+        /// The name of the group to retrieve.
+        /// GroupID may be specified instead, in which case this parmeter will be null.
+        /// </param>
+        GroupRecord GetGroupRecord(UUID RequestingAgentID, UUID GroupID, string GroupName);
+
+        List<GroupRoleMembersData> GetGroupRoleMembers(UUID RequestingAgentID, UUID GroupID);
+
+        List<GroupRolesData> GetGroupRoles(UUID RequestingAgentID, UUID GroupID);
+
         bool hasAgentBeenInvitedToGroupChatSession(UUID agentID, UUID groupID);
+
         bool hasAgentDroppedGroupChatSession(UUID agentID, UUID groupID);
-        void AgentDroppedFromGroupChatSession(UUID agentID, UUID groupID);
-        void AgentInvitedToGroupChatSession(UUID agentID, UUID groupID);
+
+        void RemoveAgentFromGroup(UUID RequestingAgentID, UUID AgentID, UUID GroupID);
+
+        void RemoveAgentFromGroupRole(UUID RequestingAgentID, UUID AgentID, UUID GroupID, UUID RoleID);
+
+        void RemoveAgentToGroupInvite(UUID RequestingAgentID, UUID inviteID);
+
+        void RemoveGroupRole(UUID RequestingAgentID, UUID groupID, UUID roleID);
+
+        void ResetAgentGroupChatSessions(UUID agentID);
+
+        void SetAgentActiveGroup(UUID RequestingAgentID, UUID AgentID, UUID GroupID);
+
+        void SetAgentActiveGroupRole(UUID RequestingAgentID, UUID AgentID, UUID GroupID, UUID RoleID);
+
+        void SetAgentGroupInfo(UUID RequestingAgentID, UUID AgentID, UUID GroupID, bool AcceptNotices, bool ListInProfile);
+
+        void UpdateGroup(UUID RequestingAgentID, UUID groupID, string charter, bool showInList, UUID insigniaID, int membershipFee, bool openEnrollment, bool allowPublish, bool maturePublish);
+        void UpdateGroupRole(UUID RequestingAgentID, UUID groupID, UUID roleID, string name, string description, string title, ulong powers);
     }
 
     public class GroupInviteInfo
     {
-        public UUID GroupID  = UUID.Zero;
-        public UUID RoleID   = UUID.Zero;
-        public UUID AgentID  = UUID.Zero;
+        public UUID AgentID = UUID.Zero;
+        public UUID GroupID = UUID.Zero;
         public UUID InviteID = UUID.Zero;
+        public UUID RoleID = UUID.Zero;
     }
 }

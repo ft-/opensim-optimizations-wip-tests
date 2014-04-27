@@ -25,12 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using Nini.Config;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
 using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Server.Base;
 using OpenSim.Server.Handlers.Base;
+using OpenSim.Services.Interfaces;
+using System;
 
 namespace OpenSim.Server.Handlers.Authorization
 {
@@ -40,7 +40,7 @@ namespace OpenSim.Server.Handlers.Authorization
         private string m_ConfigName = "AuthorizationService";
 
         public AuthorizationServerConnector(IConfigSource config, IHttpServer server, string configName) :
-                base(config, server, configName)
+            base(config, server, configName)
         {
             if (configName != String.Empty)
                 m_ConfigName = configName;

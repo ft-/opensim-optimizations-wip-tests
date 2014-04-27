@@ -25,23 +25,34 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
-using OpenSim.Framework;
+using System;
 using System.Collections.Generic;
 
 namespace OpenSim.Services.Interfaces
 {
+    public interface IFriendsService
+    {
+        bool Delete(UUID PrincipalID, string Friend);
+
+        bool Delete(string PrincipalID, string Friend);
+
+        FriendInfo[] GetFriends(UUID PrincipalID);
+
+        FriendInfo[] GetFriends(string PrincipalID);
+
+        bool StoreFriend(string PrincipalID, string Friend, int flags);
+    }
+
     public class FriendInfo
     {
-        public UUID PrincipalID;
         public string Friend;
-
         /// <summary>
         /// The permissions that this user has granted to the friend.
         /// </summary>
         public int MyFlags;
 
+        public UUID PrincipalID;
         /// <summary>
         /// The permissions that the friend has granted to this user.
         /// </summary>
@@ -77,14 +88,5 @@ namespace OpenSim.Services.Interfaces
 
             return result;
         }
-    }
-
-    public interface IFriendsService
-    {
-        FriendInfo[] GetFriends(UUID PrincipalID);
-        FriendInfo[] GetFriends(string PrincipalID);
-        bool StoreFriend(string PrincipalID, string Friend, int flags);
-        bool Delete(UUID PrincipalID, string Friend);
-        bool Delete(string PrincipalID, string Friend);
     }
 }

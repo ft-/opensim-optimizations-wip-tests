@@ -25,20 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using Nini.Config;
-using log4net;
-using System;
-using System.IO;
-using System.Reflection;
-using System.Net;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Xml;
-using System.Xml.Serialization;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
 using OpenSim.Framework;
 using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Server.Base;
+using OpenSim.Services.Interfaces;
+using System.IO;
+using System.Net;
+using System.Xml.Serialization;
 
 namespace OpenSim.Server.Handlers.Asset
 {
@@ -49,7 +42,7 @@ namespace OpenSim.Server.Handlers.Asset
         private IAssetService m_AssetService;
 
         public AssetServerGetHandler(IAssetService service) :
-                base("GET", "/assets")
+            base("GET", "/assets")
         {
             m_AssetService = service;
         }
@@ -143,7 +136,7 @@ namespace OpenSim.Server.Handlers.Asset
                 httpResponse.ContentType = "text/plain";
                 result = new byte[0];
             }
-            
+
             return result;
         }
     }

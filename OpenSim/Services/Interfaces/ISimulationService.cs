@@ -25,16 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using OpenSim.Framework;
 using OpenMetaverse;
-
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
+using OpenSim.Framework;
 
 namespace OpenSim.Services.Interfaces
 {
     public interface ISimulationService
     {
+        ISimulationService GetInnerService();
+
         /// <summary>
         /// Retrieve the scene with the given region ID.
         /// </summary>
@@ -45,10 +44,15 @@ namespace OpenSim.Services.Interfaces
         /// The scene.
         /// </returns>
         IScene GetScene(UUID regionId);
-
-        ISimulationService GetInnerService();
-
         #region Agents
+
+        /// <summary>
+        /// Close agent.
+        /// </summary>
+        /// <param name="regionHandle"></param>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        bool CloseAgent(GridRegion destination, UUID id, string auth_token);
 
         /// <summary>
         /// Ask the simulator hosting the destination to create an agent on that region.
@@ -58,24 +62,8 @@ namespace OpenSim.Services.Interfaces
         /// <param name="destination"></param>
         /// <param name="aCircuit"></param>
         /// <param name="flags"></param>
-        /// <param name="reason">Reason message in the event of a failure.</param>        
+        /// <param name="reason">Reason message in the event of a failure.</param>
         bool CreateAgent(GridRegion source, GridRegion destination, AgentCircuitData aCircuit, uint flags, out string reason);
-
-        /// <summary>
-        /// Full child agent update.
-        /// </summary>
-        /// <param name="regionHandle"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        bool UpdateAgent(GridRegion destination, AgentData data);
-
-        /// <summary>
-        /// Short child agent update, mostly for position.
-        /// </summary>
-        /// <param name="regionHandle"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        bool UpdateAgent(GridRegion destination, AgentPosition data);
 
         /// <summary>
         /// Returns whether a propspective user is allowed to visit the region.
@@ -100,13 +88,20 @@ namespace OpenSim.Services.Interfaces
         bool ReleaseAgent(UUID originRegion, UUID id, string uri);
 
         /// <summary>
-        /// Close agent.
+        /// Full child agent update.
         /// </summary>
         /// <param name="regionHandle"></param>
-        /// <param name="id"></param>
+        /// <param name="data"></param>
         /// <returns></returns>
-        bool CloseAgent(GridRegion destination, UUID id, string auth_token);
+        bool UpdateAgent(GridRegion destination, AgentData data);
 
+        /// <summary>
+        /// Short child agent update, mostly for position.
+        /// </summary>
+        /// <param name="regionHandle"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        bool UpdateAgent(GridRegion destination, AgentPosition data);
         #endregion Agents
 
         #region Objects
@@ -121,6 +116,5 @@ namespace OpenSim.Services.Interfaces
         bool CreateObject(GridRegion destination, Vector3 newPosition, ISceneObject sog, bool isLocalCall);
 
         #endregion Objects
-
     }
 }

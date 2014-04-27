@@ -25,24 +25,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.IO;
-using System.Net;
-using System.Reflection;
-using System.Text;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
 using OpenMetaverse;
-using OpenMetaverse.StructuredData;
 using OpenSim.Framework;
-using OpenSim.Framework.Communications;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Region.Framework.Scenes.Serialization;
-using OpenSim.Services.Interfaces;
 using OpenSim.Services.Connectors.Simulation;
+using OpenSim.Services.Interfaces;
+using System;
+using System.Net;
+using System.Reflection;
 using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Simulation
@@ -55,8 +49,10 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Simulation
         private bool initialized = false;
         protected bool m_enabled = false;
         protected Scene m_aScene;
+
         // RemoteSimulationConnector does not care about local regions; it delegates that to the Local module
         protected LocalSimulationConnectorModule m_localBackend;
+
         protected SimulationServiceConnector m_remoteConnector;
 
         protected bool m_safemode;
@@ -138,13 +134,13 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Simulation
         }
 
         protected virtual void InitOnce(Scene scene)
-        {            
+        {
             m_aScene = scene;
             //m_regionClient = new RegionToRegionClient(m_aScene, m_hyperlinkService);
             m_thisIP = Util.GetHostFromDNS(scene.RegionInfo.ExternalHostName);
         }
 
-        #endregion
+        #endregion Region Module interface
 
         #region ISimulationService
 
@@ -239,7 +235,6 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Simulation
             return false;
         }
 
-
         public bool CloseAgent(GridRegion destination, UUID id, string auth_token)
         {
             if (destination == null)
@@ -252,7 +247,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Simulation
             // else do the remote thing
             if (!m_localBackend.IsLocalRegion(destination.RegionID))
                 return m_remoteConnector.CloseAgent(destination, id, auth_token);
-            
+
             return false;
         }
 
@@ -279,6 +274,6 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Simulation
             return false;
         }
 
-        #endregion
+        #endregion ISimulationService
     }
 }

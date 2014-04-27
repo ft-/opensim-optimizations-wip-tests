@@ -25,20 +25,26 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-
+using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Scenes;
-
-using OpenMetaverse;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
     public interface IInventoryAccessModule
     {
+        /// <summary>
+        /// Does the client have sufficient permissions to retrieve the inventory item?
+        /// </summary>
+        /// <param name="remoteClient"></param>
+        /// <param name="itemID"></param>
+        /// <param name="requestID"></param>
+        /// <returns></returns>
+        bool CanGetAgentInventoryItem(IClientAPI remoteClient, UUID itemID, UUID requestID);
+
         UUID CapsUpdateInventoryItemAsset(IClientAPI remoteClient, UUID itemID, byte[] data);
-        
+
         /// <summary>
         /// Copy objects to a user's inventory.
         /// </summary>
@@ -58,6 +64,9 @@ namespace OpenSim.Region.Framework.Interfaces
         /// </returns>
         List<InventoryItemBase> CopyToInventory(
             DeRezAction action, UUID folderID, List<SceneObjectGroup> objectGroups, IClientAPI remoteClient, bool asAttachment);
+
+        // Must be here because of textures in user's inventory
+        bool IsForeignUser(UUID userID, out string assetServerURL);
 
         /// <summary>
         /// Rez an object into the scene from the user's inventory
@@ -111,17 +120,5 @@ namespace OpenSim.Region.Framework.Interfaces
             bool RezSelected, bool RemoveItem, UUID fromTaskID, bool attachment);
 
         void TransferInventoryAssets(InventoryItemBase item, UUID sender, UUID receiver);
-
-        /// <summary>
-        /// Does the client have sufficient permissions to retrieve the inventory item?
-        /// </summary>
-        /// <param name="remoteClient"></param>
-        /// <param name="itemID"></param>
-        /// <param name="requestID"></param>
-        /// <returns></returns>
-        bool CanGetAgentInventoryItem(IClientAPI remoteClient, UUID itemID, UUID requestID);
-
-        // Must be here because of textures in user's inventory
-        bool IsForeignUser(UUID userID, out string assetServerURL);
     }
 }

@@ -25,12 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenSim.Framework;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
 using System;
 using System.IO;
 using System.Text;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Framework;
 
 namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
 {
@@ -42,6 +42,11 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
     internal class Terragen : ITerrainLoader
     {
         #region ITerrainLoader Members
+
+        public string FileExtension
+        {
+            get { return ".ter"; }
+        }
 
         public ITerrainChannel LoadFile(string filename)
         {
@@ -78,14 +83,17 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
                         fileYPoints = fileXPoints;
                         bs.ReadInt16();
                         break;
+
                     case "XPTS":
                         fileXPoints = bs.ReadInt16();
                         bs.ReadInt16();
                         break;
+
                     case "YPTS":
                         fileYPoints = bs.ReadInt16();
                         bs.ReadInt16();
                         break;
+
                     case "ALTW":
                         eof = true;
                         Int16 heightScale = bs.ReadInt16();
@@ -138,6 +146,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
                         }
 
                         break;
+
                     default:
                         bs.ReadInt32();
                         break;
@@ -164,7 +173,6 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
             bool eof = false;
             if (Encoding.ASCII.GetString(bs.ReadBytes(16)) == "TERRAGENTERRAIN ")
             {
-
                 // Terragen file
                 while (eof == false)
                 {
@@ -176,14 +184,17 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
                             h = w;
                             bs.ReadInt16();
                             break;
+
                         case "XPTS":
                             w = bs.ReadInt16();
                             bs.ReadInt16();
                             break;
+
                         case "YPTS":
                             h = bs.ReadInt16();
                             bs.ReadInt16();
                             break;
+
                         case "ALTW":
                             eof = true;
                             // create new channel of proper size (now that we know it)
@@ -198,6 +209,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
                                 }
                             }
                             break;
+
                         default:
                             bs.ReadInt32();
                             break;
@@ -217,19 +229,27 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
             s.Close();
         }
 
+        public virtual void SaveFile(ITerrainChannel m_channel, string filename,
+                             int offsetX, int offsetY,
+                             int fileWidth, int fileHeight,
+                             int regionSizeX, int regionSizeY)
+        {
+            throw new System.Exception("Not Implemented");
+        }
+
         public void SaveStream(Stream stream, ITerrainChannel map)
         {
             BinaryWriter bs = new BinaryWriter(stream);
 
             //find the max and min heights on the map
-            double heightMax = map[0,0];
-            double heightMin = map[0,0];
+            double heightMax = map[0, 0];
+            double heightMin = map[0, 0];
 
             for (int y = 0; y < map.Height; y++)
             {
                 for (int x = 0; x < map.Width; x++)
                 {
-                    double current = map[x,y];
+                    double current = map[x, y];
                     if (heightMax < current)
                         heightMax = current;
                     if (heightMin > current)
@@ -237,7 +257,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
                 }
             }
 
-            double baseHeight = Math.Floor( (heightMax + heightMin) / 2d );
+            double baseHeight = Math.Floor((heightMax + heightMin) / 2d);
 
             double horizontalScale = Math.Ceiling((heightMax - heightMin));
 
@@ -282,7 +302,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
             {
                 for (int x = 0; x < map.Width; x++)
                 {
-                    float elevation = (float)((map[x,y] - baseHeight) * factor); // see LoadStream for inverse
+                    float elevation = (float)((map[x, y] - baseHeight) * factor); // see LoadStream for inverse
 
                     // clamp rounding issues
                     if (elevation > Int16.MaxValue)
@@ -299,26 +319,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
 
             bs.Close();
         }
-
-        public string FileExtension
-        {
-            get { return ".ter"; }
-        }
-
-        public virtual void SaveFile(ITerrainChannel m_channel, string filename,
-                             int offsetX, int offsetY,
-                             int fileWidth, int fileHeight,
-                             int regionSizeX, int regionSizeY)
-        {
-            throw new System.Exception("Not Implemented");
-        }
-
-        #endregion
-
-        public override string ToString()
-        {
-            return "Terragen";
-        }
+        #endregion ITerrainLoader Members
 
         //Returns true if this extension is supported for terrain save-tile
         public bool SupportsTileSave()
@@ -326,13 +327,17 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
             return false;
         }
 
+        public override string ToString()
+        {
+            return "Terragen";
+        }
         /// <summary>
         /// terragen SCAL floats need to be written intel ordered regardless of
         /// big or little endian system
         /// </summary>
         /// <param name="number"></param>
         /// <returns></returns>
-        private byte[] ToLittleEndian( float number)
+        private byte[] ToLittleEndian(float number)
         {
             byte[] retVal = BitConverter.GetBytes(number);
             if (BitConverter.IsLittleEndian == false)
@@ -343,10 +348,8 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
                     tmp[i] = retVal[3 - i];
                 }
                 retVal = tmp;
-
             }
-            return retVal ;
+            return retVal;
         }
-
     }
 }

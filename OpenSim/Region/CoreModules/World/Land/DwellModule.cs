@@ -25,63 +25,31 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Reflection;
-using System.Text;
-using log4net;
+using Mono.Addins;
 using Nini.Config;
 using OpenMetaverse;
-using OpenMetaverse.StructuredData;
-using OpenMetaverse.Messages.Linden;
-using Mono.Addins;
 using OpenSim.Framework;
-using OpenSim.Framework.Capabilities;
-using OpenSim.Framework.Console;
-using OpenSim.Framework.Servers;
-using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Region.CoreModules.Framework.InterfaceCommander;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Region.Physics.Manager;
-using OpenSim.Services.Interfaces;
-using Caps = OpenSim.Framework.Capabilities.Caps;
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
+using System;
 
 namespace OpenSim.Region.CoreModules.World.Land
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "DefaultDwellModule")]
     public class DefaultDwellModule : IDwellModule, INonSharedRegionModule
     {
-        private Scene m_scene;
         private IConfigSource m_Config;
         private bool m_Enabled = false;
-
-        public Type ReplaceableInterface
-        {
-            get { return typeof(IDwellModule); }
-        }
-
+        private Scene m_scene;
         public string Name
         {
             get { return "DefaultDwellModule"; }
         }
 
-        public void Initialise(IConfigSource source)
+        public Type ReplaceableInterface
         {
-            m_Config = source;
-
-            IConfig DwellConfig = m_Config.Configs ["Dwell"];
-
-            if (DwellConfig == null) {
-                m_Enabled = false;
-                return;
-            }
-            m_Enabled = (DwellConfig.GetString ("DwellModule", "DefaultDwellModule") == "DefaultDwellModule");
+            get { return typeof(IDwellModule); }
         }
-
         public void AddRegion(Scene scene)
         {
             if (!m_Enabled)
@@ -92,6 +60,33 @@ namespace OpenSim.Region.CoreModules.World.Land
             m_scene.EventManager.OnNewClient += OnNewClient;
         }
 
+        public void Close()
+        {
+        }
+
+        public int GetDwell(UUID parcelID)
+        {
+            return 0;
+        }
+
+        public void Initialise(IConfigSource source)
+        {
+            m_Config = source;
+
+            IConfig DwellConfig = m_Config.Configs["Dwell"];
+
+            if (DwellConfig == null)
+            {
+                m_Enabled = false;
+                return;
+            }
+            m_Enabled = (DwellConfig.GetString("DwellModule", "DefaultDwellModule") == "DefaultDwellModule");
+        }
+        public void OnNewClient(IClientAPI client)
+        {
+            client.OnParcelDwellRequest += ClientOnParcelDwellRequest;
+        }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -99,16 +94,6 @@ namespace OpenSim.Region.CoreModules.World.Land
         public void RemoveRegion(Scene scene)
         {
         }
-
-        public void Close()
-        {
-        }
-
-        public void OnNewClient(IClientAPI client)
-        {
-            client.OnParcelDwellRequest += ClientOnParcelDwellRequest;
-        }
-
         private void ClientOnParcelDwellRequest(int localID, IClientAPI client)
         {
             ILandObject parcel = m_scene.LandChannel.GetLandObject(localID);
@@ -116,11 +101,6 @@ namespace OpenSim.Region.CoreModules.World.Land
                 return;
 
             client.SendParcelDwellReply(localID, parcel.LandData.GlobalID, parcel.LandData.Dwell);
-        }
-
-        public int GetDwell(UUID parcelID)
-        {
-            return 0;
         }
     }
 }

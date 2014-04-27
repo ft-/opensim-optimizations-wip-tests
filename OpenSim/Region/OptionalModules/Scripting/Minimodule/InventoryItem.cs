@@ -25,32 +25,41 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Text;
-
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Scenes;
 //using OpenSim.Services.AssetService;
 using OpenMetaverse;
-using OpenMetaverse.Assets;
+using OpenSim.Framework;
+using OpenSim.Region.Framework.Scenes;
+using System;
 
 namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
     public class InventoryItem : IInventoryItem
     {
-        TaskInventoryItem m_privateItem;
-        Scene m_rootScene;
-        
+        private TaskInventoryItem m_privateItem;
+        private Scene m_rootScene;
+
         public InventoryItem(Scene rootScene, TaskInventoryItem internalItem)
         {
             m_rootScene = rootScene;
             m_privateItem = internalItem;
         }
 
-        // Marked internal, to prevent scripts from accessing the internal type
-        internal TaskInventoryItem ToTaskInventoryItem()
+        public UUID AssetID { get { return m_privateItem.AssetID; } }
+
+        public int Type { get { return m_privateItem.Type; } }
+
+        // This method exposes OpenSim/OpenMetaverse internals and needs to be replaced with a IAsset specific to MRM.
+        public T RetrieveAsset<T>() where T : OpenMetaverse.Assets.Asset, new()
         {
-            return m_privateItem;
+            AssetBase a = m_rootScene.AssetService.Get(AssetID.ToString());
+            T result = new T();
+
+            if ((sbyte)result.AssetType != a.Type)
+                throw new ApplicationException("[MRM] The supplied asset class does not match the found asset");
+
+            result.AssetData = a.Data;
+            result.Decode();
+            return result;
         }
 
         /// <summary>
@@ -77,22 +86,11 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
                 throw new ApplicationException("[MRM] There is no legal conversion from IInventoryItem to InventoryItem");
             }
         }
-            
-        public int Type { get { return m_privateItem.Type; } }
-        public UUID AssetID { get { return m_privateItem.AssetID; } }
-        
-        // This method exposes OpenSim/OpenMetaverse internals and needs to be replaced with a IAsset specific to MRM.
-        public T RetrieveAsset<T>() where T : OpenMetaverse.Assets.Asset, new()
-        {
-            AssetBase a = m_rootScene.AssetService.Get(AssetID.ToString());
-            T result = new T();
 
-            if ((sbyte)result.AssetType != a.Type)
-                throw new ApplicationException("[MRM] The supplied asset class does not match the found asset");
-            
-            result.AssetData = a.Data;
-            result.Decode();
-            return result;
+        // Marked internal, to prevent scripts from accessing the internal type
+        internal TaskInventoryItem ToTaskInventoryItem()
+        {
+            return m_privateItem;
         }
     }
 }

@@ -29,52 +29,43 @@
  * Copyright (c) Contributors, http://aurora-sim.org/, http://opensimulator.org/
  */
 
-using System;
-using System.Reflection;
-
 using log4net;
-
-using OpenSim.Framework;
-using OpenSim.Region.Framework;
-using OpenSim.Region.Framework.Scenes;
-
 using OpenMetaverse;
 using OpenMetaverse.Packets;
+using OpenSim.Framework;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Region.ClientStack.LindenUDP
 {
     public static class OpenSimTerrainCompressor
     {
+        public const int END_OF_PATCHES = 97;
+        private const int NEGATIVE_VALUE = 0x7;
+        private const float OO_SQRT2 = 0.7071067811865475244008443621049f;
+        private const int POSITIVE_VALUE = 0x6;
+        private const int STRIDE = 264;
+        private const int ZERO_CODE = 0x0;
+        private const int ZERO_EOB = 0x2;
+        //private static readonly float[] CosineTable32 = new float[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
+        private static readonly int[] CopyMatrix16 = new int[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
+
+        private static readonly int[] CopyMatrix32 = new int[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
+        private static readonly float[] CosineTable16 = new float[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
+        private static readonly float[] DequantizeTable16 =
+            new float[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
+
+        private static readonly float[] DequantizeTable32 =
+            new float[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
+
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
 #pragma warning disable 414
+        private static readonly float[] QuantizeTable16 =
+            new float[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
+
         private static string LogHeader = "[TERRAIN COMPRESSOR]";
 #pragma warning restore 414
-
-        public const int END_OF_PATCHES = 97;
-
-        private const float OO_SQRT2 = 0.7071067811865475244008443621049f;
-        private const int STRIDE = 264;
-
-        private const int ZERO_CODE = 0x0;
-        private const int ZERO_EOB = 0x2;
-        private const int POSITIVE_VALUE = 0x6;
-        private const int NEGATIVE_VALUE = 0x7;
-
-        private static readonly float[] DequantizeTable16 =
-            new float[Constants.TerrainPatchSize*Constants.TerrainPatchSize];
-
-        private static readonly float[] DequantizeTable32 =
-            new float[Constants.TerrainPatchSize*Constants.TerrainPatchSize];
-
-        private static readonly float[] CosineTable16 = new float[Constants.TerrainPatchSize*Constants.TerrainPatchSize];
-        //private static readonly float[] CosineTable32 = new float[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
-        private static readonly int[] CopyMatrix16 = new int[Constants.TerrainPatchSize*Constants.TerrainPatchSize];
-        private static readonly int[] CopyMatrix32 = new int[Constants.TerrainPatchSize*Constants.TerrainPatchSize];
-
-        private static readonly float[] QuantizeTable16 =
-            new float[Constants.TerrainPatchSize*Constants.TerrainPatchSize];
-
         static OpenSimTerrainCompressor()
         {
             // Initialize the decompression tables
@@ -82,33 +73,6 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             SetupCosines16();
             BuildCopyMatrix16();
             BuildQuantizeTable16();
-        }
-
-        // Used to send cloud and wind patches
-        public static LayerDataPacket CreateLayerDataPacket(TerrainPatch[] patches, byte type, int pRegionSizeX,
-                                                            int pRegionSizeY)
-        {
-            LayerDataPacket layer = new LayerDataPacket {LayerID = {Type = type}};
-
-            TerrainPatch.GroupHeader header = new TerrainPatch.GroupHeader
-                                                  {Stride = STRIDE, PatchSize = Constants.TerrainPatchSize};
-
-            // Should be enough to fit even the most poorly packed data
-            byte[] data = new byte[patches.Length*Constants.TerrainPatchSize*Constants.TerrainPatchSize*2];
-            BitPack bitpack = new BitPack(data, 0);
-            bitpack.PackBits(header.Stride, 16);
-            bitpack.PackBits(header.PatchSize, 8);
-            bitpack.PackBits(type, 8);
-
-            foreach (TerrainPatch t in patches)
-                CreatePatch(bitpack, t.Data, t.X, t.Y, pRegionSizeX, pRegionSizeY);
-
-            bitpack.PackBits(END_OF_PATCHES, 8);
-
-            layer.LayerData.Data = new byte[bitpack.BytePos + 1];
-            Buffer.BlockCopy(bitpack.Data, 0, layer.LayerData.Data, 0, bitpack.BytePos + 1);
-
-            return layer;
         }
 
         // Create a land packet for a single patch.
@@ -153,10 +117,9 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         /// <returns></returns>
         public static LayerDataPacket CreateLandPacket(TerrainData terrData, int[] x, int[] y, byte type)
         {
-            LayerDataPacket layer = new LayerDataPacket {LayerID = {Type = type}};
+            LayerDataPacket layer = new LayerDataPacket { LayerID = { Type = type } };
 
-            TerrainPatch.GroupHeader header = new TerrainPatch.GroupHeader
-                                                  {Stride = STRIDE, PatchSize = Constants.TerrainPatchSize};
+            TerrainPatch.GroupHeader header = new TerrainPatch.GroupHeader { Stride = STRIDE, PatchSize = Constants.TerrainPatchSize };
 
             byte[] data = new byte[x.Length * Constants.TerrainPatchSize * Constants.TerrainPatchSize * 2];
             BitPack bitpack = new BitPack(data, 0);
@@ -175,6 +138,31 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             return layer;
         }
 
+        // Used to send cloud and wind patches
+        public static LayerDataPacket CreateLayerDataPacket(TerrainPatch[] patches, byte type, int pRegionSizeX,
+                                                            int pRegionSizeY)
+        {
+            LayerDataPacket layer = new LayerDataPacket { LayerID = { Type = type } };
+
+            TerrainPatch.GroupHeader header = new TerrainPatch.GroupHeader { Stride = STRIDE, PatchSize = Constants.TerrainPatchSize };
+
+            // Should be enough to fit even the most poorly packed data
+            byte[] data = new byte[patches.Length * Constants.TerrainPatchSize * Constants.TerrainPatchSize * 2];
+            BitPack bitpack = new BitPack(data, 0);
+            bitpack.PackBits(header.Stride, 16);
+            bitpack.PackBits(header.PatchSize, 8);
+            bitpack.PackBits(type, 8);
+
+            foreach (TerrainPatch t in patches)
+                CreatePatch(bitpack, t.Data, t.X, t.Y, pRegionSizeX, pRegionSizeY);
+
+            bitpack.PackBits(END_OF_PATCHES, 8);
+
+            layer.LayerData.Data = new byte[bitpack.BytePos + 1];
+            Buffer.BlockCopy(bitpack.Data, 0, layer.LayerData.Data, 0, bitpack.BytePos + 1);
+
+            return layer;
+        }
         // Unused: left for historical reference.
         public static void CreatePatch(BitPack output, float[] patchData, int x, int y, int pRegionSizeX, int pRegionSizeY)
         {
@@ -241,51 +229,54 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             EncodePatch(output, patch, 0, wbits);
         }
 
-        private static TerrainPatch.Header PrescanPatch(float[] patch)
+        public static void DecodePatch(int[] patches, BitPack bitpack, TerrainPatch.Header header, int size)
         {
-            TerrainPatch.Header header = new TerrainPatch.Header();
-            float zmax = -99999999.0f;
-            float zmin = 99999999.0f;
-
-            for (int i = 0; i < Constants.TerrainPatchSize*Constants.TerrainPatchSize; i++)
+            for (int n = 0; n < size * size; n++)
             {
-                float val = patch[i];
-                if (val > zmax) zmax = val;
-                if (val < zmin) zmin = val;
-            }
-
-            header.DCOffset = zmin;
-            header.Range = (int) ((zmax - zmin) + 1.0f);
-
-            return header;
-        }
-
-        // Scan the height info we're returning and return a patch packet header for this patch.
-        private static TerrainPatch.Header PrescanPatch(TerrainData terrData, int patchX, int patchY)
-        {
-            TerrainPatch.Header header = new TerrainPatch.Header();
-            float zmax = -99999999.0f;
-            float zmin = 99999999.0f;
-
-            for (int j = patchY*Constants.TerrainPatchSize; j < (patchY + 1)*Constants.TerrainPatchSize; j++)
-            {
-                for (int i = patchX*Constants.TerrainPatchSize; i < (patchX + 1)*Constants.TerrainPatchSize; i++)
+                // ?
+                int temp = bitpack.UnpackBits(1);
+                if (temp != 0)
                 {
-                    float val = terrData[i, j];
-                    if (val > zmax) zmax = val;
-                    if (val < zmin) zmin = val;
+                    // Value or EOB
+                    temp = bitpack.UnpackBits(1);
+                    if (temp != 0)
+                    {
+                        // Value
+                        temp = bitpack.UnpackBits(1);
+                        if (temp != 0)
+                        {
+                            // Negative
+                            temp = bitpack.UnpackBits((int)header.WordBits);
+                            patches[n] = temp * -1;
+                        }
+                        else
+                        {
+                            // Positive
+                            temp = bitpack.UnpackBits((int)header.WordBits);
+                            patches[n] = temp;
+                        }
+                    }
+                    else
+                    {
+                        // Set the rest to zero
+                        // TODO: This might not be necessary
+                        for (int o = n; o < size * size; o++)
+                        {
+                            patches[o] = 0;
+                        }
+                        break;
+                    }
+                }
+                else
+                {
+                    patches[n] = 0;
                 }
             }
-
-            header.DCOffset = zmin;
-            header.Range = (int)((zmax - zmin) + 1.0f);
-
-            return header;
         }
 
         public static TerrainPatch.Header DecodePatchHeader(BitPack bitpack)
         {
-            TerrainPatch.Header header = new TerrainPatch.Header {QuantWBits = bitpack.UnpackBits(8)};
+            TerrainPatch.Header header = new TerrainPatch.Header { QuantWBits = bitpack.UnpackBits(8) };
 
             // Quantized word bits
             if (header.QuantWBits == END_OF_PATCHES)
@@ -301,9 +292,315 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             header.PatchIDs = bitpack.UnpackBits(10);
 
             // Word bits
-            header.WordBits = (uint) ((header.QuantWBits & 0x0f) + 2);
+            header.WordBits = (uint)((header.QuantWBits & 0x0f) + 2);
 
             return header;
+        }
+
+        public static float[] DecompressPatch(int[] patches, TerrainPatch.Header header, TerrainPatch.GroupHeader group)
+        {
+            float[] block = new float[group.PatchSize * group.PatchSize];
+            float[] output = new float[group.PatchSize * group.PatchSize];
+            int prequant = (header.QuantWBits >> 4) + 2;
+            int quantize = 1 << prequant;
+            float ooq = 1.0f / quantize;
+            float mult = ooq * header.Range;
+            float addval = mult * (1 << (prequant - 1)) + header.DCOffset;
+
+            if (group.PatchSize == Constants.TerrainPatchSize)
+            {
+                for (int n = 0; n < Constants.TerrainPatchSize * Constants.TerrainPatchSize; n++)
+                {
+                    block[n] = patches[CopyMatrix16[n]] * DequantizeTable16[n];
+                }
+
+                float[] ftemp = new float[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
+
+                for (int o = 0; o < Constants.TerrainPatchSize; o++)
+                    IDCTColumn16(block, ftemp, o);
+                for (int o = 0; o < Constants.TerrainPatchSize; o++)
+                    IDCTLine16(ftemp, block, o);
+            }
+            else
+            {
+                for (int n = 0; n < Constants.TerrainPatchSize * 2 * Constants.TerrainPatchSize * 2; n++)
+                {
+                    block[n] = patches[CopyMatrix32[n]] * DequantizeTable32[n];
+                }
+
+                Logger.Log("Implement IDCTPatchLarge", Helpers.LogLevel.Error);
+            }
+
+            for (int j = 0; j < block.Length; j++)
+            {
+                output[j] = block[j] * mult + addval;
+            }
+
+            return output;
+        }
+
+        private static int[] CompressPatch(float[] patchData, TerrainPatch.Header header, int prequant, out int wbits)
+        {
+            float[] block = new float[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
+            int wordsize = (prequant - 2) & 0x0f;
+            float oozrange = 1.0f / header.Range;
+            float range = (1 << prequant);
+            float premult = oozrange * range;
+            float sub = (1 << (prequant - 1)) + header.DCOffset * premult;
+
+            header.QuantWBits = wordsize;
+            header.QuantWBits |= wordsize << 4;
+
+            int k = 0;
+            for (int j = 0; j < Constants.TerrainPatchSize; j++)
+            {
+                for (int i = 0; i < Constants.TerrainPatchSize; i++)
+                    block[k++] = patchData[j * Constants.TerrainPatchSize + i] * premult - sub;
+            }
+
+            float[] ftemp = new float[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
+            int[] itemp = new int[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
+
+            int maxWbits = prequant + 5;
+            wbits = (prequant >> 1);
+
+            for (int o = 0; o < Constants.TerrainPatchSize; o++)
+                DCTLine16(block, ftemp, o);
+            for (int o = 0; o < Constants.TerrainPatchSize; o++)
+                wbits = DCTColumn16Wbits(ftemp, itemp, o, wbits, maxWbits);
+
+            return itemp;
+        }
+
+        private static int[] CompressPatch(float[,] patchData, TerrainPatch.Header header, int prequant, out int wbits)
+        {
+            float[] block = new float[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
+            float oozrange = 1.0f / header.Range;
+            float range = (1 << prequant);
+            float premult = oozrange * range;
+            float sub = (1 << (prequant - 1)) + header.DCOffset * premult;
+            int wordsize = (prequant - 2) & 0x0f;
+
+            header.QuantWBits = wordsize;
+            header.QuantWBits |= wordsize << 4;
+
+            int k = 0;
+            for (int j = 0; j < Constants.TerrainPatchSize; j++)
+            {
+                for (int i = 0; i < Constants.TerrainPatchSize; i++)
+                    block[k++] = patchData[j, i] * premult - sub;
+            }
+
+            float[] ftemp = new float[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
+            int[] itemp = new int[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
+
+            int maxWbits = prequant + 5;
+            wbits = (prequant >> 1);
+
+            for (int o = 0; o < Constants.TerrainPatchSize; o++)
+                DCTLine16(block, ftemp, o);
+            for (int o = 0; o < Constants.TerrainPatchSize; o++)
+                wbits = DCTColumn16Wbits(ftemp, itemp, o, wbits, maxWbits);
+
+            return itemp;
+        }
+
+        private static int[] CompressPatch(TerrainData terrData, int patchX, int patchY, TerrainPatch.Header header,
+                                                               int prequant, out int wbits)
+        {
+            float[] block = new float[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
+            int wordsize = prequant;
+            float oozrange = 1.0f / header.Range;
+            float range = (1 << prequant);
+            float premult = oozrange * range;
+            float sub = (1 << (prequant - 1)) + header.DCOffset * premult;
+
+            header.QuantWBits = wordsize - 2;
+            header.QuantWBits |= (prequant - 2) << 4;
+
+            int k = 0;
+
+            int yPatchLimit = patchY >= (terrData.SizeY / Constants.TerrainPatchSize) ?
+                            (terrData.SizeY - Constants.TerrainPatchSize) / Constants.TerrainPatchSize : patchY;
+            yPatchLimit = (yPatchLimit + 1) * Constants.TerrainPatchSize;
+
+            int xPatchLimit = patchX >= (terrData.SizeX / Constants.TerrainPatchSize) ?
+                            (terrData.SizeX - Constants.TerrainPatchSize) / Constants.TerrainPatchSize : patchX;
+            xPatchLimit = (xPatchLimit + 1) * Constants.TerrainPatchSize;
+
+            for (int yy = patchY * Constants.TerrainPatchSize; yy < yPatchLimit; yy++)
+            {
+                for (int xx = patchX * Constants.TerrainPatchSize; xx < xPatchLimit; xx++)
+                {
+                    block[k++] = terrData[xx, yy] * premult - sub;
+                }
+            }
+
+            float[] ftemp = new float[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
+            int[] itemp = new int[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
+
+            int maxWbits = prequant + 5;
+            wbits = (prequant >> 1);
+
+            for (int o = 0; o < Constants.TerrainPatchSize; o++)
+                DCTLine16(block, ftemp, o);
+            for (int o = 0; o < Constants.TerrainPatchSize; o++)
+                wbits = DCTColumn16Wbits(ftemp, itemp, o, wbits, maxWbits);
+
+            return itemp;
+        }
+
+        private static int DCTColumn16Wbits(float[] linein, int[] lineout, int column, int wbits, int maxwbits)
+        {
+            // input columns are in fact stored in lines now
+
+            bool dowbits = wbits != maxwbits;
+            int wbitsMaxValue = 1 << wbits;
+
+            float total = 0.0f;
+            //            const float oosob = 2.0f / Constants.TerrainPatchSize;
+            int inlinesptr = Constants.TerrainPatchSize * column;
+
+            for (int n = 0; n < Constants.TerrainPatchSize; n++)
+            {
+                total += linein[inlinesptr + n];
+            }
+
+            //            lineout[CopyMatrix16[column]] = (int)(OO_SQRT2 * total * oosob * QuantizeTable16[column]);
+            int tmp = (int)(OO_SQRT2 * total * QuantizeTable16[column]);
+            lineout[CopyMatrix16[column]] = tmp;
+
+            if (dowbits)
+            {
+                if (tmp < 0) tmp *= -1;
+                while (tmp > wbitsMaxValue)
+                {
+                    wbits++;
+                    wbitsMaxValue = 1 << wbits;
+                    if (wbits == maxwbits)
+                    {
+                        dowbits = false;
+                        break;
+                    }
+                }
+            }
+
+            for (int uptr = Constants.TerrainPatchSize;
+                 uptr < Constants.TerrainPatchSize * Constants.TerrainPatchSize;
+                 uptr += Constants.TerrainPatchSize)
+            {
+                total = 0.0f;
+
+                for (int n = inlinesptr, ptru = uptr; n < inlinesptr + Constants.TerrainPatchSize; n++, ptru++)
+                {
+                    total += linein[n] * CosineTable16[ptru];
+                }
+
+                tmp = (int)(total * QuantizeTable16[uptr + column]);
+                lineout[CopyMatrix16[uptr + column]] = tmp;
+
+                if (dowbits)
+                {
+                    if (tmp < 0) tmp *= -1;
+                    while (tmp > wbitsMaxValue)
+                    {
+                        wbits++;
+                        wbitsMaxValue = 1 << wbits;
+                        if (wbits == maxwbits)
+                        {
+                            dowbits = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            return wbits;
+        }
+
+        private static void DCTLine16(float[] linein, float[] lineout, int line)
+        {
+            // outputs transpose data (lines exchanged with coluns )
+            // so to save a bit of cpu when doing coluns
+            float total = 0.0f;
+            int lineSize = line * Constants.TerrainPatchSize;
+
+            for (int n = 0; n < Constants.TerrainPatchSize; n++)
+            {
+                total += linein[lineSize + n];
+            }
+
+            lineout[line] = OO_SQRT2 * total;
+
+            for (int u = Constants.TerrainPatchSize;
+                 u < Constants.TerrainPatchSize * Constants.TerrainPatchSize;
+                 u += Constants.TerrainPatchSize)
+            {
+                total = 0.0f;
+                for (int ptrn = lineSize, ptru = u; ptrn < lineSize + Constants.TerrainPatchSize; ptrn++, ptru++)
+                {
+                    total += linein[ptrn] * CosineTable16[ptru];
+                }
+
+                lineout[line + u] = total;
+            }
+        }
+
+        private static void EncodePatch(BitPack output, int[] patch, int postquant, int wbits)
+        {
+            int maxwbitssize = (1 << wbits) - 1;
+
+            if (postquant > Constants.TerrainPatchSize * Constants.TerrainPatchSize || postquant < 0)
+            {
+                Logger.Log("Postquant is outside the range of allowed values in EncodePatch()", Helpers.LogLevel.Error);
+                return;
+            }
+
+            if (postquant != 0) patch[Constants.TerrainPatchSize * Constants.TerrainPatchSize - postquant] = 0;
+
+            for (int i = 0; i < Constants.TerrainPatchSize * Constants.TerrainPatchSize; i++)
+            {
+                int temp = patch[i];
+
+                if (temp == 0)
+                {
+                    bool eob = true;
+
+                    for (int j = i; j < Constants.TerrainPatchSize * Constants.TerrainPatchSize - postquant; j++)
+                    {
+                        if (patch[j] != 0)
+                        {
+                            eob = false;
+                            break;
+                        }
+                    }
+
+                    if (eob)
+                    {
+                        output.PackBits(ZERO_EOB, 2);
+                        return;
+                    }
+                    output.PackBits(ZERO_CODE, 1);
+                }
+                else
+                {
+                    if (temp < 0)
+                    {
+                        temp *= -1;
+
+                        if (temp > maxwbitssize) temp = maxwbitssize;
+
+                        output.PackBits(NEGATIVE_VALUE, 3);
+                        output.PackBits(temp, wbits);
+                    }
+                    else
+                    {
+                        if (temp > maxwbitssize) temp = maxwbitssize;
+
+                        output.PackBits(POSITIVE_VALUE, 3);
+                        output.PackBits(temp, wbits);
+                    }
+                }
+            }
         }
 
         private static int EncodePatchHeader(BitPack output, TerrainPatch.Header header, int[] patch, uint pRegionSizeX,
@@ -339,7 +636,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
                                     break;
                                 }
                             }
- 
+
                             while (temp > wbitsMaxValue)
                                 {
                                 wbits++;
@@ -379,94 +676,105 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         {
             for (int n = 0; n < Constants.TerrainPatchSize; n++)
             {
-                float total = OO_SQRT2*linein[column];
+                float total = OO_SQRT2 * linein[column];
 
                 for (int u = 1; u < Constants.TerrainPatchSize; u++)
                 {
-                    int usize = u*Constants.TerrainPatchSize;
-                    total += linein[usize + column]*CosineTable16[usize + n];
+                    int usize = u * Constants.TerrainPatchSize;
+                    total += linein[usize + column] * CosineTable16[usize + n];
                 }
 
-                lineout[Constants.TerrainPatchSize*n + column] = total;
+                lineout[Constants.TerrainPatchSize * n + column] = total;
             }
         }
 
         private static void IDCTLine16(float[] linein, float[] lineout, int line)
         {
-            const float oosob = 2.0f/Constants.TerrainPatchSize;
-            int lineSize = line*Constants.TerrainPatchSize;
-
-            for (int n = 0; n < Constants.TerrainPatchSize; n++)
-            {
-                float total = OO_SQRT2*linein[lineSize];
-
-                for (int u = 1; u < Constants.TerrainPatchSize; u++)
-                {
-                    total += linein[lineSize + u]*CosineTable16[u*Constants.TerrainPatchSize + n];
-                }
-
-                lineout[lineSize + n] = total*oosob;
-            }
-        }
-
-/*
-        private static void DCTLine16(float[] linein, float[] lineout, int line)
-        {
-            float total = 0.0f;
+            const float oosob = 2.0f / Constants.TerrainPatchSize;
             int lineSize = line * Constants.TerrainPatchSize;
 
             for (int n = 0; n < Constants.TerrainPatchSize; n++)
             {
-                total += linein[lineSize + n];
-            }
+                float total = OO_SQRT2 * linein[lineSize];
 
-            lineout[lineSize] = OO_SQRT2 * total;
-
-            int uptr = 0;
-            for (int u = 1; u < Constants.TerrainPatchSize; u++)
-            {
-                total = 0.0f;
-                uptr += Constants.TerrainPatchSize;
-
-                for (int n = 0; n < Constants.TerrainPatchSize; n++)
+                for (int u = 1; u < Constants.TerrainPatchSize; u++)
                 {
-                    total += linein[lineSize + n] * CosineTable16[uptr + n];
+                    total += linein[lineSize + u] * CosineTable16[u * Constants.TerrainPatchSize + n];
                 }
 
-                lineout[lineSize + u] = total;
+                lineout[lineSize + n] = total * oosob;
             }
         }
-*/
 
-        private static void DCTLine16(float[] linein, float[] lineout, int line)
+        private static TerrainPatch.Header PrescanPatch(float[] patch)
         {
-            // outputs transpose data (lines exchanged with coluns )
-            // so to save a bit of cpu when doing coluns
-            float total = 0.0f;
-            int lineSize = line*Constants.TerrainPatchSize;
+            TerrainPatch.Header header = new TerrainPatch.Header();
+            float zmax = -99999999.0f;
+            float zmin = 99999999.0f;
 
-            for (int n = 0; n < Constants.TerrainPatchSize; n++)
+            for (int i = 0; i < Constants.TerrainPatchSize * Constants.TerrainPatchSize; i++)
             {
-                total += linein[lineSize + n];
+                float val = patch[i];
+                if (val > zmax) zmax = val;
+                if (val < zmin) zmin = val;
             }
 
-            lineout[line] = OO_SQRT2*total;
+            header.DCOffset = zmin;
+            header.Range = (int)((zmax - zmin) + 1.0f);
 
-            for (int u = Constants.TerrainPatchSize;
-                 u < Constants.TerrainPatchSize*Constants.TerrainPatchSize;
-                 u += Constants.TerrainPatchSize)
-            {
-                total = 0.0f;
-                for (int ptrn = lineSize, ptru = u; ptrn < lineSize + Constants.TerrainPatchSize; ptrn++,ptru++)
-                {
-                    total += linein[ptrn]*CosineTable16[ptru];
-                }
-
-                lineout[line + u] = total;
-            }
+            return header;
         }
 
+        // Scan the height info we're returning and return a patch packet header for this patch.
+        private static TerrainPatch.Header PrescanPatch(TerrainData terrData, int patchX, int patchY)
+        {
+            TerrainPatch.Header header = new TerrainPatch.Header();
+            float zmax = -99999999.0f;
+            float zmin = 99999999.0f;
 
+            for (int j = patchY * Constants.TerrainPatchSize; j < (patchY + 1) * Constants.TerrainPatchSize; j++)
+            {
+                for (int i = patchX * Constants.TerrainPatchSize; i < (patchX + 1) * Constants.TerrainPatchSize; i++)
+                {
+                    float val = terrData[i, j];
+                    if (val > zmax) zmax = val;
+                    if (val < zmin) zmin = val;
+                }
+            }
+
+            header.DCOffset = zmin;
+            header.Range = (int)((zmax - zmin) + 1.0f);
+
+            return header;
+        }
+        /*
+                private static void DCTLine16(float[] linein, float[] lineout, int line)
+                {
+                    float total = 0.0f;
+                    int lineSize = line * Constants.TerrainPatchSize;
+
+                    for (int n = 0; n < Constants.TerrainPatchSize; n++)
+                    {
+                        total += linein[lineSize + n];
+                    }
+
+                    lineout[lineSize] = OO_SQRT2 * total;
+
+                    int uptr = 0;
+                    for (int u = 1; u < Constants.TerrainPatchSize; u++)
+                    {
+                        total = 0.0f;
+                        uptr += Constants.TerrainPatchSize;
+
+                        for (int n = 0; n < Constants.TerrainPatchSize; n++)
+                        {
+                            total += linein[lineSize + n] * CosineTable16[uptr + n];
+                        }
+
+                        lineout[lineSize + u] = total;
+                    }
+                }
+        */
         /*
                 private static void DCTColumn16(float[] linein, int[] lineout, int column)
                 {
@@ -527,369 +835,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             }
         }
         */
-
-        private static int DCTColumn16Wbits(float[] linein, int[] lineout, int column, int wbits, int maxwbits)
-        {
-            // input columns are in fact stored in lines now
-
-            bool dowbits = wbits != maxwbits;
-            int wbitsMaxValue = 1 << wbits;
-
-            float total = 0.0f;
-            //            const float oosob = 2.0f / Constants.TerrainPatchSize;
-            int inlinesptr = Constants.TerrainPatchSize*column;
-
-            for (int n = 0; n < Constants.TerrainPatchSize; n++)
-            {
-                total += linein[inlinesptr + n];
-            }
-
-            //            lineout[CopyMatrix16[column]] = (int)(OO_SQRT2 * total * oosob * QuantizeTable16[column]);
-            int tmp = (int) (OO_SQRT2*total*QuantizeTable16[column]);
-            lineout[CopyMatrix16[column]] = tmp;
-
-            if (dowbits)
-            {
-                if (tmp < 0) tmp *= -1;
-                while (tmp > wbitsMaxValue)
-                {
-                    wbits++;
-                    wbitsMaxValue = 1 << wbits;
-                    if (wbits == maxwbits)
-                    {
-                        dowbits = false;
-                        break;
-                    }
-                }
-            }
-
-            for (int uptr = Constants.TerrainPatchSize;
-                 uptr < Constants.TerrainPatchSize*Constants.TerrainPatchSize;
-                 uptr += Constants.TerrainPatchSize)
-            {
-                total = 0.0f;
-
-                for (int n = inlinesptr, ptru = uptr; n < inlinesptr + Constants.TerrainPatchSize; n++, ptru++)
-                {
-                    total += linein[n]*CosineTable16[ptru];
-                }
-
-                tmp = (int) (total*QuantizeTable16[uptr + column]);
-                lineout[CopyMatrix16[uptr + column]] = tmp;
-
-                if (dowbits)
-                {
-                    if (tmp < 0) tmp *= -1;
-                    while (tmp > wbitsMaxValue)
-                    {
-                        wbits++;
-                        wbitsMaxValue = 1 << wbits;
-                        if (wbits == maxwbits)
-                        {
-                            dowbits = false;
-                            break;
-                        }
-                    }
-                }
-            }
-            return wbits;
-        }
-
-        public static void DecodePatch(int[] patches, BitPack bitpack, TerrainPatch.Header header, int size)
-        {
-            for (int n = 0; n < size*size; n++)
-            {
-                // ?
-                int temp = bitpack.UnpackBits(1);
-                if (temp != 0)
-                {
-                    // Value or EOB
-                    temp = bitpack.UnpackBits(1);
-                    if (temp != 0)
-                    {
-                        // Value
-                        temp = bitpack.UnpackBits(1);
-                        if (temp != 0)
-                        {
-                            // Negative
-                            temp = bitpack.UnpackBits((int) header.WordBits);
-                            patches[n] = temp*-1;
-                        }
-                        else
-                        {
-                            // Positive
-                            temp = bitpack.UnpackBits((int) header.WordBits);
-                            patches[n] = temp;
-                        }
-                    }
-                    else
-                    {
-                        // Set the rest to zero
-                        // TODO: This might not be necessary
-                        for (int o = n; o < size*size; o++)
-                        {
-                            patches[o] = 0;
-                        }
-                        break;
-                    }
-                }
-                else
-                {
-                    patches[n] = 0;
-                }
-            }
-        }
-
-        private static void EncodePatch(BitPack output, int[] patch, int postquant, int wbits)
-        {
-            int maxwbitssize = (1 << wbits) - 1;
-
-            if (postquant > Constants.TerrainPatchSize*Constants.TerrainPatchSize || postquant < 0)
-            {
-                Logger.Log("Postquant is outside the range of allowed values in EncodePatch()", Helpers.LogLevel.Error);
-                return;
-            }
-
-            if (postquant != 0) patch[Constants.TerrainPatchSize*Constants.TerrainPatchSize - postquant] = 0;
-
-            for (int i = 0; i < Constants.TerrainPatchSize*Constants.TerrainPatchSize; i++)
-            {
-                int temp = patch[i];
-
-                if (temp == 0)
-                {
-                    bool eob = true;
-
-                    for (int j = i; j < Constants.TerrainPatchSize*Constants.TerrainPatchSize - postquant; j++)
-                    {
-                        if (patch[j] != 0)
-                        {
-                            eob = false;
-                            break;
-                        }
-                    }
-
-                    if (eob)
-                    {
-                        output.PackBits(ZERO_EOB, 2);
-                        return;
-                    }
-                    output.PackBits(ZERO_CODE, 1);
-                }
-                else
-                {
-                    if (temp < 0)
-                    {
-                        temp *= -1;
-
-                        if (temp > maxwbitssize) temp = maxwbitssize;
-
-                        output.PackBits(NEGATIVE_VALUE, 3);
-                        output.PackBits(temp, wbits);
-                    }
-                    else
-                    {
-                        if (temp > maxwbitssize) temp = maxwbitssize;
-
-                        output.PackBits(POSITIVE_VALUE, 3);
-                        output.PackBits(temp, wbits);
-                    }
-                }
-            }
-        }
-
-        public static float[] DecompressPatch(int[] patches, TerrainPatch.Header header, TerrainPatch.GroupHeader group)
-        {
-            float[] block = new float[group.PatchSize*group.PatchSize];
-            float[] output = new float[group.PatchSize*group.PatchSize];
-            int prequant = (header.QuantWBits >> 4) + 2;
-            int quantize = 1 << prequant;
-            float ooq = 1.0f/quantize;
-            float mult = ooq*header.Range;
-            float addval = mult*(1 << (prequant - 1)) + header.DCOffset;
-
-            if (group.PatchSize == Constants.TerrainPatchSize)
-            {
-                for (int n = 0; n < Constants.TerrainPatchSize*Constants.TerrainPatchSize; n++)
-                {
-                    block[n] = patches[CopyMatrix16[n]]*DequantizeTable16[n];
-                }
-
-                float[] ftemp = new float[Constants.TerrainPatchSize*Constants.TerrainPatchSize];
-
-                for (int o = 0; o < Constants.TerrainPatchSize; o++)
-                    IDCTColumn16(block, ftemp, o);
-                for (int o = 0; o < Constants.TerrainPatchSize; o++)
-                    IDCTLine16(ftemp, block, o);
-            }
-            else
-            {
-                for (int n = 0; n < Constants.TerrainPatchSize*2*Constants.TerrainPatchSize*2; n++)
-                {
-                    block[n] = patches[CopyMatrix32[n]]*DequantizeTable32[n];
-                }
-
-                Logger.Log("Implement IDCTPatchLarge", Helpers.LogLevel.Error);
-            }
-
-            for (int j = 0; j < block.Length; j++)
-            {
-                output[j] = block[j]*mult + addval;
-            }
-
-            return output;
-        }
-
-        private static int[] CompressPatch(float[] patchData, TerrainPatch.Header header, int prequant, out int wbits)
-        {
-            float[] block = new float[Constants.TerrainPatchSize*Constants.TerrainPatchSize];
-            int wordsize = (prequant - 2) & 0x0f;
-            float oozrange = 1.0f/header.Range;
-            float range = (1 << prequant);
-            float premult = oozrange*range;
-            float sub = (1 << (prequant - 1)) + header.DCOffset*premult;
-
-            header.QuantWBits = wordsize;
-            header.QuantWBits |= wordsize << 4;
-
-            int k = 0;
-            for (int j = 0; j < Constants.TerrainPatchSize; j++)
-            {
-                for (int i = 0; i < Constants.TerrainPatchSize; i++)
-                    block[k++] = patchData[j*Constants.TerrainPatchSize + i]*premult - sub;
-            }
-
-            float[] ftemp = new float[Constants.TerrainPatchSize*Constants.TerrainPatchSize];
-            int[] itemp = new int[Constants.TerrainPatchSize*Constants.TerrainPatchSize];
-
-
-            int maxWbits = prequant + 5;
-            wbits = (prequant >> 1);
-
-            for (int o = 0; o < Constants.TerrainPatchSize; o++)
-                DCTLine16(block, ftemp, o);
-            for (int o = 0; o < Constants.TerrainPatchSize; o++)
-                wbits = DCTColumn16Wbits(ftemp, itemp, o, wbits, maxWbits);
-
-            return itemp;
-        }
-
-        private static int[] CompressPatch(float[,] patchData, TerrainPatch.Header header, int prequant, out int wbits)
-        {
-            float[] block = new float[Constants.TerrainPatchSize*Constants.TerrainPatchSize];
-            float oozrange = 1.0f/header.Range;
-            float range = (1 << prequant);
-            float premult = oozrange*range;
-            float sub = (1 << (prequant - 1)) + header.DCOffset*premult;
-            int wordsize = (prequant - 2) & 0x0f;
-
-            header.QuantWBits = wordsize;
-            header.QuantWBits |= wordsize << 4;
-
-            int k = 0;
-            for (int j = 0; j < Constants.TerrainPatchSize; j++)
-            {
-                for (int i = 0; i < Constants.TerrainPatchSize; i++)
-                    block[k++] = patchData[j, i]*premult - sub;
-            }
-
-            float[] ftemp = new float[Constants.TerrainPatchSize*Constants.TerrainPatchSize];
-            int[] itemp = new int[Constants.TerrainPatchSize*Constants.TerrainPatchSize];
-
-            int maxWbits = prequant + 5;
-            wbits = (prequant >> 1);
-
-            for (int o = 0; o < Constants.TerrainPatchSize; o++)
-                DCTLine16(block, ftemp, o);
-            for (int o = 0; o < Constants.TerrainPatchSize; o++)
-                wbits = DCTColumn16Wbits(ftemp, itemp, o, wbits, maxWbits);
-
-            return itemp;
-        }
-
-        private static int[] CompressPatch(TerrainData terrData, int patchX, int patchY, TerrainPatch.Header header,
-                                                               int prequant, out int wbits)
-        {
-            float[] block = new float[Constants.TerrainPatchSize*Constants.TerrainPatchSize];
-            int wordsize = prequant;
-            float oozrange = 1.0f/header.Range;
-            float range = (1 << prequant);
-            float premult = oozrange*range;
-            float sub = (1 << (prequant - 1)) + header.DCOffset*premult;
-
-            header.QuantWBits = wordsize - 2;
-            header.QuantWBits |= (prequant - 2) << 4;
-
-            int k = 0;
-
-            int yPatchLimit = patchY >= (terrData.SizeY / Constants.TerrainPatchSize) ?
-                            (terrData.SizeY - Constants.TerrainPatchSize) / Constants.TerrainPatchSize : patchY;
-            yPatchLimit = (yPatchLimit + 1) * Constants.TerrainPatchSize;
-
-            int xPatchLimit = patchX >= (terrData.SizeX / Constants.TerrainPatchSize) ?
-                            (terrData.SizeX - Constants.TerrainPatchSize) / Constants.TerrainPatchSize : patchX;
-            xPatchLimit = (xPatchLimit + 1) * Constants.TerrainPatchSize;
-
-            for (int yy = patchY * Constants.TerrainPatchSize; yy < yPatchLimit; yy++)
-            {
-                for (int xx = patchX * Constants.TerrainPatchSize; xx < xPatchLimit; xx++)
-                {
-                    block[k++] = terrData[xx, yy] * premult - sub;
-                }
-            }
-
-            float[] ftemp = new float[Constants.TerrainPatchSize*Constants.TerrainPatchSize];
-            int[] itemp = new int[Constants.TerrainPatchSize*Constants.TerrainPatchSize];
-
-            int maxWbits = prequant + 5;
-            wbits = (prequant >> 1);
-
-            for (int o = 0; o < Constants.TerrainPatchSize; o++)
-                DCTLine16(block, ftemp, o);
-            for (int o = 0; o < Constants.TerrainPatchSize; o++)
-                wbits = DCTColumn16Wbits(ftemp, itemp, o, wbits, maxWbits);
-
-            return itemp;
-        }
-
         #region Initialization
-
-        private static void BuildDequantizeTable16()
-        {
-            for (int j = 0; j < Constants.TerrainPatchSize; j++)
-            {
-                for (int i = 0; i < Constants.TerrainPatchSize; i++)
-                {
-                    DequantizeTable16[j*Constants.TerrainPatchSize + i] = 1.0f + 2.0f*(i + j);
-                }
-            }
-        }
-
-        private static void BuildQuantizeTable16()
-        {
-            const float oosob = 2.0f/Constants.TerrainPatchSize;
-            for (int j = 0; j < Constants.TerrainPatchSize; j++)
-            {
-                for (int i = 0; i < Constants.TerrainPatchSize; i++)
-                {
-//                    QuantizeTable16[j * Constants.TerrainPatchSize + i] = 1.0f / (1.0f + 2.0f * ((float)i + (float)j));
-                    QuantizeTable16[j*Constants.TerrainPatchSize + i] = oosob/(1.0f + 2.0f*(i + (float) j));
-                }
-            }
-        }
-
-        private static void SetupCosines16()
-        {
-            const float hposz = (float) Math.PI*0.5f/Constants.TerrainPatchSize;
-
-            for (int u = 0; u < Constants.TerrainPatchSize; u++)
-            {
-                for (int n = 0; n < Constants.TerrainPatchSize; n++)
-                {
-                    CosineTable16[u*Constants.TerrainPatchSize + n] = (float) Math.Cos((2.0f*n + 1.0f)*u*hposz);
-                }
-            }
-        }
 
         private static void BuildCopyMatrix16()
         {
@@ -901,7 +847,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
             while (i < Constants.TerrainPatchSize && j < Constants.TerrainPatchSize)
             {
-                CopyMatrix16[j*Constants.TerrainPatchSize + i] = count++;
+                CopyMatrix16[j * Constants.TerrainPatchSize + i] = count++;
 
                 if (!diag)
                 {
@@ -940,6 +886,42 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             }
         }
 
+        private static void BuildDequantizeTable16()
+        {
+            for (int j = 0; j < Constants.TerrainPatchSize; j++)
+            {
+                for (int i = 0; i < Constants.TerrainPatchSize; i++)
+                {
+                    DequantizeTable16[j * Constants.TerrainPatchSize + i] = 1.0f + 2.0f * (i + j);
+                }
+            }
+        }
+
+        private static void BuildQuantizeTable16()
+        {
+            const float oosob = 2.0f / Constants.TerrainPatchSize;
+            for (int j = 0; j < Constants.TerrainPatchSize; j++)
+            {
+                for (int i = 0; i < Constants.TerrainPatchSize; i++)
+                {
+                    //                    QuantizeTable16[j * Constants.TerrainPatchSize + i] = 1.0f / (1.0f + 2.0f * ((float)i + (float)j));
+                    QuantizeTable16[j * Constants.TerrainPatchSize + i] = oosob / (1.0f + 2.0f * (i + (float)j));
+                }
+            }
+        }
+
+        private static void SetupCosines16()
+        {
+            const float hposz = (float)Math.PI * 0.5f / Constants.TerrainPatchSize;
+
+            for (int u = 0; u < Constants.TerrainPatchSize; u++)
+            {
+                for (int n = 0; n < Constants.TerrainPatchSize; n++)
+                {
+                    CosineTable16[u * Constants.TerrainPatchSize + n] = (float)Math.Cos((2.0f * n + 1.0f) * u * hposz);
+                }
+            }
+        }
         #endregion Initialization
     }
 }

@@ -25,16 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using OpenMetaverse;
-
 namespace OpenSim.Region.Framework.Interfaces
 {
     public interface ISunModule : INonSharedRegionModule
     {
+        float GetCurrentSunHour();
+
         double GetSunParameter(string param);
 
         void SetSunParameter(string param, double value);
-
-        float GetCurrentSunHour();
     }
 }

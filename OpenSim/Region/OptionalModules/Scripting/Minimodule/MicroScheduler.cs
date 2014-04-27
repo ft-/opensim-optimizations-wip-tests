@@ -25,17 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
+using OpenSim.Region.OptionalModules.Scripting.Minimodule.Interfaces;
 using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
-using log4net;
-using OpenSim.Region.OptionalModules.Scripting.Minimodule.Interfaces;
 
 namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
-    public class MicroScheduler : System.MarshalByRefObject, IMicrothreader 
+    public class MicroScheduler : System.MarshalByRefObject, IMicrothreader
     {
         private readonly List<IEnumerator> m_threads = new List<IEnumerator>();
 
@@ -57,11 +53,10 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
                 {
                     i++;
 
-                    bool running = m_threads[i%m_threads.Count].MoveNext();
-
+                    bool running = m_threads[i % m_threads.Count].MoveNext();
 
                     if (!running)
-                        m_threads.Remove(m_threads[i%m_threads.Count]);
+                        m_threads.Remove(m_threads[i % m_threads.Count]);
                 }
             }
         }

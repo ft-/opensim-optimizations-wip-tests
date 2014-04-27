@@ -25,22 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using Nini.Config;
 using log4net;
-using System;
-using System.Reflection;
-using System.IO;
-using System.Net;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Xml;
-using System.Xml.Serialization;
-using System.Collections.Generic;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
+using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Framework.Servers.HttpServer;
-using OpenMetaverse;
+using OpenSim.Server.Base;
+using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Xml;
 
 namespace OpenSim.Server.Handlers.GridUser
 {
@@ -51,7 +46,7 @@ namespace OpenSim.Server.Handlers.GridUser
         private IGridUserService m_GridUserService;
 
         public GridUserServerPostHandler(IGridUserService service) :
-                base("POST", "/griduser")
+            base("POST", "/griduser")
         {
             m_GridUserService = service;
         }
@@ -80,14 +75,19 @@ namespace OpenSim.Server.Handlers.GridUser
                 {
                     case "loggedin":
                         return LoggedIn(request);
+
                     case "loggedout":
                         return LoggedOut(request);
+
                     case "sethome":
                         return SetHome(request);
+
                     case "setposition":
                         return SetPosition(request);
+
                     case "getgriduserinfo":
                         return GetGridUserInfo(request);
+
                     case "getgriduserinfos":
                         return GetGridUserInfos(request);
                 }
@@ -99,81 +99,42 @@ namespace OpenSim.Server.Handlers.GridUser
             }
 
             return FailureResult();
-
         }
 
-        byte[] LoggedIn(Dictionary<string, object> request)
+        private byte[] DocToBytes(XmlDocument doc)
         {
-            string user = String.Empty;
+            MemoryStream ms = new MemoryStream();
+            XmlTextWriter xw = new XmlTextWriter(ms, null);
+            xw.Formatting = Formatting.Indented;
+            doc.WriteTo(xw);
+            xw.Flush();
 
-            if (!request.ContainsKey("UserID"))
-                return FailureResult();
-
-            user = request["UserID"].ToString();
-
-            GridUserInfo guinfo = m_GridUserService.LoggedIn(user);
-
-            Dictionary<string, object> result = new Dictionary<string, object>();
-            result["result"] = guinfo.ToKeyValuePairs();
-
-            string xmlString = ServerUtils.BuildXmlResponse(result);
-
-            //m_log.DebugFormat("[GRID USER HANDLER]: resp string: {0}", xmlString);
-            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
+            return ms.ToArray();
         }
 
-        byte[] LoggedOut(Dictionary<string, object> request)
+        private byte[] FailureResult()
         {
-            string userID = string.Empty;
-            UUID regionID = UUID.Zero;
-            Vector3 position = Vector3.Zero;
-            Vector3 lookat = Vector3.Zero;
+            XmlDocument doc = new XmlDocument();
 
-            if (!UnpackArgs(request, out userID, out regionID, out position, out lookat))
-                return FailureResult();
+            XmlNode xmlnode = doc.CreateNode(XmlNodeType.XmlDeclaration,
+                    "", "");
 
-            if (m_GridUserService.LoggedOut(userID, UUID.Zero, regionID, position, lookat))
-                return SuccessResult();
+            doc.AppendChild(xmlnode);
 
-            return FailureResult();
+            XmlElement rootElement = doc.CreateElement("", "ServerResponse",
+                    "");
+
+            doc.AppendChild(rootElement);
+
+            XmlElement result = doc.CreateElement("", "result", "");
+            result.AppendChild(doc.CreateTextNode("Failure"));
+
+            rootElement.AppendChild(result);
+
+            return DocToBytes(doc);
         }
 
-        byte[] SetHome(Dictionary<string, object> request)
-        {
-            string user = string.Empty;
-            UUID region = UUID.Zero;
-            Vector3 position = new Vector3(128, 128, 70);
-            Vector3 look = Vector3.Zero;
-
-            if (!UnpackArgs(request, out user, out region, out position, out look))
-                return FailureResult();
-
-            if (m_GridUserService.SetHome(user, region, position, look))
-                return SuccessResult();
-
-            return FailureResult();
-        }
-
-        byte[] SetPosition(Dictionary<string, object> request)
-        {
-            string user = string.Empty;
-            UUID region = UUID.Zero;
-            Vector3 position = new Vector3(128, 128, 70);
-            Vector3 look = Vector3.Zero;
-
-            if (!request.ContainsKey("UserID") || !request.ContainsKey("RegionID"))
-                return FailureResult();
-
-            if (!UnpackArgs(request, out user, out region, out position, out look))
-                return FailureResult();
-
-            if (m_GridUserService.SetLastPosition(user, UUID.Zero, region, position, look))
-                return SuccessResult();
-
-            return FailureResult();
-        }
-
-        byte[] GetGridUserInfo(Dictionary<string, object> request)
+        private byte[] GetGridUserInfo(Dictionary<string, object> request)
         {
             string user = String.Empty;
 
@@ -195,9 +156,8 @@ namespace OpenSim.Server.Handlers.GridUser
             return Util.UTF8NoBomEncoding.GetBytes(xmlString);
         }
 
-        byte[] GetGridUserInfos(Dictionary<string, object> request)
+        private byte[] GetGridUserInfos(Dictionary<string, object> request)
         {
-
             string[] userIDs;
 
             if (!request.ContainsKey("AgentIDs"))
@@ -234,6 +194,98 @@ namespace OpenSim.Server.Handlers.GridUser
             return Util.UTF8NoBomEncoding.GetBytes(xmlString);
         }
 
+        private byte[] LoggedIn(Dictionary<string, object> request)
+        {
+            string user = String.Empty;
+
+            if (!request.ContainsKey("UserID"))
+                return FailureResult();
+
+            user = request["UserID"].ToString();
+
+            GridUserInfo guinfo = m_GridUserService.LoggedIn(user);
+
+            Dictionary<string, object> result = new Dictionary<string, object>();
+            result["result"] = guinfo.ToKeyValuePairs();
+
+            string xmlString = ServerUtils.BuildXmlResponse(result);
+
+            //m_log.DebugFormat("[GRID USER HANDLER]: resp string: {0}", xmlString);
+            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
+        }
+
+        private byte[] LoggedOut(Dictionary<string, object> request)
+        {
+            string userID = string.Empty;
+            UUID regionID = UUID.Zero;
+            Vector3 position = Vector3.Zero;
+            Vector3 lookat = Vector3.Zero;
+
+            if (!UnpackArgs(request, out userID, out regionID, out position, out lookat))
+                return FailureResult();
+
+            if (m_GridUserService.LoggedOut(userID, UUID.Zero, regionID, position, lookat))
+                return SuccessResult();
+
+            return FailureResult();
+        }
+
+        private byte[] SetHome(Dictionary<string, object> request)
+        {
+            string user = string.Empty;
+            UUID region = UUID.Zero;
+            Vector3 position = new Vector3(128, 128, 70);
+            Vector3 look = Vector3.Zero;
+
+            if (!UnpackArgs(request, out user, out region, out position, out look))
+                return FailureResult();
+
+            if (m_GridUserService.SetHome(user, region, position, look))
+                return SuccessResult();
+
+            return FailureResult();
+        }
+
+        private byte[] SetPosition(Dictionary<string, object> request)
+        {
+            string user = string.Empty;
+            UUID region = UUID.Zero;
+            Vector3 position = new Vector3(128, 128, 70);
+            Vector3 look = Vector3.Zero;
+
+            if (!request.ContainsKey("UserID") || !request.ContainsKey("RegionID"))
+                return FailureResult();
+
+            if (!UnpackArgs(request, out user, out region, out position, out look))
+                return FailureResult();
+
+            if (m_GridUserService.SetLastPosition(user, UUID.Zero, region, position, look))
+                return SuccessResult();
+
+            return FailureResult();
+        }
+        private byte[] SuccessResult()
+        {
+            XmlDocument doc = new XmlDocument();
+
+            XmlNode xmlnode = doc.CreateNode(XmlNodeType.XmlDeclaration,
+                    "", "");
+
+            doc.AppendChild(xmlnode);
+
+            XmlElement rootElement = doc.CreateElement("", "ServerResponse",
+                    "");
+
+            doc.AppendChild(rootElement);
+
+            XmlElement result = doc.CreateElement("", "result", "");
+            result.AppendChild(doc.CreateTextNode("Success"));
+
+            rootElement.AppendChild(result);
+
+            return DocToBytes(doc);
+        }
+
         private bool UnpackArgs(Dictionary<string, object> request, out string user, out UUID region, out Vector3 position, out Vector3 lookAt)
         {
             user = string.Empty;
@@ -257,63 +309,5 @@ namespace OpenSim.Server.Handlers.GridUser
 
             return true;
         }
-
-
-        private byte[] SuccessResult()
-        {
-            XmlDocument doc = new XmlDocument();
-
-            XmlNode xmlnode = doc.CreateNode(XmlNodeType.XmlDeclaration,
-                    "", "");
-
-            doc.AppendChild(xmlnode);
-
-            XmlElement rootElement = doc.CreateElement("", "ServerResponse",
-                    "");
-
-            doc.AppendChild(rootElement);
-
-            XmlElement result = doc.CreateElement("", "result", "");
-            result.AppendChild(doc.CreateTextNode("Success"));
-
-            rootElement.AppendChild(result);
-
-            return DocToBytes(doc);
-        }
-
-        private byte[] FailureResult()
-        {
-            XmlDocument doc = new XmlDocument();
-
-            XmlNode xmlnode = doc.CreateNode(XmlNodeType.XmlDeclaration,
-                    "", "");
-
-            doc.AppendChild(xmlnode);
-
-            XmlElement rootElement = doc.CreateElement("", "ServerResponse",
-                    "");
-
-            doc.AppendChild(rootElement);
-
-            XmlElement result = doc.CreateElement("", "result", "");
-            result.AppendChild(doc.CreateTextNode("Failure"));
-
-            rootElement.AppendChild(result);
-
-            return DocToBytes(doc);
-        }
-
-        private byte[] DocToBytes(XmlDocument doc)
-        {
-            MemoryStream ms = new MemoryStream();
-            XmlTextWriter xw = new XmlTextWriter(ms, null);
-            xw.Formatting = Formatting.Indented;
-            doc.WriteTo(xw);
-            xw.Flush();
-
-            return ms.ToArray();
-        }
-
-
     }
 }

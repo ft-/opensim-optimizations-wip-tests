@@ -25,9 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
 using OpenMetaverse;
 using OpenSim.Framework;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
@@ -36,6 +36,8 @@ namespace OpenSim.Region.Framework.Interfaces
     public interface IGroupsModule
     {
         event NewGroupNotice OnNewGroupNotice;
+
+        void ActivateGroup(IClientAPI remoteClient, UUID groupID);
 
         /// <summary>
         /// Create a group
@@ -51,8 +53,16 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="maturePublish"></param>
         /// <returns>The UUID of the created group</returns>
         UUID CreateGroup(
-            IClientAPI remoteClient, string name, string charter, bool showInList, UUID insigniaID, int membershipFee, 
+            IClientAPI remoteClient, string name, string charter, bool showInList, UUID insigniaID, int membershipFee,
             bool openEnrollment, bool allowPublish, bool maturePublish);
+
+        GridInstantMessage CreateGroupNoticeIM(UUID agentID, UUID groupNoticeID, byte dialog);
+
+        void EjectGroupMember(IClientAPI remoteClient, UUID agentID, UUID GroupID, UUID EjecteeID);
+
+        void EjectGroupMemberRequest(IClientAPI remoteClient, UUID GroupID, UUID EjecteeID);
+
+        List<DirGroupsReplyData> FindGroups(IClientAPI remoteClient, string query);
 
         /// <summary>
         /// Get a group
@@ -67,37 +77,45 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="GroupID">ID of the group</param>
         /// <returns>The group's data.  Null if there is no such group.</returns>
         GroupRecord GetGroupRecord(UUID GroupID);
-        
-        void ActivateGroup(IClientAPI remoteClient, UUID groupID);
-        List<GroupTitlesData> GroupTitlesRequest(IClientAPI remoteClient, UUID groupID);
-        List<GroupMembersData> GroupMembersRequest(IClientAPI remoteClient, UUID groupID);
-        List<GroupRolesData> GroupRoleDataRequest(IClientAPI remoteClient, UUID groupID);
-        List<GroupRoleMembersData> GroupRoleMembersRequest(IClientAPI remoteClient, UUID groupID);
-        GroupProfileData GroupProfileRequest(IClientAPI remoteClient, UUID groupID);
+        string GetGroupTitle(UUID avatarID);
+
         GroupMembershipData[] GetMembershipData(UUID UserID);
+
         GroupMembershipData GetMembershipData(UUID GroupID, UUID UserID);
 
-        void UpdateGroupInfo(IClientAPI remoteClient, UUID groupID, string charter, bool showInList, UUID insigniaID, int membershipFee, bool openEnrollment, bool allowPublish, bool maturePublish);
+        List<GroupMembersData> GroupMembersRequest(IClientAPI remoteClient, UUID groupID);
+
+        void GroupNoticeRequest(IClientAPI remoteClient, UUID groupNoticeID);
+
+        GroupNoticeData[] GroupNoticesListRequest(IClientAPI remoteClient, UUID GroupID);
+
+        GroupProfileData GroupProfileRequest(IClientAPI remoteClient, UUID groupID);
+
+        void GroupRoleChanges(IClientAPI remoteClient, UUID GroupID, UUID RoleID, UUID MemberID, uint changes);
+
+        List<GroupRolesData> GroupRoleDataRequest(IClientAPI remoteClient, UUID groupID);
+
+        List<GroupRoleMembersData> GroupRoleMembersRequest(IClientAPI remoteClient, UUID groupID);
+
+        void GroupRoleUpdate(IClientAPI remoteClient, UUID GroupID, UUID RoleID, string name, string description, string title, ulong powers, byte updateType);
+
+        List<GroupTitlesData> GroupTitlesRequest(IClientAPI remoteClient, UUID groupID);
+        void GroupTitleUpdate(IClientAPI remoteClient, UUID GroupID, UUID TitleRoleID);
+
+        void InviteGroup(IClientAPI remoteClient, UUID agentID, UUID GroupID, UUID InviteeID, UUID RoleID);
+
+        void InviteGroupRequest(IClientAPI remoteClient, UUID GroupID, UUID InviteeID, UUID RoleID);
+
+        void JoinGroupRequest(IClientAPI remoteClient, UUID GroupID);
+
+        void LeaveGroupRequest(IClientAPI remoteClient, UUID GroupID);
+
+        void NotifyChange(UUID GroupID);
+
+        void SendAgentGroupDataUpdate(IClientAPI remoteClient);
 
         void SetGroupAcceptNotices(IClientAPI remoteClient, UUID groupID, bool acceptNotices, bool listInProfile);
 
-        void GroupTitleUpdate(IClientAPI remoteClient, UUID GroupID, UUID TitleRoleID);
-        
-        GroupNoticeData[] GroupNoticesListRequest(IClientAPI remoteClient, UUID GroupID);
-        string GetGroupTitle(UUID avatarID);
-        void GroupRoleUpdate(IClientAPI remoteClient, UUID GroupID, UUID RoleID, string name, string description, string title, ulong powers, byte updateType);
-        void GroupRoleChanges(IClientAPI remoteClient, UUID GroupID, UUID RoleID, UUID MemberID, uint changes);
-        void GroupNoticeRequest(IClientAPI remoteClient, UUID groupNoticeID);
-        GridInstantMessage CreateGroupNoticeIM(UUID agentID, UUID groupNoticeID, byte dialog);
-        void SendAgentGroupDataUpdate(IClientAPI remoteClient);
-        void JoinGroupRequest(IClientAPI remoteClient, UUID GroupID);
-        void LeaveGroupRequest(IClientAPI remoteClient, UUID GroupID);
-        void EjectGroupMemberRequest(IClientAPI remoteClient, UUID GroupID, UUID EjecteeID);
-        void EjectGroupMember(IClientAPI remoteClient, UUID agentID, UUID GroupID, UUID EjecteeID);
-        void InviteGroupRequest(IClientAPI remoteClient, UUID GroupID, UUID InviteeID, UUID RoleID);
-        void InviteGroup(IClientAPI remoteClient, UUID agentID, UUID GroupID, UUID InviteeID, UUID RoleID);
-        void NotifyChange(UUID GroupID);
-
-        List<DirGroupsReplyData> FindGroups(IClientAPI remoteClient, string query);
+        void UpdateGroupInfo(IClientAPI remoteClient, UUID groupID, string charter, bool showInList, UUID insigniaID, int membershipFee, bool openEnrollment, bool allowPublish, bool maturePublish);
     }
 }

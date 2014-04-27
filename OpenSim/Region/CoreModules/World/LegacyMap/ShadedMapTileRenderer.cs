@@ -25,24 +25,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Nini.Config;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
 using System;
 using System.Drawing;
 using System.Reflection;
-using log4net;
-using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
 
 namespace OpenSim.Region.CoreModules.World.LegacyMap
 {
     public class ShadedMapTileRenderer : IMapTileTerrainRenderer
     {
-        private static readonly Color WATER_COLOR = Color.FromArgb(29, 71, 95);
-
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private static readonly string LogHeader = "[SHADED MAPTILE RENDERER]";
-
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private static readonly Color WATER_COLOR = Color.FromArgb(29, 71, 95);
         private Scene m_scene;
         //private IConfigSource m_config; // not used currently
 
@@ -197,7 +194,7 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
                                                                    (g - hfdiffi > 0) ? g - hfdiffi : 0,
                                                                    (b - hfdiffi > 0) ? b - hfdiffi : 0);
 
-                                            mapbmp.SetPixel(x-1, yr+1, color);
+                                            mapbmp.SetPixel(x - 1, yr + 1, color);
                                         }
                                     }
                                 }

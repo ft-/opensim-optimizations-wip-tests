@@ -40,6 +40,12 @@ namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
 
         #region Supporting Functions
 
+        private enum NeighbourSystem
+        {
+            Moore,
+            VonNeumann
+        } ;
+
         private static int[] Neighbours(NeighbourSystem neighbourType, int index)
         {
             int[] coord = new int[2];
@@ -137,14 +143,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
 
             return coord;
         }
-
-        private enum NeighbourSystem
-        {
-            Moore,
-            VonNeumann
-        } ;
-
-        #endregion
+        #endregion Supporting Functions
 
         #region ITerrainPaintableEffect Members
 
@@ -159,7 +158,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
                 int y;
                 for (y = 0; y < map.Height; y++)
                 {
-                    if (!mask[x,y])
+                    if (!mask[x, y])
                         continue;
 
                     double z = TerrainUtil.SphericalFactor(x, y, rx, ry, strength);
@@ -206,6 +205,6 @@ namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
             }
         }
 
-        #endregion
+        #endregion ITerrainPaintableEffect Members
     }
 }

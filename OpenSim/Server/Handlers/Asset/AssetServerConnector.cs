@@ -25,16 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.IO;
 using Nini.Config;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Framework.Console;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
 using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Server.Base;
 using OpenSim.Server.Handlers.Base;
+using OpenSim.Services.Interfaces;
+using System;
+using System.IO;
 
 namespace OpenSim.Server.Handlers.Asset
 {
@@ -44,7 +44,7 @@ namespace OpenSim.Server.Handlers.Asset
         private string m_ConfigName = "AssetService";
 
         public AssetServiceConnector(IConfigSource config, IHttpServer server, string configName) :
-                base(config, server, configName)
+            base(config, server, configName)
         {
             if (configName != String.Empty)
                 m_ConfigName = configName;
@@ -108,7 +108,7 @@ namespace OpenSim.Server.Handlers.Asset
                     HandleDumpAsset);
         }
 
-        void HandleDeleteAsset(string module, string[] args)
+        private void HandleDeleteAsset(string module, string[] args)
         {
             if (args.Length < 3)
             {
@@ -130,7 +130,7 @@ namespace OpenSim.Server.Handlers.Asset
                 MainConsole.Instance.OutputFormat("Deleted asset {0} {1}", asset.ID, asset.Name);
         }
 
-        void HandleDumpAsset(string module, string[] args)
+        private void HandleDumpAsset(string module, string[] args)
         {
             if (args.Length < 3)
             {
@@ -146,31 +146,31 @@ namespace OpenSim.Server.Handlers.Asset
                 MainConsole.Instance.OutputFormat("ERROR: {0} is not a valid ID format", rawAssetId);
                 return;
             }
-            
+
             AssetBase asset = m_AssetService.Get(assetId.ToString());
             if (asset == null)
-            {                
+            {
                 MainConsole.Instance.OutputFormat("ERROR: No asset found with ID {0}", assetId);
-                return;                
+                return;
             }
-            
+
             string fileName = rawAssetId;
 
             if (!ConsoleUtil.CheckFileDoesNotExist(MainConsole.Instance, fileName))
                 return;
-            
+
             using (FileStream fs = new FileStream(fileName, FileMode.CreateNew))
             {
                 using (BinaryWriter bw = new BinaryWriter(fs))
                 {
                     bw.Write(asset.Data);
                 }
-            }   
-            
+            }
+
             MainConsole.Instance.OutputFormat("Asset dumped to file {0}", fileName);
         }
 
-        void HandleShowAsset(string module, string[] args)
+        private void HandleShowAsset(string module, string[] args)
         {
             if (args.Length < 3)
             {
@@ -196,7 +196,7 @@ namespace OpenSim.Server.Handlers.Asset
             MainConsole.Instance.OutputFormat("Temporary: {0}", asset.Temporary ? "yes" : "no");
             MainConsole.Instance.OutputFormat("Flags: {0}", asset.Metadata.Flags);
 
-            for (i = 0 ; i < 5 ; i++)
+            for (i = 0; i < 5; i++)
             {
                 int off = i * 16;
                 if (asset.Data.Length <= off)

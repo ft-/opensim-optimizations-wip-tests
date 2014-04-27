@@ -26,29 +26,24 @@
  */
 
 using log4net;
+using Nwc.XmlRpc;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
-using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Services.Interfaces;
-using OpenMetaverse;
-using Nwc.XmlRpc;
 using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 
 namespace OpenSim.Services.Connectors
 {
     public class LandServicesConnector : ILandService
     {
+        protected IGridService m_GridService = null;
+
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
-
-        protected IGridService m_GridService = null;
-
         public LandServicesConnector()
         {
         }
@@ -56,11 +51,6 @@ namespace OpenSim.Services.Connectors
         public LandServicesConnector(IGridService gridServices)
         {
             Initialise(gridServices);
-        }
-
-        public virtual void Initialise(IGridService gridServices)
-        {
-            m_GridService = gridServices;
         }
 
         public virtual LandData GetLandData(UUID scopeID, ulong regionHandle, uint x, uint y, out byte regionAccess)
@@ -113,12 +103,12 @@ namespace OpenSim.Services.Connectors
                         catch (Exception e)
                         {
                             m_log.ErrorFormat(
-                                "[LAND CONNECTOR]: Got exception while parsing land-data: {0} {1}", 
+                                "[LAND CONNECTOR]: Got exception while parsing land-data: {0} {1}",
                                 e.Message, e.StackTrace);
                         }
                     }
                 }
-                else 
+                else
                     m_log.WarnFormat("[LAND CONNECTOR]: Couldn't find region with handle {0}", regionHandle);
             }
             catch (Exception e)
@@ -126,8 +116,13 @@ namespace OpenSim.Services.Connectors
                 m_log.ErrorFormat(
                     "[LAND CONNECTOR]: Couldn't contact region {0}: {1} {2}", regionHandle, e.Message, e.StackTrace);
             }
-        
+
             return landData;
+        }
+
+        public virtual void Initialise(IGridService gridServices)
+        {
+            m_GridService = gridServices;
         }
     }
 }

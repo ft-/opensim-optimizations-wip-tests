@@ -25,9 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
 using System;
 using System.Timers;
-using OpenMetaverse;
 
 namespace OpenSim.Region.Physics.Manager
 {
@@ -41,22 +41,6 @@ namespace OpenSim.Region.Physics.Manager
         SCRIPTED = 4
     }
 
-    public abstract class PhysicsSensor
-    {
-        public static PhysicsSensor Null
-        {
-            get { return new NullPhysicsSensor(); }
-        }
-        public abstract Vector3 Position { get; set; }
-        public abstract void TimerCallback (object obj, ElapsedEventArgs eea);
-        public abstract float radianarc {get; set;}
-        public abstract string targetname {get; set;}
-        public abstract Guid targetKey{get;set;}
-        public abstract SenseType sensetype { get;set;}
-        public abstract float range { get;set;}
-        public abstract float rateSeconds { get;set;}
-    }
-
     public class NullPhysicsSensor : PhysicsSensor
     {
         public override Vector3 Position
@@ -64,15 +48,46 @@ namespace OpenSim.Region.Physics.Manager
             get { return Vector3.Zero; }
             set { return; }
         }
+
+        public override float radianarc { get { return 0f; } set { } }
+
+        public override float range { get { return 0; } set { } }
+
+        public override float rateSeconds { get { return 0; } set { } }
+
+        public override SenseType sensetype { get { return SenseType.NONE; } set { } }
+
+        public override Guid targetKey { get { return Guid.Empty; } set { } }
+
+        public override string targetname { get { return ""; } set { } }
+
         public override void TimerCallback(object obj, ElapsedEventArgs eea)
         {
             // don't do squat
         }
-        public override float radianarc { get { return 0f; } set { } }
-        public override string targetname { get { return ""; } set { } }
-        public override Guid targetKey { get { return Guid.Empty; } set { } }
-        public override SenseType sensetype { get { return SenseType.NONE; } set { } }
-        public override float range { get { return 0; } set { } }
-        public override float rateSeconds { get { return 0; } set { } }
+    }
+
+    public abstract class PhysicsSensor
+    {
+        public static PhysicsSensor Null
+        {
+            get { return new NullPhysicsSensor(); }
+        }
+
+        public abstract Vector3 Position { get; set; }
+
+        public abstract float radianarc { get; set; }
+
+        public abstract float range { get; set; }
+
+        public abstract float rateSeconds { get; set; }
+
+        public abstract SenseType sensetype { get; set; }
+
+        public abstract Guid targetKey { get; set; }
+
+        public abstract string targetname { get; set; }
+
+        public abstract void TimerCallback(object obj, ElapsedEventArgs eea);
     }
 }

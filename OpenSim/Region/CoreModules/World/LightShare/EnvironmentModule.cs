@@ -25,60 +25,33 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
+using log4net;
+using Mono.Addins;
+using Nini.Config;
 using OpenMetaverse;
-using OpenSim.Framework;
 using OpenSim.Framework.Capabilities;
 using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using log4net;
-using Nini.Config;
-using Mono.Addins;
-
+using System;
+using System.Reflection;
 using Caps = OpenSim.Framework.Capabilities.Caps;
-
 
 namespace OpenSim.Region.CoreModules.World.LightShare
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "EnvironmentModule")]
-
     public class EnvironmentModule : INonSharedRegionModule, IEnvironmentModule
     {
+        private static readonly string capsBase = "/CAPS/0020/";
+        private static readonly string capsName = "EnvironmentSettings";
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
+        private static bool Enabled = false;
         private Scene m_scene = null;
         private UUID regionID = UUID.Zero;
-        private static bool Enabled = false;
-
-        private static readonly string capsName = "EnvironmentSettings";
-        private static readonly string capsBase = "/CAPS/0020/";
-
         private LLSDEnvironmentSetResponse setResponse = null;
 
         #region INonSharedRegionModule
-        public void Initialise(IConfigSource source)
-        {
-            IConfig config = source.Configs["ClientStack.LindenCaps"];
-
-            if (null == config)
-                return;
-
-            if (config.GetString("Cap_EnvironmentSettings", String.Empty) != "localhost")
-            {
-                m_log.InfoFormat("[{0}]: Module is disabled.", Name);
-                return;
-            }
-
-            Enabled = true;
-
-            m_log.InfoFormat("[{0}]: Module is enabled.", Name);
-        }
-
-        public void Close()
-        {
-        }
 
         public string Name
         {
@@ -100,6 +73,27 @@ namespace OpenSim.Region.CoreModules.World.LightShare
             regionID = scene.RegionInfo.RegionID;
         }
 
+        public void Close()
+        {
+        }
+
+        public void Initialise(IConfigSource source)
+        {
+            IConfig config = source.Configs["ClientStack.LindenCaps"];
+
+            if (null == config)
+                return;
+
+            if (config.GetString("Cap_EnvironmentSettings", String.Empty) != "localhost")
+            {
+                m_log.InfoFormat("[{0}]: Module is disabled.", Name);
+                return;
+            }
+
+            Enabled = true;
+
+            m_log.InfoFormat("[{0}]: Module is enabled.", Name);
+        }
         public void RegionLoaded(Scene scene)
         {
             if (!Enabled)
@@ -117,9 +111,11 @@ namespace OpenSim.Region.CoreModules.World.LightShare
             scene.EventManager.OnRegisterCaps -= OnRegisterCaps;
             m_scene = null;
         }
-        #endregion
+
+        #endregion INonSharedRegionModule
 
         #region IEnvironmentModule
+
         public void ResetEnvironmentSettings(UUID regionUUID)
         {
             if (!Enabled)
@@ -127,9 +123,11 @@ namespace OpenSim.Region.CoreModules.World.LightShare
 
             m_scene.SimulationDataService.RemoveRegionEnvironmentSettings(regionUUID);
         }
-        #endregion
+
+        #endregion IEnvironmentModule
 
         #region Events
+
         private void OnRegisterCaps(UUID agentID, Caps caps)
         {
             //            m_log.DebugFormat("[{0}]: Register capability for agentID {1} in region {2}",
@@ -158,7 +156,8 @@ namespace OpenSim.Region.CoreModules.World.LightShare
                  capsName,
                  agentID.ToString()));
         }
-        #endregion
+
+        #endregion Events
 
         private string GetEnvironmentSettings(string request, string path, string param,
               UUID agentID, Caps caps)
@@ -187,7 +186,6 @@ namespace OpenSim.Region.CoreModules.World.LightShare
         private string SetEnvironmentSettings(string request, string path, string param,
                               UUID agentID, Caps caps)
         {
-
             //            m_log.DebugFormat("[{0}]: Environment SET handle from agentID {1} in region {2}",
             //                Name, agentID, caps.RegionName);
 
@@ -221,4 +219,3 @@ namespace OpenSim.Region.CoreModules.World.LightShare
         }
     }
 }
-

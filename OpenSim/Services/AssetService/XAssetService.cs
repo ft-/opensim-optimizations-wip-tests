@@ -25,16 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using Nini.Config;
 using log4net;
-using OpenSim.Framework;
-using OpenSim.Data;
-using OpenSim.Services.Interfaces;
+using Nini.Config;
 using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Services.Interfaces;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Services.AssetService
 {
@@ -43,13 +40,15 @@ namespace OpenSim.Services.AssetService
     /// </summary>
     public class XAssetService : XAssetServiceBase, IAssetService
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
         protected static XAssetService m_RootInstance;
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        public XAssetService(IConfigSource config)
+            : this(config, "AssetService")
+        {
+        }
 
-        public XAssetService(IConfigSource config) : this(config, "AssetService") {}
-
-        public XAssetService(IConfigSource config, string configName) : base(config, configName)
+        public XAssetService(IConfigSource config, string configName)
+            : base(config, configName)
         {
             if (m_RootInstance == null)
             {
@@ -74,11 +73,11 @@ namespace OpenSim.Services.AssetService
                             a =>
                             {
                                 AssetBase existingAsset = Get(a.ID);
-//                                AssetMetadata existingMetadata = GetMetadata(a.ID);
+                                //                                AssetMetadata existingMetadata = GetMetadata(a.ID);
 
                                 if (existingAsset == null || Util.SHA1Hash(existingAsset.Data) != Util.SHA1Hash(a.Data))
                                 {
-//                                    m_log.DebugFormat("[ASSET]: Storing {0} {1}", a.Name, a.ID);
+                                    //                                    m_log.DebugFormat("[ASSET]: Storing {0} {1}", a.Name, a.ID);
                                     Store(a);
                                 }
                             });
@@ -89,10 +88,30 @@ namespace OpenSim.Services.AssetService
             }
         }
 
+        public virtual bool[] AssetsExist(string[] ids)
+        {
+            UUID[] uuid = Array.ConvertAll(ids, id => UUID.Parse(id));
+            return m_Database.AssetsExist(uuid);
+        }
+
+        public virtual bool Delete(string id)
+        {
+            //            m_log.DebugFormat("[XASSET SERVICE]: Deleting asset {0}", id);
+
+            UUID assetID;
+            if (!UUID.TryParse(id, out assetID))
+                return false;
+
+            if (HasChainedAssetService)
+                m_ChainedAssetService.Delete(id);
+
+            return m_Database.Delete(id);
+        }
+
         public virtual AssetBase Get(string id)
         {
-//            m_log.DebugFormat("[ASSET SERVICE]: Get asset for {0}", id);
-            
+            //            m_log.DebugFormat("[ASSET SERVICE]: Get asset for {0}", id);
+
             UUID assetID;
 
             if (!UUID.TryParse(id, out assetID))
@@ -128,26 +147,32 @@ namespace OpenSim.Services.AssetService
             }
         }
 
+        public virtual bool Get(string id, Object sender, AssetRetrieved handler)
+        {
+            //m_log.DebugFormat("[XASSET SERVICE]: Get asset async {0}", id);
+
+            UUID assetID;
+
+            if (!UUID.TryParse(id, out assetID))
+                return false;
+
+            AssetBase asset = Get(id);
+
+            //m_log.DebugFormat("[XASSET SERVICE]: Got asset {0}", asset);
+
+            handler(id, sender, asset);
+
+            return true;
+        }
+
         public virtual AssetBase GetCached(string id)
         {
             return Get(id);
         }
 
-        public virtual AssetMetadata GetMetadata(string id)
-        {
-//            m_log.DebugFormat("[XASSET SERVICE]: Get asset metadata for {0}", id);
-
-            AssetBase asset = Get(id);
-
-            if (asset != null)
-                return asset.Metadata;
-            else
-                return null;
-        }
-
         public virtual byte[] GetData(string id)
         {
-//            m_log.DebugFormat("[XASSET SERVICE]: Get asset data for {0}", id);
+            //            m_log.DebugFormat("[XASSET SERVICE]: Get asset data for {0}", id);
 
             AssetBase asset = Get(id);
 
@@ -157,44 +182,31 @@ namespace OpenSim.Services.AssetService
                 return null;
         }
 
-        public virtual bool Get(string id, Object sender, AssetRetrieved handler)
+        public virtual AssetMetadata GetMetadata(string id)
         {
-            //m_log.DebugFormat("[XASSET SERVICE]: Get asset async {0}", id);
-            
-            UUID assetID;
-
-            if (!UUID.TryParse(id, out assetID))
-                return false;
+            //            m_log.DebugFormat("[XASSET SERVICE]: Get asset metadata for {0}", id);
 
             AssetBase asset = Get(id);
 
-            //m_log.DebugFormat("[XASSET SERVICE]: Got asset {0}", asset);
-            
-            handler(id, sender, asset);
-
-            return true;
+            if (asset != null)
+                return asset.Metadata;
+            else
+                return null;
         }
-
-        public virtual bool[] AssetsExist(string[] ids)
-        {
-            UUID[] uuid = Array.ConvertAll(ids, id => UUID.Parse(id));
-            return m_Database.AssetsExist(uuid);
-        }
-        
         public virtual string Store(AssetBase asset)
         {
             bool exists = m_Database.AssetsExist(new[] { asset.FullID })[0];
             if (!exists)
             {
-//                m_log.DebugFormat(
-//                    "[XASSET SERVICE]: Storing asset {0} {1}, bytes {2}", asset.Name, asset.FullID, asset.Data.Length);
+                //                m_log.DebugFormat(
+                //                    "[XASSET SERVICE]: Storing asset {0} {1}, bytes {2}", asset.Name, asset.FullID, asset.Data.Length);
                 m_Database.StoreAsset(asset);
             }
-//            else
-//            {
-//                m_log.DebugFormat(
-//                    "[XASSET SERVICE]: Not storing asset {0} {1}, bytes {2} as it already exists", asset.Name, asset.FullID, asset.Data.Length);
-//            }
+            //            else
+            //            {
+            //                m_log.DebugFormat(
+            //                    "[XASSET SERVICE]: Not storing asset {0} {1}, bytes {2} as it already exists", asset.Name, asset.FullID, asset.Data.Length);
+            //            }
 
             return asset.ID;
         }
@@ -203,24 +215,9 @@ namespace OpenSim.Services.AssetService
         {
             return false;
         }
-
-        public virtual bool Delete(string id)
-        {
-//            m_log.DebugFormat("[XASSET SERVICE]: Deleting asset {0}", id);
-
-            UUID assetID;
-            if (!UUID.TryParse(id, out assetID))
-                return false;
-
-            if (HasChainedAssetService)
-                m_ChainedAssetService.Delete(id);
-
-            return m_Database.Delete(id);
-        }
-
         private void MigrateFromChainedService(AssetBase asset)
         {
-            Store(asset); 
+            Store(asset);
             m_ChainedAssetService.Delete(asset.ID);
         }
     }

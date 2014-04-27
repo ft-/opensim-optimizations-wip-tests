@@ -33,7 +33,7 @@
  * ODEDynamics.cs contains methods dealing with Prim Physical motion
  * (dynamics) and the associated settings. Old Linear and angular
  * motors for dynamic motion have been replace with  MoveLinear()
- * and MoveAngular(); 'Physical' is used only to switch ODE dynamic 
+ * and MoveAngular(); 'Physical' is used only to switch ODE dynamic
  * simualtion on/off; VEHICAL_TYPE_NONE/VEHICAL_TYPE_<other> is to
  * switch between 'VEHICLE' parameter use and general dynamics
  * settings use.
@@ -41,16 +41,15 @@
 
 //#define SPAM
 
+using log4net;
+using Ode.NET;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Region.Physics.Manager;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Threading;
-using log4net;
-using OpenMetaverse;
-using Ode.NET;
-using OpenSim.Framework;
-using OpenSim.Region.Physics.Manager;
 
 namespace OpenSim.Region.Physics.OdePlugin
 {
@@ -64,6 +63,7 @@ namespace OpenSim.Region.Physics.OdePlugin
         private bool m_isphysical;
 
         public int ExpectedCollisionContacts { get { return m_expectedCollisionContacts; } }
+
         private int m_expectedCollisionContacts = 0;
 
         /// <summary>
@@ -97,8 +97,10 @@ namespace OpenSim.Region.Physics.OdePlugin
         private Vector3 m_rotationalVelocity;
         private Vector3 _size;
         private Vector3 _acceleration;
+
         // private d.Vector3 _zeroPosition = new d.Vector3(0.0f, 0.0f, 0.0f);
         private Quaternion _orientation;
+
         private Vector3 m_taintposition;
         private Vector3 m_taintsize;
         private Vector3 m_taintVelocity;
@@ -126,17 +128,17 @@ namespace OpenSim.Region.Physics.OdePlugin
         private float m_targetHoverHeight;
         private float m_groundHeight;
         private float m_waterHeight;
-        private float m_buoyancy;                //KF: m_buoyancy should be set by llSetBuoyancy() for non-vehicle. 
+        private float m_buoyancy;                //KF: m_buoyancy should be set by llSetBuoyancy() for non-vehicle.
 
         // private float m_tensor = 5f;
         private int body_autodisable_frames = 20;
-
 
         private const CollisionCategories m_default_collisionFlags = (CollisionCategories.Geom
                                                         | CollisionCategories.Space
                                                         | CollisionCategories.Body
                                                         | CollisionCategories.Character
                                                         );
+
         private bool m_taintshape;
         private bool m_taintPhysics;
         private bool m_collidesLand = true;
@@ -149,10 +151,15 @@ namespace OpenSim.Region.Physics.OdePlugin
         private CollisionCategories m_collisionFlags = m_default_collisionFlags;
 
         public bool m_taintremove { get; private set; }
+
         public bool m_taintdisable { get; private set; }
+
         internal bool m_disabled;
+
         public bool m_taintadd { get; private set; }
+
         public bool m_taintselected { get; private set; }
+
         public bool m_taintCollidesWater { get; private set; }
 
         private bool m_taintforce = false;
@@ -163,7 +170,7 @@ namespace OpenSim.Region.Physics.OdePlugin
 
         private PrimitiveBaseShape _pbs;
         private OdeScene _parent_scene;
-        
+
         /// <summary>
         /// The physics space which contains prim geometries
         /// </summary>
@@ -193,15 +200,21 @@ namespace OpenSim.Region.Physics.OdePlugin
 
         private bool m_throttleUpdates;
         private int throttleCounter;
+
         public int m_interpenetrationcount { get; private set; }
+
         internal float m_collisionscore;
+
         public int m_roundsUnderMotionThreshold { get; private set; }
+
         private int m_crossingfailures;
 
         public bool outofBounds { get; private set; }
+
         private float m_density = 10.000006836f; // Aluminum g/cm3;
 
         public bool _zeroFlag { get; private set; }
+
         private bool m_lastUpdateSent;
 
         public IntPtr Body = IntPtr.Zero;
@@ -298,7 +311,7 @@ namespace OpenSim.Region.Physics.OdePlugin
 
         public override int PhysicsActorType
         {
-            get { return (int) ActorTypes.Prim; }
+            get { return (int)ActorTypes.Prim; }
             set { return; }
         }
 
@@ -346,7 +359,7 @@ namespace OpenSim.Region.Physics.OdePlugin
         private void SetGeom(IntPtr geom)
         {
             prim_geom = geom;
-//Console.WriteLine("SetGeom to " + prim_geom + " for " + Name);
+            //Console.WriteLine("SetGeom to " + prim_geom + " for " + Name);
 
             if (m_assetFailed)
             {
@@ -367,7 +380,7 @@ namespace OpenSim.Region.Physics.OdePlugin
                 if (_parent != null && _parent is OdePrim)
                 {
                     OdePrim parent = (OdePrim)_parent;
-//Console.WriteLine("SetGeom calls ChildSetGeom");
+                    //Console.WriteLine("SetGeom calls ChildSetGeom");
                     parent.ChildSetGeom(this);
                 }
             }
@@ -437,9 +450,9 @@ namespace OpenSim.Region.Physics.OdePlugin
 
                 d.BodySetAutoDisableFlag(Body, true);
                 d.BodySetAutoDisableSteps(Body, body_autodisable_frames);
-                
+
                 // disconnect from world gravity so we can apply buoyancy
-                d.BodySetGravityMode (Body, false);
+                d.BodySetGravityMode(Body, false);
 
                 m_interpenetrationcount = 0;
                 m_collisionscore = 0;
@@ -468,19 +481,19 @@ namespace OpenSim.Region.Physics.OdePlugin
 
             float returnMass = 0;
             float hollowAmount = (float)_pbs.ProfileHollow * 2.0e-5f;
-            float hollowVolume = hollowAmount * hollowAmount; 
-            
+            float hollowVolume = hollowAmount * hollowAmount;
+
             switch (_pbs.ProfileShape)
             {
                 case ProfileShape.Square:
                     // default box
 
                     if (_pbs.PathCurve == (byte)Extrusion.Straight)
-                        {
+                    {
                         if (hollowAmount > 0.0)
-                            {
+                        {
                             switch (_pbs.HollowShape)
-                                {
+                            {
                                 case HollowShape.Square:
                                 case HollowShape.Same:
                                     break;
@@ -498,56 +511,56 @@ namespace OpenSim.Region.Physics.OdePlugin
                                 default:
                                     hollowVolume = 0;
                                     break;
-                                }
-                            volume *= (1.0f - hollowVolume);
                             }
+                            volume *= (1.0f - hollowVolume);
                         }
-
+                    }
                     else if (_pbs.PathCurve == (byte)Extrusion.Curve1)
-                        {
-                        //a tube 
+                    {
+                        //a tube
 
                         volume *= 0.78539816339e-2f * (float)(200 - _pbs.PathScaleX);
-                        tmp= 1.0f -2.0e-2f * (float)(200 - _pbs.PathScaleY);
-                        volume -= volume*tmp*tmp;
-                        
+                        tmp = 1.0f - 2.0e-2f * (float)(200 - _pbs.PathScaleY);
+                        volume -= volume * tmp * tmp;
+
                         if (hollowAmount > 0.0)
-                            {
+                        {
                             hollowVolume *= hollowAmount;
-                            
+
                             switch (_pbs.HollowShape)
-                                {
+                            {
                                 case HollowShape.Square:
                                 case HollowShape.Same:
                                     break;
 
                                 case HollowShape.Circle:
-                                    hollowVolume *= 0.78539816339f;;
+                                    hollowVolume *= 0.78539816339f; ;
                                     break;
 
                                 case HollowShape.Triangle:
                                     hollowVolume *= 0.5f * 0.5f;
                                     break;
+
                                 default:
                                     hollowVolume = 0;
                                     break;
-                                }
-                            volume *= (1.0f - hollowVolume);
                             }
+                            volume *= (1.0f - hollowVolume);
                         }
+                    }
 
                     break;
 
                 case ProfileShape.Circle:
 
                     if (_pbs.PathCurve == (byte)Extrusion.Straight)
-                        {
+                    {
                         volume *= 0.78539816339f; // elipse base
 
                         if (hollowAmount > 0.0)
-                            {
+                        {
                             switch (_pbs.HollowShape)
-                                {
+                            {
                                 case HollowShape.Same:
                                 case HollowShape.Circle:
                                     break;
@@ -563,25 +576,23 @@ namespace OpenSim.Region.Physics.OdePlugin
                                 default:
                                     hollowVolume = 0;
                                     break;
-                                }
-                            volume *= (1.0f - hollowVolume);
                             }
+                            volume *= (1.0f - hollowVolume);
                         }
-
+                    }
                     else if (_pbs.PathCurve == (byte)Extrusion.Curve1)
-                        {
+                    {
                         volume *= 0.61685027506808491367715568749226e-2f * (float)(200 - _pbs.PathScaleX);
                         tmp = 1.0f - .02f * (float)(200 - _pbs.PathScaleY);
                         volume *= (1.0f - tmp * tmp);
-                        
-                        if (hollowAmount > 0.0)
-                            {
 
+                        if (hollowAmount > 0.0)
+                        {
                             // calculate the hollow volume by it's shape compared to the prim shape
                             hollowVolume *= hollowAmount;
 
                             switch (_pbs.HollowShape)
-                                {
+                            {
                                 case HollowShape.Same:
                                 case HollowShape.Circle:
                                     break;
@@ -597,31 +608,30 @@ namespace OpenSim.Region.Physics.OdePlugin
                                 default:
                                     hollowVolume = 0;
                                     break;
-                                }
-                            volume *= (1.0f - hollowVolume);
                             }
+                            volume *= (1.0f - hollowVolume);
                         }
+                    }
                     break;
 
                 case ProfileShape.HalfCircle:
                     if (_pbs.PathCurve == (byte)Extrusion.Curve1)
                     {
-                    volume *= 0.52359877559829887307710723054658f;
+                        volume *= 0.52359877559829887307710723054658f;
                     }
                     break;
 
                 case ProfileShape.EquilateralTriangle:
 
                     if (_pbs.PathCurve == (byte)Extrusion.Straight)
-                        {
+                    {
                         volume *= 0.32475953f;
 
                         if (hollowAmount > 0.0)
-                            {
-
+                        {
                             // calculate the hollow volume by it's shape compared to the prim shape
                             switch (_pbs.HollowShape)
-                                {
+                            {
                                 case HollowShape.Same:
                                 case HollowShape.Triangle:
                                     hollowVolume *= .25f;
@@ -641,24 +651,23 @@ namespace OpenSim.Region.Physics.OdePlugin
                                 default:
                                     hollowVolume = 0;
                                     break;
-                                }
-                            volume *= (1.0f - hollowVolume);
                             }
+                            volume *= (1.0f - hollowVolume);
                         }
+                    }
                     else if (_pbs.PathCurve == (byte)Extrusion.Curve1)
-                        {
+                    {
                         volume *= 0.32475953f;
                         volume *= 0.01f * (float)(200 - _pbs.PathScaleX);
                         tmp = 1.0f - .02f * (float)(200 - _pbs.PathScaleY);
                         volume *= (1.0f - tmp * tmp);
 
                         if (hollowAmount > 0.0)
-                            {
-
+                        {
                             hollowVolume *= hollowAmount;
 
                             switch (_pbs.HollowShape)
-                                {
+                            {
                                 case HollowShape.Same:
                                 case HollowShape.Triangle:
                                     hollowVolume *= .25f;
@@ -676,15 +685,15 @@ namespace OpenSim.Region.Physics.OdePlugin
                                 default:
                                     hollowVolume = 0;
                                     break;
-                                }
-                            volume *= (1.0f - hollowVolume);
                             }
+                            volume *= (1.0f - hollowVolume);
                         }
-                        break;
+                    }
+                    break;
 
                 default:
                     break;
-                }
+            }
 
             float taperX1;
             float taperY1;
@@ -726,7 +735,7 @@ namespace OpenSim.Region.Physics.OdePlugin
             pathEnd = 1.0f - (float)_pbs.PathEnd * 2.0e-5f;
             volume *= (pathEnd - pathBegin);
 
-// this is crude aproximation
+            // this is crude aproximation
             profileBegin = (float)_pbs.ProfileBegin * 2.0e-5f;
             profileEnd = 1.0f - (float)_pbs.ProfileEnd * 2.0e-5f;
             volume *= (profileEnd - profileBegin);
@@ -735,8 +744,8 @@ namespace OpenSim.Region.Physics.OdePlugin
 
             if (returnMass <= 0)
                 returnMass = 0.0001f;//ckrinke: Mass must be greater then zero.
-//            else if (returnMass > _parent_scene.maximumMassObject)
-//                returnMass = _parent_scene.maximumMassObject;
+            //            else if (returnMass > _parent_scene.maximumMassObject)
+            //                returnMass = _parent_scene.maximumMassObject;
 
             // Recursively calculate mass
             bool HasChildPrim = false;
@@ -771,11 +780,11 @@ namespace OpenSim.Region.Physics.OdePlugin
             return returnMass;
         }
 
-        #endregion
+        #endregion Mass Calculation
 
         private void setMass()
         {
-            if (Body != (IntPtr) 0)
+            if (Body != (IntPtr)0)
             {
                 float newmass = CalculateMass();
 
@@ -831,7 +840,7 @@ namespace OpenSim.Region.Physics.OdePlugin
                 else
                 {
                     _parent_scene.DeactivatePrim(this);
-                    
+
                     m_collisionCategories &= ~CollisionCategories.Body;
                     m_collisionFlags &= ~(CollisionCategories.Wind | CollisionCategories.Land);
 
@@ -842,7 +851,6 @@ namespace OpenSim.Region.Physics.OdePlugin
                     }
                     else
                     {
-
                         d.GeomSetCategoryBits(prim_geom, (int)m_collisionCategories);
                         d.GeomSetCollideBits(prim_geom, (int)m_collisionFlags);
                     }
@@ -859,7 +867,7 @@ namespace OpenSim.Region.Physics.OdePlugin
 
         private void setMesh(OdeScene parent_scene, IMesh mesh)
         {
-//            m_log.DebugFormat("[ODE PRIM]: Setting mesh on {0} to {1}", Name, mesh);
+            //            m_log.DebugFormat("[ODE PRIM]: Setting mesh on {0} to {1}", Name, mesh);
 
             // This sleeper is there to moderate how long it takes between
             // setting up the mesh and pre-processing it when we get rapid fire mesh requests on a single object
@@ -902,14 +910,14 @@ namespace OpenSim.Region.Physics.OdePlugin
                 else
                 {
                     _triMeshData = d.GeomTriMeshDataCreate();
-    
+
                     d.GeomTriMeshDataBuildSimple(_triMeshData, vertices, vertexStride, vertexCount, indices, indexCount, triStride);
                     d.GeomTriMeshDataPreprocess(_triMeshData);
                     m_MeshToTriMeshMap[mesh] = _triMeshData;
                 }
             }
 
-//            _parent_scene.waitForSpaceUnlock(m_targetSpace);
+            //            _parent_scene.waitForSpaceUnlock(m_targetSpace);
             try
             {
                 SetGeom(d.CreateTriMesh(m_targetSpace, _triMeshData, parent_scene.triCallback, null, null));
@@ -920,14 +928,14 @@ namespace OpenSim.Region.Physics.OdePlugin
                 return;
             }
 
-           // if (IsPhysical && Body == (IntPtr) 0)
-           // {
-                // Recreate the body
-          //     m_interpenetrationcount = 0;
-           //     m_collisionscore = 0;
+            // if (IsPhysical && Body == (IntPtr) 0)
+            // {
+            // Recreate the body
+            //     m_interpenetrationcount = 0;
+            //     m_collisionscore = 0;
 
-           //     enableBody();
-           // }
+            //     enableBody();
+            // }
         }
 
         internal void ProcessTaints()
@@ -942,7 +950,7 @@ Console.WriteLine("ZProcessTaints for " + Name);
                 changeadd();
 
             if (!_position.ApproxEquals(m_taintposition, 0f))
-                 changemove();
+                changemove();
 
             if (m_taintrot != _orientation)
             {
@@ -960,7 +968,7 @@ Console.WriteLine("ZProcessTaints for " + Name);
                     rotate();
                 }
             }
-        
+
             if (m_taintPhysics != IsPhysical && !(m_taintparent != _parent))
                 changePhysicsStatus();
 
@@ -994,7 +1002,7 @@ Console.WriteLine("ZProcessTaints for " + Name);
             if (m_taintCollidesWater != m_collidesWater)
                 changefloatonwater();
 
-            if (!m_angularlock.ApproxEquals(m_taintAngularLock,0f))
+            if (!m_angularlock.ApproxEquals(m_taintAngularLock, 0f))
                 changeAngularLock();
         }
 
@@ -1044,7 +1052,7 @@ Console.WriteLine("ZProcessTaints for " + Name);
                 {
                     OdePrim obj = (OdePrim)m_taintparent;
                     //obj.disableBody();
-//Console.WriteLine("changelink calls ParentPrim");
+                    //Console.WriteLine("changelink calls ParentPrim");
                     obj.AddChildPrim(this);
 
                     /*
@@ -1062,8 +1070,8 @@ Console.WriteLine("ZProcessTaints for " + Name);
             // destroy link
             else if (_parent != null && m_taintparent == null)
             {
-//Console.WriteLine("  changelink B");
-            
+                //Console.WriteLine("  changelink B");
+
                 if (_parent is OdePrim)
                 {
                     OdePrim obj = (OdePrim)_parent;
@@ -1071,16 +1079,16 @@ Console.WriteLine("ZProcessTaints for " + Name);
                     childPrim = false;
                     //_parent = null;
                 }
-                
+
                 /*
                     if (Body != (IntPtr)0 && _linkJointGroup != (IntPtr)0)
                     d.JointGroupDestroy(_linkJointGroup);
-                        
+
                     _linkJointGroup = (IntPtr)0;
                     m_linkJoint = (IntPtr)0;
                 */
             }
- 
+
             _parent = m_taintparent;
             m_taintPhysics = IsPhysical;
         }
@@ -1105,8 +1113,8 @@ Console.WriteLine("ZProcessTaints for " + Name);
                 if (childrenPrim.Contains(prim))
                     return;
 
-//                m_log.DebugFormat(
-//                    "[ODE PRIM]: Linking prim {0} {1} to {2} {3}", prim.Name, prim.LocalID, Name, LocalID);
+                //                m_log.DebugFormat(
+                //                    "[ODE PRIM]: Linking prim {0} {1} to {2} {3}", prim.Name, prim.LocalID, Name, LocalID);
 
                 childrenPrim.Add(prim);
 
@@ -1134,7 +1142,7 @@ Console.WriteLine("ZProcessTaints for " + Name);
                     prm.m_collisionCategories |= CollisionCategories.Body;
                     prm.m_collisionFlags |= (CollisionCategories.Land | CollisionCategories.Wind);
 
-//Console.WriteLine(" GeomSetCategoryBits 1: " + prm.prim_geom + " - " + (int)prm.m_collisionCategories + " for " + Name);
+                    //Console.WriteLine(" GeomSetCategoryBits 1: " + prm.prim_geom + " - " + (int)prm.m_collisionCategories + " for " + Name);
                     if (prm.m_assetFailed)
                     {
                         d.GeomSetCategoryBits(prm.prim_geom, 0);
@@ -1158,7 +1166,7 @@ Console.WriteLine("ZProcessTaints for " + Name);
                     {
                         d.GeomSetBody(prm.prim_geom, Body);
                         prm.childPrim = true;
-                        d.GeomSetOffsetWorldPosition(prm.prim_geom, prm.Position.X , prm.Position.Y, prm.Position.Z);
+                        d.GeomSetOffsetWorldPosition(prm.prim_geom, prm.Position.X, prm.Position.Y, prm.Position.Z);
                         //d.GeomSetOffsetPosition(prim.prim_geom,
                         //    (Position.X - prm.Position.X) - pMass.c.X,
                         //    (Position.Y - prm.Position.Y) - pMass.c.Y,
@@ -1244,8 +1252,8 @@ Console.WriteLine("ZProcessTaints for " + Name);
 
         private void ChildSetGeom(OdePrim odePrim)
         {
-//            m_log.DebugFormat(
-//                "[ODE PRIM]: ChildSetGeom {0} {1} for {2} {3}", odePrim.Name, odePrim.LocalID, Name, LocalID);
+            //            m_log.DebugFormat(
+            //                "[ODE PRIM]: ChildSetGeom {0} {1} for {2} {3}", odePrim.Name, odePrim.LocalID, Name, LocalID);
 
             //if (IsPhysical && Body != IntPtr.Zero)
             lock (childrenPrim)
@@ -1265,16 +1273,16 @@ Console.WriteLine("ZProcessTaints for " + Name);
             disableBody();
 
             // Spurious - Body == IntPtr.Zero after disableBody()
-//            if (Body != IntPtr.Zero)
-//            {
-//                _parent_scene.DeactivatePrim(this);
-//            }
+            //            if (Body != IntPtr.Zero)
+            //            {
+            //                _parent_scene.DeactivatePrim(this);
+            //            }
 
             lock (childrenPrim)
             {
                 foreach (OdePrim prm in childrenPrim)
                 {
-//Console.WriteLine("ChildSetGeom calls ParentPrim");
+                    //Console.WriteLine("ChildSetGeom calls ParentPrim");
                     AddChildPrim(prm);
                 }
             }
@@ -1282,8 +1290,8 @@ Console.WriteLine("ZProcessTaints for " + Name);
 
         private void ChildDelink(OdePrim odePrim)
         {
-//            m_log.DebugFormat(
-//                "[ODE PRIM]: Delinking prim {0} {1} from {2} {3}", odePrim.Name, odePrim.LocalID, Name, LocalID);
+            //            m_log.DebugFormat(
+            //                "[ODE PRIM]: Delinking prim {0} {1} from {2} {3}", odePrim.Name, odePrim.LocalID, Name, LocalID);
 
             // Okay, we have a delinked child..   need to rebuild the body.
             lock (childrenPrim)
@@ -1304,21 +1312,21 @@ Console.WriteLine("ZProcessTaints for " + Name);
 
             lock (childrenPrim)
             {
- //Console.WriteLine("childrenPrim.Remove " + odePrim);
+                //Console.WriteLine("childrenPrim.Remove " + odePrim);
                 childrenPrim.Remove(odePrim);
             }
 
             // Spurious - Body == IntPtr.Zero after disableBody()
-//            if (Body != IntPtr.Zero)
-//            {
-//                _parent_scene.DeactivatePrim(this);
-//            }
+            //            if (Body != IntPtr.Zero)
+            //            {
+            //                _parent_scene.DeactivatePrim(this);
+            //            }
 
             lock (childrenPrim)
             {
                 foreach (OdePrim prm in childrenPrim)
                 {
-//Console.WriteLine("ChildDelink calls ParentPrim");
+                    //Console.WriteLine("ChildDelink calls ParentPrim");
                     AddChildPrim(prm);
                 }
             }
@@ -1338,7 +1346,7 @@ Console.WriteLine("ZProcessTaints for " + Name);
                 // in between the disabling and the collision properties setting
                 // which would wake the physical body up from a soft disabling and potentially cause it to fall
                 // through the ground.
-                
+
                 // NOTE FOR JOINTS: this doesn't always work for jointed assemblies because if you select
                 // just one part of the assembly, the rest of the assembly is non-selected and still simulating,
                 // so that causes the selected part to wake up and continue moving.
@@ -1352,7 +1360,7 @@ Console.WriteLine("ZProcessTaints for " + Name);
                 // e.g. we select 100 prims that are connected by joints. non-atomically, the first 50 are
                 // selected and disabled. then, due to a thread switch, the selection processing is
                 // interrupted and the physics engine continues to simulate, so the last 50 items, whose
-                // selection was not yet processed, continues to simulate. this wakes up ALL of the 
+                // selection was not yet processed, continues to simulate. this wakes up ALL of the
                 // first 50 again. then the last 50 are disabled. then the first 50, which were just woken
                 // up, start simulating again, which in turn wakes up the last 50.
 
@@ -1452,10 +1460,10 @@ Console.WriteLine("CreateGeom:");
                     {
                         if (((_size.X / 2f) > 0f))
                         {
-//                            _parent_scene.waitForSpaceUnlock(m_targetSpace);
+                            //                            _parent_scene.waitForSpaceUnlock(m_targetSpace);
                             try
                             {
-//Console.WriteLine(" CreateGeom 1");
+                                //Console.WriteLine(" CreateGeom 1");
                                 SetGeom(d.CreateSphere(m_targetSpace, _size.X / 2));
                                 m_expectedCollisionContacts = 3;
                             }
@@ -1467,10 +1475,10 @@ Console.WriteLine("CreateGeom:");
                         }
                         else
                         {
-//                            _parent_scene.waitForSpaceUnlock(m_targetSpace);
+                            //                            _parent_scene.waitForSpaceUnlock(m_targetSpace);
                             try
                             {
-//Console.WriteLine(" CreateGeom 2");
+                                //Console.WriteLine(" CreateGeom 2");
                                 SetGeom(d.CreateBox(m_targetSpace, _size.X, _size.Y, _size.Z));
                                 m_expectedCollisionContacts = 4;
                             }
@@ -1483,10 +1491,10 @@ Console.WriteLine("CreateGeom:");
                     }
                     else
                     {
-//                        _parent_scene.waitForSpaceUnlock(m_targetSpace);
+                        //                        _parent_scene.waitForSpaceUnlock(m_targetSpace);
                         try
                         {
-//Console.WriteLine("  CreateGeom 3");
+                            //Console.WriteLine("  CreateGeom 3");
                             SetGeom(d.CreateBox(m_targetSpace, _size.X, _size.Y, _size.Z));
                             m_expectedCollisionContacts = 4;
                         }
@@ -1499,10 +1507,10 @@ Console.WriteLine("CreateGeom:");
                 }
                 else
                 {
-//                    _parent_scene.waitForSpaceUnlock(m_targetSpace);
+                    //                    _parent_scene.waitForSpaceUnlock(m_targetSpace);
                     try
                     {
-//Console.WriteLine("  CreateGeom 4");
+                        //Console.WriteLine("  CreateGeom 4");
                         SetGeom(d.CreateBox(m_targetSpace, _size.X, _size.Y, _size.Z));
                         m_expectedCollisionContacts = 4;
                     }
@@ -1552,13 +1560,14 @@ Console.WriteLine("CreateGeom:");
                 return false;
             }
         }
+
         /// <summary>
         /// Add prim in response to an add taint.
         /// </summary>
         private void changeadd()
         {
-//            m_log.DebugFormat("[ODE PRIM]: Adding prim {0}", Name);
-            
+            //            m_log.DebugFormat("[ODE PRIM]: Adding prim {0}", Name);
+
             int[] iprimspaceArrItem = _parent_scene.calculateSpaceArrayItemFromPos(_position);
             IntPtr targetspace = _parent_scene.calculateSpaceForGeom(_position);
 
@@ -1574,7 +1583,7 @@ Console.WriteLine("CreateGeom:");
                 // Don't need to re-enable body..   it's done in SetMesh
                 mesh = _parent_scene.mesher.CreateMesh(Name, _pbs, _size, _parent_scene.meshSculptLOD, IsPhysical);
                 // createmesh returns null when it's a shape that isn't a cube.
-               // m_log.Debug(m_localID);
+                // m_log.Debug(m_localID);
                 if (mesh == null)
                     CheckMeshAsset();
                 else
@@ -1634,8 +1643,8 @@ Console.WriteLine("changeadd 1");
                             OdePrim odParent = (OdePrim)_parent;
                             if (Body != (IntPtr)0 && odParent.Body != (IntPtr)0 && Body != odParent.Body)
                             {
-// KF: Fixed Joints were removed? Anyway - this Console.WriteLine does not show up, so routine is not used??
-Console.WriteLine(" JointCreateFixed");
+                                // KF: Fixed Joints were removed? Anyway - this Console.WriteLine does not show up, so routine is not used??
+                                Console.WriteLine(" JointCreateFixed");
                                 m_linkJoint = d.JointCreateFixed(_parent_scene.world, _linkJointGroup);
                                 d.JointAttach(m_linkJoint, Body, odParent.Body);
                                 d.JointSetFixed(m_linkJoint);
@@ -1653,23 +1662,23 @@ Console.WriteLine(" JointCreateFixed");
                     }
                 }
                 //else
-               // {
-                    //m_log.Debug("[BUG]: race!");
+                // {
+                //m_log.Debug("[BUG]: race!");
                 //}
             }
 
             // string primScenAvatarIn = _parent_scene.whichspaceamIin(_position);
             // int[] arrayitem = _parent_scene.calculateSpaceArrayItemFromPos(_position);
-//          _parent_scene.waitForSpaceUnlock(m_targetSpace);
+            //          _parent_scene.waitForSpaceUnlock(m_targetSpace);
 
             IntPtr tempspace = _parent_scene.recalculateSpaceForGeom(prim_geom, _position, m_targetSpace);
             m_targetSpace = tempspace;
 
-//                _parent_scene.waitForSpaceUnlock(m_targetSpace);
+            //                _parent_scene.waitForSpaceUnlock(m_targetSpace);
 
             d.GeomSetPosition(prim_geom, _position.X, _position.Y, _position.Z);
 
-//                    _parent_scene.waitForSpaceUnlock(m_targetSpace);
+            //                    _parent_scene.waitForSpaceUnlock(m_targetSpace);
             d.SpaceAdd(m_targetSpace, prim_geom);
 
             changeSelectedStatus();
@@ -1693,39 +1702,38 @@ Console.WriteLine(" JointCreateFixed");
                 }
                 else
                 {
-//Console.WriteLine("Move " +  Name);
-                    if (!d.BodyIsEnabled (Body))  d.BodyEnable (Body); // KF add 161009
+                    //Console.WriteLine("Move " +  Name);
+                    if (!d.BodyIsEnabled(Body)) d.BodyEnable(Body); // KF add 161009
                     // NON-'VEHICLES' are dealt with here
-//                    if (d.BodyIsEnabled(Body) && !m_angularlock.ApproxEquals(Vector3.Zero, 0.003f))
-//                    {
-//                        d.Vector3 avel2 = d.BodyGetAngularVel(Body);
-//                        /*
-//                        if (m_angularlock.X == 1)
-//                            avel2.X = 0;
-//                        if (m_angularlock.Y == 1)
-//                            avel2.Y = 0;
-//                        if (m_angularlock.Z == 1)
-//                            avel2.Z = 0;
-//                        d.BodySetAngularVel(Body, avel2.X, avel2.Y, avel2.Z);
-//                         */
-//                    }
+                    //                    if (d.BodyIsEnabled(Body) && !m_angularlock.ApproxEquals(Vector3.Zero, 0.003f))
+                    //                    {
+                    //                        d.Vector3 avel2 = d.BodyGetAngularVel(Body);
+                    //                        /*
+                    //                        if (m_angularlock.X == 1)
+                    //                            avel2.X = 0;
+                    //                        if (m_angularlock.Y == 1)
+                    //                            avel2.Y = 0;
+                    //                        if (m_angularlock.Z == 1)
+                    //                            avel2.Z = 0;
+                    //                        d.BodySetAngularVel(Body, avel2.X, avel2.Y, avel2.Z);
+                    //                         */
+                    //                    }
                     //float PID_P = 900.0f;
 
                     float m_mass = CalculateMass();
 
-//                    fz = 0f;
+                    //                    fz = 0f;
                     //m_log.Info(m_collisionFlags.ToString());
 
-                    
                     //KF: m_buoyancy should be set by llSetBuoyancy() for non-vehicle.
                     // would come from SceneObjectPart.cs, public void SetBuoyancy(float fvalue) , PhysActor.Buoyancy = fvalue; ??
-                    // m_buoyancy: (unlimited value) <0=Falls fast; 0=1g; 1=0g; >1 = floats up 
+                    // m_buoyancy: (unlimited value) <0=Falls fast; 0=1g; 1=0g; >1 = floats up
                     // gravityz multiplier = 1 - m_buoyancy
                     fz = _parent_scene.gravityz * (1.0f - m_buoyancy) * m_mass;
 
                     if (m_usePID)
                     {
-//Console.WriteLine("PID " +  Name);
+                        //Console.WriteLine("PID " +  Name);
                         // KF - this is for object move? eg. llSetPos() ?
                         //if (!d.BodyIsEnabled(Body))
                         //d.BodySetForce(Body, 0f, 0f, 0f);
@@ -1734,7 +1742,7 @@ Console.WriteLine(" JointCreateFixed");
                         fz = 0f;
 
                         //  no lock; for now it's only called from within Simulate()
-    
+
                         // If the PID Controller isn't active then we set our force
                         // calculating base velocity to the current position
 
@@ -1743,7 +1751,7 @@ Console.WriteLine(" JointCreateFixed");
                             //PID_G = PID_G / m_PIDTau;
                             m_PIDTau = 1;
                         }
-    
+
                         if ((PID_G - m_PIDTau) <= 0)
                         {
                             PID_G = m_PIDTau + 1;
@@ -1763,10 +1771,10 @@ Console.WriteLine(" JointCreateFixed");
 
                         //  if velocity is zero, use position control; otherwise, velocity control
 
-                        if (_target_velocity.ApproxEquals(Vector3.Zero,0.1f))
+                        if (_target_velocity.ApproxEquals(Vector3.Zero, 0.1f))
                         {
                             //  keep track of where we stopped.  No more slippin' & slidin'
-    
+
                             // We only want to deactivate the PID Controller if we think we want to have our surrogate
                             // react to the physics scene by moving it's position.
                             // Avatar to Avatar collisions
@@ -1787,7 +1795,7 @@ Console.WriteLine(" JointCreateFixed");
                             // We're flying and colliding with something
                             fx = ((_target_velocity.X) - vel.X) * (PID_D);
                             fy = ((_target_velocity.Y) - vel.Y) * (PID_D);
-    
+
                             // vec.Z = (_target_velocity.Z - vel.Z) * PID_D + (_zeroPosition.Z - pos.Z) * PID_P;
 
                             fz = fz + ((_target_velocity.Z - vel.Z) * (PID_D) * m_mass);
@@ -1797,8 +1805,8 @@ Console.WriteLine(" JointCreateFixed");
                     // Hover PID Controller needs to be mutually exlusive to MoveTo PID controller
                     if (m_useHoverPID && !m_usePID)
                     {
-//Console.WriteLine("Hover " +  Name);
-                    
+                        //Console.WriteLine("Hover " +  Name);
+
                         // If we're using the PID controller, then we have no gravity
                         fz = (-1 * _parent_scene.gravityz) * m_mass;
 
@@ -1829,9 +1837,10 @@ Console.WriteLine(" JointCreateFixed");
                                 m_groundHeight = _parent_scene.GetTerrainHeightAtXY(pos.X, pos.Y);
                                 m_targetHoverHeight = m_groundHeight + m_PIDHoverHeight;
                                 break;
+
                             case PIDHoverType.GroundAndWater:
                                 m_groundHeight = _parent_scene.GetTerrainHeightAtXY(pos.X, pos.Y);
-                                m_waterHeight  = _parent_scene.GetWaterLevel();
+                                m_waterHeight = _parent_scene.GetWaterLevel();
                                 if (m_groundHeight > m_waterHeight)
                                 {
                                     m_targetHoverHeight = m_groundHeight + m_PIDHoverHeight;
@@ -1841,9 +1850,7 @@ Console.WriteLine(" JointCreateFixed");
                                     m_targetHoverHeight = m_waterHeight + m_PIDHoverHeight;
                                 }
                                 break;
-
                         }     // end switch (m_PIDHoverType)
-
 
                         _target_velocity =
                             new Vector3(0.0f, 0.0f,
@@ -1855,7 +1862,7 @@ Console.WriteLine(" JointCreateFixed");
                         if (_target_velocity.ApproxEquals(Vector3.Zero, 0.1f))
                         {
                             //  keep track of where we stopped.  No more slippin' & slidin'
-    
+
                             // We only want to deactivate the PID Controller if we think we want to have our surrogate
                             // react to the physics scene by moving it's position.
                             // Avatar to Avatar collisions
@@ -1893,7 +1900,7 @@ Console.WriteLine(" JointCreateFixed");
                         {
                             // A physical body at rest on a surface will auto-disable after a while,
                             // this appears to re-enable it incase the surface it is upon vanishes,
-                            // and the body should fall again. 
+                            // and the body should fall again.
                             d.BodySetLinearVel(Body, 0f, 0f, 0f);
                             d.BodySetForce(Body, 0, 0, 0);
                             enableBodySoft();
@@ -1902,7 +1909,7 @@ Console.WriteLine(" JointCreateFixed");
                         // 35x10 = 350n times the mass per second applied maximum.
                         float nmax = 35f * m_mass;
                         float nmin = -35f * m_mass;
-                    
+
                         if (fx > nmax)
                             fx = nmax;
                         if (fx < nmin)
@@ -1912,16 +1919,15 @@ Console.WriteLine(" JointCreateFixed");
                         if (fy < nmin)
                             fy = nmin;
                         d.BodyAddForce(Body, fx, fy, fz);
-//Console.WriteLine("AddForce " + fx + "," + fy + "," + fz);
+                        //Console.WriteLine("AddForce " + fx + "," + fy + "," + fz);
                     }
                 }
             }
             else
             {    // is not physical, or is not a body or is selected
-              //  _zeroPosition = d.BodyGetPosition(Body);
+                //  _zeroPosition = d.BodyGetPosition(Body);
                 return;
-//Console.WriteLine("Nothing " +  Name);
-               
+                //Console.WriteLine("Nothing " +  Name);
             }
         }
 
@@ -1947,7 +1953,7 @@ Console.WriteLine(" JointCreateFixed");
                 // daughter prim, do Geom set
                 d.GeomSetQuaternion(prim_geom, ref myrot);
             }
-            
+
             resetCollisionAccounting();
             m_taintrot = _orientation;
         }
@@ -2001,7 +2007,7 @@ Console.WriteLine(" JointCreateFixed");
                     {
                         RemoveGeom();
 
-//Console.WriteLine("changePhysicsStatus for " + Name);
+                        //Console.WriteLine("changePhysicsStatus for " + Name);
                         changeadd();
                     }
 
@@ -2058,7 +2064,7 @@ Console.WriteLine(" JointCreateFixed");
 
             if (d.SpaceQuery(m_targetSpace, prim_geom))
             {
-//                _parent_scene.waitForSpaceUnlock(m_targetSpace);
+                //                _parent_scene.waitForSpaceUnlock(m_targetSpace);
                 d.SpaceRemove(m_targetSpace, prim_geom);
             }
 
@@ -2085,7 +2091,6 @@ Console.WriteLine(" JointCreateFixed");
                     else
                         m_assetFailed = false;
                 }
-                    
             }
 
             CreateGeom(m_targetSpace, mesh);
@@ -2143,6 +2148,7 @@ Console.WriteLine(" JointCreateFixed");
 
                 d.GeomSetCollideBits(prim_geom, (int)m_collisionFlags);
         }
+
         /// <summary>
         /// Change prim in response to a shape taint.
         /// </summary>
@@ -2176,7 +2182,6 @@ Console.WriteLine(" JointCreateFixed");
             // Construction of new prim
 
             IMesh mesh = null;
-
 
             if (_parent_scene.needsMeshing(_pbs))
             {
@@ -2228,7 +2233,7 @@ Console.WriteLine(" JointCreateFixed");
             }
 
             resetCollisionAccounting();
-//            m_taintshape = false;
+            //            m_taintshape = false;
         }
 
         /// <summary>
@@ -2249,7 +2254,6 @@ Console.WriteLine(" JointCreateFixed");
                         {
                             for (i = 0; i < m_forcelist.Count; i++)
                             {
-
                                 iforce = iforce + (m_forcelist[i] * 100);
                             }
                         }
@@ -2317,7 +2321,6 @@ Console.WriteLine(" JointCreateFixed");
                         }
                         d.BodyEnable(Body);
                         d.BodyAddTorque(Body, iforce.X, iforce.Y, iforce.Z);
-                        
                     }
                     m_angularforcelist.Clear();
                 }
@@ -2347,7 +2350,7 @@ Console.WriteLine(" JointCreateFixed");
                         d.BodySetLinearVel(Body, m_taintVelocity.X, m_taintVelocity.Y, m_taintVelocity.Z);
                     }
                 }
-                
+
                 //resetCollisionAccounting();
             }
 
@@ -2399,7 +2402,9 @@ Console.WriteLine(" JointCreateFixed");
         {
             get { return _position; }
 
-            set { _position = value;
+            set
+            {
+                _position = value;
                 //m_log.Info("[PHYSICS]: " + _position.ToString());
             }
         }
@@ -2412,7 +2417,7 @@ Console.WriteLine(" JointCreateFixed");
                 if (value.IsFinite())
                 {
                     _size = value;
-//                    m_log.DebugFormat("[PHYSICS]: Set size on {0} to {1}", Name, value);
+                    //                    m_log.DebugFormat("[PHYSICS]: Set size on {0} to {1}", Name, value);
                 }
                 else
                 {
@@ -2451,17 +2456,17 @@ Console.WriteLine(" JointCreateFixed");
 
         public override void VehicleFloatParam(int param, float value)
         {
-            m_vehicle.ProcessFloatVehicleParam((Vehicle) param, value);
+            m_vehicle.ProcessFloatVehicleParam((Vehicle)param, value);
         }
 
         public override void VehicleVectorParam(int param, Vector3 value)
         {
-            m_vehicle.ProcessVectorVehicleParam((Vehicle) param, value);
+            m_vehicle.ProcessVectorVehicleParam((Vehicle)param, value);
         }
 
         public override void VehicleRotationParam(int param, Quaternion rotation)
         {
-            m_vehicle.ProcessRotationVehicleParam((Vehicle) param, rotation);
+            m_vehicle.ProcessRotationVehicleParam((Vehicle)param, rotation);
         }
 
         public override void VehicleFlags(int param, bool remove)
@@ -2527,7 +2532,6 @@ Console.WriteLine(" JointCreateFixed");
                 {
                     m_log.WarnFormat("[PHYSICS]: Got NaN Velocity in Object {0}", Name);
                 }
-
             }
         }
 
@@ -2790,15 +2794,15 @@ Console.WriteLine(" JointCreateFixed");
                     }
 
                     //float Adiff = 1.0f - Math.Abs(Quaternion.Dot(m_lastorientation, l_orientation));
-//Console.WriteLine("Adiff " + Name + " = " + Adiff);
+                    //Console.WriteLine("Adiff " + Name + " = " + Adiff);
                     if ((Math.Abs(m_lastposition.X - l_position.X) < 0.02)
                         && (Math.Abs(m_lastposition.Y - l_position.Y) < 0.02)
                         && (Math.Abs(m_lastposition.Z - l_position.Z) < 0.02)
-//                        && (1.0 - Math.Abs(Quaternion.Dot(m_lastorientation, l_orientation)) < 0.01))
+                        //                        && (1.0 - Math.Abs(Quaternion.Dot(m_lastorientation, l_orientation)) < 0.01))
                         && (1.0 - Math.Abs(Quaternion.Dot(m_lastorientation, l_orientation)) < 0.0001))  // KF 0.01 is far to large
                     {
                         _zeroFlag = true;
-//Console.WriteLine("ZFT 2");
+                        //Console.WriteLine("ZFT 2");
                         m_throttleUpdates = false;
                     }
                     else
@@ -2861,12 +2865,12 @@ Console.WriteLine(" JointCreateFixed");
                         _acceleration = ((_velocity - m_lastVelocity) / 0.1f);
                         _acceleration = new Vector3(_velocity.X - m_lastVelocity.X / 0.1f, _velocity.Y - m_lastVelocity.Y / 0.1f, _velocity.Z - m_lastVelocity.Z / 0.1f);
                         //m_log.Info("[PHYSICS]: V1: " + _velocity + " V2: " + m_lastVelocity + " Acceleration: " + _acceleration.ToString());
-                       
-                        // Note here that linearvelocity is affecting angular velocity...  so I'm guessing this is a vehicle specific thing... 
-                        // it does make sense to do this for tiny little instabilities with physical prim, however 0.5m/frame is fairly large. 
+
+                        // Note here that linearvelocity is affecting angular velocity...  so I'm guessing this is a vehicle specific thing...
+                        // it does make sense to do this for tiny little instabilities with physical prim, however 0.5m/frame is fairly large.
                         // reducing this to 0.02m/frame seems to help the angular rubberbanding quite a bit, however, to make sure it doesn't affect elevators and vehicles
                         // adding these logical exclusion situations to maintain this where I think it was intended to be.
-                        if (m_throttleUpdates || m_usePID || (m_vehicle != null && m_vehicle.Type != Vehicle.TYPE_NONE) || (Amotor != IntPtr.Zero)) 
+                        if (m_throttleUpdates || m_usePID || (m_vehicle != null && m_vehicle.Type != Vehicle.TYPE_NONE) || (Amotor != IntPtr.Zero))
                         {
                             m_minvelocity = 0.5f;
                         }
@@ -2925,7 +2929,8 @@ Console.WriteLine(" JointCreateFixed");
 
         public override bool FloatOnWater
         {
-            set {
+            set
+            {
                 m_taintCollidesWater = value;
                 _parent_scene.AddPhysicsActorTaint(this);
             }
@@ -2935,8 +2940,8 @@ Console.WriteLine(" JointCreateFixed");
         {
         }
 
-        public override Vector3 PIDTarget 
-        { 
+        public override Vector3 PIDTarget
+        {
             set
             {
                 if (value.IsFinite())
@@ -2945,23 +2950,28 @@ Console.WriteLine(" JointCreateFixed");
                 }
                 else
                     m_log.WarnFormat("[PHYSICS]: Got NaN PIDTarget from Scene on Object {0}", Name);
-            } 
+            }
         }
+
         public override bool PIDActive { set { m_usePID = value; } }
+
         public override float PIDTau { set { m_PIDTau = value; } }
 
         public override float PIDHoverHeight { set { m_PIDHoverHeight = value; ; } }
+
         public override bool PIDHoverActive { set { m_useHoverPID = value; } }
+
         public override PIDHoverType PIDHoverType { set { m_PIDHoverType = value; } }
+
         public override float PIDHoverTau { set { m_PIDHoverTau = value; } }
-        
-        public override Quaternion APIDTarget{ set { return; } }
 
-        public override bool APIDActive{ set { return; } }
+        public override Quaternion APIDTarget { set { return; } }
 
-        public override float APIDStrength{ set { return; } }
+        public override bool APIDActive { set { return; } }
 
-        public override float APIDDamping{ set { return; } }
+        public override float APIDStrength { set { return; } }
+
+        public override float APIDDamping { set { return; } }
 
         private void createAMotor(Vector3 axis)
         {
@@ -2980,7 +2990,6 @@ Console.WriteLine(" JointCreateFixed");
 
             // PhysicsVector totalSize = new PhysicsVector(_size.X, _size.Y, _size.Z);
 
-            
             // Inverse Inertia Matrix, set the X, Y, and/r Z inertia to 0 then invert it again.
             d.Mass objMass;
             d.MassSetZero(out objMass);
@@ -2996,7 +3005,6 @@ Console.WriteLine(" JointCreateFixed");
             //m_log.DebugFormat("2-{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, ", mathmat[0, 0], mathmat[0, 1], mathmat[0, 2], mathmat[1, 0], mathmat[1, 1], mathmat[1, 2], mathmat[2, 0], mathmat[2, 1], mathmat[2, 2]);
 
             mathmat = Inverse(mathmat);
-
 
             objMass = FromMatrix4(mathmat, ref objMass);
             //m_log.DebugFormat("3-{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, ", objMass.I.M00, objMass.I.M01, objMass.I.M02, objMass.I.M10, objMass.I.M11, objMass.I.M12, objMass.I.M20, objMass.I.M21, objMass.I.M22);
@@ -3018,13 +3026,11 @@ Console.WriteLine(" JointCreateFixed");
                 mathmat.M11 = 50.0000001f;
                 //objMass.I.M00 = 0;
             }
-            
-            
 
             mathmat = Inverse(mathmat);
             objMass = FromMatrix4(mathmat, ref objMass);
             //m_log.DebugFormat("4-{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, ", objMass.I.M00, objMass.I.M01, objMass.I.M02, objMass.I.M10, objMass.I.M11, objMass.I.M12, objMass.I.M20, objMass.I.M21, objMass.I.M22);
-           
+
             //return;
             if (d.MassCheck(ref objMass))
             {
@@ -3043,7 +3049,7 @@ Console.WriteLine(" JointCreateFixed");
             d.JointAttach(Amotor, Body, IntPtr.Zero);
             d.JointSetAMotorMode(Amotor, 0);
 
-            d.JointSetAMotorNumAxes(Amotor,(int)axisnum);
+            d.JointSetAMotorNumAxes(Amotor, (int)axisnum);
             int i = 0;
 
             if (axis.X == 0)
@@ -3175,9 +3181,9 @@ Console.WriteLine(" JointCreateFixed");
         public static Matrix4 Adjoint(Matrix4 pMat)
         {
             Matrix4 adjointMatrix = new Matrix4();
-            for (int i=0; i<4; i++)
+            for (int i = 0; i < 4; i++)
             {
-                for (int j=0; j<4; j++)
+                for (int j = 0; j < 4; j++)
                 {
                     Matrix4SetValue(ref adjointMatrix, i, j, (float)(Math.Pow(-1, i + j) * (determinant3x3(Minor(pMat, i, j)))));
                 }
@@ -3200,7 +3206,7 @@ Console.WriteLine(" JointCreateFixed");
                 {
                     if (j == iCol)
                         continue;
-                    Matrix4SetValue(ref minor, m,n, matrix[i, j]);
+                    Matrix4SetValue(ref minor, m, n, matrix[i, j]);
                     n++;
                 }
                 m++;
@@ -3228,66 +3234,81 @@ Console.WriteLine(" JointCreateFixed");
                         case 0:
                             pMat.M11 = val;
                             break;
+
                         case 1:
                             pMat.M12 = val;
                             break;
+
                         case 2:
                             pMat.M13 = val;
                             break;
+
                         case 3:
                             pMat.M14 = val;
                             break;
                     }
 
                     break;
+
                 case 1:
                     switch (c)
                     {
                         case 0:
                             pMat.M21 = val;
                             break;
+
                         case 1:
                             pMat.M22 = val;
                             break;
+
                         case 2:
                             pMat.M23 = val;
                             break;
+
                         case 3:
                             pMat.M24 = val;
                             break;
                     }
 
                     break;
+
                 case 2:
                     switch (c)
                     {
                         case 0:
                             pMat.M31 = val;
                             break;
+
                         case 1:
                             pMat.M32 = val;
                             break;
+
                         case 2:
                             pMat.M33 = val;
                             break;
+
                         case 3:
                             pMat.M34 = val;
                             break;
                     }
 
                     break;
+
                 case 3:
                     switch (c)
                     {
                         case 0:
                             pMat.M41 = val;
                             break;
+
                         case 1:
                             pMat.M42 = val;
                             break;
+
                         case 2:
                             pMat.M43 = val;
                             break;
+
                         case 3:
                             pMat.M44 = val;
                             break;
@@ -3300,17 +3321,17 @@ Console.WriteLine(" JointCreateFixed");
         private static float determinant3x3(Matrix4 pMat)
         {
             float det = 0;
-            float diag1 = pMat[0, 0]*pMat[1, 1]*pMat[2, 2];
-            float diag2 = pMat[0, 1]*pMat[2, 1]*pMat[2, 0];
-            float diag3 = pMat[0, 2]*pMat[1, 0]*pMat[2, 1];
-            float diag4 = pMat[2, 0]*pMat[1, 1]*pMat[0, 2];
-            float diag5 = pMat[2, 1]*pMat[1, 2]*pMat[0, 0];
-            float diag6 = pMat[2, 2]*pMat[1, 0]*pMat[0, 1];
+            float diag1 = pMat[0, 0] * pMat[1, 1] * pMat[2, 2];
+            float diag2 = pMat[0, 1] * pMat[2, 1] * pMat[2, 0];
+            float diag3 = pMat[0, 2] * pMat[1, 0] * pMat[2, 1];
+            float diag4 = pMat[2, 0] * pMat[1, 1] * pMat[0, 2];
+            float diag5 = pMat[2, 1] * pMat[1, 2] * pMat[0, 0];
+            float diag6 = pMat[2, 2] * pMat[1, 0] * pMat[0, 1];
 
             det = diag1 + diag2 + diag3 - (diag4 + diag5 + diag6);
             return det;
         }
-        
+
         private static void DMassCopy(ref d.Mass src, ref d.Mass dst)
         {
             dst.c.W = src.c.W;
@@ -3359,14 +3380,14 @@ Console.WriteLine(" JointCreateFixed");
 
                 _pbs.SculptData = new byte[asset.Data.Length];
                 asset.Data.CopyTo(_pbs.SculptData, 0);
-//                m_assetFailed = false;
+                //                m_assetFailed = false;
 
-//                m_log.DebugFormat(
-//                    "[ODE PRIM]: Received mesh/sculpt data asset {0} with {1} bytes for {2} at {3} in {4}", 
-//                    _pbs.SculptTexture, _pbs.SculptData.Length, Name, _position, _parent_scene.Name);
+                //                m_log.DebugFormat(
+                //                    "[ODE PRIM]: Received mesh/sculpt data asset {0} with {1} bytes for {2} at {3} in {4}",
+                //                    _pbs.SculptTexture, _pbs.SculptData.Length, Name, _position, _parent_scene.Name);
 
                 m_taintshape = true;
-               _parent_scene.AddPhysicsActorTaint(this);
+                _parent_scene.AddPhysicsActorTaint(this);
             }
             else
             {
@@ -3374,6 +3395,6 @@ Console.WriteLine(" JointCreateFixed");
                     "[ODE PRIM]: Could not get mesh/sculpt asset {0} for {1} at {2} in {3}",
                     _pbs.SculptTexture, Name, _position, _parent_scene.Name);
             }
-        }          
+        }
     }
 }

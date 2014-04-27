@@ -25,20 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using Nini.Config;
 using log4net;
-using System;
+using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Services.Interfaces;
 using System.IO;
 using System.Reflection;
-using System.Net;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Xml;
-using System.Xml.Serialization;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
-using OpenSim.Framework;
-using OpenSim.Framework.Servers.HttpServer;
 
 namespace OpenSim.Server.Handlers.BakedTextures
 {
@@ -47,11 +38,12 @@ namespace OpenSim.Server.Handlers.BakedTextures
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private IBakedTextureService m_BakesService;
+
         private System.Text.UTF8Encoding utf8 =
                 new System.Text.UTF8Encoding();
 
         public BakesServerGetHandler(IBakedTextureService service) :
-                base("GET", "/bakes")
+            base("GET", "/bakes")
         {
             m_BakesService = service;
         }

@@ -1,21 +1,21 @@
 ﻿/* The MIT License
- * 
+ *
  * Copyright (c) 2010 Intel Corporation.
  * All rights reserved.
  *
- * Based on the convexdecomposition library from 
+ * Based on the convexdecomposition library from
  * <http://codesuppository.googlecode.com> by John W. Ratcliff and Stan Melax.
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -30,55 +30,6 @@ using System.Collections.Generic;
 
 namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
 {
-    public class Rect3d
-    {
-        public float[] mMin = new float[3];
-        public float[] mMax = new float[3];
-
-        public Rect3d()
-        {
-        }
-
-        public Rect3d(float[] bmin, float[] bmax)
-        {
-            mMin[0] = bmin[0];
-            mMin[1] = bmin[1];
-            mMin[2] = bmin[2];
-
-            mMax[0] = bmax[0];
-            mMax[1] = bmax[1];
-            mMax[2] = bmax[2];
-        }
-
-        public void SetMin(float[] bmin)
-        {
-            mMin[0] = bmin[0];
-            mMin[1] = bmin[1];
-            mMin[2] = bmin[2];
-        }
-
-        public void SetMax(float[] bmax)
-        {
-            mMax[0] = bmax[0];
-            mMax[1] = bmax[1];
-            mMax[2] = bmax[2];
-        }
-
-        public void SetMin(float x, float y, float z)
-        {
-            mMin[0] = x;
-            mMin[1] = y;
-            mMin[2] = z;
-        }
-
-        public void SetMax(float x, float y, float z)
-        {
-            mMax[0] = x;
-            mMax[1] = y;
-            mMax[2] = z;
-        }
-    }
-
     public static class SplitPlane
     {
         public static bool computeSplitPlane(List<float3> vertices, List<int> indices, ref float4 plane)
@@ -158,6 +109,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
                     }
 
                     break;
+
                 case 1:
                     p2[0] = bmin[0];
                     p2[2] = bmin[2];
@@ -174,6 +126,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
                     }
 
                     break;
+
                 case 2:
                     p2[0] = bmin[0];
                     p2[1] = bmin[1];
@@ -195,6 +148,36 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
             computePlane(p1, p2, p3, plane);
 
             return true;
+        }
+
+        public static void splitRect(int axis, Rect3d source, Rect3d b1, Rect3d b2, float[] midpoint)
+        {
+            switch (axis)
+            {
+                case 0:
+                    b1.SetMin(source.mMin);
+                    b1.SetMax(midpoint[0], source.mMax[1], source.mMax[2]);
+
+                    b2.SetMin(midpoint[0], source.mMin[1], source.mMin[2]);
+                    b2.SetMax(source.mMax);
+                    break;
+
+                case 1:
+                    b1.SetMin(source.mMin);
+                    b1.SetMax(source.mMax[0], midpoint[1], source.mMax[2]);
+
+                    b2.SetMin(source.mMin[0], midpoint[1], source.mMin[2]);
+                    b2.SetMax(source.mMax);
+                    break;
+
+                case 2:
+                    b1.SetMin(source.mMin);
+                    b1.SetMax(source.mMax[0], source.mMax[1], midpoint[2]);
+
+                    b2.SetMin(source.mMin[0], source.mMin[1], midpoint[2]);
+                    b2.SetMax(source.mMax);
+                    break;
+            }
         }
 
         internal static void computePlane(float[] A, float[] B, float[] C, float4 plane)
@@ -233,33 +216,52 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
             plane.z = z;
             plane.w = D;
         }
+    }
 
-        public static void splitRect(int axis, Rect3d source, Rect3d b1, Rect3d b2, float[] midpoint)
+    public class Rect3d
+    {
+        public float[] mMax = new float[3];
+        public float[] mMin = new float[3];
+        public Rect3d()
         {
-            switch (axis)
-            {
-                case 0:
-                    b1.SetMin(source.mMin);
-                    b1.SetMax(midpoint[0], source.mMax[1], source.mMax[2]);
+        }
 
-                    b2.SetMin(midpoint[0], source.mMin[1], source.mMin[2]);
-                    b2.SetMax(source.mMax);
-                    break;
-                case 1:
-                    b1.SetMin(source.mMin);
-                    b1.SetMax(source.mMax[0], midpoint[1], source.mMax[2]);
+        public Rect3d(float[] bmin, float[] bmax)
+        {
+            mMin[0] = bmin[0];
+            mMin[1] = bmin[1];
+            mMin[2] = bmin[2];
 
-                    b2.SetMin(source.mMin[0], midpoint[1], source.mMin[2]);
-                    b2.SetMax(source.mMax);
-                    break;
-                case 2:
-                    b1.SetMin(source.mMin);
-                    b1.SetMax(source.mMax[0], source.mMax[1], midpoint[2]);
+            mMax[0] = bmax[0];
+            mMax[1] = bmax[1];
+            mMax[2] = bmax[2];
+        }
 
-                    b2.SetMin(source.mMin[0], source.mMin[1], midpoint[2]);
-                    b2.SetMax(source.mMax);
-                    break;
-            }
+        public void SetMax(float[] bmax)
+        {
+            mMax[0] = bmax[0];
+            mMax[1] = bmax[1];
+            mMax[2] = bmax[2];
+        }
+
+        public void SetMax(float x, float y, float z)
+        {
+            mMax[0] = x;
+            mMax[1] = y;
+            mMax[2] = z;
+        }
+
+        public void SetMin(float[] bmin)
+        {
+            mMin[0] = bmin[0];
+            mMin[1] = bmin[1];
+            mMin[2] = bmin[2];
+        }
+        public void SetMin(float x, float y, float z)
+        {
+            mMin[0] = x;
+            mMin[1] = y;
+            mMin[2] = z;
         }
     }
 }

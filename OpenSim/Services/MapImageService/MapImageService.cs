@@ -23,49 +23,41 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
- * The design of this map service is based on SimianGrid's PHP-based 
+ *
+ * The design of this map service is based on SimianGrid's PHP-based
  * map service. See this URL for the original PHP version:
  * https://github.com/openmetaversefoundation/simiangrid/
  */
 
+using log4net;
+using Nini.Config;
+using OpenSim.Services.Interfaces;
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Net;
 using System.Reflection;
-
-using Nini.Config;
-using log4net;
-using OpenMetaverse;
-
-using OpenSim.Framework;
-using OpenSim.Framework.Console;
-using OpenSim.Services.Interfaces;
-
 
 namespace OpenSim.Services.MapImageService
 {
     public class MapImageService : IMapImageService
     {
+        private const int HALF_WIDTH = 128;
+
+        private const int IMAGE_WIDTH = 256;
+
+        private const int JPEG_QUALITY = 80;
+
+        private const int ZOOM_LEVELS = 8;
+
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
-
-        private const int ZOOM_LEVELS = 8;
-        private const int IMAGE_WIDTH = 256;
-        private const int HALF_WIDTH = 128;
-        private const int JPEG_QUALITY = 80;
-
-        private static string m_TilesStoragePath = "maptiles";
-
-        private static object m_Sync = new object();
         private static bool m_Initialized = false;
-        private static string m_WaterTileFile = string.Empty;
+        private static object m_Sync = new object();
+        private static string m_TilesStoragePath = "maptiles";
         private static Color m_Watercolor = Color.FromArgb(29, 71, 95);
-
+        private static string m_WaterTileFile = string.Empty;
         public MapImageService(IConfigSource config)
         {
             if (!m_Initialized)
@@ -79,7 +71,6 @@ namespace OpenSim.Services.MapImageService
                     m_TilesStoragePath = serviceConfig.GetString("TilesStoragePath", m_TilesStoragePath);
                     if (!Directory.Exists(m_TilesStoragePath))
                         Directory.CreateDirectory(m_TilesStoragePath);
-
 
                     m_WaterTileFile = Path.Combine(m_TilesStoragePath, "water.jpg");
                     if (!File.Exists(m_WaterTileFile))
@@ -115,6 +106,29 @@ namespace OpenSim.Services.MapImageService
             }
 
             return UpdateMultiResolutionFiles(x, y, out reason);
+        }
+
+        public byte[] GetMapTile(string fileName, out string format)
+        {
+            //            m_log.DebugFormat("[MAP IMAGE SERVICE]: Getting map tile {0}", fileName);
+
+            format = ".jpg";
+            string fullName = Path.Combine(m_TilesStoragePath, fileName);
+            if (File.Exists(fullName))
+            {
+                format = Path.GetExtension(fileName).ToLower();
+                //m_log.DebugFormat("[MAP IMAGE SERVICE]: Found file {0}, extension {1}", fileName, format);
+                return File.ReadAllBytes(fullName);
+            }
+            else if (File.Exists(m_WaterTileFile))
+            {
+                return File.ReadAllBytes(m_WaterTileFile);
+            }
+            else
+            {
+                m_log.DebugFormat("[MAP IMAGE SERVICE]: unable to get file {0}", fileName);
+                return new byte[0];
+            }
         }
 
         public bool RemoveMapTile(int x, int y, out string reason)
@@ -164,80 +178,11 @@ namespace OpenSim.Services.MapImageService
 
             return true;
         }
-
-        public byte[] GetMapTile(string fileName, out string format)
-        {
-//            m_log.DebugFormat("[MAP IMAGE SERVICE]: Getting map tile {0}", fileName);
-
-            format = ".jpg";
-            string fullName = Path.Combine(m_TilesStoragePath, fileName);
-            if (File.Exists(fullName))
-            {
-                format = Path.GetExtension(fileName).ToLower();
-                //m_log.DebugFormat("[MAP IMAGE SERVICE]: Found file {0}, extension {1}", fileName, format);
-                return File.ReadAllBytes(fullName);
-            }
-            else if (File.Exists(m_WaterTileFile))
-            {
-                return File.ReadAllBytes(m_WaterTileFile);
-            }
-            else
-            {
-                m_log.DebugFormat("[MAP IMAGE SERVICE]: unable to get file {0}", fileName);
-                return new byte[0];
-            }
-        }
-
-        #endregion
-
-
-        private string GetFileName(uint zoomLevel, int x, int y)
-        {
-            string extension = "jpg";
-            return Path.Combine(m_TilesStoragePath, string.Format("map-{0}-{1}-{2}-objects.{3}", zoomLevel, x, y, extension));
-        }
-
-        private Bitmap GetInputTileImage(string fileName)
-        {
-            try
-            {
-                if (File.Exists(fileName))
-                    return new Bitmap(fileName);
-            }
-            catch (Exception e)
-            {
-                m_log.WarnFormat("[MAP IMAGE SERVICE]: Unable to read image data from {0}: {1}", fileName, e);
-            }
-
-            return null;
-        }
-
-        private Bitmap GetOutputTileImage(string fileName)
-        {
-            try
-            {
-                if (File.Exists(fileName))                    
-                    return new Bitmap(fileName);
-
-                else
-                {
-                    // Create a new output tile with a transparent background
-                    Bitmap bm = new Bitmap(IMAGE_WIDTH, IMAGE_WIDTH, PixelFormat.Format24bppRgb);
-                    bm.MakeTransparent();
-                    return bm;
-                }
-            }
-            catch (Exception e)
-            {
-                m_log.WarnFormat("[MAP IMAGE SERVICE]: Unable to read image data from {0}: {1}", fileName, e);
-            }
-
-            return null;
-        }
+        #endregion IMapImageService
 
         private bool CreateTile(uint zoomLevel, int x, int y)
         {
-//            m_log.DebugFormat("[MAP IMAGE SERVICE]: Create tile for {0} {1}, zoom {2}", x, y, zoomLevel);
+            //            m_log.DebugFormat("[MAP IMAGE SERVICE]: Create tile for {0} {1}, zoom {2}", x, y, zoomLevel);
             int prevWidth = (int)Math.Pow(2, (double)zoomLevel - 2);
             int thisWidth = (int)Math.Pow(2, (double)zoomLevel - 1);
 
@@ -302,6 +247,48 @@ namespace OpenSim.Services.MapImageService
             return true;
         }
 
+        private string GetFileName(uint zoomLevel, int x, int y)
+        {
+            string extension = "jpg";
+            return Path.Combine(m_TilesStoragePath, string.Format("map-{0}-{1}-{2}-objects.{3}", zoomLevel, x, y, extension));
+        }
+
+        private Bitmap GetInputTileImage(string fileName)
+        {
+            try
+            {
+                if (File.Exists(fileName))
+                    return new Bitmap(fileName);
+            }
+            catch (Exception e)
+            {
+                m_log.WarnFormat("[MAP IMAGE SERVICE]: Unable to read image data from {0}: {1}", fileName, e);
+            }
+
+            return null;
+        }
+
+        private Bitmap GetOutputTileImage(string fileName)
+        {
+            try
+            {
+                if (File.Exists(fileName))
+                    return new Bitmap(fileName);
+                else
+                {
+                    // Create a new output tile with a transparent background
+                    Bitmap bm = new Bitmap(IMAGE_WIDTH, IMAGE_WIDTH, PixelFormat.Format24bppRgb);
+                    bm.MakeTransparent();
+                    return bm;
+                }
+            }
+            catch (Exception e)
+            {
+                m_log.WarnFormat("[MAP IMAGE SERVICE]: Unable to read image data from {0}: {1}", fileName, e);
+            }
+
+            return null;
+        }
         #region Image utilities
 
         private void FillImage(Bitmap bm, Color c)
@@ -324,6 +311,6 @@ namespace OpenSim.Services.MapImageService
                 }
         }
 
-        #endregion
+        #endregion Image utilities
     }
 }

@@ -26,14 +26,13 @@
  */
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
-    interface IPersistence
+    internal interface IPersistence
     {
         T Get<T>(Guid storageID);
+
         T Get<T>();
 
         /// <summary>

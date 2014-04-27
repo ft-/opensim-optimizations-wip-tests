@@ -28,14 +28,13 @@
 using System;
 using System.Collections.Generic;
 
-
 namespace OpenSim.Region.OptionalModules.World.AutoBackup
 {
     /// <summary>AutoBackupModuleState: Auto-Backup state for one region (scene).
     /// If you use this class in any way outside of AutoBackupModule, you should treat the class as opaque.
     /// Since it is not part of the framework, you really should not rely upon it outside of the AutoBackupModule implementation.
     /// </summary>
-    /// 
+    ///
     public class AutoBackupModuleState
     {
         private Dictionary<Guid, string> m_liveRequests = null;
@@ -50,21 +49,19 @@ namespace OpenSim.Region.OptionalModules.World.AutoBackup
             this.Script = null;
         }
 
-        public Dictionary<Guid, string> LiveRequests
-        {
-            get {
-                return this.m_liveRequests ??
-                       (this.m_liveRequests = new Dictionary<Guid, string>(1));
-            }
-        }
-
-        public bool Enabled
+        public string BackupDir
         {
             get;
             set;
         }
 
-        public System.Timers.Timer Timer
+        public bool BusyCheck
+        {
+            get;
+            set;
+        }
+
+        public bool Enabled
         {
             get;
             set;
@@ -85,7 +82,15 @@ namespace OpenSim.Region.OptionalModules.World.AutoBackup
             }
         }
 
-        public bool BusyCheck
+        public Dictionary<Guid, string> LiveRequests
+        {
+            get
+            {
+                return this.m_liveRequests ??
+                       (this.m_liveRequests = new Dictionary<Guid, string>(1));
+            }
+        }
+        public NamingType NamingType
         {
             get;
             set;
@@ -97,18 +102,11 @@ namespace OpenSim.Region.OptionalModules.World.AutoBackup
             set;
         }
 
-        public string BackupDir
+        public System.Timers.Timer Timer
         {
             get;
             set;
         }
-
-        public NamingType NamingType
-        {
-            get;
-            set;
-        }
-
         public new string ToString()
         {
             string retval = "";
@@ -123,4 +121,3 @@ namespace OpenSim.Region.OptionalModules.World.AutoBackup
         }
     }
 }
-

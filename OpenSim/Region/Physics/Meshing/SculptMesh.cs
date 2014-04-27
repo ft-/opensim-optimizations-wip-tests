@@ -30,46 +30,30 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.IO;
 
 #if SYSTEM_DRAWING
+
 using System.Drawing;
-using System.Drawing.Imaging;
+
 #endif
 
 namespace PrimMesher
 {
-
     public class SculptMesh
     {
         public List<Coord> coords;
         public List<Face> faces;
 
-        public List<ViewerFace> viewerFaces;
         public List<Coord> normals;
         public List<UVCoord> uvs;
-
-        public enum SculptType { sphere = 1, torus = 2, plane = 3, cylinder = 4 };
-
-#if SYSTEM_DRAWING
-
-        public SculptMesh SculptMeshFromFile(string fileName, SculptType sculptType, int lod, bool viewerMode)
-        {
-            Bitmap bitmap = (Bitmap)Bitmap.FromFile(fileName);
-            SculptMesh sculptMesh = new SculptMesh(bitmap, sculptType, lod, viewerMode);
-            bitmap.Dispose();
-            return sculptMesh;
-        }
-
-
+        public List<ViewerFace> viewerFaces;
         public SculptMesh(string fileName, int sculptType, int lod, int viewerMode, int mirror, int invert)
         {
             Bitmap bitmap = (Bitmap)Bitmap.FromFile(fileName);
             _SculptMesh(bitmap, (SculptType)sculptType, lod, viewerMode != 0, mirror != 0, invert != 0);
             bitmap.Dispose();
         }
-#endif
 
         /// <summary>
         /// ** Experimental ** May disappear from future versions ** not recommeneded for use in applications
@@ -174,7 +158,6 @@ namespace PrimMesher
                 calcVertexNormals(SculptType.plane, numXElements, numYElements);
         }
 
-#if SYSTEM_DRAWING
         public SculptMesh(Bitmap sculptBitmap, SculptType sculptType, int lod, bool viewerMode)
         {
             _SculptMesh(sculptBitmap, sculptType, lod, viewerMode, false, false);
@@ -184,123 +167,165 @@ namespace PrimMesher
         {
             _SculptMesh(sculptBitmap, sculptType, lod, viewerMode, mirror, invert);
         }
-#endif
 
         public SculptMesh(List<List<Coord>> rows, SculptType sculptType, bool viewerMode, bool mirror, bool invert)
         {
             _SculptMesh(rows, sculptType, viewerMode, mirror, invert);
         }
 
+        public SculptMesh(SculptMesh sm)
+        {
+            coords = new List<Coord>(sm.coords);
+            faces = new List<Face>(sm.faces);
+            viewerFaces = new List<ViewerFace>(sm.viewerFaces);
+            normals = new List<Coord>(sm.normals);
+            uvs = new List<UVCoord>(sm.uvs);
+        }
+
+        public enum SculptType { sphere = 1, torus = 2, plane = 3, cylinder = 4 };
+
 #if SYSTEM_DRAWING
+
         /// <summary>
-        /// converts a bitmap to a list of lists of coords, while scaling the image.
-        /// the scaling is done in floating point so as to allow for reduced vertex position
-        /// quantization as the position will be averaged between pixel values. this routine will
-        /// likely fail if the bitmap width and height are not powers of 2.
+        /// Adds a value to each XYZ vertex coordinate in the mesh
         /// </summary>
-        /// <param name="bitmap"></param>
-        /// <param name="scale"></param>
-        /// <param name="mirror"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="z"></param>
+        public void AddPos(float x, float y, float z)
+        {
+            int i;
+            int numVerts = this.coords.Count;
+            Coord vert;
+
+            for (i = 0; i < numVerts; i++)
+            {
+                vert = this.coords[i];
+                vert.X += x;
+                vert.Y += y;
+                vert.Z += z;
+                this.coords[i] = vert;
+            }
+
+            if (this.viewerFaces != null)
+            {
+                int numViewerFaces = this.viewerFaces.Count;
+
+                for (i = 0; i < numViewerFaces; i++)
+                {
+                    ViewerFace v = this.viewerFaces[i];
+                    v.AddPos(x, y, z);
+                    this.viewerFaces[i] = v;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Rotates the mesh
+        /// </summary>
+        /// <param name="q"></param>
+        public void AddRot(Quat q)
+        {
+            int i;
+            int numVerts = this.coords.Count;
+
+            for (i = 0; i < numVerts; i++)
+                this.coords[i] *= q;
+
+            int numNormals = this.normals.Count;
+            for (i = 0; i < numNormals; i++)
+                this.normals[i] *= q;
+
+            if (this.viewerFaces != null)
+            {
+                int numViewerFaces = this.viewerFaces.Count;
+
+                for (i = 0; i < numViewerFaces; i++)
+                {
+                    ViewerFace v = this.viewerFaces[i];
+                    v.v1 *= q;
+                    v.v2 *= q;
+                    v.v3 *= q;
+
+                    v.n1 *= q;
+                    v.n2 *= q;
+                    v.n3 *= q;
+
+                    this.viewerFaces[i] = v;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Duplicates a SculptMesh object. All object properties are copied by value, including lists.
+        /// </summary>
         /// <returns></returns>
-        private List<List<Coord>> bitmap2Coords(Bitmap bitmap, int scale, bool mirror)
+        public SculptMesh Copy()
         {
-            int numRows = bitmap.Height / scale;
-            int numCols = bitmap.Width / scale;
-            List<List<Coord>> rows = new List<List<Coord>>(numRows);
-
-            float pixScale = 1.0f / (scale * scale);
-            pixScale /= 255;
-
-            int imageX, imageY = 0;
-
-            int rowNdx, colNdx;
-
-            for (rowNdx = 0; rowNdx < numRows; rowNdx++)
-            {
-                List<Coord> row = new List<Coord>(numCols);
-                for (colNdx = 0; colNdx < numCols; colNdx++)
-                {
-                    imageX = colNdx * scale;
-                    int imageYStart = rowNdx * scale;
-                    int imageYEnd = imageYStart + scale;
-                    int imageXEnd = imageX + scale;
-                    float rSum = 0.0f;
-                    float gSum = 0.0f;
-                    float bSum = 0.0f;
-                    for (; imageX < imageXEnd; imageX++)
-                    {
-                        for (imageY = imageYStart; imageY < imageYEnd; imageY++)
-                        {
-                            Color c = bitmap.GetPixel(imageX, imageY);
-                            if (c.A != 255)
-                            {
-                                bitmap.SetPixel(imageX, imageY, Color.FromArgb(255, c.R, c.G, c.B));
-                                c = bitmap.GetPixel(imageX, imageY);
-                            }
-                            rSum += c.R;
-                            gSum += c.G;
-                            bSum += c.B;
-                        }
-                    }
-                    if (mirror)
-                        row.Add(new Coord(-(rSum * pixScale - 0.5f), gSum * pixScale - 0.5f, bSum * pixScale - 0.5f));
-                    else
-                        row.Add(new Coord(rSum * pixScale - 0.5f, gSum * pixScale - 0.5f, bSum * pixScale - 0.5f));
-
-                }
-                rows.Add(row);
-            }
-            return rows;
+            return new SculptMesh(this);
         }
 
-        private List<List<Coord>> bitmap2CoordsSampled(Bitmap bitmap, int scale, bool mirror)
+        public void DumpRaw(String path, String name, String title)
         {
-            int numRows = bitmap.Height / scale;
-            int numCols = bitmap.Width / scale;
-            List<List<Coord>> rows = new List<List<Coord>>(numRows);
+            if (path == null)
+                return;
+            String fileName = name + "_" + title + ".raw";
+            String completePath = System.IO.Path.Combine(path, fileName);
+            StreamWriter sw = new StreamWriter(completePath);
 
-            float pixScale = 1.0f / 256.0f;
-
-            int imageX, imageY = 0;
-
-            int rowNdx, colNdx;
-
-            for (rowNdx = 0; rowNdx <= numRows; rowNdx++)
+            for (int i = 0; i < this.faces.Count; i++)
             {
-                List<Coord> row = new List<Coord>(numCols);
-                imageY = rowNdx * scale;
-                if (rowNdx == numRows) imageY--;
-                for (colNdx = 0; colNdx <= numCols; colNdx++)
-                {
-                    imageX = colNdx * scale;
-                    if (colNdx == numCols) imageX--;
+                string s = this.coords[this.faces[i].v1].ToString();
+                s += " " + this.coords[this.faces[i].v2].ToString();
+                s += " " + this.coords[this.faces[i].v3].ToString();
 
-                    Color c = bitmap.GetPixel(imageX, imageY);
-                    if (c.A != 255)
-                    {
-                        bitmap.SetPixel(imageX, imageY, Color.FromArgb(255, c.R, c.G, c.B));
-                        c = bitmap.GetPixel(imageX, imageY);
-                    }
-
-                    if (mirror)
-                        row.Add(new Coord(-(c.R * pixScale - 0.5f), c.G * pixScale - 0.5f, c.B * pixScale - 0.5f));
-                    else
-                        row.Add(new Coord(c.R * pixScale - 0.5f, c.G * pixScale - 0.5f, c.B * pixScale - 0.5f));
-
-                }
-                rows.Add(row);
+                sw.WriteLine(s);
             }
-            return rows;
+
+            sw.Close();
         }
 
+        public void Scale(float x, float y, float z)
+        {
+            int i;
+            int numVerts = this.coords.Count;
 
-        void _SculptMesh(Bitmap sculptBitmap, SculptType sculptType, int lod, bool viewerMode, bool mirror, bool invert)
+            Coord m = new Coord(x, y, z);
+            for (i = 0; i < numVerts; i++)
+                this.coords[i] *= m;
+
+            if (this.viewerFaces != null)
+            {
+                int numViewerFaces = this.viewerFaces.Count;
+                for (i = 0; i < numViewerFaces; i++)
+                {
+                    ViewerFace v = this.viewerFaces[i];
+                    v.v1 *= m;
+                    v.v2 *= m;
+                    v.v3 *= m;
+                    this.viewerFaces[i] = v;
+                }
+            }
+        }
+
+        public SculptMesh SculptMeshFromFile(string fileName, SculptType sculptType, int lod, bool viewerMode)
+        {
+            Bitmap bitmap = (Bitmap)Bitmap.FromFile(fileName);
+            SculptMesh sculptMesh = new SculptMesh(bitmap, sculptType, lod, viewerMode);
+            bitmap.Dispose();
+            return sculptMesh;
+        }
+#endif
+#if SYSTEM_DRAWING
+#endif
+#if SYSTEM_DRAWING
+
+        private void _SculptMesh(Bitmap sculptBitmap, SculptType sculptType, int lod, bool viewerMode, bool mirror, bool invert)
         {
             _SculptMesh(new SculptMap(sculptBitmap, lod).ToRows(mirror), sculptType, viewerMode, mirror, invert);
         }
-#endif
 
-        void _SculptMesh(List<List<Coord>> rows, SculptType sculptType, bool viewerMode, bool mirror, bool invert)
+        private void _SculptMesh(List<List<Coord>> rows, SculptType sculptType, bool viewerMode, bool mirror, bool invert)
         {
             coords = new List<Coord>();
             faces = new List<Face>();
@@ -375,7 +400,7 @@ namespace PrimMesher
 
             int coordsDown = rows.Count;
             int coordsAcross = rows[0].Count;
-//            int lastColumn = coordsAcross - 1;
+            //            int lastColumn = coordsAcross - 1;
 
             float widthUnit = 1.0f / (coordsAcross - 1);
             float heightUnit = 1.0f / (coordsDown - 1);
@@ -463,23 +488,104 @@ namespace PrimMesher
         }
 
         /// <summary>
-        /// Duplicates a SculptMesh object. All object properties are copied by value, including lists.
+        /// converts a bitmap to a list of lists of coords, while scaling the image.
+        /// the scaling is done in floating point so as to allow for reduced vertex position
+        /// quantization as the position will be averaged between pixel values. this routine will
+        /// likely fail if the bitmap width and height are not powers of 2.
         /// </summary>
+        /// <param name="bitmap"></param>
+        /// <param name="scale"></param>
+        /// <param name="mirror"></param>
         /// <returns></returns>
-        public SculptMesh Copy()
+        private List<List<Coord>> bitmap2Coords(Bitmap bitmap, int scale, bool mirror)
         {
-            return new SculptMesh(this);
+            int numRows = bitmap.Height / scale;
+            int numCols = bitmap.Width / scale;
+            List<List<Coord>> rows = new List<List<Coord>>(numRows);
+
+            float pixScale = 1.0f / (scale * scale);
+            pixScale /= 255;
+
+            int imageX, imageY = 0;
+
+            int rowNdx, colNdx;
+
+            for (rowNdx = 0; rowNdx < numRows; rowNdx++)
+            {
+                List<Coord> row = new List<Coord>(numCols);
+                for (colNdx = 0; colNdx < numCols; colNdx++)
+                {
+                    imageX = colNdx * scale;
+                    int imageYStart = rowNdx * scale;
+                    int imageYEnd = imageYStart + scale;
+                    int imageXEnd = imageX + scale;
+                    float rSum = 0.0f;
+                    float gSum = 0.0f;
+                    float bSum = 0.0f;
+                    for (; imageX < imageXEnd; imageX++)
+                    {
+                        for (imageY = imageYStart; imageY < imageYEnd; imageY++)
+                        {
+                            Color c = bitmap.GetPixel(imageX, imageY);
+                            if (c.A != 255)
+                            {
+                                bitmap.SetPixel(imageX, imageY, Color.FromArgb(255, c.R, c.G, c.B));
+                                c = bitmap.GetPixel(imageX, imageY);
+                            }
+                            rSum += c.R;
+                            gSum += c.G;
+                            bSum += c.B;
+                        }
+                    }
+                    if (mirror)
+                        row.Add(new Coord(-(rSum * pixScale - 0.5f), gSum * pixScale - 0.5f, bSum * pixScale - 0.5f));
+                    else
+                        row.Add(new Coord(rSum * pixScale - 0.5f, gSum * pixScale - 0.5f, bSum * pixScale - 0.5f));
+                }
+                rows.Add(row);
+            }
+            return rows;
         }
 
-        public SculptMesh(SculptMesh sm)
+        private List<List<Coord>> bitmap2CoordsSampled(Bitmap bitmap, int scale, bool mirror)
         {
-            coords = new List<Coord>(sm.coords);
-            faces = new List<Face>(sm.faces);
-            viewerFaces = new List<ViewerFace>(sm.viewerFaces);
-            normals = new List<Coord>(sm.normals);
-            uvs = new List<UVCoord>(sm.uvs);
-        }
+            int numRows = bitmap.Height / scale;
+            int numCols = bitmap.Width / scale;
+            List<List<Coord>> rows = new List<List<Coord>>(numRows);
 
+            float pixScale = 1.0f / 256.0f;
+
+            int imageX, imageY = 0;
+
+            int rowNdx, colNdx;
+
+            for (rowNdx = 0; rowNdx <= numRows; rowNdx++)
+            {
+                List<Coord> row = new List<Coord>(numCols);
+                imageY = rowNdx * scale;
+                if (rowNdx == numRows) imageY--;
+                for (colNdx = 0; colNdx <= numCols; colNdx++)
+                {
+                    imageX = colNdx * scale;
+                    if (colNdx == numCols) imageX--;
+
+                    Color c = bitmap.GetPixel(imageX, imageY);
+                    if (c.A != 255)
+                    {
+                        bitmap.SetPixel(imageX, imageY, Color.FromArgb(255, c.R, c.G, c.B));
+                        c = bitmap.GetPixel(imageX, imageY);
+                    }
+
+                    if (mirror)
+                        row.Add(new Coord(-(c.R * pixScale - 0.5f), c.G * pixScale - 0.5f, c.B * pixScale - 0.5f));
+                    else
+                        row.Add(new Coord(c.R * pixScale - 0.5f, c.G * pixScale - 0.5f, c.B * pixScale - 0.5f));
+                }
+                rows.Add(row);
+            }
+            return rows;
+        }
+#endif
         private void calcVertexNormals(SculptType sculptType, int xSize, int ySize)
         {  // compute vertex normals by summing all the surface normals of all the triangles sharing
             // each vertex and then normalizing
@@ -528,119 +634,6 @@ namespace PrimMesher
 
                 this.viewerFaces.Add(vf);
             }
-        }
-
-        /// <summary>
-        /// Adds a value to each XYZ vertex coordinate in the mesh
-        /// </summary>
-        /// <param name="x"></param>
-        /// <param name="y"></param>
-        /// <param name="z"></param>
-        public void AddPos(float x, float y, float z)
-        {
-            int i;
-            int numVerts = this.coords.Count;
-            Coord vert;
-
-            for (i = 0; i < numVerts; i++)
-            {
-                vert = this.coords[i];
-                vert.X += x;
-                vert.Y += y;
-                vert.Z += z;
-                this.coords[i] = vert;
-            }
-
-            if (this.viewerFaces != null)
-            {
-                int numViewerFaces = this.viewerFaces.Count;
-
-                for (i = 0; i < numViewerFaces; i++)
-                {
-                    ViewerFace v = this.viewerFaces[i];
-                    v.AddPos(x, y, z);
-                    this.viewerFaces[i] = v;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Rotates the mesh
-        /// </summary>
-        /// <param name="q"></param>
-        public void AddRot(Quat q)
-        {
-            int i;
-            int numVerts = this.coords.Count;
-
-            for (i = 0; i < numVerts; i++)
-                this.coords[i] *= q;
-
-            int numNormals = this.normals.Count;
-            for (i = 0; i < numNormals; i++)
-                this.normals[i] *= q;
-
-            if (this.viewerFaces != null)
-            {
-                int numViewerFaces = this.viewerFaces.Count;
-
-                for (i = 0; i < numViewerFaces; i++)
-                {
-                    ViewerFace v = this.viewerFaces[i];
-                    v.v1 *= q;
-                    v.v2 *= q;
-                    v.v3 *= q;
-
-                    v.n1 *= q;
-                    v.n2 *= q;
-                    v.n3 *= q;
-
-                    this.viewerFaces[i] = v;
-                }
-            }
-        }
-
-        public void Scale(float x, float y, float z)
-        {
-            int i;
-            int numVerts = this.coords.Count;
-
-            Coord m = new Coord(x, y, z);
-            for (i = 0; i < numVerts; i++)
-                this.coords[i] *= m;
-
-            if (this.viewerFaces != null)
-            {
-                int numViewerFaces = this.viewerFaces.Count;
-                for (i = 0; i < numViewerFaces; i++)
-                {
-                    ViewerFace v = this.viewerFaces[i];
-                    v.v1 *= m;
-                    v.v2 *= m;
-                    v.v3 *= m;
-                    this.viewerFaces[i] = v;
-                }
-            }
-        }
-
-        public void DumpRaw(String path, String name, String title)
-        {
-            if (path == null)
-                return;
-            String fileName = name + "_" + title + ".raw";
-            String completePath = System.IO.Path.Combine(path, fileName);
-            StreamWriter sw = new StreamWriter(completePath);
-
-            for (int i = 0; i < this.faces.Count; i++)
-            {
-                string s = this.coords[this.faces[i].v1].ToString();
-                s += " " + this.coords[this.faces[i].v2].ToString();
-                s += " " + this.coords[this.faces[i].v3].ToString();
-
-                sw.WriteLine(s);
-            }
-
-            sw.Close();
         }
     }
 }

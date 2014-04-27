@@ -25,22 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using Nini.Config;
 using log4net;
-using System;
-using System.Reflection;
-using System.IO;
-using System.Net;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Xml;
-using System.Xml.Serialization;
-using System.Collections.Generic;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
+using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Framework.Servers.HttpServer;
-using OpenMetaverse;
+using OpenSim.Server.Base;
+using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Xml;
 
 namespace OpenSim.Server.Handlers.Avatar
 {
@@ -51,7 +46,7 @@ namespace OpenSim.Server.Handlers.Avatar
         private IAvatarService m_AvatarService;
 
         public AvatarServerPostHandler(IAvatarService service) :
-                base("POST", "/avatar")
+            base("POST", "/avatar")
         {
             m_AvatarService = service;
         }
@@ -80,12 +75,16 @@ namespace OpenSim.Server.Handlers.Avatar
                 {
                     case "getavatar":
                         return GetAvatar(request);
+
                     case "setavatar":
                         return SetAvatar(request);
+
                     case "resetavatar":
                         return ResetAvatar(request);
+
                     case "setitems":
                         return SetItems(request);
+
                     case "removeitems":
                         return RemoveItems(request);
                 }
@@ -97,10 +96,42 @@ namespace OpenSim.Server.Handlers.Avatar
             }
 
             return FailureResult();
-
         }
 
-        byte[] GetAvatar(Dictionary<string, object> request)
+        private byte[] DocToBytes(XmlDocument doc)
+        {
+            MemoryStream ms = new MemoryStream();
+            XmlTextWriter xw = new XmlTextWriter(ms, null);
+            xw.Formatting = Formatting.Indented;
+            doc.WriteTo(xw);
+            xw.Flush();
+
+            return ms.ToArray();
+        }
+
+        private byte[] FailureResult()
+        {
+            XmlDocument doc = new XmlDocument();
+
+            XmlNode xmlnode = doc.CreateNode(XmlNodeType.XmlDeclaration,
+                    "", "");
+
+            doc.AppendChild(xmlnode);
+
+            XmlElement rootElement = doc.CreateElement("", "ServerResponse",
+                    "");
+
+            doc.AppendChild(rootElement);
+
+            XmlElement result = doc.CreateElement("", "result", "");
+            result.AppendChild(doc.CreateTextNode("Failure"));
+
+            rootElement.AppendChild(result);
+
+            return DocToBytes(doc);
+        }
+
+        private byte[] GetAvatar(Dictionary<string, object> request)
         {
             UUID user = UUID.Zero;
 
@@ -127,82 +158,7 @@ namespace OpenSim.Server.Handlers.Avatar
             return FailureResult();
         }
 
-        byte[] SetAvatar(Dictionary<string, object> request)
-        {
-            UUID user = UUID.Zero;
-
-            if (!request.ContainsKey("UserID"))
-                return FailureResult();
-
-            if (!UUID.TryParse(request["UserID"].ToString(), out user))
-                return FailureResult();
-
-            RemoveRequestParamsNotForStorage(request);
-
-            AvatarData avatar = new AvatarData(request);
-            if (m_AvatarService.SetAvatar(user, avatar))
-                return SuccessResult();
-
-            return FailureResult();
-        }
-
-        byte[] ResetAvatar(Dictionary<string, object> request)
-        {
-            UUID user = UUID.Zero;
-            if (!request.ContainsKey("UserID"))
-                return FailureResult();
-
-            if (!UUID.TryParse(request["UserID"].ToString(), out user))
-                return FailureResult();
-
-            RemoveRequestParamsNotForStorage(request);
-
-            if (m_AvatarService.ResetAvatar(user))
-                return SuccessResult();
-
-            return FailureResult();
-        }
-
-        /// <summary>
-        /// Remove parameters that were used to invoke the method and should not in themselves be persisted.
-        /// </summary>
-        /// <param name='request'></param>
-        private void RemoveRequestParamsNotForStorage(Dictionary<string, object> request)
-        {
-            request.Remove("VERSIONMAX");
-            request.Remove("VERSIONMIN");
-            request.Remove("METHOD");
-            request.Remove("UserID");
-        }
-        
-        byte[] SetItems(Dictionary<string, object> request)
-        {
-            UUID user = UUID.Zero;
-            string[] names, values;
-
-            if (!request.ContainsKey("UserID") || !request.ContainsKey("Names") || !request.ContainsKey("Values"))
-                return FailureResult();
-
-            if (!UUID.TryParse(request["UserID"].ToString(), out user))
-                return FailureResult();
-
-            if (!(request["Names"] is List<string> || request["Values"] is List<string>))
-                return FailureResult();
-
-            RemoveRequestParamsNotForStorage(request);
-
-            List<string> _names = (List<string>)request["Names"];
-            names = _names.ToArray();
-            List<string> _values = (List<string>)request["Values"];
-            values = _values.ToArray();
-            
-            if (m_AvatarService.SetItems(user, names, values))
-                return SuccessResult();
-
-            return FailureResult();
-        }
-
-        byte[] RemoveItems(Dictionary<string, object> request)
+        private byte[] RemoveItems(Dictionary<string, object> request)
         {
             UUID user = UUID.Zero;
             string[] names;
@@ -225,8 +181,79 @@ namespace OpenSim.Server.Handlers.Avatar
             return FailureResult();
         }
 
+        /// <summary>
+        /// Remove parameters that were used to invoke the method and should not in themselves be persisted.
+        /// </summary>
+        /// <param name='request'></param>
+        private void RemoveRequestParamsNotForStorage(Dictionary<string, object> request)
+        {
+            request.Remove("VERSIONMAX");
+            request.Remove("VERSIONMIN");
+            request.Remove("METHOD");
+            request.Remove("UserID");
+        }
 
-        
+        private byte[] ResetAvatar(Dictionary<string, object> request)
+        {
+            UUID user = UUID.Zero;
+            if (!request.ContainsKey("UserID"))
+                return FailureResult();
+
+            if (!UUID.TryParse(request["UserID"].ToString(), out user))
+                return FailureResult();
+
+            RemoveRequestParamsNotForStorage(request);
+
+            if (m_AvatarService.ResetAvatar(user))
+                return SuccessResult();
+
+            return FailureResult();
+        }
+
+        private byte[] SetAvatar(Dictionary<string, object> request)
+        {
+            UUID user = UUID.Zero;
+
+            if (!request.ContainsKey("UserID"))
+                return FailureResult();
+
+            if (!UUID.TryParse(request["UserID"].ToString(), out user))
+                return FailureResult();
+
+            RemoveRequestParamsNotForStorage(request);
+
+            AvatarData avatar = new AvatarData(request);
+            if (m_AvatarService.SetAvatar(user, avatar))
+                return SuccessResult();
+
+            return FailureResult();
+        }
+        private byte[] SetItems(Dictionary<string, object> request)
+        {
+            UUID user = UUID.Zero;
+            string[] names, values;
+
+            if (!request.ContainsKey("UserID") || !request.ContainsKey("Names") || !request.ContainsKey("Values"))
+                return FailureResult();
+
+            if (!UUID.TryParse(request["UserID"].ToString(), out user))
+                return FailureResult();
+
+            if (!(request["Names"] is List<string> || request["Values"] is List<string>))
+                return FailureResult();
+
+            RemoveRequestParamsNotForStorage(request);
+
+            List<string> _names = (List<string>)request["Names"];
+            names = _names.ToArray();
+            List<string> _values = (List<string>)request["Values"];
+            values = _values.ToArray();
+
+            if (m_AvatarService.SetItems(user, names, values))
+                return SuccessResult();
+
+            return FailureResult();
+        }
         private byte[] SuccessResult()
         {
             XmlDocument doc = new XmlDocument();
@@ -248,39 +275,5 @@ namespace OpenSim.Server.Handlers.Avatar
 
             return DocToBytes(doc);
         }
-
-        private byte[] FailureResult()
-        {
-            XmlDocument doc = new XmlDocument();
-
-            XmlNode xmlnode = doc.CreateNode(XmlNodeType.XmlDeclaration,
-                    "", "");
-
-            doc.AppendChild(xmlnode);
-
-            XmlElement rootElement = doc.CreateElement("", "ServerResponse",
-                    "");
-
-            doc.AppendChild(rootElement);
-
-            XmlElement result = doc.CreateElement("", "result", "");
-            result.AppendChild(doc.CreateTextNode("Failure"));
-
-            rootElement.AppendChild(result);
-
-            return DocToBytes(doc);
-        }
-
-        private byte[] DocToBytes(XmlDocument doc)
-        {
-            MemoryStream ms = new MemoryStream();
-            XmlTextWriter xw = new XmlTextWriter(ms, null);
-            xw.Formatting = Formatting.Indented;
-            doc.WriteTo(xw);
-            xw.Flush();
-
-            return ms.ToArray();
-        }
-
     }
 }

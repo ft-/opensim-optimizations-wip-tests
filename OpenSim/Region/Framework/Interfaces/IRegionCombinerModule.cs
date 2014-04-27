@@ -25,23 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using OpenSim.Region.Framework.Scenes;
-using System.IO;
 using OpenMetaverse;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
     public interface IRegionCombinerModule
     {
-        /// <summary>
-        /// Does the given id belong to the root region of a megaregion?
-        /// </summary>
-        bool IsRootForMegaregion(UUID regionId);
-
         /// <summary>
         /// Gets the size of megaregion.
         /// </summary>
@@ -56,6 +45,10 @@ namespace OpenSim.Region.Framework.Interfaces
         /// </param>
         Vector2 GetSizeOfMegaregion(UUID regionId);
 
+        /// <summary>
+        /// Does the given id belong to the root region of a megaregion?
+        /// </summary>
+        bool IsRootForMegaregion(UUID regionId);
         /// <summary>
         /// Tests to see of position (relative to the region) is within the megaregion
         /// </summary>

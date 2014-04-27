@@ -25,12 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
 using OpenMetaverse;
-using OpenSim.Framework;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
+    public delegate void CustomMenuHandler(string action, UUID agentID, List<uint> selection);
+
     public enum InsertLocation : int
     {
         Agent = 1,
@@ -45,13 +46,12 @@ namespace OpenSim.Region.Framework.Interfaces
         Normal = 0,
         God = 3
     }
-
-    public delegate void CustomMenuHandler(string action, UUID agentID, List<uint> selection);
-
     public interface IDynamicMenuModule
     {
         void AddMenuItem(UUID agentID, string title, InsertLocation location, UserMode mode, CustomMenuHandler handler);
+
         void AddMenuItem(string title, InsertLocation location, UserMode mode, CustomMenuHandler handler);
+
         void RemoveMenuItem(string action);
     }
 }

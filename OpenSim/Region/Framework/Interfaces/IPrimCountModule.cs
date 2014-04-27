@@ -32,10 +32,12 @@ namespace OpenSim.Region.Framework.Interfaces
 {
     public interface IPrimCountModule
     {
-        void TaintPrimCount(ILandObject land);
-        void TaintPrimCount(int x, int y);
-        void TaintPrimCount();
-
         IPrimCounts GetPrimCounts(UUID parcelID);
+
+        void TaintPrimCount(ILandObject land);
+
+        void TaintPrimCount(int x, int y);
+
+        void TaintPrimCount();
     }
 }

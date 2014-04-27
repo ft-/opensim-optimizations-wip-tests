@@ -31,8 +31,10 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
     public interface IMRMModule
     {
-        void RegisterExtension<T>(T instance);
-        void InitializeMRM(MRMBase mmb, uint localID, UUID itemID);
         void GetGlobalEnvironment(uint localID, out IWorld world, out IHost host);
+
+        void InitializeMRM(MRMBase mmb, uint localID, UUID itemID);
+
+        void RegisterExtension<T>(T instance);
     }
 }

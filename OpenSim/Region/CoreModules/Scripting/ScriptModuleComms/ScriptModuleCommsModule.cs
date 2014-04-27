@@ -45,19 +45,18 @@ namespace OpenSim.Region.CoreModules.Scripting.ScriptModuleComms
     {
         private static readonly ILog m_log =
             LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         private static string LogHeader = "[MODULE COMMS]";
 
-        private Dictionary<string,object> m_constants = new Dictionary<string,object>();
-        private ReaderWriterLock m_ConstantsLock = new ReaderWriterLock();
+        private Dictionary<string, object> m_constants = new Dictionary<string, object>();
+        private ReaderWriterLock m_ConstantsRwLock = new ReaderWriterLock();
 
-#region ScriptInvocation
+        #region ScriptInvocation
+
+        private Dictionary<string, ScriptInvocationData> m_scriptInvocation = new Dictionary<string, ScriptInvocationData>();
+		private ReaderWriterLock m_ScriptInvocationRwLock = new ReaderWriterLock();
         protected class ScriptInvocationData
         {
-            public Delegate ScriptInvocationDelegate { get; private set; }
-            public string FunctionName { get; private set; }
-            public Type[] TypeSignature { get; private set; }
-            public Type ReturnType { get; private set; }
-
             public ScriptInvocationData(string fname, Delegate fn, Type[] callsig, Type returnsig)
             {
                 FunctionName = fname;
@@ -65,36 +64,21 @@ namespace OpenSim.Region.CoreModules.Scripting.ScriptModuleComms
                 TypeSignature = callsig;
                 ReturnType = returnsig;
             }
-        }
 
-        private Dictionary<string,ScriptInvocationData> m_scriptInvocation = new Dictionary<string,ScriptInvocationData>();
-        private ReaderWriterLock m_ScriptInvocationRwLock = new ReaderWriterLock();
-#endregion
+            public string FunctionName { get; private set; }
+
+            public Type ReturnType { get; private set; }
+
+            public Delegate ScriptInvocationDelegate { get; private set; }
+            public Type[] TypeSignature { get; private set; }
+        }
+        #endregion ScriptInvocation
 
         private IScriptModule m_scriptModule = null;
+
         public event ScriptCommand OnScriptCommand;
 
-#region RegionModuleInterface
-        public void Initialise(IConfigSource config)
-        {
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            scene.RegisterModuleInterface<IScriptModuleComms>(this);
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-        }
-
-        public void RegionLoaded(Scene scene)
-        {
-            m_scriptModule = scene.RequestModuleInterface<IScriptModule>();
-            
-            if (m_scriptModule != null)
-                m_log.Info("[MODULE COMMANDS]: Script engine found, module active");
-        }
+        #region RegionModuleInterface
 
         public string Name
         {
@@ -106,12 +90,198 @@ namespace OpenSim.Region.CoreModules.Scripting.ScriptModuleComms
             get { return null; }
         }
 
+        public void AddRegion(Scene scene)
+        {
+            scene.RegisterModuleInterface<IScriptModuleComms>(this);
+        }
+
         public void Close()
         {
         }
-#endregion
 
-#region ScriptModuleComms
+        public void Initialise(IConfigSource config)
+        {
+        }
+        public void RegionLoaded(Scene scene)
+        {
+            m_scriptModule = scene.RequestModuleInterface<IScriptModule>();
+
+            if (m_scriptModule != null)
+                m_log.Info("[MODULE COMMANDS]: Script engine found, module active");
+        }
+
+        public void RemoveRegion(Scene scene)
+        {
+        }
+        #endregion RegionModuleInterface
+
+        #region ScriptModuleComms
+
+        public void DispatchReply(UUID script, int code, string text, string k)
+        {
+            if (m_scriptModule == null)
+                return;
+
+            Object[] args = new Object[] { -1, code, text, k };
+
+            m_scriptModule.PostScriptEvent(script, "link_message", args);
+        }
+
+        /// <summary>
+        /// Get all registered constants
+        /// </summary>
+        public Dictionary<string, object> GetConstants()
+        {
+            Dictionary<string, object> ret = new Dictionary<string, object>();
+
+            m_ConstantsRwLock.AcquireReaderLock(-1);
+            try
+            {
+                foreach (KeyValuePair<string, object> kvp in m_constants)
+                    ret[kvp.Key] = kvp.Value;
+            }
+            finally
+            {
+                m_ConstantsRwLock.ReleaseReaderLock();
+            }
+
+            return ret;
+        }
+
+        public Delegate[] GetScriptInvocationList()
+        {
+            List<Delegate> ret = new List<Delegate>();
+
+            m_ScriptInvocationRwLock.AcquireReaderLock(-1);
+            try
+            {
+                foreach (ScriptInvocationData d in m_scriptInvocation.Values)
+                    ret.Add(d.ScriptInvocationDelegate);
+            }
+            finally
+            {
+                m_ScriptInvocationRwLock.ReleaseReaderLock();
+            }
+            return ret.ToArray();
+        }
+
+        public object InvokeOperation(UUID hostid, UUID scriptid, string fname, params object[] parms)
+        {
+            List<object> olist = new List<object>();
+            olist.Add(hostid);
+            olist.Add(scriptid);
+            foreach (object o in parms)
+                olist.Add(o);
+            Delegate fn = LookupScriptInvocation(fname);
+            return fn.DynamicInvoke(olist.ToArray());
+        }
+
+        /// <summary>
+        /// Operation to check for a registered constant
+        /// </summary>
+        public object LookupModConstant(string cname)
+        {
+            // m_log.DebugFormat("[MODULE COMMANDS] lookup constant <{0}>",cname);
+
+            m_ConstantsRwLock.AcquireReaderLock(-1);
+            try
+            {
+                object value = null;
+                if (m_constants.TryGetValue(cname, out value))
+                    return value;
+            }
+            finally
+            {
+                m_ConstantsRwLock.ReleaseReaderLock();
+            }
+
+            return null;
+        }
+
+        public string LookupModInvocation(string fname)
+        {
+            m_ScriptInvocationRwLock.AcquireReaderLock(-1);
+            try
+            {
+                ScriptInvocationData sid;
+                if (m_scriptInvocation.TryGetValue(fname, out sid))
+                {
+                    if (sid.ReturnType == typeof(string))
+                        return "modInvokeS";
+                    else if (sid.ReturnType == typeof(int))
+                        return "modInvokeI";
+                    else if (sid.ReturnType == typeof(float))
+                        return "modInvokeF";
+                    else if (sid.ReturnType == typeof(UUID))
+                        return "modInvokeK";
+                    else if (sid.ReturnType == typeof(OpenMetaverse.Vector3))
+                        return "modInvokeV";
+                    else if (sid.ReturnType == typeof(OpenMetaverse.Quaternion))
+                        return "modInvokeR";
+                    else if (sid.ReturnType == typeof(object[]))
+                        return "modInvokeL";
+
+                    m_log.WarnFormat("[MODULE COMMANDS] failed to find match for {0} with return type {1}", fname, sid.ReturnType.Name);
+                }
+            }
+            finally
+            {
+                m_ScriptInvocationRwLock.ReleaseReaderLock();
+            }
+
+            return null;
+        }
+
+        public Type LookupReturnType(string fname)
+        {
+            m_ScriptInvocationRwLock.AcquireReaderLock(-1);
+            try
+            {
+                ScriptInvocationData sid;
+                if (m_scriptInvocation.TryGetValue(fname, out sid))
+                    return sid.ReturnType;
+            }
+            finally
+            {
+                m_ScriptInvocationRwLock.ReleaseReaderLock();
+            }
+
+            return null;
+        }
+
+        public Delegate LookupScriptInvocation(string fname)
+        {
+            m_ScriptInvocationRwLock.AcquireReaderLock(-1);
+            try
+            {
+                ScriptInvocationData sid;
+                if (m_scriptInvocation.TryGetValue(fname, out sid))
+                    return sid.ScriptInvocationDelegate;
+            }
+            finally
+            {
+                m_ScriptInvocationRwLock.ReleaseReaderLock();
+            }
+
+            return null;
+        }
+
+        public Type[] LookupTypeSignature(string fname)
+        {
+            m_ScriptInvocationRwLock.AcquireReaderLock(-1);
+            try
+            {
+                ScriptInvocationData sid;
+                if (m_scriptInvocation.TryGetValue(fname, out sid))
+                    return sid.TypeSignature;
+            }
+            finally
+            {
+                m_ScriptInvocationRwLock.ReleaseReaderLock();
+            }
+
+            return null;
+        }
 
         public void RaiseEvent(UUID script, string id, string module, string command, string k)
         {
@@ -122,28 +292,35 @@ namespace OpenSim.Region.CoreModules.Scripting.ScriptModuleComms
 
             c(script, id, module, command, k);
         }
-
-        public void DispatchReply(UUID script, int code, string text, string k)
+        /// <summary>
+        /// Operation to for a region module to register a constant to be used
+        /// by the script engine
+        /// </summary>
+        public void RegisterConstant(string cname, object value)
         {
-            if (m_scriptModule == null)
-                return;
-
-            Object[] args = new Object[] {-1, code, text, k};
-
-            m_scriptModule.PostScriptEvent(script, "link_message", args);
+            m_ConstantsRwLock.AcquireWriterLock(-1);
+            try
+            {
+                m_constants.Add(cname, value);
+            }
+            finally
+            {
+                m_ConstantsRwLock.ReleaseWriterLock();
+            }
         }
 
-        private static MethodInfo GetMethodInfoFromType(Type target, string meth, bool searchInstanceMethods)
+        public void RegisterConstants(IRegionModuleBase target)
         {
-            BindingFlags getMethodFlags =
-                    BindingFlags.NonPublic | BindingFlags.Public;
-
-            if (searchInstanceMethods)
-                getMethodFlags |= BindingFlags.Instance;
-            else
-                getMethodFlags |= BindingFlags.Static;
-
-            return target.GetMethod(meth, getMethodFlags);
+            foreach (FieldInfo field in target.GetType().GetFields(
+                    BindingFlags.Public | BindingFlags.Static |
+                    BindingFlags.Instance))
+            {
+                if (field.GetCustomAttributes(
+                        typeof(ScriptConstantAttribute), true).Any())
+                {
+                    RegisterConstant(field.Name, field.GetValue(target));
+                }
+            }
         }
 
         public void RegisterScriptInvocation(object target, string meth)
@@ -166,7 +343,7 @@ namespace OpenSim.Region.CoreModules.Scripting.ScriptModuleComms
 
         public void RegisterScriptInvocation(object target, MethodInfo mi)
         {
-//            m_log.DebugFormat("[MODULE COMMANDS] Register method {0} from type {1}", mi.Name, (target is Type) ? ((Type)target).Name : target.GetType().Name);
+            //            m_log.DebugFormat("[MODULE COMMANDS] Register method {0} from type {1}", mi.Name, (target is Type) ? ((Type)target).Name : target.GetType().Name);
 
             Type delegateType = typeof(void);
             List<Type> typeArgs = mi.GetParameters()
@@ -197,7 +374,7 @@ namespace OpenSim.Region.CoreModules.Scripting.ScriptModuleComms
             else
                 fcall = Delegate.CreateDelegate(delegateType, (Type)target, mi.Name);
 
-            m_ScriptInvocationRwLock.AcquireWriterLock(-1);
+            m_ScriptInvocationRwLock.AcquireReaderLock(-1);
             try
             {
                 ParameterInfo[] parameters = fcall.Method.GetParameters();
@@ -208,11 +385,19 @@ namespace OpenSim.Region.CoreModules.Scripting.ScriptModuleComms
                 Type[] parmTypes = new Type[parameters.Length - 2];
                 for (int i = 2; i < parameters.Length; i++)
                     parmTypes[i - 2] = parameters[i].ParameterType;
-                m_scriptInvocation[fcall.Method.Name] = new ScriptInvocationData(fcall.Method.Name, fcall, parmTypes, fcall.Method.ReturnType);
+                LockCookie lc = m_ScriptInvocationRwLock.UpgradeToWriterLock(-1);
+                try
+                {
+                    m_scriptInvocation[fcall.Method.Name] = new ScriptInvocationData(fcall.Method.Name, fcall, parmTypes, fcall.Method.ReturnType);
+                }
+                finally
+                {
+                    m_ConstantsRwLock.DowngradeFromWriterLock(ref lc);
+                }
             }
             finally
             {
-                m_ScriptInvocationRwLock.ReleaseWriterLock();
+                m_ConstantsRwLock.ReleaseReaderLock();
             }
         }
 
@@ -230,210 +415,33 @@ namespace OpenSim.Region.CoreModules.Scripting.ScriptModuleComms
 
         public void RegisterScriptInvocations(IRegionModuleBase target)
         {
-            foreach(MethodInfo method in target.GetType().GetMethods(
+            foreach (MethodInfo method in target.GetType().GetMethods(
                     BindingFlags.Public | BindingFlags.Instance |
                     BindingFlags.Static))
             {
-                if(method.GetCustomAttributes(
+                if (method.GetCustomAttributes(
                         typeof(ScriptInvocationAttribute), true).Any())
                 {
-                    if(method.IsStatic)
+                    if (method.IsStatic)
                         RegisterScriptInvocation(target.GetType(), method);
                     else
                         RegisterScriptInvocation(target, method);
                 }
             }
         }
-        
-        public Delegate[] GetScriptInvocationList()
+
+        private static MethodInfo GetMethodInfoFromType(Type target, string meth, bool searchInstanceMethods)
         {
-            List<Delegate> ret = new List<Delegate>();
+            BindingFlags getMethodFlags =
+                    BindingFlags.NonPublic | BindingFlags.Public;
 
-            m_ScriptInvocationRwLock.AcquireReaderLock(-1);
-            try
-            {
-                foreach (ScriptInvocationData d in m_scriptInvocation.Values)
-                    ret.Add(d.ScriptInvocationDelegate);
-            }
-            finally
-            {
-                m_ScriptInvocationRwLock.ReleaseReaderLock();
-            }
-            return ret.ToArray();
+            if (searchInstanceMethods)
+                getMethodFlags |= BindingFlags.Instance;
+            else
+                getMethodFlags |= BindingFlags.Static;
+
+            return target.GetMethod(meth, getMethodFlags);
         }
-
-        public string LookupModInvocation(string fname)
-        {
-            m_ScriptInvocationRwLock.AcquireReaderLock(-1);
-            try
-            {
-                ScriptInvocationData sid;
-                if (m_scriptInvocation.TryGetValue(fname,out sid))
-                {
-                    if (sid.ReturnType == typeof(string))
-                        return "modInvokeS";
-                    else if (sid.ReturnType == typeof(int))
-                        return "modInvokeI";
-                    else if (sid.ReturnType == typeof(float))
-                        return "modInvokeF";
-                    else if (sid.ReturnType == typeof(UUID))
-                        return "modInvokeK";
-                    else if (sid.ReturnType == typeof(OpenMetaverse.Vector3))
-                        return "modInvokeV";
-                    else if (sid.ReturnType == typeof(OpenMetaverse.Quaternion))
-                        return "modInvokeR";
-                    else if (sid.ReturnType == typeof(object[]))
-                        return "modInvokeL";
-
-                    m_log.WarnFormat("[MODULE COMMANDS] failed to find match for {0} with return type {1}",fname,sid.ReturnType.Name);
-                }
-            }
-            finally
-            {
-                m_ScriptInvocationRwLock.ReleaseReaderLock();
-            }
-
-            return null;
-        }
-
-        public Delegate LookupScriptInvocation(string fname)
-        {
-            m_ScriptInvocationRwLock.AcquireReaderLock(-1);
-            try
-            {
-                ScriptInvocationData sid;
-                if (m_scriptInvocation.TryGetValue(fname,out sid))
-                    return sid.ScriptInvocationDelegate;
-            }
-            finally
-            {
-                m_ScriptInvocationRwLock.ReleaseReaderLock();
-            }
-
-            return null;
-        }
-
-        public Type[] LookupTypeSignature(string fname)
-        {
-            m_ScriptInvocationRwLock.AcquireReaderLock(-1);
-            try
-            {
-                ScriptInvocationData sid;
-                if (m_scriptInvocation.TryGetValue(fname,out sid))
-                    return sid.TypeSignature;
-            }
-            finally
-            {
-                m_ScriptInvocationRwLock.ReleaseReaderLock();
-            }
-
-            return null;
-        }
-
-        public Type LookupReturnType(string fname)
-        {
-            m_ScriptInvocationRwLock.AcquireReaderLock(-1);
-            try
-            {
-                ScriptInvocationData sid;
-                if (m_scriptInvocation.TryGetValue(fname,out sid))
-                    return sid.ReturnType;
-            }
-            finally
-            {
-                m_ScriptInvocationRwLock.ReleaseReaderLock();
-            }
-
-            return null;
-        }
-
-        public object InvokeOperation(UUID hostid, UUID scriptid, string fname, params object[] parms)
-        {
-            List<object> olist = new List<object>();
-            olist.Add(hostid);
-            olist.Add(scriptid);
-            foreach (object o in parms)
-                olist.Add(o);
-            Delegate fn = LookupScriptInvocation(fname);
-            return fn.DynamicInvoke(olist.ToArray());
-        }
-
-        /// <summary>
-        /// Operation to for a region module to register a constant to be used
-        /// by the script engine
-        /// </summary>
-        public void RegisterConstant(string cname, object value)
-        {
-//            m_log.DebugFormat("[MODULE COMMANDS] register constant <{0}> with value {1}",cname,value.ToString());
-            m_ConstantsLock.AcquireWriterLock(-1);
-            try
-            {
-                m_constants.Add(cname,value);
-            }
-            finally
-            {
-                m_ConstantsLock.ReleaseWriterLock();
-            }
-        }
-
-        public void RegisterConstants(IRegionModuleBase target)
-        {
-            foreach (FieldInfo field in target.GetType().GetFields(
-                    BindingFlags.Public | BindingFlags.Static |
-                    BindingFlags.Instance))
-            {
-                if (field.GetCustomAttributes(
-                        typeof(ScriptConstantAttribute), true).Any())
-                {
-                    RegisterConstant(field.Name, field.GetValue(target));
-                }
-            }
-        }
-
-        /// <summary>
-        /// Operation to check for a registered constant
-        /// </summary>
-        public object LookupModConstant(string cname)
-        {
-            // m_log.DebugFormat("[MODULE COMMANDS] lookup constant <{0}>",cname);
-
-            m_ConstantsLock.AcquireReaderLock(-1);
-            try
-            {
-                object value = null;
-                if (m_constants.TryGetValue(cname,out value))
-                    return value;
-            }
-            finally
-            {
-                m_ConstantsLock.ReleaseReaderLock();
-            }
-            
-            return null;
-        }
-
-        /// <summary>
-        /// Get all registered constants
-        /// </summary>
-        public Dictionary<string, object> GetConstants()
-        {
-            Dictionary<string, object> ret = new Dictionary<string, object>();
-
-            m_ConstantsLock.AcquireReaderLock(-1);
-            try
-            {
-                foreach (KeyValuePair<string, object> kvp in m_constants)
-                    ret[kvp.Key] = kvp.Value;
-            }
-            finally
-            {
-                m_ConstantsLock.ReleaseReaderLock();
-            }
-
-            return ret;
-        }
-
-#endregion
-
+        #endregion ScriptModuleComms
     }
 }

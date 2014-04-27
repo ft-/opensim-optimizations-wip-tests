@@ -26,16 +26,14 @@
  */
 
 using log4net;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
 using Nini.Config;
+using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Framework.Communications;
 using OpenSim.Server.Base;
 using OpenSim.Services.Interfaces;
-using OpenMetaverse;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.Services.Connectors
 {
@@ -59,26 +57,6 @@ namespace OpenSim.Services.Connectors
         public UserAccountServicesConnector(IConfigSource source)
         {
             Initialise(source);
-        }
-
-        public virtual void Initialise(IConfigSource source)
-        {
-            IConfig assetConfig = source.Configs["UserAccountService"];
-            if (assetConfig == null)
-            {
-                m_log.Error("[ACCOUNT CONNECTOR]: UserAccountService missing from OpenSim.ini");
-                throw new Exception("User account connector init error");
-            }
-
-            string serviceURI = assetConfig.GetString("UserAccountServerURI",
-                    String.Empty);
-
-            if (serviceURI == String.Empty)
-            {
-                m_log.Error("[ACCOUNT CONNECTOR]: No Server URI named in section UserAccountService");
-                throw new Exception("User account connector init error");
-            }
-            m_ServerURI = serviceURI;
         }
 
         public virtual UserAccount GetUserAccount(UUID scopeID, string firstName, string lastName)
@@ -187,6 +165,25 @@ namespace OpenSim.Services.Connectors
             return accounts;
         }
 
+        public virtual void Initialise(IConfigSource source)
+        {
+            IConfig assetConfig = source.Configs["UserAccountService"];
+            if (assetConfig == null)
+            {
+                m_log.Error("[ACCOUNT CONNECTOR]: UserAccountService missing from OpenSim.ini");
+                throw new Exception("User account connector init error");
+            }
+
+            string serviceURI = assetConfig.GetString("UserAccountServerURI",
+                    String.Empty);
+
+            if (serviceURI == String.Empty)
+            {
+                m_log.Error("[ACCOUNT CONNECTOR]: No Server URI named in section UserAccountService");
+                throw new Exception("User account connector init error");
+            }
+            m_ServerURI = serviceURI;
+        }
         public void InvalidateCache(UUID userID)
         {
         }
@@ -212,6 +209,41 @@ namespace OpenSim.Services.Connectors
             }
 
             return SendAndGetBoolReply(sendData);
+        }
+
+        private bool SendAndGetBoolReply(Dictionary<string, object> sendData)
+        {
+            string reqString = ServerUtils.BuildQueryString(sendData);
+            string uri = m_ServerURI + "/accounts";
+            // m_log.DebugFormat("[ACCOUNTS CONNECTOR]: queryString = {0}", reqString);
+            try
+            {
+                string reply = SynchronousRestFormsRequester.MakeRequest("POST",
+                        uri,
+                        reqString);
+                if (reply != string.Empty)
+                {
+                    Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
+
+                    if (replyData.ContainsKey("result"))
+                    {
+                        if (replyData["result"].ToString().ToLower() == "success")
+                            return true;
+                        else
+                            return false;
+                    }
+                    else
+                        m_log.DebugFormat("[ACCOUNTS CONNECTOR]: Set or Create UserAccount reply data does not contain result field");
+                }
+                else
+                    m_log.DebugFormat("[ACCOUNTS CONNECTOR]: Set or Create UserAccount received empty reply");
+            }
+            catch (Exception e)
+            {
+                m_log.DebugFormat("[ACCOUNT CONNECTOR]: Exception when contacting user accounts server at {0}: {1}", uri, e.Message);
+            }
+
+            return false;
         }
 
         private UserAccount SendAndGetReply(Dictionary<string, object> sendData)
@@ -248,44 +280,6 @@ namespace OpenSim.Services.Connectors
             }
 
             return account;
-
         }
-
-        private bool SendAndGetBoolReply(Dictionary<string, object> sendData)
-        {
-            string reqString = ServerUtils.BuildQueryString(sendData);
-            string uri = m_ServerURI + "/accounts";
-            // m_log.DebugFormat("[ACCOUNTS CONNECTOR]: queryString = {0}", reqString);
-            try
-            {
-                string reply = SynchronousRestFormsRequester.MakeRequest("POST",
-                        uri,
-                        reqString);
-                if (reply != string.Empty)
-                {
-                    Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
-
-                    if (replyData.ContainsKey("result"))
-                    {
-                        if (replyData["result"].ToString().ToLower() == "success")
-                            return true;
-                        else
-                            return false;
-                    }
-                    else
-                        m_log.DebugFormat("[ACCOUNTS CONNECTOR]: Set or Create UserAccount reply data does not contain result field");
-
-                }
-                else
-                    m_log.DebugFormat("[ACCOUNTS CONNECTOR]: Set or Create UserAccount received empty reply");
-            }
-            catch (Exception e)
-            {
-                m_log.DebugFormat("[ACCOUNT CONNECTOR]: Exception when contacting user accounts server at {0}: {1}", uri, e.Message);
-            }
-
-            return false;
-        }
-
     }
 }

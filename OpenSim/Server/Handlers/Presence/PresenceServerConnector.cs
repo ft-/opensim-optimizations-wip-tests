@@ -25,22 +25,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using Nini.Config;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
 using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Server.Base;
 using OpenSim.Server.Handlers.Base;
+using OpenSim.Services.Interfaces;
+using System;
 
 namespace OpenSim.Server.Handlers.Presence
 {
     public class PresenceServiceConnector : ServiceConnector
     {
-        private IPresenceService m_PresenceService;
         private string m_ConfigName = "PresenceService";
-
+        private IPresenceService m_PresenceService;
         public PresenceServiceConnector(IConfigSource config, IHttpServer server, string configName) :
-                base(config, server, configName)
+            base(config, server, configName)
         {
             IConfig serverConfig = config.Configs[m_ConfigName];
             if (serverConfig == null)

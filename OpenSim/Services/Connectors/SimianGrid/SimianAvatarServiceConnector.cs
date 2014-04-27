@@ -25,22 +25,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-// DEBUG ON
-using System.Diagnostics;
-// DEBUG OFF
-using System.Reflection;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
+using OpenMetaverse;
+using OpenMetaverse.StructuredData;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
-using OpenMetaverse;
-using OpenMetaverse.StructuredData;
+using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+
+// DEBUG ON
+// DEBUG OFF
+using System.Reflection;
 
 namespace OpenSim.Services.Connectors.SimianGrid
 {
@@ -53,22 +53,41 @@ namespace OpenSim.Services.Connectors.SimianGrid
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
-//        private static string ZeroID = UUID.Zero.ToString();
 
-        private string m_serverUrl = String.Empty;
+        //        private static string ZeroID = UUID.Zero.ToString();
+
         private bool m_Enabled = false;
-
+        private string m_serverUrl = String.Empty;
         #region ISharedRegionModule
 
-        public Type ReplaceableInterface { get { return null; } }
-        public void RegionLoaded(Scene scene) { }
-        public void PostInitialise() { }
-        public void Close() { }
+        public SimianAvatarServiceConnector()
+        {
+        }
 
-        public SimianAvatarServiceConnector() { }
         public string Name { get { return "SimianAvatarServiceConnector"; } }
-        public void AddRegion(Scene scene) { if (m_Enabled) { scene.RegisterModuleInterface<IAvatarService>(this); } }
-        public void RemoveRegion(Scene scene) { if (m_Enabled) { scene.UnregisterModuleInterface<IAvatarService>(this); } }
+
+        public Type ReplaceableInterface { get { return null; } }
+
+        public void AddRegion(Scene scene)
+        {
+            if (m_Enabled) { scene.RegisterModuleInterface<IAvatarService>(this); }
+        }
+
+        public void Close()
+        {
+        }
+
+        public void PostInitialise()
+        {
+        }
+
+        public void RegionLoaded(Scene scene)
+        {
+        }
+        public void RemoveRegion(Scene scene)
+        {
+            if (m_Enabled) { scene.UnregisterModuleInterface<IAvatarService>(this); }
+        }
 
         #endregion ISharedRegionModule
 
@@ -132,52 +151,21 @@ namespace OpenSim.Services.Connectors.SimianGrid
                 if (map != null)
                 {
                     AvatarAppearance appearance = new AvatarAppearance(map);
-// DEBUG ON
-                    m_log.WarnFormat("[SIMIAN AVATAR CONNECTOR] retrieved appearance for {0}:\n{1}",userID,appearance.ToString());
-// DEBUG OFF
+                    // DEBUG ON
+                    m_log.WarnFormat("[SIMIAN AVATAR CONNECTOR] retrieved appearance for {0}:\n{1}", userID, appearance.ToString());
+                    // DEBUG OFF
                     return appearance;
                 }
 
-                m_log.WarnFormat("[SIMIAN AVATAR CONNECTOR]: Failed to decode appearance for {0}",userID);
+                m_log.WarnFormat("[SIMIAN AVATAR CONNECTOR]: Failed to decode appearance for {0}", userID);
                 return null;
             }
 
             m_log.WarnFormat("[SIMIAN AVATAR CONNECTOR]: Failed to get appearance for {0}: {1}",
-                             userID,response["Message"].AsString());
+                             userID, response["Message"].AsString());
             return null;
         }
-        
-        // <summary>
-        // </summary>
-        // <param name=""></param>
-        public bool SetAppearance(UUID userID, AvatarAppearance appearance)
-        {
-            OSDMap map = appearance.Pack();
-            if (map == null)
-            {
-                m_log.WarnFormat("[SIMIAN AVATAR CONNECTOR]: Failed to encode appearance for {0}",userID);
-                return false;
-            }
 
-            // m_log.DebugFormat("[SIMIAN AVATAR CONNECTOR] save appearance for {0}",userID);
-
-            NameValueCollection requestArgs = new NameValueCollection
-                {
-                        { "RequestMethod", "AddUserData" },
-                        { "UserID", userID.ToString() },
-                        { "LLPackedAppearance", OSDParser.SerializeJsonString(map) }
-                };
-
-            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
-            bool success = response["Success"].AsBoolean();
-
-            if (! success)
-                m_log.WarnFormat("[SIMIAN AVATAR CONNECTOR]: Failed to save appearance for {0}: {1}",
-                                 userID,response["Message"].AsString());
-
-            return success;
-        }
-            
         // <summary>
         // </summary>
         // <param name=""></param>
@@ -218,7 +206,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
                     appearance.AvatarHeight = (float)map["Height"].AsReal();
 
                     AvatarData avatar = new AvatarData(appearance);
-                    
+
                     // Get attachments
                     map = null;
                     try { map = OSDParser.DeserializeJson(response["LLAttachments"].AsString()) as OSDMap; }
@@ -229,7 +217,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
                         foreach (KeyValuePair<string, OSD> kvp in map)
                             avatar.Data[kvp.Key] = kvp.Value.AsString();
                     }
-                
+
                     return avatar;
                 }
                 else
@@ -248,6 +236,48 @@ namespace OpenSim.Services.Connectors.SimianGrid
             return null;
         }
 
+        public bool RemoveItems(UUID userID, string[] names)
+        {
+            m_log.Error("[SIMIAN AVATAR CONNECTOR]: RemoveItems called for " + userID + " with " + names.Length + " names, implement this");
+            return false;
+        }
+
+        public bool ResetAvatar(UUID userID)
+        {
+            m_log.Error("[SIMIAN AVATAR CONNECTOR]: ResetAvatar called for " + userID + ", implement this");
+            return false;
+        }
+
+        // <summary>
+        // </summary>
+        // <param name=""></param>
+        public bool SetAppearance(UUID userID, AvatarAppearance appearance)
+        {
+            OSDMap map = appearance.Pack();
+            if (map == null)
+            {
+                m_log.WarnFormat("[SIMIAN AVATAR CONNECTOR]: Failed to encode appearance for {0}", userID);
+                return false;
+            }
+
+            // m_log.DebugFormat("[SIMIAN AVATAR CONNECTOR] save appearance for {0}",userID);
+
+            NameValueCollection requestArgs = new NameValueCollection
+                {
+                        { "RequestMethod", "AddUserData" },
+                        { "UserID", userID.ToString() },
+                        { "LLPackedAppearance", OSDParser.SerializeJsonString(map) }
+                };
+
+            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
+            bool success = response["Success"].AsBoolean();
+
+            if (!success)
+                m_log.WarnFormat("[SIMIAN AVATAR CONNECTOR]: Failed to save appearance for {0}: {1}",
+                                 userID, response["Message"].AsString());
+
+            return success;
+        }
         // <summary>
         // </summary>
         // <param name=""></param>
@@ -290,7 +320,6 @@ namespace OpenSim.Services.Connectors.SimianGrid
                 map["UnderPantsAsset"] = appearance.Wearables[AvatarWearable.UNDERPANTS][0].AssetID.ToString();
                 map["UnderShirtAsset"] = appearance.Wearables[AvatarWearable.UNDERSHIRT][0].AssetID.ToString();
 
-
                 OSDMap items = new OSDMap();
                 foreach (KeyValuePair<string, string> kvp in avatar.Data)
                 {
@@ -320,25 +349,11 @@ namespace OpenSim.Services.Connectors.SimianGrid
                 return false;
             }
         }
-
-        public bool ResetAvatar(UUID userID)
-        {
-            m_log.Error("[SIMIAN AVATAR CONNECTOR]: ResetAvatar called for " + userID + ", implement this");
-            return false;
-        }
-
         public bool SetItems(UUID userID, string[] names, string[] values)
         {
             m_log.Error("[SIMIAN AVATAR CONNECTOR]: SetItems called for " + userID + " with " + names.Length + " names and " + values.Length + " values, implement this");
             return false;
         }
-
-        public bool RemoveItems(UUID userID, string[] names)
-        {
-            m_log.Error("[SIMIAN AVATAR CONNECTOR]: RemoveItems called for " + userID + " with " + names.Length + " names, implement this");
-            return false;
-        }
-
         #endregion IAvatarService
     }
 }

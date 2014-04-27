@@ -25,32 +25,26 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Nini.Config;
+using OpenSim.Data;
+using OpenSim.Services.Base;
 using System;
 using System.Reflection;
-using Nini.Config;
-using log4net;
-using OpenSim.Services.Base;
-using OpenSim.Data;
 
 namespace OpenSim.Services.ProfilesService
 {
-    public class UserProfilesServiceBase: ServiceBase
+    public class UserProfilesServiceBase : ServiceBase
     {
-        static readonly ILog m_log =
-            LogManager.GetLogger(
-                MethodBase.GetCurrentMethod().DeclaringType);
-
         public IProfilesData ProfilesData;
 
-        public string ConfigName
-        {
-            get; private set;
-        }
-
-        public UserProfilesServiceBase(IConfigSource config, string configName):
+        private static readonly ILog m_log =
+            LogManager.GetLogger(
+                MethodBase.GetCurrentMethod().DeclaringType);
+        public UserProfilesServiceBase(IConfigSource config, string configName) :
             base(config)
         {
-            if(string.IsNullOrEmpty(configName))
+            if (string.IsNullOrEmpty(configName))
             {
                 m_log.WarnFormat("[PROFILES]: Configuration section not given!");
                 return;
@@ -68,7 +62,7 @@ namespace OpenSim.Services.ProfilesService
                 if (string.IsNullOrEmpty(connString))
                     connString = dbConfig.GetString("ConnectionString", String.Empty);
             }
-            
+
             IConfig ProfilesConfig = config.Configs[configName];
             if (ProfilesConfig != null)
             {
@@ -76,12 +70,16 @@ namespace OpenSim.Services.ProfilesService
                 connString = ProfilesConfig.GetString("ConnectionString", connString);
                 realm = ProfilesConfig.GetString("Realm", realm);
             }
-            
+
             ProfilesData = LoadPlugin<IProfilesData>(dllName, new Object[] { connString });
             if (ProfilesData == null)
                 throw new Exception("Could not find a storage interface in the given module");
+        }
 
+        public string ConfigName
+        {
+            get;
+            private set;
         }
     }
 }
-

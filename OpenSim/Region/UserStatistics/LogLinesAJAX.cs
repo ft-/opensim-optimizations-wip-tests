@@ -25,17 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
+using OpenMetaverse.StructuredData;
 using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using Mono.Data.SqliteClient;
-using OpenMetaverse;
-using OpenMetaverse.StructuredData;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Framework.Monitoring;
 
 namespace OpenSim.Region.UserStatistics
 {
@@ -43,12 +36,11 @@ namespace OpenSim.Region.UserStatistics
     {
         private Regex normalizeEndLines = new Regex(@"\r\n", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.Multiline);
 
-        private Regex webFormat = new Regex(@"[^\s]*\s([^,]*),[^\s]*\s([A-Z]*)[^\s-][^\[]*\[([^\]]*)\]([^\n]*)",
-                                            RegexOptions.Singleline | RegexOptions.Compiled);
         private Regex TitleColor = new Regex(@"[^\s]*\s(?:[^,]*),[^\s]*\s(?:[A-Z]*)[^\s-][^\[]*\[([^\]]*)\](?:[^\n]*)",
                                     RegexOptions.Singleline | RegexOptions.Compiled);
 
-
+        private Regex webFormat = new Regex(@"[^\s]*\s([^,]*),[^\s]*\s([A-Z]*)[^\s-][^\[]*\[([^\]]*)\]([^\n]*)",
+                                            RegexOptions.Singleline | RegexOptions.Compiled);
         #region IStatsController Members
 
         public string ReportName
@@ -63,10 +55,38 @@ namespace OpenSim.Region.UserStatistics
             return nh;
         }
 
+        /// <summary>
+        /// Return the last log lines. Output in the format:
+        /// <pre>
+        /// {"logLines": [
+        /// "line1",
+        /// "line2",
+        /// ...
+        /// ]
+        /// }
+        /// </pre>
+        /// </summary>
+        /// <param name="pModelResult"></param>
+        /// <returns></returns>
+        public string RenderJson(Hashtable pModelResult)
+        {
+            OSDMap logInfo = new OpenMetaverse.StructuredData.OSDMap();
+
+            OSDArray logLines = new OpenMetaverse.StructuredData.OSDArray();
+            string tmp = normalizeEndLines.Replace(pModelResult["loglines"].ToString(), "\n");
+            string[] result = Regex.Split(tmp, "\n");
+            for (int i = 0; i < result.Length; i++)
+            {
+                logLines.Add(new OSDString(result[i]));
+            }
+            logInfo.Add("logLines", logLines);
+            return logInfo.ToString();
+        }
+
         public string RenderView(Hashtable pModelResult)
         {
             StringBuilder output = new StringBuilder();
-            
+
             HTMLUtil.HR(ref output, "");
             output.Append("<H3>ActiveLog</H3>\n");
 
@@ -98,17 +118,15 @@ namespace OpenSim.Region.UserStatistics
                             formatopen = "";
                             formatclose = "";
                             break;
-
                     }
                 }
                 StringBuilder replaceStr = new StringBuilder();
-                //string titlecolorresults = 
-                
+                //string titlecolorresults =
+
                 string formatresult = Regex.Replace(TitleColor.Replace(result[i], "$1"), "[^ABCDEFabcdef0-9]", "");
                 if (formatresult.Length > 6)
                 {
                     formatresult = formatresult.Substring(0, 6);
-                   
                 }
                 for (int j = formatresult.Length; j <= 5; j++)
                     formatresult += "0";
@@ -116,44 +134,14 @@ namespace OpenSim.Region.UserStatistics
                 replaceStr.Append(formatresult);
                 replaceStr.Append("\">$3</font>] $4<br />");
                 string repstr = replaceStr.ToString();
-                
+
                 output.Append(formatopen);
                 output.Append(webFormat.Replace(result[i], repstr));
                 output.Append(formatclose);
             }
-                
 
             return output.ToString();
         }
-
-        /// <summary>
-        /// Return the last log lines. Output in the format:
-        /// <pre>
-        /// {"logLines": [
-        /// "line1",
-        /// "line2",
-        /// ...
-        /// ]
-        /// }
-        /// </pre>
-        /// </summary>
-        /// <param name="pModelResult"></param>
-        /// <returns></returns>
-        public string RenderJson(Hashtable pModelResult)
-        {
-            OSDMap logInfo = new OpenMetaverse.StructuredData.OSDMap();
-
-            OSDArray logLines = new OpenMetaverse.StructuredData.OSDArray();
-            string tmp = normalizeEndLines.Replace(pModelResult["loglines"].ToString(), "\n");
-            string[] result = Regex.Split(tmp, "\n");
-            for (int i = 0; i < result.Length; i++)
-            {
-                logLines.Add(new OSDString(result[i]));
-            }
-            logInfo.Add("logLines", logLines);
-            return logInfo.ToString();
-        }
-
-        #endregion
+        #endregion IStatsController Members
     }
 }

@@ -1,3 +1,8 @@
+using log4net;
+using Nwc.XmlRpc;
+using OpenMetaverse;
+using OpenSim.Services.Interfaces;
+
 /*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
@@ -24,18 +29,11 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-using System;
+
 using System.Collections;
-using System.Collections.Generic;
 using System.Net;
 using System.Reflection;
-
-using OpenSim.Services.Interfaces;
 using GridRegion = OpenSim.Services.Interfaces.GridRegion;
-
-using log4net;
-using Nwc.XmlRpc;
-using OpenMetaverse;
 
 namespace OpenSim.Server.Handlers.Hypergrid
 {
@@ -49,40 +47,6 @@ namespace OpenSim.Server.Handlers.Hypergrid
         {
             m_GatekeeperService = gatekeeper;
             m_log.DebugFormat("[HYPERGRID HANDLERS]: Active");
-        }
-
-        /// <summary>
-        /// Someone wants to link to us
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public XmlRpcResponse LinkRegionRequest(XmlRpcRequest request, IPEndPoint remoteClient)
-        {
-            Hashtable requestData = (Hashtable)request.Params[0];
-            //string host = (string)requestData["host"];
-            //string portstr = (string)requestData["port"];
-            string name = (string)requestData["region_name"];
-            if (name == null)
-                name = string.Empty;
-
-            UUID regionID = UUID.Zero;
-            string externalName = string.Empty;
-            string imageURL = string.Empty;
-            ulong regionHandle = 0;
-            string reason = string.Empty;
-
-            bool success = m_GatekeeperService.LinkRegion(name, out regionID, out regionHandle, out externalName, out imageURL, out reason);
-
-            Hashtable hash = new Hashtable();
-            hash["result"] = success.ToString();
-            hash["uuid"] = regionID.ToString();
-            hash["handle"] = regionHandle.ToString();
-            hash["region_image"] = imageURL;
-            hash["external_name"] = externalName;
-
-            XmlRpcResponse response = new XmlRpcResponse();
-            response.Value = hash;
-            return response;
         }
 
         public XmlRpcResponse GetRegion(XmlRpcRequest request, IPEndPoint remoteClient)
@@ -129,8 +93,40 @@ namespace OpenSim.Server.Handlers.Hypergrid
             XmlRpcResponse response = new XmlRpcResponse();
             response.Value = hash;
             return response;
-
         }
 
+        /// <summary>
+        /// Someone wants to link to us
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public XmlRpcResponse LinkRegionRequest(XmlRpcRequest request, IPEndPoint remoteClient)
+        {
+            Hashtable requestData = (Hashtable)request.Params[0];
+            //string host = (string)requestData["host"];
+            //string portstr = (string)requestData["port"];
+            string name = (string)requestData["region_name"];
+            if (name == null)
+                name = string.Empty;
+
+            UUID regionID = UUID.Zero;
+            string externalName = string.Empty;
+            string imageURL = string.Empty;
+            ulong regionHandle = 0;
+            string reason = string.Empty;
+
+            bool success = m_GatekeeperService.LinkRegion(name, out regionID, out regionHandle, out externalName, out imageURL, out reason);
+
+            Hashtable hash = new Hashtable();
+            hash["result"] = success.ToString();
+            hash["uuid"] = regionID.ToString();
+            hash["handle"] = regionHandle.ToString();
+            hash["region_image"] = imageURL;
+            hash["external_name"] = externalName;
+
+            XmlRpcResponse response = new XmlRpcResponse();
+            response.Value = hash;
+            return response;
+        }
     }
 }

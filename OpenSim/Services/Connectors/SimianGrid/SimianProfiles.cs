@@ -25,10 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Reflection;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
@@ -39,6 +35,10 @@ using OpenSim.Framework.Client;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Reflection;
 
 namespace OpenSim.Services.Connectors.SimianGrid
 {
@@ -66,17 +66,17 @@ namespace OpenSim.Services.Connectors.SimianGrid
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
-        private string m_serverUrl = String.Empty;
         private bool m_Enabled = false;
-
+        private string m_serverUrl = String.Empty;
         #region INonSharedRegionModule
-        
-        public Type ReplaceableInterface { get { return null; } }
-        public void RegionLoaded(Scene scene) { }
-        public void Close() { }
 
-        public SimianProfiles() { }
+        public SimianProfiles()
+        {
+        }
+
         public string Name { get { return "SimianProfiles"; } }
+
+        public Type ReplaceableInterface { get { return null; } }
 
         public void AddRegion(Scene scene)
         {
@@ -87,6 +87,13 @@ namespace OpenSim.Services.Connectors.SimianGrid
             }
         }
 
+        public void Close()
+        {
+        }
+
+        public void RegionLoaded(Scene scene)
+        {
+        }
         public void RemoveRegion(Scene scene)
         {
             if (m_Enabled)
@@ -128,6 +135,50 @@ namespace OpenSim.Services.Connectors.SimianGrid
 
             if (String.IsNullOrEmpty(m_serverUrl))
                 m_log.Info("[SIMIAN PROFILES]: No UserAccountServerURI specified, disabling connector");
+        }
+
+        private bool AddUserData(UUID userID, string key, OSDMap value)
+        {
+            NameValueCollection requestArgs = new NameValueCollection
+            {
+                { "RequestMethod", "AddUserData" },
+                { "UserID", userID.ToString() },
+                { key, OSDParser.SerializeJsonString(value) }
+            };
+
+            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
+            bool success = response["Success"].AsBoolean();
+
+            if (!success)
+                m_log.WarnFormat("[SIMIAN PROFILES]: Failed to add user data with key {0} for {1}: {2}", key, userID, response["Message"].AsString());
+
+            return success;
+        }
+
+        /// <summary>
+        /// Sanity checks regions for a valid estate owner at startup
+        /// </summary>
+        private void CheckEstateManager(Scene scene)
+        {
+            EstateSettings estate = scene.RegionInfo.EstateSettings;
+
+            if (estate.EstateOwner == UUID.Zero)
+            {
+                // Attempt to lookup the grid admin
+                UserAccount admin = scene.UserAccountService.GetUserAccount(scene.RegionInfo.ScopeID, UUID.Zero);
+                if (admin != null)
+                {
+                    m_log.InfoFormat("[SIMIAN PROFILES]: Setting estate {0} (ID: {1}) owner to {2}", estate.EstateName,
+                        estate.EstateID, admin.Name);
+
+                    estate.EstateOwner = admin.PrincipalID;
+                    estate.Save();
+                }
+                else
+                {
+                    m_log.WarnFormat("[SIMIAN PROFILES]: Estate {0} (ID: {1}) does not have an owner", estate.EstateName, estate.EstateID);
+                }
+            }
         }
 
         private void ClientConnectHandler(IClientCore clientCore)
@@ -181,6 +232,11 @@ namespace OpenSim.Services.Connectors.SimianGrid
             client.SendAvatarClassifiedReply(targetAvatarID, new Dictionary<UUID, string>(0));
         }
 
+        private void ClassifiedDeleteHandler(UUID classifiedID, IClientAPI client)
+        {
+            // FIXME: Delete the specified classified ad
+        }
+
         private void ClassifiedInfoRequestHandler(UUID classifiedID, IClientAPI client)
         {
             // FIXME: Fetch this info
@@ -194,12 +250,6 @@ namespace OpenSim.Services.Connectors.SimianGrid
         {
             // FIXME: Save this info
         }
-
-        private void ClassifiedDeleteHandler(UUID classifiedID, IClientAPI client)
-        {
-            // FIXME: Delete the specified classified ad
-        }
-
         #endregion Classifieds
 
         #region Picks
@@ -240,20 +290,24 @@ namespace OpenSim.Services.Connectors.SimianGrid
                 String.Empty, String.Empty, Vector3.Zero, 0, false);
         }
 
-        private void PickInfoUpdateHandler(IClientAPI client, UUID pickID, UUID creatorID, bool topPick, string name,
-            string desc, UUID snapshotID, int sortOrder, bool enabled)
-        {
-            // FIXME: Save this
-        }
-
         private void PickDeleteHandler(IClientAPI client, UUID pickID)
         {
             // FIXME: Delete
         }
 
+        private void PickInfoUpdateHandler(IClientAPI client, UUID pickID, UUID creatorID, bool topPick, string name,
+            string desc, UUID snapshotID, int sortOrder, bool enabled)
+        {
+            // FIXME: Save this
+        }
         #endregion Picks
 
         #region Notes
+
+        private void AvatarNotesUpdateHandler(IClientAPI client, UUID targetID, string notes)
+        {
+            // FIXME: Save this
+        }
 
         private void HandleAvatarNotesRequest(Object sender, string method, List<String> args)
         {
@@ -271,20 +325,29 @@ namespace OpenSim.Services.Connectors.SimianGrid
             // FIXME: Fetch this
             client.SendAvatarNotesReply(targetAvatarID, String.Empty);
         }
-
-        private void AvatarNotesUpdateHandler(IClientAPI client, UUID targetID, string notes)
-        {
-            // FIXME: Save this
-        }
-
         #endregion Notes
 
         #region Profiles
 
+        private void AvatarInterestUpdateHandler(IClientAPI client, uint wantmask, string wanttext, uint skillsmask,
+            string skillstext, string languages)
+        {
+            OSDMap map = new OSDMap
+            {
+                { "WantMask", OSD.FromInteger(wantmask) },
+                { "WantText", OSD.FromString(wanttext) },
+                { "SkillsMask", OSD.FromInteger(skillsmask) },
+                { "SkillsText", OSD.FromString(skillstext) },
+                { "Languages", OSD.FromString(languages) }
+            };
+
+            AddUserData(client.AgentId, "LLInterests", map);
+        }
+
         private void RequestAvatarPropertiesHandler(IClientAPI client, UUID avatarID)
         {
-            m_log.DebugFormat("[SIMIAN PROFILES]: Request avatar properties for {0}",avatarID);
-            
+            m_log.DebugFormat("[SIMIAN PROFILES]: Request avatar properties for {0}", avatarID);
+
             OSDMap user = FetchUserData(avatarID);
 
             ProfileFlags flags = ProfileFlags.AllowPublish | ProfileFlags.MaturePublish;
@@ -365,20 +428,9 @@ namespace OpenSim.Services.Connectors.SimianGrid
 
             AddUserData(client.AgentId, "LLAbout", map);
         }
-
-        private void AvatarInterestUpdateHandler(IClientAPI client, uint wantmask, string wanttext, uint skillsmask,
-            string skillstext, string languages)
+        private void UpdateUserInfoHandler(bool imViaEmail, bool visible, IClientAPI client)
         {
-            OSDMap map = new OSDMap
-            {
-                { "WantMask", OSD.FromInteger(wantmask) },
-                { "WantText", OSD.FromString(wanttext) },
-                { "SkillsMask", OSD.FromInteger(skillsmask) },
-                { "SkillsText", OSD.FromString(skillstext) },
-                { "Languages", OSD.FromString(languages) }
-            };
-
-            AddUserData(client.AgentId, "LLInterests", map);
+            m_log.Info("[SIMIAN PROFILES]: Ignoring user info update from " + client.Name);
         }
 
         private void UserInfoRequestHandler(IClientAPI client)
@@ -400,62 +452,11 @@ namespace OpenSim.Services.Connectors.SimianGrid
 
             client.SendUserInfoReply(false, true, email);
         }
-
-        private void UpdateUserInfoHandler(bool imViaEmail, bool visible, IClientAPI client)
-        {
-            m_log.Info("[SIMIAN PROFILES]: Ignoring user info update from " + client.Name);
-        }
-
         #endregion Profiles
-
-        /// <summary>
-        /// Sanity checks regions for a valid estate owner at startup
-        /// </summary>
-        private void CheckEstateManager(Scene scene)
-        {
-            EstateSettings estate = scene.RegionInfo.EstateSettings;
-
-            if (estate.EstateOwner == UUID.Zero)
-            {
-                // Attempt to lookup the grid admin
-                UserAccount admin = scene.UserAccountService.GetUserAccount(scene.RegionInfo.ScopeID, UUID.Zero);
-                if (admin != null)
-                {
-                    m_log.InfoFormat("[SIMIAN PROFILES]: Setting estate {0} (ID: {1}) owner to {2}", estate.EstateName,
-                        estate.EstateID, admin.Name);
-
-                    estate.EstateOwner = admin.PrincipalID;
-                    estate.Save();
-                }
-                else
-                {
-                    m_log.WarnFormat("[SIMIAN PROFILES]: Estate {0} (ID: {1}) does not have an owner", estate.EstateName, estate.EstateID);
-                }
-            }
-        }
-
-        private bool AddUserData(UUID userID, string key, OSDMap value)
-        {
-            NameValueCollection requestArgs = new NameValueCollection
-            {
-                { "RequestMethod", "AddUserData" },
-                { "UserID", userID.ToString() },
-                { key, OSDParser.SerializeJsonString(value) }
-            };
-
-            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
-            bool success = response["Success"].AsBoolean();
-
-            if (!success)
-                m_log.WarnFormat("[SIMIAN PROFILES]: Failed to add user data with key {0} for {1}: {2}", key, userID, response["Message"].AsString());
-
-            return success;
-        }
-
         private OSDMap FetchUserData(UUID userID)
         {
-            m_log.DebugFormat("[SIMIAN PROFILES]: Fetch information about {0}",userID);
-            
+            m_log.DebugFormat("[SIMIAN PROFILES]: Fetch information about {0}", userID);
+
             NameValueCollection requestArgs = new NameValueCollection
             {
                 { "RequestMethod", "GetUser" },

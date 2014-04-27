@@ -25,8 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
 using OpenMetaverse;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
@@ -43,7 +43,12 @@ namespace OpenSim.Region.Framework.Interfaces
 
     public interface IHttpRequestModule
     {
+        IServiceRequest GetNextCompletedRequest();
+
         UUID MakeHttpRequest(string url, string parameters, string body);
+
+        void RemoveCompletedRequest(UUID id);
+
         UUID StartHttpRequest(uint localID, UUID itemID, string url, List<string> parameters, Dictionary<string, string> headers, string body);
 
         /// <summary>
@@ -51,8 +56,5 @@ namespace OpenSim.Region.Framework.Interfaces
         /// </summary>
         /// <param name='id'></param>
         void StopHttpRequestsForScript(UUID id);
-
-        IServiceRequest GetNextCompletedRequest();
-        void RemoveCompletedRequest(UUID id);
     }
 }

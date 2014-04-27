@@ -25,17 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Net.Sockets;
-using System.Reflection;
-using System.Text;
-using System.Threading;
-using log4net;
-using OpenSim.Framework;
 using OpenSim.Framework.Monitoring;
 using OpenSim.Region.Framework.Scenes;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
 
 namespace OpenSim.Region.OptionalModules.Agent.InternetRelayClientView.Server
 {
@@ -44,12 +38,12 @@ namespace OpenSim.Region.OptionalModules.Agent.InternetRelayClientView.Server
     /// <summary>
     /// Adam's completely hacked up not-probably-compliant RFC1459 server class.
     /// </summary>
-    class IRCServer
+    internal class IRCServer
     {
-        public event OnNewIRCUserDelegate OnNewIRCClient;
+        private readonly Scene m_baseScene;
 
         private readonly TcpListener m_listener;
-        private readonly Scene m_baseScene;
+
         private bool m_running = true;
 
         public IRCServer(IPAddress listener, int port, Scene baseScene)
@@ -62,10 +56,19 @@ namespace OpenSim.Region.OptionalModules.Agent.InternetRelayClientView.Server
             m_baseScene = baseScene;
         }
 
+        public event OnNewIRCUserDelegate OnNewIRCClient;
         public void Stop()
         {
             m_running = false;
             m_listener.Stop();
+        }
+
+        private void AcceptClient(TcpClient client)
+        {
+            IRCClientView cv = new IRCClientView(client, m_baseScene);
+
+            if (OnNewIRCClient != null)
+                OnNewIRCClient(cv);
         }
 
         private void ListenLoop()
@@ -77,14 +80,6 @@ namespace OpenSim.Region.OptionalModules.Agent.InternetRelayClientView.Server
             }
 
             Watchdog.RemoveThread();
-        }
-
-        private void AcceptClient(TcpClient client)
-        {
-            IRCClientView cv = new IRCClientView(client, m_baseScene);
-
-            if (OnNewIRCClient != null)
-                OnNewIRCClient(cv);
         }
     }
 }

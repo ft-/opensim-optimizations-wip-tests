@@ -25,32 +25,59 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using OpenMetaverse;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
-    public delegate void ScriptRemoved(UUID script);
     public delegate void ObjectRemoved(UUID prim);
 
-    public interface IScriptModule: INonSharedRegionModule
+    public delegate void ScriptRemoved(UUID script);
+    public interface IScriptModule : INonSharedRegionModule
     {
-        /// <summary>
-        /// Triggered when a script is removed from the script module.
-        /// </summary>
-        event ScriptRemoved OnScriptRemoved;
-
         /// <summary>
         /// Triggered when an object is removed via the script module.
         /// </summary>
         event ObjectRemoved OnObjectRemoved;
 
+        /// <summary>
+        /// Triggered when a script is removed from the script module.
+        /// </summary>
+        event ScriptRemoved OnScriptRemoved;
         string ScriptEngineName { get; }
 
+        /// <summary>
+        /// Get the execution times of all scripts in each object.
+        /// </summary>
+        /// <returns>
+        /// A dictionary where the key is the root object ID of a linkset
+        /// and the value is a representative execution time in milliseconds of all scripts in that linkset.
+        /// </returns>
+        Dictionary<uint, float> GetObjectScriptsExecutionTimes();
+
+        ArrayList GetScriptErrors(UUID itemID);
+
+        /// <summary>
+        /// Get the execution times of all scripts in the given array if they are currently running.
+        /// </summary>
+        /// <returns>
+        /// A float the value is a representative execution time in milliseconds of all scripts in that Array.
+        /// </returns>
+        float GetScriptExecutionTime(List<UUID> itemIDs);
+
+        /// <summary>
+        /// Returns true if a script is running.
+        /// </summary>
+        /// <param name="itemID">The item ID of the script.</param>
+        bool GetScriptState(UUID itemID);
+
         string GetXMLState(UUID itemID);
-        bool SetXMLState(UUID itemID, string xml);
+
+        bool HasScript(UUID itemID, out bool running);
+
+        bool PostObjectEvent(UUID itemID, string name, Object[] args);
 
         /// <summary>
         /// Post a script event to a single script.
@@ -64,52 +91,24 @@ namespace OpenSim.Region.Framework.Interfaces
         /// </param>
         bool PostScriptEvent(UUID itemID, string name, Object[] args);
 
-        bool PostObjectEvent(UUID itemID, string name, Object[] args);
-
-        /// <summary>
-        /// Suspends a script.
-        /// </summary>
-        /// <param name="itemID">The item ID of the script.</param>
-        void SuspendScript(UUID itemID);
-
         /// <summary>
         /// Resumes a script.
         /// </summary>
         /// <param name="itemID">The item ID of the script.</param>
         void ResumeScript(UUID itemID);
 
-        ArrayList GetScriptErrors(UUID itemID);
-
-        bool HasScript(UUID itemID, out bool running);
-
-        /// <summary>
-        /// Returns true if a script is running.
-        /// </summary>
-        /// <param name="itemID">The item ID of the script.</param>
-        bool GetScriptState(UUID itemID);
-
         void SaveAllState();
 
+        bool SetXMLState(UUID itemID, string xml);
         /// <summary>
         /// Starts the processing threads.
         /// </summary>
         void StartProcessing();
 
         /// <summary>
-        /// Get the execution times of all scripts in the given array if they are currently running.
+        /// Suspends a script.
         /// </summary>
-        /// <returns>
-        /// A float the value is a representative execution time in milliseconds of all scripts in that Array.
-        /// </returns>
-        float GetScriptExecutionTime(List<UUID> itemIDs);
-
-        /// <summary>
-        /// Get the execution times of all scripts in each object.
-        /// </summary>
-        /// <returns>
-        /// A dictionary where the key is the root object ID of a linkset
-        /// and the value is a representative execution time in milliseconds of all scripts in that linkset.
-        /// </returns>
-        Dictionary<uint, float> GetObjectScriptsExecutionTimes();
+        /// <param name="itemID">The item ID of the script.</param>
+        void SuspendScript(UUID itemID);
     }
 }

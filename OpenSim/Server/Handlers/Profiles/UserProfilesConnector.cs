@@ -25,51 +25,31 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
 using Nini.Config;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
 using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Framework;
+using OpenSim.Server.Base;
 using OpenSim.Server.Handlers.Base;
-using log4net;
+using OpenSim.Services.Interfaces;
+using System;
 
 namespace OpenSim.Server.Handlers.Profiles
 {
-    public class UserProfilesConnector: ServiceConnector
+    public class UserProfilesConnector : ServiceConnector
     {
-//        static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);        
-        
-        // Our Local Module
-        public IUserProfilesService ServiceModule
-        {
-            get; private set;
-        }
-
-        // The HTTP server.
-        public IHttpServer Server
-        {
-            get; private set;
-        }
-
-        public bool Enabled
-        {
-            get; private set;
-        }
+        //        static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         public UserProfilesConnector(IConfigSource config, IHttpServer server, string configName) :
             base(config, server, configName)
         {
             ConfigName = "UserProfilesService";
-            if(!string.IsNullOrEmpty(configName))
+            if (!string.IsNullOrEmpty(configName))
                 ConfigName = configName;
 
             IConfig serverConfig = config.Configs[ConfigName];
             if (serverConfig == null)
                 throw new Exception(String.Format("No section {0} in config file", ConfigName));
 
-            if(!serverConfig.GetBoolean("Enabled",false))
+            if (!serverConfig.GetBoolean("Enabled", false))
             {
                 Enabled = false;
                 return;
@@ -83,7 +63,7 @@ namespace OpenSim.Server.Handlers.Profiles
 
             Object[] args = new Object[] { config, ConfigName };
             ServiceModule = ServerUtils.LoadPlugin<IUserProfilesService>(service, args);
-            
+
             JsonRpcProfileHandlers handler = new JsonRpcProfileHandlers(ServiceModule);
 
             Server.AddJsonRPCHandler("avatarclassifiedsrequest", handler.AvatarClassifiedsRequest);
@@ -104,6 +84,26 @@ namespace OpenSim.Server.Handlers.Profiles
             Server.AddJsonRPCHandler("image_assets_request", handler.AvatarImageAssetsRequest);
             Server.AddJsonRPCHandler("user_data_request", handler.RequestUserAppData);
             Server.AddJsonRPCHandler("user_data_update", handler.UpdateUserAppData);
+        }
+
+        public bool Enabled
+        {
+            get;
+            private set;
+        }
+
+        // The HTTP server.
+        public IHttpServer Server
+        {
+            get;
+            private set;
+        }
+
+        // Our Local Module
+        public IUserProfilesService ServiceModule
+        {
+            get;
+            private set;
         }
     }
 }

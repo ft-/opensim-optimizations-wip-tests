@@ -25,8 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
@@ -34,35 +32,19 @@ using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.World.Vegetation
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "VegetationModule")]
     public class VegetationModule : INonSharedRegionModule, IVegetationModule
-    { 
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        
-        protected Scene m_scene;
-        
+    {
         protected static readonly PCode[] creationCapabilities = new PCode[] { PCode.Grass, PCode.NewTree, PCode.Tree };
+        protected Scene m_scene;
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         public PCode[] CreationCapabilities { get { return creationCapabilities; } }
-        
-        public void Initialise(IConfigSource source)
-        {
-        }
 
-        public void AddRegion(Scene scene)
-        {
-            m_scene = scene;
-            m_scene.RegisterModuleInterface<IVegetationModule>(this);
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-            m_scene.UnregisterModuleInterface<IVegetationModule>(this);
-        }
-
-        public void Close() {}
         public string Name { get { return "Vegetation Module"; } }
 
         public Type ReplaceableInterface
@@ -70,8 +52,10 @@ namespace OpenSim.Region.CoreModules.World.Vegetation
             get { return null; }
         }
 
-        public void RegionLoaded(Scene scene)
+        public void AddRegion(Scene scene)
         {
+            m_scene = scene;
+            m_scene.RegisterModuleInterface<IVegetationModule>(this);
         }
 
         public SceneObjectGroup AddTree(
@@ -83,10 +67,14 @@ namespace OpenSim.Region.CoreModules.World.Vegetation
             treeShape.PCode = newTree ? (byte)PCode.NewTree : (byte)PCode.Tree;
             treeShape.Scale = scale;
             treeShape.State = (byte)treeType;
-            
+
             return m_scene.AddNewPrim(uuid, groupID, position, rotation, treeShape);
         }
-        
+
+        public void Close()
+        {
+        }
+
         public SceneObjectGroup CreateEntity(
             UUID ownerID, UUID groupID, Vector3 pos, Quaternion rot, PrimitiveBaseShape shape)
         {
@@ -95,22 +83,33 @@ namespace OpenSim.Region.CoreModules.World.Vegetation
                 m_log.DebugFormat("[VEGETATION]: PCode {0} not handled by {1}", shape.PCode, Name);
                 return null;
             }
-            
+
             SceneObjectGroup sceneObject = new SceneObjectGroup(ownerID, pos, rot, shape);
             SceneObjectPart rootPart = sceneObject.GetPart(sceneObject.UUID);
-            
+
             // if grass or tree, make phantom
             //rootPart.TrimPermissions();
             rootPart.AddFlag(PrimFlags.Phantom);
             if (rootPart.Shape.PCode != (byte)PCode.Grass)
                 AdaptTree(ref shape);
-            
+
             m_scene.AddNewSceneObject(sceneObject, true);
             sceneObject.SetGroup(groupID, null);
-            
+
             return sceneObject;
         }
-        
+
+        public void Initialise(IConfigSource source)
+        {
+        }
+        public void RegionLoaded(Scene scene)
+        {
+        }
+
+        public void RemoveRegion(Scene scene)
+        {
+            m_scene.UnregisterModuleInterface<IVegetationModule>(this);
+        }
         protected void AdaptTree(ref PrimitiveBaseShape tree)
         {
             // Tree size has to be adapted depending on its type

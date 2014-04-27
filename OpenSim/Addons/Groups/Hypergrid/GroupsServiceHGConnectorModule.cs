@@ -25,23 +25,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading;
-
+using log4net;
+using Mono.Addins;
+using Nini.Config;
+using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Framework.Servers;
-using OpenSim.Region.Framework.Scenes;
 using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
-
-using OpenMetaverse;
-using Mono.Addins;
-using log4net;
-using Nini.Config;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Threading;
 
 namespace OpenSim.Groups
 {
@@ -50,22 +46,48 @@ namespace OpenSim.Groups
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
+        private RemoteConnectorCacheWrapper m_CacheWrapper;
+        private IConfigSource m_Config;
         private bool m_Enabled = false;
+        private ForeignImporter m_ForeignImporter;
         private IGroupsServicesConnector m_LocalGroupsConnector;
         private string m_LocalGroupsServiceLocation;
-        private IUserManagement m_UserManagement;
-        private IOfflineIMService m_OfflineIM;
         private IMessageTransferModule m_Messaging;
-        private List<Scene> m_Scenes;
-        private ForeignImporter m_ForeignImporter;
-        private string m_ServiceLocation;
-        private IConfigSource m_Config;
-
-        private ReaderWriterLock m_RwLock = new ReaderWriterLock();
         private Dictionary<string, GroupsServiceHGConnector> m_NetworkConnectors = new Dictionary<string, GroupsServiceHGConnector>();
-        private RemoteConnectorCacheWrapper m_CacheWrapper; // for caching info of external group services
+        private IOfflineIMService m_OfflineIM;
+        private ReaderWriterLock m_RwLock = new ReaderWriterLock();
+        private List<Scene> m_Scenes;
+        private string m_ServiceLocation;
+        private IUserManagement m_UserManagement;
+         // for caching info of external group services
 
         #region ISharedRegionModule
+
+        public string Name
+        {
+            get { return "Groups HG Service Connector"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
+        public void AddRegion(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+
+            m_log.DebugFormat("[Groups]: Registering {0} with {1}", this.Name, scene.RegionInfo.RegionName);
+            scene.RegisterModuleInterface<IGroupsServicesConnector>(this);
+            m_Scenes.Add(scene);
+
+            scene.EventManager.OnNewClient += OnNewClient;
+        }
+
+        public void Close()
+        {
+        }
 
         public void Initialise(IConfigSource config)
         {
@@ -88,36 +110,8 @@ namespace OpenSim.Groups
 
             m_log.DebugFormat("[Groups]: Initializing {0} with LocalService {1}", this.Name, m_ServiceLocation);
         }
-
-        public string Name
+        public void PostInitialise()
         {
-            get { return "Groups HG Service Connector"; }
-        }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-            m_log.DebugFormat("[Groups]: Registering {0} with {1}", this.Name, scene.RegionInfo.RegionName); 
-            scene.RegisterModuleInterface<IGroupsServicesConnector>(this);
-            m_Scenes.Add(scene);
-
-            scene.EventManager.OnNewClient += OnNewClient;
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-            scene.UnregisterModuleInterface<IGroupsServicesConnector>(this);
-            m_Scenes.Remove(scene);
         }
 
         public void RegionLoaded(Scene scene)
@@ -136,34 +130,27 @@ namespace OpenSim.Groups
                 {
                     m_LocalGroupsConnector = new GroupsServiceLocalConnectorModule(m_Config, m_UserManagement);
                     // Also, if local, create the endpoint for the HGGroupsService
-                    new HGGroupsServiceRobustConnector(m_Config, MainServer.Instance, string.Empty, 
+                    new HGGroupsServiceRobustConnector(m_Config, MainServer.Instance, string.Empty,
                         scene.RequestModuleInterface<IOfflineIMService>(), scene.RequestModuleInterface<IUserAccountService>());
-
                 }
                 else
                     m_LocalGroupsConnector = new GroupsServiceRemoteConnectorModule(m_Config, m_UserManagement);
 
                 m_CacheWrapper = new RemoteConnectorCacheWrapper(m_UserManagement);
             }
-
         }
 
-        public void PostInitialise()
+        public void RemoveRegion(Scene scene)
         {
+            if (!m_Enabled)
+                return;
+
+            scene.UnregisterModuleInterface<IGroupsServicesConnector>(this);
+            m_Scenes.Remove(scene);
         }
+        #endregion ISharedRegionModule
 
-        public void Close()
-        {
-        }
-
-        #endregion
-
-        private void OnNewClient(IClientAPI client)
-        {
-            client.OnCompleteMovementToRegion += OnCompleteMovementToRegion;
-        }
-
-        void OnCompleteMovementToRegion(IClientAPI client, bool arg2)
+        private void OnCompleteMovementToRegion(IClientAPI client, bool arg2)
         {
             object sp = null;
             if (client.Scene.TryGetScenePresence(client.AgentId, out sp))
@@ -171,7 +158,7 @@ namespace OpenSim.Groups
                 if (sp is ScenePresence && ((ScenePresence)sp).PresenceType != PresenceType.Npc)
                 {
                     AgentCircuitData aCircuit = ((ScenePresence)sp).Scene.AuthenticateHandler.GetAgentCircuitData(client.AgentId);
-                    if (aCircuit != null && (aCircuit.teleportFlags & (uint)Constants.TeleportFlags.ViaHGLogin) != 0 && 
+                    if (aCircuit != null && (aCircuit.teleportFlags & (uint)Constants.TeleportFlags.ViaHGLogin) != 0 &&
                         m_OfflineIM != null && m_Messaging != null)
                     {
                         List<GridInstantMessage> ims = m_OfflineIM.GetMessages(aCircuit.AgentID);
@@ -183,201 +170,11 @@ namespace OpenSim.Groups
             }
         }
 
+        private void OnNewClient(IClientAPI client)
+        {
+            client.OnCompleteMovementToRegion += OnCompleteMovementToRegion;
+        }
         #region IGroupsServicesConnector
-
-        public UUID CreateGroup(UUID RequestingAgentID, string name, string charter, bool showInList, UUID insigniaID, int membershipFee, bool openEnrollment, 
-            bool allowPublish, bool maturePublish, UUID founderID, out string reason)
-        {
-            reason = string.Empty;
-            if (m_UserManagement.IsLocalGridUser(RequestingAgentID))
-                return m_LocalGroupsConnector.CreateGroup(RequestingAgentID, name, charter, showInList, insigniaID, 
-                    membershipFee, openEnrollment, allowPublish, maturePublish, founderID, out reason);
-            else
-            {
-                reason = "Only local grid users are allowed to create a new group";
-                return UUID.Zero;
-            }
-        }
-
-        public bool UpdateGroup(string RequestingAgentID, UUID groupID, string charter, bool showInList, UUID insigniaID, int membershipFee, 
-            bool openEnrollment, bool allowPublish, bool maturePublish, out string reason)
-        {
-            reason = string.Empty;
-            string url = string.Empty;
-            string name = string.Empty;
-            if (IsLocal(groupID, out url, out name))
-                return m_LocalGroupsConnector.UpdateGroup(AgentUUI(RequestingAgentID), groupID, charter, showInList, insigniaID, membershipFee, 
-                    openEnrollment, allowPublish, maturePublish, out reason);
-            else
-            {
-                reason = "Changes to remote group not allowed. Please go to the group's original world.";
-                return false;
-            }
-        }
-
-        public ExtendedGroupRecord GetGroupRecord(string RequestingAgentID, UUID GroupID, string GroupName)
-        {
-            string url = string.Empty;
-            string name = string.Empty;
-            if (IsLocal(GroupID, out url, out name))
-                return m_LocalGroupsConnector.GetGroupRecord(AgentUUI(RequestingAgentID), GroupID, GroupName);
-            else if (url != string.Empty)
-            {
-                ExtendedGroupMembershipData membership = m_LocalGroupsConnector.GetAgentGroupMembership(RequestingAgentID, RequestingAgentID, GroupID);
-                string accessToken = string.Empty;
-                if (membership != null)
-                    accessToken = membership.AccessToken;
-                else
-                    return null;
-
-                GroupsServiceHGConnector c = GetConnector(url);
-                if (c != null)
-                {
-                    ExtendedGroupRecord grec = m_CacheWrapper.GetGroupRecord(RequestingAgentID, GroupID, GroupName, delegate
-                    {
-                        return c.GetGroupRecord(AgentUUIForOutside(RequestingAgentID), GroupID, GroupName, accessToken);
-                    });
-
-                    if (grec != null)
-                        ImportForeigner(grec.FounderUUI);
-                    return grec;
-                }
-            }
-
-            return null;
-        }
-
-        public List<DirGroupsReplyData> FindGroups(string RequestingAgentID, string search)
-        {
-            return m_LocalGroupsConnector.FindGroups(AgentUUI(RequestingAgentID), search);
-        }
-
-        public List<GroupMembersData> GetGroupMembers(string RequestingAgentID, UUID GroupID)
-        {
-            string url = string.Empty, gname = string.Empty;
-            if (IsLocal(GroupID, out url, out gname))
-            {
-                string agentID = AgentUUI(RequestingAgentID);
-                return m_LocalGroupsConnector.GetGroupMembers(agentID, GroupID);
-            }
-            else if (!string.IsNullOrEmpty(url))
-            {
-                ExtendedGroupMembershipData membership = m_LocalGroupsConnector.GetAgentGroupMembership(RequestingAgentID, RequestingAgentID, GroupID);
-                string accessToken = string.Empty;
-                if (membership != null)
-                    accessToken = membership.AccessToken;
-                else
-                    return null;
-
-                GroupsServiceHGConnector c = GetConnector(url);
-                if (c != null)
-                {
-                    return m_CacheWrapper.GetGroupMembers(RequestingAgentID, GroupID, delegate
-                    {
-                        return c.GetGroupMembers(AgentUUIForOutside(RequestingAgentID), GroupID, accessToken);
-                    });
-
-                }
-            }
-            return new List<GroupMembersData>();
-        }
-
-        public bool AddGroupRole(string RequestingAgentID, UUID groupID, UUID roleID, string name, string description, string title, ulong powers, out string reason)
-        {
-            reason = string.Empty;
-            string url = string.Empty, gname = string.Empty;
-
-            if (IsLocal(groupID, out url, out gname))
-                return m_LocalGroupsConnector.AddGroupRole(AgentUUI(RequestingAgentID), groupID, roleID, name, description, title, powers, out reason);
-            else
-            {
-                reason = "Operation not allowed outside this group's origin world.";
-                return false;
-            }
-        }
-
-        public bool UpdateGroupRole(string RequestingAgentID, UUID groupID, UUID roleID, string name, string description, string title, ulong powers)
-        {
-            string url = string.Empty, gname = string.Empty;
-
-            if (IsLocal(groupID, out url, out gname))
-                return m_LocalGroupsConnector.UpdateGroupRole(AgentUUI(RequestingAgentID), groupID, roleID, name, description, title, powers);
-            else
-            {
-                return false;
-            }
-
-        }
-
-        public void RemoveGroupRole(string RequestingAgentID, UUID groupID, UUID roleID)
-        {
-            string url = string.Empty, gname = string.Empty;
-
-            if (IsLocal(groupID, out url, out gname))
-                m_LocalGroupsConnector.RemoveGroupRole(AgentUUI(RequestingAgentID), groupID, roleID);
-            else
-            {
-                return;
-            }
-        }
-
-        public List<GroupRolesData> GetGroupRoles(string RequestingAgentID, UUID groupID)
-        {
-            string url = string.Empty, gname = string.Empty;
-
-            if (IsLocal(groupID, out url, out gname))
-                return m_LocalGroupsConnector.GetGroupRoles(AgentUUI(RequestingAgentID), groupID);
-            else if (!string.IsNullOrEmpty(url))
-            {
-                ExtendedGroupMembershipData membership = m_LocalGroupsConnector.GetAgentGroupMembership(RequestingAgentID, RequestingAgentID, groupID);
-                string accessToken = string.Empty;
-                if (membership != null)
-                    accessToken = membership.AccessToken;
-                else
-                    return null;
-
-                GroupsServiceHGConnector c = GetConnector(url);
-                if (c != null)
-                {
-                    return m_CacheWrapper.GetGroupRoles(RequestingAgentID, groupID, delegate
-                    {
-                        return c.GetGroupRoles(AgentUUIForOutside(RequestingAgentID), groupID, accessToken);
-                    });
-
-                }
-            }
-
-            return new List<GroupRolesData>();
-        }
-
-        public List<GroupRoleMembersData> GetGroupRoleMembers(string RequestingAgentID, UUID groupID)
-        {
-            string url = string.Empty, gname = string.Empty;
-
-            if (IsLocal(groupID, out url, out gname))
-                return m_LocalGroupsConnector.GetGroupRoleMembers(AgentUUI(RequestingAgentID), groupID);
-            else if (!string.IsNullOrEmpty(url))
-            {
-                ExtendedGroupMembershipData membership = m_LocalGroupsConnector.GetAgentGroupMembership(RequestingAgentID, RequestingAgentID, groupID);
-                string accessToken = string.Empty;
-                if (membership != null)
-                    accessToken = membership.AccessToken;
-                else
-                    return null;
-
-                GroupsServiceHGConnector c = GetConnector(url);
-                if (c != null)
-                {
-                    return m_CacheWrapper.GetGroupRoleMembers(RequestingAgentID, groupID, delegate
-                    {
-                        return c.GetGroupRoleMembers(AgentUUIForOutside(RequestingAgentID), groupID, accessToken);
-                    });
-
-                }
-            }
-            
-            return new List<GroupRoleMembersData>();
-        }
 
         public bool AddAgentToGroup(string RequestingAgentID, string AgentID, UUID GroupID, UUID RoleID, string token, out string reason)
         {
@@ -430,25 +227,6 @@ namespace OpenSim.Groups
             return false;
         }
 
-
-        public void RemoveAgentFromGroup(string RequestingAgentID, string AgentID, UUID GroupID)
-        {
-            string url = string.Empty, name = string.Empty;
-            if (!IsLocal(GroupID, out url, out name) && url != string.Empty)
-            {
-                ExtendedGroupMembershipData membership = m_LocalGroupsConnector.GetAgentGroupMembership(AgentUUI(RequestingAgentID), AgentUUI(AgentID), GroupID);
-                if (membership != null)
-                {
-                    GroupsServiceHGConnector c = GetConnector(url);
-                    if (c != null)
-                        c.RemoveAgentFromGroup(AgentUUIForOutside(AgentID), GroupID, membership.AccessToken);
-                }
-            }
-
-            // remove from local service
-            m_LocalGroupsConnector.RemoveAgentFromGroup(AgentUUI(RequestingAgentID), AgentUUI(AgentID), GroupID);
-        }
-
         public bool AddAgentToGroupInvite(string RequestingAgentID, UUID inviteID, UUID groupID, UUID roleID, string agentID)
         {
             string url = string.Empty, gname = string.Empty;
@@ -459,82 +237,12 @@ namespace OpenSim.Groups
                 return false;
         }
 
-        public GroupInviteInfo GetAgentToGroupInvite(string RequestingAgentID, UUID inviteID)
-        {
-            return m_LocalGroupsConnector.GetAgentToGroupInvite(AgentUUI(RequestingAgentID), inviteID); ;
-        }
-
-        public void RemoveAgentToGroupInvite(string RequestingAgentID, UUID inviteID)
-        {
-            m_LocalGroupsConnector.RemoveAgentToGroupInvite(AgentUUI(RequestingAgentID), inviteID);
-        }
-
         public void AddAgentToGroupRole(string RequestingAgentID, string AgentID, UUID GroupID, UUID RoleID)
         {
             string url = string.Empty, gname = string.Empty;
 
             if (IsLocal(GroupID, out url, out gname))
                 m_LocalGroupsConnector.AddAgentToGroupRole(AgentUUI(RequestingAgentID), AgentUUI(AgentID), GroupID, RoleID);
-
-        }
-
-        public void RemoveAgentFromGroupRole(string RequestingAgentID, string AgentID, UUID GroupID, UUID RoleID)
-        {
-            string url = string.Empty, gname = string.Empty;
-
-            if (IsLocal(GroupID, out url, out gname))
-                m_LocalGroupsConnector.RemoveAgentFromGroupRole(AgentUUI(RequestingAgentID), AgentUUI(AgentID), GroupID, RoleID);
-        }
-
-        public List<GroupRolesData> GetAgentGroupRoles(string RequestingAgentID, string AgentID, UUID GroupID)
-        {
-            string url = string.Empty, gname = string.Empty;
-
-            if (IsLocal(GroupID, out url, out gname))
-                return m_LocalGroupsConnector.GetAgentGroupRoles(AgentUUI(RequestingAgentID), AgentUUI(AgentID), GroupID);
-            else
-                return new List<GroupRolesData>();
-        }
-
-        public void SetAgentActiveGroup(string RequestingAgentID, string AgentID, UUID GroupID)
-        {
-            string url = string.Empty, gname = string.Empty;
-
-            if (IsLocal(GroupID, out url, out gname))
-                m_LocalGroupsConnector.SetAgentActiveGroup(AgentUUI(RequestingAgentID), AgentUUI(AgentID), GroupID);
-        }
-
-        public ExtendedGroupMembershipData GetAgentActiveMembership(string RequestingAgentID, string AgentID)
-        {
-            return m_LocalGroupsConnector.GetAgentActiveMembership(AgentUUI(RequestingAgentID), AgentUUI(AgentID));
-        }
-
-        public void SetAgentActiveGroupRole(string RequestingAgentID, string AgentID, UUID GroupID, UUID RoleID)
-        {
-            string url = string.Empty, gname = string.Empty;
-
-            if (IsLocal(GroupID, out url, out gname))
-                m_LocalGroupsConnector.SetAgentActiveGroupRole(AgentUUI(RequestingAgentID), AgentUUI(AgentID), GroupID, RoleID);
-        }
-
-        public void UpdateMembership(string RequestingAgentID, string AgentID, UUID GroupID, bool AcceptNotices, bool ListInProfile)
-        {
-            m_LocalGroupsConnector.UpdateMembership(AgentUUI(RequestingAgentID), AgentUUI(AgentID), GroupID, AcceptNotices, ListInProfile);
-        }
-
-        public ExtendedGroupMembershipData GetAgentGroupMembership(string RequestingAgentID, string AgentID, UUID GroupID)
-        {
-            string url = string.Empty, gname = string.Empty;
-
-            if (IsLocal(GroupID, out url, out gname))
-                return m_LocalGroupsConnector.GetAgentGroupMembership(AgentUUI(RequestingAgentID), AgentUUI(AgentID), GroupID);
-            else
-                return null;
-        }
-
-        public List<GroupMembershipData> GetAgentGroupMemberships(string RequestingAgentID, string AgentID)
-        {
-            return m_LocalGroupsConnector.GetAgentGroupMemberships(AgentUUI(RequestingAgentID), AgentUUI(AgentID));
         }
 
         public bool AddGroupNotice(string RequestingAgentID, UUID groupID, UUID noticeID, string fromName, string subject, string message,
@@ -584,12 +292,109 @@ namespace OpenSim.Groups
                 return false;
         }
 
+        public bool AddGroupRole(string RequestingAgentID, UUID groupID, UUID roleID, string name, string description, string title, ulong powers, out string reason)
+        {
+            reason = string.Empty;
+            string url = string.Empty, gname = string.Empty;
+
+            if (IsLocal(groupID, out url, out gname))
+                return m_LocalGroupsConnector.AddGroupRole(AgentUUI(RequestingAgentID), groupID, roleID, name, description, title, powers, out reason);
+            else
+            {
+                reason = "Operation not allowed outside this group's origin world.";
+                return false;
+            }
+        }
+
+        public UUID CreateGroup(UUID RequestingAgentID, string name, string charter, bool showInList, UUID insigniaID, int membershipFee, bool openEnrollment,
+            bool allowPublish, bool maturePublish, UUID founderID, out string reason)
+        {
+            reason = string.Empty;
+            if (m_UserManagement.IsLocalGridUser(RequestingAgentID))
+                return m_LocalGroupsConnector.CreateGroup(RequestingAgentID, name, charter, showInList, insigniaID,
+                    membershipFee, openEnrollment, allowPublish, maturePublish, founderID, out reason);
+            else
+            {
+                reason = "Only local grid users are allowed to create a new group";
+                return UUID.Zero;
+            }
+        }
+
+        public List<DirGroupsReplyData> FindGroups(string RequestingAgentID, string search)
+        {
+            return m_LocalGroupsConnector.FindGroups(AgentUUI(RequestingAgentID), search);
+        }
+
+        public ExtendedGroupMembershipData GetAgentActiveMembership(string RequestingAgentID, string AgentID)
+        {
+            return m_LocalGroupsConnector.GetAgentActiveMembership(AgentUUI(RequestingAgentID), AgentUUI(AgentID));
+        }
+
+        public ExtendedGroupMembershipData GetAgentGroupMembership(string RequestingAgentID, string AgentID, UUID GroupID)
+        {
+            string url = string.Empty, gname = string.Empty;
+
+            if (IsLocal(GroupID, out url, out gname))
+                return m_LocalGroupsConnector.GetAgentGroupMembership(AgentUUI(RequestingAgentID), AgentUUI(AgentID), GroupID);
+            else
+                return null;
+        }
+
+        public List<GroupMembershipData> GetAgentGroupMemberships(string RequestingAgentID, string AgentID)
+        {
+            return m_LocalGroupsConnector.GetAgentGroupMemberships(AgentUUI(RequestingAgentID), AgentUUI(AgentID));
+        }
+
+        public List<GroupRolesData> GetAgentGroupRoles(string RequestingAgentID, string AgentID, UUID GroupID)
+        {
+            string url = string.Empty, gname = string.Empty;
+
+            if (IsLocal(GroupID, out url, out gname))
+                return m_LocalGroupsConnector.GetAgentGroupRoles(AgentUUI(RequestingAgentID), AgentUUI(AgentID), GroupID);
+            else
+                return new List<GroupRolesData>();
+        }
+
+        public GroupInviteInfo GetAgentToGroupInvite(string RequestingAgentID, UUID inviteID)
+        {
+            return m_LocalGroupsConnector.GetAgentToGroupInvite(AgentUUI(RequestingAgentID), inviteID); ;
+        }
+
+        public List<GroupMembersData> GetGroupMembers(string RequestingAgentID, UUID GroupID)
+        {
+            string url = string.Empty, gname = string.Empty;
+            if (IsLocal(GroupID, out url, out gname))
+            {
+                string agentID = AgentUUI(RequestingAgentID);
+                return m_LocalGroupsConnector.GetGroupMembers(agentID, GroupID);
+            }
+            else if (!string.IsNullOrEmpty(url))
+            {
+                ExtendedGroupMembershipData membership = m_LocalGroupsConnector.GetAgentGroupMembership(RequestingAgentID, RequestingAgentID, GroupID);
+                string accessToken = string.Empty;
+                if (membership != null)
+                    accessToken = membership.AccessToken;
+                else
+                    return null;
+
+                GroupsServiceHGConnector c = GetConnector(url);
+                if (c != null)
+                {
+                    return m_CacheWrapper.GetGroupMembers(RequestingAgentID, GroupID, delegate
+                    {
+                        return c.GetGroupMembers(AgentUUIForOutside(RequestingAgentID), GroupID, accessToken);
+                    });
+                }
+            }
+            return new List<GroupMembersData>();
+        }
+
         public GroupNoticeInfo GetGroupNotice(string RequestingAgentID, UUID noticeID)
         {
             GroupNoticeInfo notice = m_LocalGroupsConnector.GetGroupNotice(AgentUUI(RequestingAgentID), noticeID);
 
             if (notice != null && notice.noticeData.HasAttachment && notice.noticeData.AttachmentOwnerID != null)
-               ImportForeigner(notice.noticeData.AttachmentOwnerID);
+                ImportForeigner(notice.noticeData.AttachmentOwnerID);
 
             return notice;
         }
@@ -599,7 +404,184 @@ namespace OpenSim.Groups
             return m_LocalGroupsConnector.GetGroupNotices(AgentUUI(RequestingAgentID), GroupID);
         }
 
-        #endregion
+        public ExtendedGroupRecord GetGroupRecord(string RequestingAgentID, UUID GroupID, string GroupName)
+        {
+            string url = string.Empty;
+            string name = string.Empty;
+            if (IsLocal(GroupID, out url, out name))
+                return m_LocalGroupsConnector.GetGroupRecord(AgentUUI(RequestingAgentID), GroupID, GroupName);
+            else if (url != string.Empty)
+            {
+                ExtendedGroupMembershipData membership = m_LocalGroupsConnector.GetAgentGroupMembership(RequestingAgentID, RequestingAgentID, GroupID);
+                string accessToken = string.Empty;
+                if (membership != null)
+                    accessToken = membership.AccessToken;
+                else
+                    return null;
+
+                GroupsServiceHGConnector c = GetConnector(url);
+                if (c != null)
+                {
+                    ExtendedGroupRecord grec = m_CacheWrapper.GetGroupRecord(RequestingAgentID, GroupID, GroupName, delegate
+                    {
+                        return c.GetGroupRecord(AgentUUIForOutside(RequestingAgentID), GroupID, GroupName, accessToken);
+                    });
+
+                    if (grec != null)
+                        ImportForeigner(grec.FounderUUI);
+                    return grec;
+                }
+            }
+
+            return null;
+        }
+
+        public List<GroupRoleMembersData> GetGroupRoleMembers(string RequestingAgentID, UUID groupID)
+        {
+            string url = string.Empty, gname = string.Empty;
+
+            if (IsLocal(groupID, out url, out gname))
+                return m_LocalGroupsConnector.GetGroupRoleMembers(AgentUUI(RequestingAgentID), groupID);
+            else if (!string.IsNullOrEmpty(url))
+            {
+                ExtendedGroupMembershipData membership = m_LocalGroupsConnector.GetAgentGroupMembership(RequestingAgentID, RequestingAgentID, groupID);
+                string accessToken = string.Empty;
+                if (membership != null)
+                    accessToken = membership.AccessToken;
+                else
+                    return null;
+
+                GroupsServiceHGConnector c = GetConnector(url);
+                if (c != null)
+                {
+                    return m_CacheWrapper.GetGroupRoleMembers(RequestingAgentID, groupID, delegate
+                    {
+                        return c.GetGroupRoleMembers(AgentUUIForOutside(RequestingAgentID), groupID, accessToken);
+                    });
+                }
+            }
+
+            return new List<GroupRoleMembersData>();
+        }
+
+        public List<GroupRolesData> GetGroupRoles(string RequestingAgentID, UUID groupID)
+        {
+            string url = string.Empty, gname = string.Empty;
+
+            if (IsLocal(groupID, out url, out gname))
+                return m_LocalGroupsConnector.GetGroupRoles(AgentUUI(RequestingAgentID), groupID);
+            else if (!string.IsNullOrEmpty(url))
+            {
+                ExtendedGroupMembershipData membership = m_LocalGroupsConnector.GetAgentGroupMembership(RequestingAgentID, RequestingAgentID, groupID);
+                string accessToken = string.Empty;
+                if (membership != null)
+                    accessToken = membership.AccessToken;
+                else
+                    return null;
+
+                GroupsServiceHGConnector c = GetConnector(url);
+                if (c != null)
+                {
+                    return m_CacheWrapper.GetGroupRoles(RequestingAgentID, groupID, delegate
+                    {
+                        return c.GetGroupRoles(AgentUUIForOutside(RequestingAgentID), groupID, accessToken);
+                    });
+                }
+            }
+
+            return new List<GroupRolesData>();
+        }
+
+        public void RemoveAgentFromGroup(string RequestingAgentID, string AgentID, UUID GroupID)
+        {
+            string url = string.Empty, name = string.Empty;
+            if (!IsLocal(GroupID, out url, out name) && url != string.Empty)
+            {
+                ExtendedGroupMembershipData membership = m_LocalGroupsConnector.GetAgentGroupMembership(AgentUUI(RequestingAgentID), AgentUUI(AgentID), GroupID);
+                if (membership != null)
+                {
+                    GroupsServiceHGConnector c = GetConnector(url);
+                    if (c != null)
+                        c.RemoveAgentFromGroup(AgentUUIForOutside(AgentID), GroupID, membership.AccessToken);
+                }
+            }
+
+            // remove from local service
+            m_LocalGroupsConnector.RemoveAgentFromGroup(AgentUUI(RequestingAgentID), AgentUUI(AgentID), GroupID);
+        }
+
+        public void RemoveAgentFromGroupRole(string RequestingAgentID, string AgentID, UUID GroupID, UUID RoleID)
+        {
+            string url = string.Empty, gname = string.Empty;
+
+            if (IsLocal(GroupID, out url, out gname))
+                m_LocalGroupsConnector.RemoveAgentFromGroupRole(AgentUUI(RequestingAgentID), AgentUUI(AgentID), GroupID, RoleID);
+        }
+
+        public void RemoveAgentToGroupInvite(string RequestingAgentID, UUID inviteID)
+        {
+            m_LocalGroupsConnector.RemoveAgentToGroupInvite(AgentUUI(RequestingAgentID), inviteID);
+        }
+
+        public void RemoveGroupRole(string RequestingAgentID, UUID groupID, UUID roleID)
+        {
+            string url = string.Empty, gname = string.Empty;
+
+            if (IsLocal(groupID, out url, out gname))
+                m_LocalGroupsConnector.RemoveGroupRole(AgentUUI(RequestingAgentID), groupID, roleID);
+            else
+            {
+                return;
+            }
+        }
+
+        public void SetAgentActiveGroup(string RequestingAgentID, string AgentID, UUID GroupID)
+        {
+            string url = string.Empty, gname = string.Empty;
+
+            if (IsLocal(GroupID, out url, out gname))
+                m_LocalGroupsConnector.SetAgentActiveGroup(AgentUUI(RequestingAgentID), AgentUUI(AgentID), GroupID);
+        }
+
+        public void SetAgentActiveGroupRole(string RequestingAgentID, string AgentID, UUID GroupID, UUID RoleID)
+        {
+            string url = string.Empty, gname = string.Empty;
+
+            if (IsLocal(GroupID, out url, out gname))
+                m_LocalGroupsConnector.SetAgentActiveGroupRole(AgentUUI(RequestingAgentID), AgentUUI(AgentID), GroupID, RoleID);
+        }
+
+        public bool UpdateGroup(string RequestingAgentID, UUID groupID, string charter, bool showInList, UUID insigniaID, int membershipFee,
+            bool openEnrollment, bool allowPublish, bool maturePublish, out string reason)
+        {
+            reason = string.Empty;
+            string url = string.Empty;
+            string name = string.Empty;
+            if (IsLocal(groupID, out url, out name))
+                return m_LocalGroupsConnector.UpdateGroup(AgentUUI(RequestingAgentID), groupID, charter, showInList, insigniaID, membershipFee,
+                    openEnrollment, allowPublish, maturePublish, out reason);
+            else
+            {
+                reason = "Changes to remote group not allowed. Please go to the group's original world.";
+                return false;
+            }
+        }
+        public bool UpdateGroupRole(string RequestingAgentID, UUID groupID, UUID roleID, string name, string description, string title, ulong powers)
+        {
+            string url = string.Empty, gname = string.Empty;
+
+            if (IsLocal(groupID, out url, out gname))
+                return m_LocalGroupsConnector.UpdateGroupRole(AgentUUI(RequestingAgentID), groupID, roleID, name, description, title, powers);
+            else
+            {
+                return false;
+            }
+        }
+        public void UpdateMembership(string RequestingAgentID, string AgentID, UUID GroupID, bool AcceptNotices, bool ListInProfile)
+        {
+            m_LocalGroupsConnector.UpdateMembership(AgentUUI(RequestingAgentID), AgentUUI(AgentID), GroupID, AcceptNotices, ListInProfile);
+        }
+        #endregion IGroupsServicesConnector
 
         #region hypergrid groups
 
@@ -627,11 +609,10 @@ namespace OpenSim.Groups
             }
             if (agent != null)
                 return Util.ProduceUserUniversalIdentifier(agent);
-            
+
             // we don't know anything about this foreign user
             // try asking the user management module, which may know more
             return m_UserManagement.GetUserUUI(AgentID);
-
         }
 
         private string AgentUUIForOutside(string AgentIDStr)
@@ -659,13 +640,35 @@ namespace OpenSim.Groups
             return Util.ProduceUserUniversalIdentifier(agent);
         }
 
+        private GroupsServiceHGConnector GetConnector(string url)
+        {
+            m_RwLock.AcquireReaderLock(-1);
+            try
+            {
+                if (m_NetworkConnectors.ContainsKey(url))
+                {
+                    return m_NetworkConnectors[url];
+                }
+
+                LockCookie lc = m_RwLock.UpgradeToWriterLock(-1);
+                GroupsServiceHGConnector c = new GroupsServiceHGConnector(url);
+                m_NetworkConnectors[url] = c;
+                m_RwLock.DowngradeFromWriterLock(ref lc);
+                return c;
+            }
+            finally
+            {
+                m_RwLock.ReleaseReaderLock();
+            }
+        }
+
         private UUID ImportForeigner(string uID)
         {
             UUID userID = UUID.Zero;
             string url = string.Empty, first = string.Empty, last = string.Empty, tmp = string.Empty;
             if (Util.ParseUniversalUserIdentifier(uID, out userID, out url, out first, out last, out tmp))
                 m_UserManagement.AddUser(userID, first, last, url);
-            
+
             return userID;
         }
 
@@ -689,28 +692,6 @@ namespace OpenSim.Groups
             //m_log.DebugFormat("[XXX]: IsLocal? {0}", isLocal);
             return isLocal;
         }
-
-        private GroupsServiceHGConnector GetConnector(string url)
-        {
-            m_RwLock.AcquireReaderLock(-1);
-            try
-            {
-                if (m_NetworkConnectors.ContainsKey(url))
-                {
-                    return m_NetworkConnectors[url];
-                }
-
-                LockCookie lc = m_RwLock.UpgradeToWriterLock(-1);
-                GroupsServiceHGConnector c = new GroupsServiceHGConnector(url);
-                m_NetworkConnectors[url] = c;
-                m_RwLock.DowngradeFromWriterLock(ref lc);
-                return c;
-            }
-            finally
-            {
-                m_RwLock.ReleaseReaderLock();
-            }
-        }
-        #endregion
+        #endregion hypergrid groups
     }
 }

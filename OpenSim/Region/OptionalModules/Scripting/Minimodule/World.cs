@@ -25,23 +25,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Region.OptionalModules.Scripting.Minimodule.WorldX;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
-    public class World : System.MarshalByRefObject, IWorld, IWorldAudio 
+    public class World : System.MarshalByRefObject, IWorld, IWorldAudio
     {
-        private readonly Scene m_internalScene;
-        private readonly ISecurityCredential m_security;
         private readonly Heightmap m_heights;
-
+        private readonly Scene m_internalScene;
         private readonly ObjectAccessor m_objs;
-
+        private readonly ISecurityCredential m_security;
         public World(Scene internalScene, ISecurityCredential securityCredential)
         {
             m_security = securityCredential;
@@ -54,7 +52,6 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 
         #region OnNewUser
 
-        private event OnNewUserDelegate _OnNewUser;
         private bool _OnNewUserActive;
 
         public event OnNewUserDelegate OnNewUser
@@ -81,7 +78,8 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             }
         }
 
-        void EventManager_OnNewPresence(ScenePresence presence)
+        private event OnNewUserDelegate _OnNewUser;
+        private void EventManager_OnNewPresence(ScenePresence presence)
         {
             if (_OnNewUser != null)
             {
@@ -91,16 +89,11 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             }
         }
 
-        #endregion
+        #endregion OnNewUser
 
         #region OnChat
-        private event OnChatDelegate _OnChat;
-        private bool _OnChatActive;
 
-        public IWorldAudio Audio
-        {
-            get { return this; }
-        }
+        private bool _OnChatActive;
 
         public event OnChatDelegate OnChat
         {
@@ -128,7 +121,21 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             }
         }
 
-        void EventManager_OnChatFromWorld(object sender, OSChatMessage chat)
+        private event OnChatDelegate _OnChat;
+        public IWorldAudio Audio
+        {
+            get { return this; }
+        }
+        private void EventManager_OnChatFromClient(object sender, OSChatMessage chat)
+        {
+            if (_OnChat != null)
+            {
+                HandleChatPacket(chat);
+                return;
+            }
+        }
+
+        private void EventManager_OnChatFromWorld(object sender, OSChatMessage chat)
         {
             if (_OnChat != null)
             {
@@ -146,10 +153,10 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             if (chat.Sender == null && chat.SenderObject != null)
             {
                 ChatEventArgs e = new ChatEventArgs();
-                e.Sender = new SOPObject(m_internalScene, ((SceneObjectPart) chat.SenderObject).LocalId, m_security);
+                e.Sender = new SOPObject(m_internalScene, ((SceneObjectPart)chat.SenderObject).LocalId, m_security);
                 e.Text = chat.Message;
                 e.Channel = chat.Channel;
-                
+
                 _OnChat(this, e);
                 return;
             }
@@ -160,24 +167,32 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
                 e.Sender = new SPAvatar(m_internalScene, chat.SenderUUID, m_security);
                 e.Text = chat.Message;
                 e.Channel = chat.Channel;
-                
+
                 _OnChat(this, e);
                 return;
             }
             // Skip if other
         }
+        #endregion OnChat
 
-        void EventManager_OnChatFromClient(object sender, OSChatMessage chat)
+        #endregion Events
+
+        public IAvatar[] Avatars
         {
-            if (_OnChat != null)
+            get
             {
-                HandleChatPacket(chat);
-                return;
+                EntityBase[] ents = m_internalScene.Entities.GetAllByType<ScenePresence>();
+                IAvatar[] rets = new IAvatar[ents.Length];
+
+                for (int i = 0; i < ents.Length; i++)
+                {
+                    EntityBase ent = ents[i];
+                    rets[i] = new SPAvatar(m_internalScene, ent.UUID, m_security);
+                }
+
+                return rets;
             }
         }
-        #endregion
-
-        #endregion
 
         public IObjectAccessor Objects
         {
@@ -199,25 +214,6 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
                 return m_parcels.ToArray();
             }
         }
-
-
-        public IAvatar[] Avatars
-        {
-            get
-            {
-                EntityBase[] ents = m_internalScene.Entities.GetAllByType<ScenePresence>();
-                IAvatar[] rets = new IAvatar[ents.Length];
-
-                for (int i = 0; i < ents.Length; i++)
-                {
-                    EntityBase ent = ents[i];
-                    rets[i] = new SPAvatar(m_internalScene, ent.UUID, m_security);
-                }
-
-                return rets;
-            }
-        }
-
         public IHeightmap Terrain
         {
             get { return m_heights; }
@@ -245,6 +241,6 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             }
         }
 
-        #endregion
+        #endregion Implementation of IWorldAudio
     }
 }

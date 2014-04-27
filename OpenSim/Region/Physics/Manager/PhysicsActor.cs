@@ -25,19 +25,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using log4net;
+using OpenMetaverse;
+using OpenSim.Framework;
 using System;
 using System.Collections.Generic;
-using System.Reflection;
-using OpenSim.Framework;
-using OpenMetaverse;
 
 namespace OpenSim.Region.Physics.Manager
 {
-    public delegate void PositionUpdate(Vector3 position);
-    public delegate void VelocityUpdate(Vector3 velocity);
     public delegate void OrientationUpdate(Quaternion orientation);
 
+    public delegate void PositionUpdate(Vector3 position);
+
+    public delegate void VelocityUpdate(Vector3 velocity);
     public enum ActorTypes : int
     {
         Unknown = 0,
@@ -56,10 +55,9 @@ namespace OpenSim.Region.Physics.Manager
 
     public struct ContactPoint
     {
+        public float PenetrationDepth;
         public Vector3 Position;
         public Vector3 SurfaceNormal;
-        public float PenetrationDepth;
-
         public ContactPoint(Vector3 position, Vector3 surfaceNormal, float penetrationDepth)
         {
             Position = position;
@@ -73,13 +71,6 @@ namespace OpenSim.Region.Physics.Manager
     /// </summary>
     public class CollisionEventUpdate : EventArgs
     {
-        /// <summary>
-        /// Number of collision events in this update.
-        /// </summary>
-        public int Count { get { return m_objCollisionList.Count; } }
-
-        public bool CollisionsOnPreviousFrame { get; private set; }
-
         public Dictionary<uint, ContactPoint> m_objCollisionList;
 
         public CollisionEventUpdate(Dictionary<uint, ContactPoint> objCollisionList)
@@ -92,6 +83,12 @@ namespace OpenSim.Region.Physics.Manager
             m_objCollisionList = new Dictionary<uint, ContactPoint>();
         }
 
+        public bool CollisionsOnPreviousFrame { get; private set; }
+
+        /// <summary>
+        /// Number of collision events in this update.
+        /// </summary>
+        public int Count { get { return m_objCollisionList.Count; } }
         public void AddCollider(uint localID, ContactPoint contact)
         {
             if (!m_objCollisionList.ContainsKey(localID))
@@ -114,247 +111,21 @@ namespace OpenSim.Region.Physics.Manager
         }
     }
 
-    public abstract class PhysicsActor
-    {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        public delegate void RequestTerseUpdate();
-        public delegate void CollisionUpdate(EventArgs e);
-        public delegate void OutOfBounds(Vector3 pos);
-
-// disable warning: public events
-#pragma warning disable 67
-        public event PositionUpdate OnPositionUpdate;
-        public event VelocityUpdate OnVelocityUpdate;
-        public event OrientationUpdate OnOrientationUpdate;
-        public event RequestTerseUpdate OnRequestTerseUpdate;
-
-        /// <summary>
-        /// Subscribers to this event must synchronously handle the dictionary of collisions received, since the event
-        /// object is reused in subsequent physics frames.
-        /// </summary>
-        public event CollisionUpdate OnCollisionUpdate;
-
-        public event OutOfBounds OnOutOfBounds;
-#pragma warning restore 67
-
-        public static PhysicsActor Null
-        {
-            get { return new NullPhysicsActor(); }
-        }
-
-        public abstract bool Stopped { get; }
-
-        public abstract Vector3 Size { get; set; }
-
-        public virtual byte PhysicsShapeType { get; set; }
-
-        public abstract PrimitiveBaseShape Shape { set; }
-
-        uint m_baseLocalID;
-        public virtual uint LocalID
-        {
-            set { m_baseLocalID = value; }
-            get { return m_baseLocalID; }
-        }
-
-        public abstract bool Grabbed { set; }
-
-        public abstract bool Selected { set; }
-
-        /// <summary>
-        /// Name of this actor.
-        /// </summary>
-        /// <remarks>
-        /// XXX: Bizarrely, this cannot be "Terrain" or "Water" right now unless it really is simulating terrain or
-        /// water.  This is not a problem due to the formatting of names given by prims and avatars.
-        /// </remarks>
-        public string Name { get; protected set; }
-
-        /// <summary>
-        /// This is being used by ODE joint code.
-        /// </summary>
-        public string SOPName;
-
-        public abstract void CrossingFailure();
-
-        public abstract void link(PhysicsActor obj);
-
-        public abstract void delink();
-
-        public abstract void LockAngularMotion(Vector3 axis);
-
-        public virtual void RequestPhysicsterseUpdate()
-        {
-            // Make a temporary copy of the event to avoid possibility of
-            // a race condition if the last subscriber unsubscribes
-            // immediately after the null check and before the event is raised.
-            RequestTerseUpdate handler = OnRequestTerseUpdate;
-
-            if (handler != null)
-            {
-                handler();
-            }
-        }
-
-        public virtual void RaiseOutOfBounds(Vector3 pos)
-        {
-            // Make a temporary copy of the event to avoid possibility of
-            // a race condition if the last subscriber unsubscribes
-            // immediately after the null check and before the event is raised.
-            OutOfBounds handler = OnOutOfBounds;
-
-            if (handler != null)
-            {
-                handler(pos);
-            }
-        }
-
-        public virtual void SendCollisionUpdate(EventArgs e)
-        {
-            CollisionUpdate handler = OnCollisionUpdate;
-
-//            m_log.DebugFormat("[PHYSICS ACTOR]: Sending collision for {0}", LocalID);
-
-            if (handler != null)
-                handler(e);
-        }
-
-        public virtual void SetMaterial (int material) { }
-        public virtual float Density { get; set; }
-        public virtual float GravModifier { get; set; }
-        public virtual float Friction { get; set; }
-        public virtual float Restitution { get; set; }
-
-        /// <summary>
-        /// Position of this actor.
-        /// </summary>
-        /// <remarks>
-        /// Setting this directly moves the actor to a given position.
-        /// Getting this retrieves the position calculated by physics scene updates, using factors such as velocity and
-        /// collisions.
-        /// </remarks>
-        public abstract Vector3 Position { get; set; }
-
-        public abstract float Mass { get; }
-        public abstract Vector3 Force { get; set; }
-
-        public abstract int VehicleType { get; set; }
-        public abstract void VehicleFloatParam(int param, float value);
-        public abstract void VehicleVectorParam(int param, Vector3 value);
-        public abstract void VehicleRotationParam(int param, Quaternion rotation);
-        public abstract void VehicleFlags(int param, bool remove);
-
-        /// <summary>
-        /// Allows the detection of collisions with inherently non-physical prims. see llVolumeDetect for more
-        /// </summary>
-        public abstract void SetVolumeDetect(int param);
-
-        public abstract Vector3 GeometricCenter { get; }
-        public abstract Vector3 CenterOfMass { get; }
-
-        /// <summary>
-        /// The desired velocity of this actor.
-        /// </summary>
-        /// <remarks>
-        /// Setting this provides a target velocity for physics scene updates.
-        /// Getting this returns the last set target. Fetch Velocity to get the current velocity.
-        /// </remarks>
-        protected Vector3 m_targetVelocity;
-        public virtual Vector3 TargetVelocity
-        {
-            get { return m_targetVelocity; }
-            set {
-                m_targetVelocity = value;
-                Velocity = m_targetVelocity;
-            }
-        }
-
-        public abstract Vector3 Velocity { get; set; }
-
-        public abstract Vector3 Torque { get; set; }
-        public abstract float CollisionScore { get; set;}
-        public abstract Vector3 Acceleration { get; set; }
-        public abstract Quaternion Orientation { get; set; }
-        public abstract int PhysicsActorType { get; set; }
-        public abstract bool IsPhysical { get; set; }
-        public abstract bool Flying { get; set; }
-        public abstract bool SetAlwaysRun { get; set; }
-        public abstract bool ThrottleUpdates { get; set; }
-        public abstract bool IsColliding { get; set; }
-        public abstract bool CollidingGround { get; set; }
-        public abstract bool CollidingObj { get; set; }
-        public abstract bool FloatOnWater { set; }
-        public abstract Vector3 RotationalVelocity { get; set; }
-        public abstract bool Kinematic { get; set; }
-        public abstract float Buoyancy { get; set; }
-
-        // Used for MoveTo
-        public abstract Vector3 PIDTarget { set; }
-        public abstract bool  PIDActive { set;}
-        public abstract float PIDTau { set; }
-
-        // Used for llSetHoverHeight and maybe vehicle height
-        // Hover Height will override MoveTo target's Z
-        public abstract bool PIDHoverActive { set;}
-        public abstract float PIDHoverHeight { set;}
-        public abstract PIDHoverType PIDHoverType { set;}
-        public abstract float PIDHoverTau { set;}
-
-        // For RotLookAt
-        public abstract Quaternion APIDTarget { set;}
-        public abstract bool APIDActive { set;}
-        public abstract float APIDStrength { set;}
-        public abstract float APIDDamping { set;}
-        
-        public abstract void AddForce(Vector3 force, bool pushforce);
-        public abstract void AddAngularForce(Vector3 force, bool pushforce);
-        public abstract void SetMomentum(Vector3 momentum);
-        public abstract void SubscribeEvents(int ms);
-        public abstract void UnSubscribeEvents();
-        public abstract bool SubscribedEvents();
-
-        // Extendable interface for new, physics engine specific operations
-        public virtual object Extension(string pFunct, params object[] pParams)
-        {
-            // A NOP of the physics engine does not implement this feature
-            return null;
-        }
-    }
-
     public class NullPhysicsActor : PhysicsActor
     {
-        public override bool Stopped
-        {
-            get{ return false; }
-        }
-
-        public override Vector3 Position
+        public override Vector3 Acceleration
         {
             get { return Vector3.Zero; }
-            set { return; }
+            set { }
         }
 
-        public override bool SetAlwaysRun
-        {
-            get { return false; }
-            set { return; }
-        }
+        public override bool APIDActive { set { return; } }
 
-        public override uint LocalID
-        {
-            set { return; }
-        }
+        public override float APIDDamping { set { return; } }
 
-        public override bool Grabbed
-        {
-            set { return; }
-        }
+        public override float APIDStrength { set { return; } }
 
-        public override bool Selected
-        {
-            set { return; }
-        }
+        public override Quaternion APIDTarget { set { return; } }
 
         public override float Buoyancy
         {
@@ -362,9 +133,9 @@ namespace OpenSim.Region.Physics.Manager
             set { return; }
         }
 
-        public override bool  FloatOnWater
+        public override Vector3 CenterOfMass
         {
-            set { return; }
+            get { return Vector3.Zero; }
         }
 
         public override bool CollidingGround
@@ -379,9 +150,59 @@ namespace OpenSim.Region.Physics.Manager
             set { return; }
         }
 
-        public override Vector3 Size
+        public override float CollisionScore
+        {
+            get { return 0f; }
+            set { }
+        }
+
+        public override bool FloatOnWater
+        {
+            set { return; }
+        }
+
+        public override bool Flying
+        {
+            get { return false; }
+            set { return; }
+        }
+
+        public override Vector3 Force
         {
             get { return Vector3.Zero; }
+            set { return; }
+        }
+
+        public override Vector3 GeometricCenter
+        {
+            get { return Vector3.Zero; }
+        }
+
+        public override bool Grabbed
+        {
+            set { return; }
+        }
+
+        public override bool IsColliding
+        {
+            get { return false; }
+            set { return; }
+        }
+
+        public override bool IsPhysical
+        {
+            get { return false; }
+            set { return; }
+        }
+
+        public override bool Kinematic
+        {
+            get { return true; }
+            set { return; }
+        }
+
+        public override uint LocalID
+        {
             set { return; }
         }
 
@@ -390,7 +211,77 @@ namespace OpenSim.Region.Physics.Manager
             get { return 0f; }
         }
 
-        public override Vector3 Force
+        public override Quaternion Orientation
+        {
+            get { return Quaternion.Identity; }
+            set { }
+        }
+
+        public override int PhysicsActorType
+        {
+            get { return (int)ActorTypes.Unknown; }
+            set { return; }
+        }
+
+        public override bool PIDActive { set { return; } }
+
+        public override bool PIDHoverActive { set { return; } }
+
+        public override float PIDHoverHeight { set { return; } }
+
+        public override float PIDHoverTau { set { return; } }
+
+        public override PIDHoverType PIDHoverType { set { return; } }
+
+        public override Vector3 PIDTarget { set { return; } }
+
+        public override float PIDTau { set { return; } }
+
+        public override Vector3 Position
+        {
+            get { return Vector3.Zero; }
+            set { return; }
+        }
+
+        public override Vector3 RotationalVelocity
+        {
+            get { return Vector3.Zero; }
+            set { return; }
+        }
+
+        public override bool Selected
+        {
+            set { return; }
+        }
+
+        public override bool SetAlwaysRun
+        {
+            get { return false; }
+            set { return; }
+        }
+
+        public override PrimitiveBaseShape Shape
+        {
+            set { return; }
+        }
+
+        public override Vector3 Size
+        {
+            get { return Vector3.Zero; }
+            set { return; }
+        }
+
+        public override bool Stopped
+        {
+            get { return false; }
+        }
+        public override bool ThrottleUpdates
+        {
+            get { return false; }
+            set { return; }
+        }
+
+        public override Vector3 Torque
         {
             get { return Vector3.Zero; }
             set { return; }
@@ -402,130 +293,13 @@ namespace OpenSim.Region.Physics.Manager
             set { return; }
         }
 
-        public override void VehicleFloatParam(int param, float value)
-        {
-
-        }
-
-        public override void VehicleVectorParam(int param, Vector3 value)
-        {
-
-        }
-
-        public override void VehicleRotationParam(int param, Quaternion rotation)
-        {
-
-        }
-
-        public override void VehicleFlags(int param, bool remove)
-        {
-            
-        }
-
-        public override void SetVolumeDetect(int param)
-        {
-
-        }
-
-        public override void SetMaterial(int material)
-        {
-            
-        }
-
-        public override Vector3 CenterOfMass
-        {
-            get { return Vector3.Zero; }
-        }
-
-        public override Vector3 GeometricCenter
-        {
-            get { return Vector3.Zero; }
-        }
-
-        public override PrimitiveBaseShape Shape
-        {
-            set { return; }
-        }
-
         public override Vector3 Velocity
         {
             get { return Vector3.Zero; }
             set { return; }
         }
 
-        public override Vector3 Torque
-        {
-            get { return Vector3.Zero; }
-            set { return; }
-        }
-
-        public override float CollisionScore
-        {
-            get { return 0f; }
-            set { }
-        }
-
-        public override void CrossingFailure()
-        {
-        }
-
-        public override Quaternion Orientation
-        {
-            get { return Quaternion.Identity; }
-            set { }
-        }
-
-        public override Vector3 Acceleration
-        {
-            get { return Vector3.Zero; }
-            set { }
-        }
-
-        public override bool IsPhysical
-        {
-            get { return false; }
-            set { return; }
-        }
-
-        public override bool Flying
-        {
-            get { return false; }
-            set { return; }
-        }
-
-        public override bool ThrottleUpdates
-        {
-            get { return false; }
-            set { return; }
-        }
-
-        public override bool IsColliding
-        {
-            get { return false; }
-            set { return; }
-        }
-
-        public override int PhysicsActorType
-        {
-            get { return (int) ActorTypes.Unknown; }
-            set { return; }
-        }
-
-        public override bool Kinematic
-        {
-            get { return true; }
-            set { return; }
-        }
-
-        public override void link(PhysicsActor obj)
-        {
-        }
-
-        public override void delink()
-        {
-        }
-
-        public override void LockAngularMotion(Vector3 axis)
+        public override void AddAngularForce(Vector3 force, bool pushforce)
         {
         }
 
@@ -533,46 +307,313 @@ namespace OpenSim.Region.Physics.Manager
         {
         }
 
-        public override void AddAngularForce(Vector3 force, bool pushforce)
+        public override void CrossingFailure()
         {
-            
         }
 
-        public override Vector3 RotationalVelocity
+        public override void delink()
         {
-            get { return Vector3.Zero; }
-            set { return; }
         }
 
-        public override Vector3 PIDTarget { set { return; } }
-        public override bool PIDActive { set { return; } }
-        public override float PIDTau { set { return; } }
+        public override void link(PhysicsActor obj)
+        {
+        }
 
-        public override float PIDHoverHeight { set { return; } }
-        public override bool PIDHoverActive { set { return; } }
-        public override PIDHoverType PIDHoverType { set { return; } }
-        public override float PIDHoverTau { set { return; } }
-        
-        public override Quaternion APIDTarget { set { return; } }
-        public override bool APIDActive { set { return; } }
-        public override float APIDStrength { set { return; } }
-        public override float APIDDamping { set { return; } }
-        
+        public override void LockAngularMotion(Vector3 axis)
+        {
+        }
+
+        public override void SetMaterial(int material)
+        {
+        }
+
         public override void SetMomentum(Vector3 momentum)
         {
         }
 
-        public override void SubscribeEvents(int ms)
+        public override void SetVolumeDetect(int param)
         {
-
         }
-        public override void UnSubscribeEvents()
-        {
 
-        }
         public override bool SubscribedEvents()
         {
             return false;
         }
+
+        public override void SubscribeEvents(int ms)
+        {
+        }
+
+        public override void UnSubscribeEvents()
+        {
+        }
+
+        public override void VehicleFlags(int param, bool remove)
+        {
+        }
+
+        public override void VehicleFloatParam(int param, float value)
+        {
+        }
+
+        public override void VehicleRotationParam(int param, Quaternion rotation)
+        {
+        }
+
+        public override void VehicleVectorParam(int param, Vector3 value)
+        {
+        }
+    }
+
+    public abstract class PhysicsActor
+    {
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        /// <summary>
+        /// This is being used by ODE joint code.
+        /// </summary>
+        public string SOPName;
+
+        /// <summary>
+        /// The desired velocity of this actor.
+        /// </summary>
+        /// <remarks>
+        /// Setting this provides a target velocity for physics scene updates.
+        /// Getting this returns the last set target. Fetch Velocity to get the current velocity.
+        /// </remarks>
+        protected Vector3 m_targetVelocity;
+
+        private uint m_baseLocalID;
+
+        public delegate void CollisionUpdate(EventArgs e);
+
+        public delegate void OutOfBounds(Vector3 pos);
+
+        public delegate void RequestTerseUpdate();
+        // disable warning: public events
+#pragma warning disable 67
+
+        /// <summary>
+        /// Subscribers to this event must synchronously handle the dictionary of collisions received, since the event
+        /// object is reused in subsequent physics frames.
+        /// </summary>
+        public event CollisionUpdate OnCollisionUpdate;
+
+        public event OrientationUpdate OnOrientationUpdate;
+
+        public event OutOfBounds OnOutOfBounds;
+
+        public event PositionUpdate OnPositionUpdate;
+
+        public event RequestTerseUpdate OnRequestTerseUpdate;
+
+        public event VelocityUpdate OnVelocityUpdate;
+#pragma warning restore 67
+
+        public static PhysicsActor Null
+        {
+            get { return new NullPhysicsActor(); }
+        }
+
+        public abstract Vector3 Acceleration { get; set; }
+
+        public abstract bool APIDActive { set; }
+
+        public abstract float APIDDamping { set; }
+
+        public abstract float APIDStrength { set; }
+
+        // For RotLookAt
+        public abstract Quaternion APIDTarget { set; }
+
+        public abstract float Buoyancy { get; set; }
+
+        public abstract Vector3 CenterOfMass { get; }
+
+        public abstract bool CollidingGround { get; set; }
+
+        public abstract bool CollidingObj { get; set; }
+
+        public abstract float CollisionScore { get; set; }
+
+        public virtual float Density { get; set; }
+
+        public abstract bool FloatOnWater { set; }
+
+        public abstract bool Flying { get; set; }
+
+        public abstract Vector3 Force { get; set; }
+
+        public virtual float Friction { get; set; }
+
+        public abstract Vector3 GeometricCenter { get; }
+
+        public abstract bool Grabbed { set; }
+
+        public virtual float GravModifier { get; set; }
+
+        public abstract bool IsColliding { get; set; }
+
+        public abstract bool IsPhysical { get; set; }
+
+        public abstract bool Kinematic { get; set; }
+
+        public virtual uint LocalID
+        {
+            set { m_baseLocalID = value; }
+            get { return m_baseLocalID; }
+        }
+
+        public abstract float Mass { get; }
+
+        /// <summary>
+        /// Name of this actor.
+        /// </summary>
+        /// <remarks>
+        /// XXX: Bizarrely, this cannot be "Terrain" or "Water" right now unless it really is simulating terrain or
+        /// water.  This is not a problem due to the formatting of names given by prims and avatars.
+        /// </remarks>
+        public string Name { get; protected set; }
+
+        public abstract Quaternion Orientation { get; set; }
+
+        public abstract int PhysicsActorType { get; set; }
+
+        public virtual byte PhysicsShapeType { get; set; }
+
+        public abstract bool PIDActive { set; }
+
+        // Used for llSetHoverHeight and maybe vehicle height
+        // Hover Height will override MoveTo target's Z
+        public abstract bool PIDHoverActive { set; }
+
+        public abstract float PIDHoverHeight { set; }
+
+        public abstract float PIDHoverTau { set; }
+
+        public abstract PIDHoverType PIDHoverType { set; }
+
+        // Used for MoveTo
+        public abstract Vector3 PIDTarget { set; }
+
+        public abstract float PIDTau { set; }
+
+        /// <summary>
+        /// Position of this actor.
+        /// </summary>
+        /// <remarks>
+        /// Setting this directly moves the actor to a given position.
+        /// Getting this retrieves the position calculated by physics scene updates, using factors such as velocity and
+        /// collisions.
+        /// </remarks>
+        public abstract Vector3 Position { get; set; }
+
+        public virtual float Restitution { get; set; }
+
+        public abstract Vector3 RotationalVelocity { get; set; }
+
+        public abstract bool Selected { set; }
+
+        public abstract bool SetAlwaysRun { get; set; }
+
+        public abstract PrimitiveBaseShape Shape { set; }
+
+        public abstract Vector3 Size { get; set; }
+
+        public abstract bool Stopped { get; }
+        public virtual Vector3 TargetVelocity
+        {
+            get { return m_targetVelocity; }
+            set
+            {
+                m_targetVelocity = value;
+                Velocity = m_targetVelocity;
+            }
+        }
+
+        public abstract bool ThrottleUpdates { get; set; }
+
+        public abstract Vector3 Torque { get; set; }
+
+        public abstract int VehicleType { get; set; }
+
+        public abstract Vector3 Velocity { get; set; }
+
+        public abstract void AddAngularForce(Vector3 force, bool pushforce);
+
+        public abstract void AddForce(Vector3 force, bool pushforce);
+
+        public abstract void CrossingFailure();
+
+        public abstract void delink();
+
+        // Extendable interface for new, physics engine specific operations
+        public virtual object Extension(string pFunct, params object[] pParams)
+        {
+            // A NOP of the physics engine does not implement this feature
+            return null;
+        }
+
+        public abstract void link(PhysicsActor obj);
+        public abstract void LockAngularMotion(Vector3 axis);
+
+        public virtual void RaiseOutOfBounds(Vector3 pos)
+        {
+            // Make a temporary copy of the event to avoid possibility of
+            // a race condition if the last subscriber unsubscribes
+            // immediately after the null check and before the event is raised.
+            OutOfBounds handler = OnOutOfBounds;
+
+            if (handler != null)
+            {
+                handler(pos);
+            }
+        }
+
+        public virtual void RequestPhysicsterseUpdate()
+        {
+            // Make a temporary copy of the event to avoid possibility of
+            // a race condition if the last subscriber unsubscribes
+            // immediately after the null check and before the event is raised.
+            RequestTerseUpdate handler = OnRequestTerseUpdate;
+
+            if (handler != null)
+            {
+                handler();
+            }
+        }
+        public virtual void SendCollisionUpdate(EventArgs e)
+        {
+            CollisionUpdate handler = OnCollisionUpdate;
+
+            //            m_log.DebugFormat("[PHYSICS ACTOR]: Sending collision for {0}", LocalID);
+
+            if (handler != null)
+                handler(e);
+        }
+
+        public virtual void SetMaterial(int material)
+        {
+        }
+        public abstract void SetMomentum(Vector3 momentum);
+
+        /// <summary>
+        /// Allows the detection of collisions with inherently non-physical prims. see llVolumeDetect for more
+        /// </summary>
+        public abstract void SetVolumeDetect(int param);
+
+        public abstract bool SubscribedEvents();
+
+        public abstract void SubscribeEvents(int ms);
+
+        public abstract void UnSubscribeEvents();
+
+        public abstract void VehicleFlags(int param, bool remove);
+
+        public abstract void VehicleFloatParam(int param, float value);
+
+        public abstract void VehicleRotationParam(int param, Quaternion rotation);
+
+        public abstract void VehicleVectorParam(int param, Vector3 value);
     }
 }

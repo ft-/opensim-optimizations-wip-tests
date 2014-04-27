@@ -25,17 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Timers;
 using log4net;
 using Nini.Config;
-
 using OpenMetaverse;
 using OpenSim.Data;
 using OpenSim.Framework;
 using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.Groups
 {
@@ -43,10 +41,9 @@ namespace OpenSim.Groups
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
+        private string m_HomeURI;
         private IOfflineIMService m_OfflineIM;
         private IUserAccountService m_UserAccounts;
-        private string m_HomeURI;
-
         public HGGroupsService(IConfigSource config, IOfflineIMService im, IUserAccountService users, string homeURI)
             : base(config, string.Empty)
         {
@@ -57,162 +54,7 @@ namespace OpenSim.Groups
                 m_HomeURI += "/";
         }
 
-
         #region HG specific operations
-
-        public bool CreateGroupProxy(string RequestingAgentID, string agentID,  string accessToken, UUID groupID, string serviceLocation, string name, out string reason)
-        {
-            reason = string.Empty;
-            Uri uri = null;
-            try
-            {
-                uri = new Uri(serviceLocation);
-            }
-            catch (UriFormatException)
-            {
-                reason = "Bad location for group proxy";
-                return false;
-            }
-
-            // Check if it already exists
-            GroupData grec = m_Database.RetrieveGroup(groupID);
-            if (grec == null || 
-                (grec != null && grec.Data["Location"] != string.Empty && grec.Data["Location"].ToLower() != serviceLocation.ToLower()))
-            {
-                // Create the group
-                grec = new GroupData();
-                grec.GroupID = groupID;
-                grec.Data = new Dictionary<string, string>();
-                grec.Data["Name"] = name + " @ " + uri.Authority;
-                grec.Data["Location"] = serviceLocation;
-                grec.Data["Charter"] = string.Empty;
-                grec.Data["InsigniaID"] = UUID.Zero.ToString();
-                grec.Data["FounderID"] = UUID.Zero.ToString();
-                grec.Data["MembershipFee"] = "0";
-                grec.Data["OpenEnrollment"] = "0";
-                grec.Data["ShowInList"] = "0";
-                grec.Data["AllowPublish"] = "0";
-                grec.Data["MaturePublish"] = "0";
-                grec.Data["OwnerRoleID"] = UUID.Zero.ToString();
-
-
-                if (!m_Database.StoreGroup(grec))
-                    return false;
-            }
-
-            if (grec.Data["Location"] == string.Empty)
-            {
-                reason = "Cannot add proxy membership to non-proxy group";
-                return false;
-            }
-
-            UUID uid = UUID.Zero;
-            string url = string.Empty, first = string.Empty, last = string.Empty, tmp = string.Empty;
-            Util.ParseUniversalUserIdentifier(RequestingAgentID, out uid, out url, out first, out last, out tmp);
-            string fromName = first + "." + last + "@" + url;
-
-            // Invite to group again
-            InviteToGroup(fromName, groupID, new UUID(agentID), grec.Data["Name"]);
-
-            // Stick the proxy membership in the DB already
-            // we'll delete it if the agent declines the invitation
-            MembershipData membership = new MembershipData();
-            membership.PrincipalID = agentID;
-            membership.GroupID = groupID;
-            membership.Data = new Dictionary<string, string>();
-            membership.Data["SelectedRoleID"] = UUID.Zero.ToString();
-            membership.Data["Contribution"] = "0";
-            membership.Data["ListInProfile"] = "1";
-            membership.Data["AcceptNotices"] = "1";
-            membership.Data["AccessToken"] = accessToken;
-
-            m_Database.StoreMember(membership);
-
-            return true;
-        }
-
-        public void RemoveAgentFromGroup(string RequestingAgentID, string AgentID, UUID GroupID, string token)
-        {
-            // check the token
-            MembershipData membership = m_Database.RetrieveMember(GroupID, AgentID);
-            if (membership != null)
-            {
-                if (token != string.Empty && token.Equals(membership.Data["AccessToken"]))
-                    RemoveAgentFromGroup(RequestingAgentID, AgentID, GroupID);
-                else
-                    m_log.DebugFormat("[Groups.HGGroupsService]: access token {0} did not match stored one {1}", token, membership.Data["AccessToken"]);
-            }
-            else
-                m_log.DebugFormat("[Groups.HGGroupsService]: membership not found for {0}", AgentID);
-        }
-
-        public ExtendedGroupRecord GetGroupRecord(string RequestingAgentID, UUID GroupID, string groupName, string token)
-        {
-            // check the token
-            if (!VerifyToken(GroupID, RequestingAgentID, token))
-                return null;
-
-            ExtendedGroupRecord grec;
-            if (GroupID == UUID.Zero)
-                grec = GetGroupRecord(RequestingAgentID, groupName);
-            else
-                grec = GetGroupRecord(RequestingAgentID, GroupID);
-
-            if (grec != null)
-                FillFounderUUI(grec);
-
-            return grec;
-        }
-
-        public List<ExtendedGroupMembersData> GetGroupMembers(string RequestingAgentID, UUID GroupID, string token)
-        {
-            if (!VerifyToken(GroupID, RequestingAgentID, token))
-                return new List<ExtendedGroupMembersData>();
-
-            List<ExtendedGroupMembersData> members = GetGroupMembers(RequestingAgentID, GroupID);
-
-            // convert UUIDs to UUIs
-            members.ForEach(delegate (ExtendedGroupMembersData m)
-            {
-                if (m.AgentID.ToString().Length == 36) // UUID
-                {
-                    UserAccount account = m_UserAccounts.GetUserAccount(UUID.Zero, new UUID(m.AgentID));
-                    if (account != null)
-                        m.AgentID = Util.UniversalIdentifier(account.PrincipalID, account.FirstName, account.LastName, m_HomeURI);
-                }
-            });
-
-            return members;
-        }
-
-        public List<GroupRolesData> GetGroupRoles(string RequestingAgentID, UUID GroupID, string token)
-        {
-            if (!VerifyToken(GroupID, RequestingAgentID, token))
-                return new List<GroupRolesData>();
-
-            return GetGroupRoles(RequestingAgentID, GroupID);
-        }
-
-        public List<ExtendedGroupRoleMembersData> GetGroupRoleMembers(string RequestingAgentID, UUID GroupID, string token)
-        {
-            if (!VerifyToken(GroupID, RequestingAgentID, token))
-                return new List<ExtendedGroupRoleMembersData>();
-
-            List<ExtendedGroupRoleMembersData> rolemembers = GetGroupRoleMembers(RequestingAgentID, GroupID);
-
-            // convert UUIDs to UUIs
-            rolemembers.ForEach(delegate(ExtendedGroupRoleMembersData m)
-            {
-                if (m.MemberID.ToString().Length == 36) // UUID
-                {
-                    UserAccount account = m_UserAccounts.GetUserAccount(UUID.Zero, new UUID(m.MemberID));
-                    if (account != null)
-                        m.MemberID = Util.UniversalIdentifier(account.PrincipalID, account.FirstName, account.LastName, m_HomeURI);
-                }
-            });
-
-            return rolemembers;
-        }
 
         public bool AddNotice(string RequestingAgentID, UUID groupID, UUID noticeID, string fromName, string subject, string message,
             bool hasAttachment, byte attType, string attName, UUID attItemID, string attOwnerID)
@@ -255,6 +97,158 @@ namespace OpenSim.Groups
             return _AddNotice(groupID, noticeID, fromName, subject, message, hasAttachment, attType, attName, attItemID, attOwnerID);
         }
 
+        public bool CreateGroupProxy(string RequestingAgentID, string agentID, string accessToken, UUID groupID, string serviceLocation, string name, out string reason)
+        {
+            reason = string.Empty;
+            Uri uri = null;
+            try
+            {
+                uri = new Uri(serviceLocation);
+            }
+            catch (UriFormatException)
+            {
+                reason = "Bad location for group proxy";
+                return false;
+            }
+
+            // Check if it already exists
+            GroupData grec = m_Database.RetrieveGroup(groupID);
+            if (grec == null ||
+                (grec != null && grec.Data["Location"] != string.Empty && grec.Data["Location"].ToLower() != serviceLocation.ToLower()))
+            {
+                // Create the group
+                grec = new GroupData();
+                grec.GroupID = groupID;
+                grec.Data = new Dictionary<string, string>();
+                grec.Data["Name"] = name + " @ " + uri.Authority;
+                grec.Data["Location"] = serviceLocation;
+                grec.Data["Charter"] = string.Empty;
+                grec.Data["InsigniaID"] = UUID.Zero.ToString();
+                grec.Data["FounderID"] = UUID.Zero.ToString();
+                grec.Data["MembershipFee"] = "0";
+                grec.Data["OpenEnrollment"] = "0";
+                grec.Data["ShowInList"] = "0";
+                grec.Data["AllowPublish"] = "0";
+                grec.Data["MaturePublish"] = "0";
+                grec.Data["OwnerRoleID"] = UUID.Zero.ToString();
+
+                if (!m_Database.StoreGroup(grec))
+                    return false;
+            }
+
+            if (grec.Data["Location"] == string.Empty)
+            {
+                reason = "Cannot add proxy membership to non-proxy group";
+                return false;
+            }
+
+            UUID uid = UUID.Zero;
+            string url = string.Empty, first = string.Empty, last = string.Empty, tmp = string.Empty;
+            Util.ParseUniversalUserIdentifier(RequestingAgentID, out uid, out url, out first, out last, out tmp);
+            string fromName = first + "." + last + "@" + url;
+
+            // Invite to group again
+            InviteToGroup(fromName, groupID, new UUID(agentID), grec.Data["Name"]);
+
+            // Stick the proxy membership in the DB already
+            // we'll delete it if the agent declines the invitation
+            MembershipData membership = new MembershipData();
+            membership.PrincipalID = agentID;
+            membership.GroupID = groupID;
+            membership.Data = new Dictionary<string, string>();
+            membership.Data["SelectedRoleID"] = UUID.Zero.ToString();
+            membership.Data["Contribution"] = "0";
+            membership.Data["ListInProfile"] = "1";
+            membership.Data["AcceptNotices"] = "1";
+            membership.Data["AccessToken"] = accessToken;
+
+            m_Database.StoreMember(membership);
+
+            return true;
+        }
+
+        public List<ExtendedGroupMembersData> GetGroupMembers(string RequestingAgentID, UUID GroupID, string token)
+        {
+            if (!VerifyToken(GroupID, RequestingAgentID, token))
+                return new List<ExtendedGroupMembersData>();
+
+            List<ExtendedGroupMembersData> members = GetGroupMembers(RequestingAgentID, GroupID);
+
+            // convert UUIDs to UUIs
+            members.ForEach(delegate(ExtendedGroupMembersData m)
+            {
+                if (m.AgentID.ToString().Length == 36) // UUID
+                {
+                    UserAccount account = m_UserAccounts.GetUserAccount(UUID.Zero, new UUID(m.AgentID));
+                    if (account != null)
+                        m.AgentID = Util.UniversalIdentifier(account.PrincipalID, account.FirstName, account.LastName, m_HomeURI);
+                }
+            });
+
+            return members;
+        }
+
+        public ExtendedGroupRecord GetGroupRecord(string RequestingAgentID, UUID GroupID, string groupName, string token)
+        {
+            // check the token
+            if (!VerifyToken(GroupID, RequestingAgentID, token))
+                return null;
+
+            ExtendedGroupRecord grec;
+            if (GroupID == UUID.Zero)
+                grec = GetGroupRecord(RequestingAgentID, groupName);
+            else
+                grec = GetGroupRecord(RequestingAgentID, GroupID);
+
+            if (grec != null)
+                FillFounderUUI(grec);
+
+            return grec;
+        }
+
+        public List<ExtendedGroupRoleMembersData> GetGroupRoleMembers(string RequestingAgentID, UUID GroupID, string token)
+        {
+            if (!VerifyToken(GroupID, RequestingAgentID, token))
+                return new List<ExtendedGroupRoleMembersData>();
+
+            List<ExtendedGroupRoleMembersData> rolemembers = GetGroupRoleMembers(RequestingAgentID, GroupID);
+
+            // convert UUIDs to UUIs
+            rolemembers.ForEach(delegate(ExtendedGroupRoleMembersData m)
+            {
+                if (m.MemberID.ToString().Length == 36) // UUID
+                {
+                    UserAccount account = m_UserAccounts.GetUserAccount(UUID.Zero, new UUID(m.MemberID));
+                    if (account != null)
+                        m.MemberID = Util.UniversalIdentifier(account.PrincipalID, account.FirstName, account.LastName, m_HomeURI);
+                }
+            });
+
+            return rolemembers;
+        }
+
+        public List<GroupRolesData> GetGroupRoles(string RequestingAgentID, UUID GroupID, string token)
+        {
+            if (!VerifyToken(GroupID, RequestingAgentID, token))
+                return new List<GroupRolesData>();
+
+            return GetGroupRoles(RequestingAgentID, GroupID);
+        }
+
+        public void RemoveAgentFromGroup(string RequestingAgentID, string AgentID, UUID GroupID, string token)
+        {
+            // check the token
+            MembershipData membership = m_Database.RetrieveMember(GroupID, AgentID);
+            if (membership != null)
+            {
+                if (token != string.Empty && token.Equals(membership.Data["AccessToken"]))
+                    RemoveAgentFromGroup(RequestingAgentID, AgentID, GroupID);
+                else
+                    m_log.DebugFormat("[Groups.HGGroupsService]: access token {0} did not match stored one {1}", token, membership.Data["AccessToken"]);
+            }
+            else
+                m_log.DebugFormat("[Groups.HGGroupsService]: membership not found for {0}", AgentID);
+        }
         public bool VerifyNotice(UUID noticeID, UUID groupID)
         {
             GroupNoticeInfo notice = GetGroupNotice(string.Empty, noticeID);
@@ -268,7 +262,36 @@ namespace OpenSim.Groups
             return true;
         }
 
-        #endregion
+        #endregion HG specific operations
+
+        private bool AddAgentToGroupInvite(UUID inviteID, UUID groupID, string agentID)
+        {
+            // Check whether the invitee is already a member of the group
+            MembershipData m = m_Database.RetrieveMember(groupID, agentID);
+            if (m != null)
+                return false;
+
+            // Check whether there are pending invitations and delete them
+            InvitationData invite = m_Database.RetrieveInvitation(groupID, agentID);
+            if (invite != null)
+                m_Database.DeleteInvite(invite.InviteID);
+
+            invite = new InvitationData();
+            invite.InviteID = inviteID;
+            invite.PrincipalID = agentID;
+            invite.GroupID = groupID;
+            invite.RoleID = UUID.Zero;
+            invite.Data = new Dictionary<string, string>();
+
+            return m_Database.StoreInvitation(invite);
+        }
+
+        private void FillFounderUUI(ExtendedGroupRecord grec)
+        {
+            UserAccount account = m_UserAccounts.GetUserAccount(UUID.Zero, grec.FounderID);
+            if (account != null)
+                grec.FounderUUI = Util.UniversalIdentifier(account.PrincipalID, account.FirstName, account.LastName, m_HomeURI);
+        }
 
         private void InviteToGroup(string fromName, UUID groupID, UUID invitedAgentID, string groupName)
         {
@@ -300,39 +323,8 @@ namespace OpenSim.Groups
 
                 string reason = string.Empty;
                 m_OfflineIM.StoreMessage(msg, out reason);
-
             }
         }
-
-        private bool AddAgentToGroupInvite(UUID inviteID, UUID groupID, string agentID)
-        {
-            // Check whether the invitee is already a member of the group
-            MembershipData m = m_Database.RetrieveMember(groupID, agentID);
-            if (m != null)
-                return false;
-
-            // Check whether there are pending invitations and delete them
-            InvitationData invite = m_Database.RetrieveInvitation(groupID, agentID);
-            if (invite != null)
-                m_Database.DeleteInvite(invite.InviteID);
-
-            invite = new InvitationData();
-            invite.InviteID = inviteID;
-            invite.PrincipalID = agentID;
-            invite.GroupID = groupID;
-            invite.RoleID = UUID.Zero;
-            invite.Data = new Dictionary<string, string>();
-
-            return m_Database.StoreInvitation(invite);
-        }
-
-        private void FillFounderUUI(ExtendedGroupRecord grec)
-        {
-            UserAccount account = m_UserAccounts.GetUserAccount(UUID.Zero, grec.FounderID);
-            if (account != null)
-                grec.FounderUUI = Util.UniversalIdentifier(account.PrincipalID, account.FirstName, account.LastName, m_HomeURI);
-        }
-
         private bool VerifyToken(UUID groupID, string agentID, string token)
         {
             // check the token

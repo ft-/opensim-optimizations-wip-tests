@@ -25,23 +25,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using Nini.Config;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
 using OpenSim.Framework;
 using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Server.Handlers.Base;
+using OpenSim.Services.Interfaces;
+using System;
 
 namespace OpenSim.Server.Handlers.Simulation
 {
     public class SimulationServiceInConnector : ServiceConnector
     {
         private ISimulationService m_LocalSimulationService;
-//        private IAuthenticationService m_AuthenticationService;
+        //        private IAuthenticationService m_AuthenticationService;
 
         public SimulationServiceInConnector(IConfigSource config, IHttpServer server, IScene scene) :
-                base(config, server, String.Empty)
+            base(config, server, String.Empty)
         {
             m_LocalSimulationService = scene.RequestModuleInterface<ISimulationService>();
             m_LocalSimulationService = m_LocalSimulationService.GetInnerService();

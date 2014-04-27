@@ -26,16 +26,15 @@
  */
 
 using log4net;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Framework.Communications;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Framework.Console;
-using OpenSim.Framework.Communications;
-using OpenSim.Services.Interfaces;
-using OpenMetaverse;
 
 namespace OpenSim.Services.Connectors
 {
@@ -48,7 +47,7 @@ namespace OpenSim.Services.Connectors
         private string m_ServerURI = String.Empty;
         private IImprovedAssetCache m_Cache = null;
         private int m_maxAssetRequestConcurrency = 30;
-        
+
         private delegate void AssetRetrievedEx(AssetBase asset);
 
         // Keeps track of concurrent requests for the same asset, so that it's only loaded once.
@@ -79,7 +78,7 @@ namespace OpenSim.Services.Connectors
         {
             IConfig netconfig = source.Configs["Network"];
             if (netconfig != null)
-                m_maxAssetRequestConcurrency = netconfig.GetInt("MaxRequestConcurrency",m_maxAssetRequestConcurrency);
+                m_maxAssetRequestConcurrency = netconfig.GetInt("MaxRequestConcurrency", m_maxAssetRequestConcurrency);
 
             IConfig assetConfig = source.Configs["AssetService"];
             if (assetConfig == null)
@@ -107,7 +106,7 @@ namespace OpenSim.Services.Connectors
 
         public AssetBase Get(string id)
         {
-//            m_log.DebugFormat("[ASSET SERVICE CONNECTOR]: Synchronous get request for {0}", id);
+            //            m_log.DebugFormat("[ASSET SERVICE CONNECTOR]: Synchronous get request for {0}", id);
 
             string uri = m_ServerURI + "/assets/" + id;
 
@@ -128,7 +127,7 @@ namespace OpenSim.Services.Connectors
 
         public AssetBase GetCached(string id)
         {
-//            m_log.DebugFormat("[ASSET SERVICE CONNECTOR]: Cache request for {0}", id);
+            //            m_log.DebugFormat("[ASSET SERVICE CONNECTOR]: Cache request for {0}", id);
 
             if (m_Cache != null)
                 return m_Cache.Get(id);
@@ -188,7 +187,7 @@ namespace OpenSim.Services.Connectors
 
         public bool Get(string id, Object sender, AssetRetrieved handler)
         {
-//            m_log.DebugFormat("[ASSET SERVICE CONNECTOR]: Potentially asynchronous get request for {0}", id);
+            //            m_log.DebugFormat("[ASSET SERVICE CONNECTOR]: Potentially asynchronous get request for {0}", id);
 
             string uri = m_ServerURI + "/assets/" + id;
 
@@ -232,7 +231,7 @@ namespace OpenSim.Services.Connectors
                             }
                             handlers.Invoke(a);
                         }, m_maxAssetRequestConcurrency);
-                    
+
                     success = true;
                 }
                 finally
@@ -268,7 +267,7 @@ namespace OpenSim.Services.Connectors
                 // This is most likely to happen because the server doesn't support this function,
                 // so just silently return "doesn't exist" for all the assets.
             }
-            
+
             if (exist == null)
                 exist = new bool[ids.Length];
 

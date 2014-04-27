@@ -25,33 +25,26 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using System.Runtime.Serialization;
-using System.Text;
-using System.Timers;
-using System.Xml;
-using System.Xml.Serialization;
-using log4net;
 using Nini.Config;
-
 using OpenMetaverse;
 using OpenSim.Data;
 using OpenSim.Framework;
 using OpenSim.Services.Interfaces;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Xml;
+using System.Xml.Serialization;
 
 namespace OpenSim.OfflineIM
 {
     public class OfflineIMService : OfflineIMServiceBase, IOfflineIMService
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private const int MAX_IM = 25;
 
-        private XmlSerializer m_serializer;
         private static bool m_Initialized = false;
-
+        private XmlSerializer m_serializer;
         public OfflineIMService(IConfigSource config)
             : base(config)
         {
@@ -61,6 +54,12 @@ namespace OpenSim.OfflineIM
                 m_Database.DeleteOld();
                 m_Initialized = true;
             }
+        }
+
+        public void DeleteMessages(UUID userID)
+        {
+            m_Database.Delete("PrincipalID", userID.ToString());
+            m_Database.Delete("FromID", userID.ToString());
         }
 
         public List<GridInstantMessage> GetMessages(UUID principalID)
@@ -90,7 +89,7 @@ namespace OpenSim.OfflineIM
         public bool StoreMessage(GridInstantMessage im, out string reason)
         {
             reason = string.Empty;
-            
+
             // Check limits
             UUID principalID = new UUID(im.toAgentID);
             long count = m_Database.GetCount("PrincipalID", principalID.ToString());
@@ -122,14 +121,6 @@ namespace OpenSim.OfflineIM
             data.Data["Message"] = imXml;
 
             return m_Database.Store(data);
-
         }
-
-        public void DeleteMessages(UUID userID)
-        {
-            m_Database.Delete("PrincipalID", userID.ToString());
-            m_Database.Delete("FromID", userID.ToString());
-        }
-
     }
 }

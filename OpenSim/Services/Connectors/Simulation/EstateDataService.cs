@@ -25,27 +25,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using OpenMetaverse;
-using log4net;
-using Mono.Addins;
 using Nini.Config;
-using System.Reflection;
-using OpenSim.Services.Base;
-using OpenSim.Services.Interfaces;
-using OpenSim.Data;
+using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
+using OpenSim.Services.Base;
+using System;
+using System.Collections.Generic;
 
 namespace OpenSim.Services.Connectors
 {
     public class EstateDataService : ServiceBase, IEstateDataService
     {
-//        private static readonly ILog m_log =
-//                LogManager.GetLogger(
-//                MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log =
+        //                LogManager.GetLogger(
+        //                MethodBase.GetCurrentMethod().DeclaringType);
 
         protected IEstateDataStore m_database;
 
@@ -81,36 +75,21 @@ namespace OpenSim.Services.Connectors
                 throw new Exception("Could not find a storage interface in the given module");
         }
 
-        public EstateSettings LoadEstateSettings(UUID regionID, bool create)
-        {
-            return m_database.LoadEstateSettings(regionID, create);
-        }
-
-        public EstateSettings LoadEstateSettings(int estateID)
-        {
-            return m_database.LoadEstateSettings(estateID);
-        }
-
         public EstateSettings CreateNewEstate()
         {
             return m_database.CreateNewEstate();
         }
-        
-        public List<EstateSettings> LoadEstateSettingsAll()
-        {
-            return m_database.LoadEstateSettingsAll();            
-        }        
 
-        public void StoreEstateSettings(EstateSettings es)
+        public bool DeleteEstate(int estateID)
         {
-            m_database.StoreEstateSettings(es);
+            return m_database.DeleteEstate(estateID);
         }
 
         public List<int> GetEstates(string search)
         {
             return m_database.GetEstates(search);
         }
-        
+
         public List<int> GetEstatesAll()
         {
             return m_database.GetEstatesAll();
@@ -121,19 +100,33 @@ namespace OpenSim.Services.Connectors
             return m_database.GetEstatesByOwner(ownerID);
         }
 
-        public bool LinkRegion(UUID regionID, int estateID)
-        {
-            return m_database.LinkRegion(regionID, estateID);
-        }
-
         public List<UUID> GetRegions(int estateID)
         {
             return m_database.GetRegions(estateID);
         }
 
-        public bool DeleteEstate(int estateID)
+        public bool LinkRegion(UUID regionID, int estateID)
         {
-            return m_database.DeleteEstate(estateID);
+            return m_database.LinkRegion(regionID, estateID);
+        }
+
+        public EstateSettings LoadEstateSettings(UUID regionID, bool create)
+        {
+            return m_database.LoadEstateSettings(regionID, create);
+        }
+
+        public EstateSettings LoadEstateSettings(int estateID)
+        {
+            return m_database.LoadEstateSettings(estateID);
+        }
+        public List<EstateSettings> LoadEstateSettingsAll()
+        {
+            return m_database.LoadEstateSettingsAll();
+        }
+
+        public void StoreEstateSettings(EstateSettings es)
+        {
+            m_database.StoreEstateSettings(es);
         }
     }
 }

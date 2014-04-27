@@ -25,27 +25,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using OpenMetaverse;
-using log4net;
-using Mono.Addins;
 using Nini.Config;
-using System.Reflection;
-using OpenSim.Services.Base;
-using OpenSim.Services.Interfaces;
-using OpenSim.Data;
+using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using OpenSim.Services.Base;
+using System;
+using System.Collections.Generic;
 
 namespace OpenSim.Services.Connectors
 {
     public class SimulationDataService : ServiceBase, ISimulationDataService
     {
-//        private static readonly ILog m_log =
-//                LogManager.GetLogger(
-//                MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log =
+        //                LogManager.GetLogger(
+        //                MethodBase.GetCurrentMethod().DeclaringType);
 
         protected ISimulationDataStore m_database;
 
@@ -80,54 +75,9 @@ namespace OpenSim.Services.Connectors
                 throw new Exception("Could not find a storage interface in the given module");
         }
 
-        public void StoreObject(SceneObjectGroup obj, UUID regionUUID)
+        public Dictionary<string, string> GetExtra(UUID regionID)
         {
-            m_database.StoreObject(obj, regionUUID);
-        }
-
-        public void RemoveObject(UUID uuid, UUID regionUUID)
-        {
-            m_database.RemoveObject(uuid, regionUUID);
-        }
-
-        public void StorePrimInventory(UUID primID, ICollection<TaskInventoryItem> items)
-        {
-            m_database.StorePrimInventory(primID, items);
-        }
-
-        public List<SceneObjectGroup> LoadObjects(UUID regionUUID)
-        {
-            return m_database.LoadObjects(regionUUID);
-        }
-
-        public void StoreTerrain(TerrainData terrain, UUID regionID)
-        {
-            m_database.StoreTerrain(terrain, regionID);
-        }
-
-        public void StoreTerrain(double[,] terrain, UUID regionID)
-        {
-            m_database.StoreTerrain(terrain, regionID);
-        }
-
-        public double[,] LoadTerrain(UUID regionID)
-        {
-            return m_database.LoadTerrain(regionID);
-        }
-
-        public TerrainData LoadTerrain(UUID regionID, int pSizeX, int pSizeY, int pSizeZ)
-        {
-            return m_database.LoadTerrain(regionID, pSizeX, pSizeY, pSizeZ);
-        }
-
-        public void StoreLandObject(ILandObject Parcel)
-        {
-            m_database.StoreLandObject(Parcel);
-        }
-
-        public void RemoveLandObject(UUID globalID)
-        {
-            m_database.RemoveLandObject(globalID);
+            return m_database.GetExtra(regionID);
         }
 
         public List<LandData> LoadLandObjects(UUID regionUUID)
@@ -135,9 +85,14 @@ namespace OpenSim.Services.Connectors
             return m_database.LoadLandObjects(regionUUID);
         }
 
-        public void StoreRegionSettings(RegionSettings rs)
+        public List<SceneObjectGroup> LoadObjects(UUID regionUUID)
         {
-            m_database.StoreRegionSettings(rs);
+            return m_database.LoadObjects(regionUUID);
+        }
+
+        public string LoadRegionEnvironmentSettings(UUID regionUUID)
+        {
+            return m_database.LoadRegionEnvironmentSettings(regionUUID);
         }
 
         public RegionSettings LoadRegionSettings(UUID regionUUID)
@@ -150,33 +105,14 @@ namespace OpenSim.Services.Connectors
             return m_database.LoadRegionWindlightSettings(regionUUID);
         }
 
-        public void StoreRegionWindlightSettings(RegionLightShareData wl)
+        public double[,] LoadTerrain(UUID regionID)
         {
-            m_database.StoreRegionWindlightSettings(wl);
-        }
-        public void RemoveRegionWindlightSettings(UUID regionID)
-        {
-            m_database.RemoveRegionWindlightSettings(regionID);
+            return m_database.LoadTerrain(regionID);
         }
 
-        public string LoadRegionEnvironmentSettings(UUID regionUUID)
+        public TerrainData LoadTerrain(UUID regionID, int pSizeX, int pSizeY, int pSizeZ)
         {
-            return m_database.LoadRegionEnvironmentSettings(regionUUID);
-        }
-
-        public void StoreRegionEnvironmentSettings(UUID regionUUID, string settings)
-        {
-            m_database.StoreRegionEnvironmentSettings(regionUUID, settings);
-        }
-
-        public void RemoveRegionEnvironmentSettings(UUID regionUUID)
-        {
-            m_database.RemoveRegionEnvironmentSettings(regionUUID);
-        }
-
-        public void SaveExtra(UUID regionID, string name, string val)
-        {
-            m_database.SaveExtra(regionID, name, val);
+            return m_database.LoadTerrain(regionID, pSizeX, pSizeY, pSizeZ);
         }
 
         public void RemoveExtra(UUID regionID, string name)
@@ -184,9 +120,67 @@ namespace OpenSim.Services.Connectors
             m_database.RemoveExtra(regionID, name);
         }
 
-        public Dictionary<string, string> GetExtra(UUID regionID)
+        public void RemoveLandObject(UUID globalID)
         {
-            return m_database.GetExtra(regionID);
+            m_database.RemoveLandObject(globalID);
+        }
+
+        public void RemoveObject(UUID uuid, UUID regionUUID)
+        {
+            m_database.RemoveObject(uuid, regionUUID);
+        }
+
+        public void RemoveRegionEnvironmentSettings(UUID regionUUID)
+        {
+            m_database.RemoveRegionEnvironmentSettings(regionUUID);
+        }
+
+        public void RemoveRegionWindlightSettings(UUID regionID)
+        {
+            m_database.RemoveRegionWindlightSettings(regionID);
+        }
+
+        public void SaveExtra(UUID regionID, string name, string val)
+        {
+            m_database.SaveExtra(regionID, name, val);
+        }
+
+        public void StoreLandObject(ILandObject Parcel)
+        {
+            m_database.StoreLandObject(Parcel);
+        }
+
+        public void StoreObject(SceneObjectGroup obj, UUID regionUUID)
+        {
+            m_database.StoreObject(obj, regionUUID);
+        }
+        public void StorePrimInventory(UUID primID, ICollection<TaskInventoryItem> items)
+        {
+            m_database.StorePrimInventory(primID, items);
+        }
+        public void StoreRegionEnvironmentSettings(UUID regionUUID, string settings)
+        {
+            m_database.StoreRegionEnvironmentSettings(regionUUID, settings);
+        }
+
+        public void StoreRegionSettings(RegionSettings rs)
+        {
+            m_database.StoreRegionSettings(rs);
+        }
+
+        public void StoreRegionWindlightSettings(RegionLightShareData wl)
+        {
+            m_database.StoreRegionWindlightSettings(wl);
+        }
+
+        public void StoreTerrain(TerrainData terrain, UUID regionID)
+        {
+            m_database.StoreTerrain(terrain, regionID);
+        }
+
+        public void StoreTerrain(double[,] terrain, UUID regionID)
+        {
+            m_database.StoreTerrain(terrain, regionID);
         }
     }
 }

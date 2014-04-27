@@ -29,14 +29,18 @@ using OpenSim.Region.OptionalModules.Scripting.Minimodule;
 
 namespace OpenSim
 {
-    class DrunkenTextAppreciationModule : MRMBase
+    internal class DrunkenTextAppreciationModule : MRMBase
     {
         public override void Start()
         {
             World.OnChat += World_OnChat;
         }
 
-        void World_OnChat(IWorld sender, ChatEventArgs e)
+        public override void Stop()
+        {
+        }
+
+        private void World_OnChat(IWorld sender, ChatEventArgs e)
         {
             if (e.Sender is IAvatar)
             {
@@ -54,11 +58,6 @@ namespace OpenSim
             {
                 // Ignore
             }
-        }
-
-        public override void Stop()
-        {
-
         }
     }
 }

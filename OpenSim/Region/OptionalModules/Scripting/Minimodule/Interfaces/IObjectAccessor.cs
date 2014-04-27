@@ -25,17 +25,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
 using OpenMetaverse;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
     public interface IObjectAccessor : ICollection<IObject>
     {
         IObject this[int index] { get; }
+
         IObject this[uint index] { get; }
+
         IObject this[UUID index] { get; }
+
         IObject Create(Vector3 position);
+
         IObject Create(Vector3 position, Quaternion rotation);
     }
 }

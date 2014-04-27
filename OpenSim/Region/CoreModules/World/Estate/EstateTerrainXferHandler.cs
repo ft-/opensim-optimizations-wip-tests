@@ -25,30 +25,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
 using OpenSim.Framework;
+using System;
 
 namespace OpenSim.Region.CoreModules.World.Estate
 {
-
     public class EstateTerrainXferHandler
     {
         //private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
+        public ulong mXferID;
+        private TerrainUploadComplete handlerTerrainUploadDone;
         private AssetBase m_asset;
-
-        public delegate void TerrainUploadComplete(string name, byte[] filedata, IClientAPI remoteClient);
-
-        public event TerrainUploadComplete TerrainUploadDone;
 
         //private string m_description = String.Empty;
         //private string m_name = String.Empty;
         //private UUID TransactionID = UUID.Zero;
         private sbyte type = 0;
-
-        public ulong mXferID;
-        private TerrainUploadComplete handlerTerrainUploadDone;
 
         public EstateTerrainXferHandler(IClientAPI pRemoteClient, string pClientFilename)
         {
@@ -59,6 +53,9 @@ namespace OpenSim.Region.CoreModules.World.Estate
             m_asset.Temporary = true;
         }
 
+        public delegate void TerrainUploadComplete(string name, byte[] filedata, IClientAPI remoteClient);
+
+        public event TerrainUploadComplete TerrainUploadDone;
         public ulong XferID
         {
             get { return mXferID; }
@@ -68,6 +65,15 @@ namespace OpenSim.Region.CoreModules.World.Estate
         {
             mXferID = Util.GetNextXferID();
             pRemoteClient.SendXferRequest(mXferID, m_asset.Type, m_asset.FullID, 0, Utils.StringToBytes(m_asset.Name));
+        }
+
+        public void SendCompleteMessage(IClientAPI remoteClient)
+        {
+            handlerTerrainUploadDone = TerrainUploadDone;
+            if (handlerTerrainUploadDone != null)
+            {
+                handlerTerrainUploadDone(m_asset.Name, m_asset.Data, remoteClient);
+            }
         }
 
         /// <summary>
@@ -103,15 +109,6 @@ namespace OpenSim.Region.CoreModules.World.Estate
                 {
                     SendCompleteMessage(remoteClient);
                 }
-            }
-        }
-
-        public void SendCompleteMessage(IClientAPI remoteClient)
-        {
-            handlerTerrainUploadDone = TerrainUploadDone;
-            if (handlerTerrainUploadDone != null)
-            {
-                handlerTerrainUploadDone(m_asset.Name, m_asset.Data, remoteClient);
             }
         }
     }

@@ -25,10 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Reflection;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
@@ -38,6 +34,10 @@ using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Reflection;
 using PermissionMask = OpenSim.Framework.PermissionMask;
 
 namespace OpenSim.Services.Connectors.SimianGrid
@@ -69,22 +69,41 @@ namespace OpenSim.Services.Connectors.SimianGrid
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
-        private string m_serverUrl = String.Empty;
-        private string m_userServerUrl = String.Empty;
-//        private object m_gestureSyncRoot = new object();
+        //        private object m_gestureSyncRoot = new object();
         private bool m_Enabled = false;
 
+        private string m_serverUrl = String.Empty;
+        private string m_userServerUrl = String.Empty;
         #region ISharedRegionModule
 
-        public Type ReplaceableInterface { get { return null; } }
-        public void RegionLoaded(Scene scene) { }
-        public void PostInitialise() { }
-        public void Close() { }
+        public SimianInventoryServiceConnector()
+        {
+        }
 
-        public SimianInventoryServiceConnector() { }
         public string Name { get { return "SimianInventoryServiceConnector"; } }
-        public void AddRegion(Scene scene) { if (m_Enabled) { scene.RegisterModuleInterface<IInventoryService>(this); } }
-        public void RemoveRegion(Scene scene) { if (m_Enabled) { scene.UnregisterModuleInterface<IInventoryService>(this); } }
+
+        public Type ReplaceableInterface { get { return null; } }
+
+        public void AddRegion(Scene scene)
+        {
+            if (m_Enabled) { scene.RegisterModuleInterface<IInventoryService>(this); }
+        }
+
+        public void Close()
+        {
+        }
+
+        public void PostInitialise()
+        {
+        }
+
+        public void RegionLoaded(Scene scene)
+        {
+        }
+        public void RemoveRegion(Scene scene)
+        {
+            if (m_Enabled) { scene.UnregisterModuleInterface<IInventoryService>(this); }
+        }
 
         #endregion ISharedRegionModule
 
@@ -98,312 +117,6 @@ namespace OpenSim.Services.Connectors.SimianGrid
             if (!url.EndsWith("/") && !url.EndsWith("="))
                 url = url + '/';
             m_serverUrl = url;
-
-        }
-
-        public void Initialise(IConfigSource source)
-        {
-            IConfig moduleConfig = source.Configs["Modules"];
-            if (moduleConfig != null)
-            {
-                string name = moduleConfig.GetString("InventoryServices", "");
-                if (name == Name)
-                    CommonInit(source);
-            }
-        }
-
-        private void CommonInit(IConfigSource source)
-        {
-            IConfig gridConfig = source.Configs["InventoryService"];
-            if (gridConfig != null)
-            {
-                string serviceUrl = gridConfig.GetString("InventoryServerURI");
-                if (!String.IsNullOrEmpty(serviceUrl))
-                {
-                    if (!serviceUrl.EndsWith("/") && !serviceUrl.EndsWith("="))
-                        serviceUrl = serviceUrl + '/';
-                    m_serverUrl = serviceUrl;
-
-                    gridConfig = source.Configs["UserAccountService"];
-                    if (gridConfig != null)
-                    {
-                        serviceUrl = gridConfig.GetString("UserAccountServerURI");
-                        if (!String.IsNullOrEmpty(serviceUrl))
-                        {
-                            m_userServerUrl = serviceUrl;
-                            m_Enabled = true;
-                        }
-                    }
-                }
-            }
-
-            if (String.IsNullOrEmpty(m_serverUrl))
-                m_log.Info("[SIMIAN INVENTORY CONNECTOR]: No InventoryServerURI specified, disabling connector");
-            else if (String.IsNullOrEmpty(m_userServerUrl))
-                m_log.Info("[SIMIAN INVENTORY CONNECTOR]: No UserAccountServerURI specified, disabling connector");
-        }
-
-        /// <summary>
-        /// Create the entire inventory for a given user
-        /// </summary>
-        /// <param name="user"></param>
-        /// <returns></returns>
-        public bool CreateUserInventory(UUID userID)
-        {
-            NameValueCollection requestArgs = new NameValueCollection
-            {
-                { "RequestMethod", "AddInventory" },
-                { "OwnerID", userID.ToString() }
-            };
-
-            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
-            bool success = response["Success"].AsBoolean();
-
-            if (!success)
-                m_log.Warn("[SIMIAN INVENTORY CONNECTOR]: Inventory creation for " + userID + " failed: " + response["Message"].AsString());
-
-            return success;
-        }
-
-        /// <summary>
-        /// Gets the skeleton of the inventory -- folders only
-        /// </summary>
-        /// <param name="userID"></param>
-        /// <returns></returns>
-        public List<InventoryFolderBase> GetInventorySkeleton(UUID userID)
-        {
-            NameValueCollection requestArgs = new NameValueCollection
-            {
-                { "RequestMethod", "GetInventoryNode" },
-                { "ItemID", userID.ToString() },
-                { "OwnerID", userID.ToString() },
-                { "IncludeFolders", "1" },
-                { "IncludeItems", "0" },
-                { "ChildrenOnly", "0" }
-            };
-
-            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
-            if (response["Success"].AsBoolean() && response["Items"] is OSDArray)
-            {
-                OSDArray items = (OSDArray)response["Items"];
-                return GetFoldersFromResponse(items, userID, true);
-            }
-            else
-            {
-                m_log.Warn("[SIMIAN INVENTORY CONNECTOR]: Failed to retrieve inventory skeleton for " + userID + ": " +
-                    response["Message"].AsString());
-                return new List<InventoryFolderBase>(0);
-            }
-        }
-
-        /// <summary>
-        /// Retrieve the root inventory folder for the given user.
-        /// </summary>
-        /// <param name="userID"></param>
-        /// <returns>null if no root folder was found</returns>
-        public InventoryFolderBase GetRootFolder(UUID userID)
-        {
-            NameValueCollection requestArgs = new NameValueCollection
-            {
-                { "RequestMethod", "GetInventoryNode" },
-                { "ItemID", userID.ToString() },
-                { "OwnerID", userID.ToString() },
-                { "IncludeFolders", "1" },
-                { "IncludeItems", "0" },
-                { "ChildrenOnly", "1" }
-            };
-
-            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
-            if (response["Success"].AsBoolean() && response["Items"] is OSDArray)
-            {
-                OSDArray items = (OSDArray)response["Items"];
-                List<InventoryFolderBase> folders = GetFoldersFromResponse(items, userID, true);
-
-                if (folders.Count > 0)
-                    return folders[0];
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Gets the user folder for the given folder-type
-        /// </summary>
-        /// <param name="userID"></param>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        public InventoryFolderBase GetFolderForType(UUID userID, AssetType type)
-        {
-            string contentType = SLUtil.SLAssetTypeToContentType((int)type);
-
-            NameValueCollection requestArgs = new NameValueCollection
-            {
-                { "RequestMethod", "GetFolderForType" },
-                { "ContentType", contentType },
-                { "OwnerID", userID.ToString() }
-            };
-
-            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
-            if (response["Success"].AsBoolean() && response["Folder"] is OSDMap)
-            {
-                OSDMap folder = (OSDMap)response["Folder"];
-
-                return new InventoryFolderBase(
-                    folder["ID"].AsUUID(),
-                    folder["Name"].AsString(),
-                    folder["OwnerID"].AsUUID(),
-                    (short)SLUtil.ContentTypeToSLAssetType(folder["ContentType"].AsString()),
-                    folder["ParentID"].AsUUID(),
-                    (ushort)folder["Version"].AsInteger()
-                );
-            }
-            else
-            {
-                m_log.Warn("[SIMIAN INVENTORY CONNECTOR]: Default folder not found for content type " + contentType + ": " + response["Message"].AsString());
-                return GetRootFolder(userID);
-            }
-        }
-
-        /// <summary>
-        /// Get an item, given by its UUID
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public InventoryItemBase GetItem(InventoryItemBase item)
-        {
-            NameValueCollection requestArgs = new NameValueCollection
-            {
-                { "RequestMethod", "GetInventoryNode" },
-                { "ItemID", item.ID.ToString() },
-                { "OwnerID", item.Owner.ToString() },
-                { "IncludeFolders", "1" },
-                { "IncludeItems", "1" },
-                { "ChildrenOnly", "1" }
-            };
-
-            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
-            if (response["Success"].AsBoolean() && response["Items"] is OSDArray)
-            {
-                List<InventoryItemBase> items = GetItemsFromResponse((OSDArray)response["Items"]);
-                if (items.Count > 0)
-                {
-                    // The requested item should be the first in this list, but loop through
-                    // and sanity check just in case
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        if (items[i].ID == item.ID)
-                            return items[i];
-                    }
-                }
-            }
-
-            m_log.Warn("[SIMIAN INVENTORY CONNECTOR]: Item " + item.ID + " owned by " + item.Owner + " not found");
-            return null;
-        }
-
-        /// <summary>
-        /// Get a folder, given by its UUID
-        /// </summary>
-        /// <param name="folder"></param>
-        /// <returns></returns>
-        public InventoryFolderBase GetFolder(InventoryFolderBase folder)
-        {
-            NameValueCollection requestArgs = new NameValueCollection
-            {
-                { "RequestMethod", "GetInventoryNode" },
-                { "ItemID", folder.ID.ToString() },
-                { "OwnerID", folder.Owner.ToString() },
-                { "IncludeFolders", "1" },
-                { "IncludeItems", "0" },
-                { "ChildrenOnly", "1" }
-            };
-
-            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
-            if (response["Success"].AsBoolean() && response["Items"] is OSDArray)
-            {
-                OSDArray items = (OSDArray)response["Items"];
-                List<InventoryFolderBase> folders = GetFoldersFromResponse(items, folder.ID, true);
-
-                if (folders.Count > 0)
-                    return folders[0];
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Gets everything (folders and items) inside a folder
-        /// </summary>
-        /// <param name="userID"></param>
-        /// <param name="folderID"></param>
-        /// <returns></returns>
-        public InventoryCollection GetFolderContent(UUID userID, UUID folderID)
-        {
-            InventoryCollection inventory = new InventoryCollection();
-            inventory.UserID = userID;
-
-            NameValueCollection requestArgs = new NameValueCollection
-            {
-                { "RequestMethod", "GetInventoryNode" },
-                { "ItemID", folderID.ToString() },
-                { "OwnerID", userID.ToString() },
-                { "IncludeFolders", "1" },
-                { "IncludeItems", "1" },
-                { "ChildrenOnly", "1" }
-            };
-
-            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
-            if (response["Success"].AsBoolean() && response["Items"] is OSDArray)
-            {
-                OSDArray items = (OSDArray)response["Items"];
-
-                inventory.Folders = GetFoldersFromResponse(items, folderID, false);
-                inventory.Items = GetItemsFromResponse(items);
-            }
-            else
-            {
-                m_log.Warn("[SIMIAN INVENTORY CONNECTOR]: Error fetching folder " + folderID + " content for " + userID + ": " +
-                    response["Message"].AsString());
-                inventory.Folders = new List<InventoryFolderBase>(0);
-                inventory.Items = new List<InventoryItemBase>(0);
-            }
-
-            return inventory;
-        }
-
-        /// <summary>
-        /// Gets the items inside a folder
-        /// </summary>
-        /// <param name="userID"></param>
-        /// <param name="folderID"></param>
-        /// <returns></returns>
-        public List<InventoryItemBase> GetFolderItems(UUID userID, UUID folderID)
-        {
-            InventoryCollection inventory = new InventoryCollection();
-            inventory.UserID = userID;
-
-            NameValueCollection requestArgs = new NameValueCollection
-            {
-                { "RequestMethod", "GetInventoryNode" },
-                { "ItemID", folderID.ToString() },
-                { "OwnerID", userID.ToString() },
-                { "IncludeFolders", "0" },
-                { "IncludeItems", "1" },
-                { "ChildrenOnly", "1" }
-            };
-
-            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
-            if (response["Success"].AsBoolean() && response["Items"] is OSDArray)
-            {
-                OSDArray items = (OSDArray)response["Items"];
-                return GetItemsFromResponse(items);
-            }
-            else
-            {
-                m_log.Warn("[SIMIAN INVENTORY CONNECTOR]: Error fetching folder " + folderID + " for " + userID + ": " +
-                    response["Message"].AsString());
-                return new List<InventoryItemBase>(0);
-            }
         }
 
         /// <summary>
@@ -429,98 +142,6 @@ namespace OpenSim.Services.Connectors.SimianGrid
             if (!success)
             {
                 m_log.Warn("[SIMIAN INVENTORY CONNECTOR]: Error creating folder " + folder.Name + " for " + folder.Owner + ": " +
-                    response["Message"].AsString());
-            }
-
-            return success;
-        }
-
-        /// <summary>
-        /// Update a folder in the user's inventory
-        /// </summary>
-        /// <param name="folder"></param>
-        /// <returns>true if the folder was successfully updated</returns>
-        public bool UpdateFolder(InventoryFolderBase folder)
-        {
-            return AddFolder(folder);
-        }
-
-        /// <summary>
-        /// Move an inventory folder to a new location
-        /// </summary>
-        /// <param name="folder">A folder containing the details of the new location</param>
-        /// <returns>true if the folder was successfully moved</returns>
-        public bool MoveFolder(InventoryFolderBase folder)
-        {
-            return AddFolder(folder);
-        }
-
-        /// <summary>
-        /// Delete an item from the user's inventory
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns>true if the item was successfully deleted</returns>
-        //bool DeleteItem(InventoryItemBase item);
-        public bool DeleteFolders(UUID userID, List<UUID> folderIDs)
-        {
-            return DeleteItems(userID, folderIDs);
-        }
-
-        /// <summary>
-        /// Delete an item from the user's inventory
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns>true if the item was successfully deleted</returns>
-        public bool DeleteItems(UUID userID, List<UUID> itemIDs)
-        {
-            // TODO: RemoveInventoryNode should be replaced with RemoveInventoryNodes
-            bool allSuccess = true;
-
-            for (int i = 0; i < itemIDs.Count; i++)
-            {
-                UUID itemID = itemIDs[i];
-
-                NameValueCollection requestArgs = new NameValueCollection
-                {
-                    { "RequestMethod", "RemoveInventoryNode" },
-                    { "OwnerID", userID.ToString() },
-                    { "ItemID", itemID.ToString() }
-                };
-
-                OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
-                bool success = response["Success"].AsBoolean();
-
-                if (!success)
-                {
-                    m_log.Warn("[SIMIAN INVENTORY CONNECTOR]: Error removing item " + itemID + " for " + userID + ": " +
-                        response["Message"].AsString());
-                    allSuccess = false;
-                }
-            }
-            
-            return allSuccess;
-        }
-
-        /// <summary>
-        /// Purge an inventory folder of all its items and subfolders.
-        /// </summary>
-        /// <param name="folder"></param>
-        /// <returns>true if the folder was successfully purged</returns>
-        public bool PurgeFolder(InventoryFolderBase folder)
-        {
-            NameValueCollection requestArgs = new NameValueCollection
-            {
-                { "RequestMethod", "PurgeInventoryFolder" },
-                { "OwnerID", folder.Owner.ToString() },
-                { "FolderID", folder.ID.ToString() }
-            };
-
-            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
-            bool success = response["Success"].AsBoolean();
-
-            if (!success)
-            {
-                m_log.Warn("[SIMIAN INVENTORY CONNECTOR]: Error purging folder " + folder.ID + " for " + folder.Owner + ": " +
                     response["Message"].AsString());
             }
 
@@ -605,22 +226,388 @@ namespace OpenSim.Services.Connectors.SimianGrid
         }
 
         /// <summary>
-        /// Update an item in the user's inventory
+        /// Create the entire inventory for a given user
+        /// </summary>
+        /// <param name="user"></param>
+        /// <returns></returns>
+        public bool CreateUserInventory(UUID userID)
+        {
+            NameValueCollection requestArgs = new NameValueCollection
+            {
+                { "RequestMethod", "AddInventory" },
+                { "OwnerID", userID.ToString() }
+            };
+
+            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
+            bool success = response["Success"].AsBoolean();
+
+            if (!success)
+                m_log.Warn("[SIMIAN INVENTORY CONNECTOR]: Inventory creation for " + userID + " failed: " + response["Message"].AsString());
+
+            return success;
+        }
+
+        /// <summary>
+        /// Delete an item from the user's inventory
         /// </summary>
         /// <param name="item"></param>
-        /// <returns>true if the item was successfully updated</returns>
-        public bool UpdateItem(InventoryItemBase item)
+        /// <returns>true if the item was successfully deleted</returns>
+        //bool DeleteItem(InventoryItemBase item);
+        public bool DeleteFolders(UUID userID, List<UUID> folderIDs)
         {
-            if (item.AssetID != UUID.Zero)
+            return DeleteItems(userID, folderIDs);
+        }
+
+        /// <summary>
+        /// Delete an item from the user's inventory
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns>true if the item was successfully deleted</returns>
+        public bool DeleteItems(UUID userID, List<UUID> itemIDs)
+        {
+            // TODO: RemoveInventoryNode should be replaced with RemoveInventoryNodes
+            bool allSuccess = true;
+
+            for (int i = 0; i < itemIDs.Count; i++)
             {
-                return AddItem(item);
+                UUID itemID = itemIDs[i];
+
+                NameValueCollection requestArgs = new NameValueCollection
+                {
+                    { "RequestMethod", "RemoveInventoryNode" },
+                    { "OwnerID", userID.ToString() },
+                    { "ItemID", itemID.ToString() }
+                };
+
+                OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
+                bool success = response["Success"].AsBoolean();
+
+                if (!success)
+                {
+                    m_log.Warn("[SIMIAN INVENTORY CONNECTOR]: Error removing item " + itemID + " for " + userID + ": " +
+                        response["Message"].AsString());
+                    allSuccess = false;
+                }
+            }
+
+            return allSuccess;
+        }
+
+        /// <summary>
+        /// Get the active gestures of the agent.
+        /// </summary>
+        /// <param name="userID"></param>
+        /// <returns></returns>
+        public List<InventoryItemBase> GetActiveGestures(UUID userID)
+        {
+            OSDArray items = FetchGestures(userID);
+
+            string[] itemIDs = new string[items.Count];
+            for (int i = 0; i < items.Count; i++)
+                itemIDs[i] = items[i].AsUUID().ToString();
+
+            //            NameValueCollection requestArgs = new NameValueCollection
+            //            {
+            //                { "RequestMethod", "GetInventoryNodes" },
+            //                { "OwnerID", userID.ToString() },
+            //                { "Items", String.Join(",", itemIDs) }
+            //            };
+
+            // FIXME: Implement this in SimianGrid
+            return new List<InventoryItemBase>(0);
+        }
+
+        /// <summary>
+        /// Get the union of permissions of all inventory items
+        /// that hold the given assetID.
+        /// </summary>
+        /// <param name="userID"></param>
+        /// <param name="assetID"></param>
+        /// <returns>The permissions or 0 if no such asset is found in
+        /// the user's inventory</returns>
+        public int GetAssetPermissions(UUID userID, UUID assetID)
+        {
+            //            NameValueCollection requestArgs = new NameValueCollection
+            //            {
+            //                { "RequestMethod", "GetInventoryNodes" },
+            //                { "OwnerID", userID.ToString() },
+            //                { "AssetID", assetID.ToString() }
+            //            };
+
+            // FIXME: Implement this in SimianGrid
+            return (int)PermissionMask.All;
+        }
+
+        /// <summary>
+        /// Get a folder, given by its UUID
+        /// </summary>
+        /// <param name="folder"></param>
+        /// <returns></returns>
+        public InventoryFolderBase GetFolder(InventoryFolderBase folder)
+        {
+            NameValueCollection requestArgs = new NameValueCollection
+            {
+                { "RequestMethod", "GetInventoryNode" },
+                { "ItemID", folder.ID.ToString() },
+                { "OwnerID", folder.Owner.ToString() },
+                { "IncludeFolders", "1" },
+                { "IncludeItems", "0" },
+                { "ChildrenOnly", "1" }
+            };
+
+            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
+            if (response["Success"].AsBoolean() && response["Items"] is OSDArray)
+            {
+                OSDArray items = (OSDArray)response["Items"];
+                List<InventoryFolderBase> folders = GetFoldersFromResponse(items, folder.ID, true);
+
+                if (folders.Count > 0)
+                    return folders[0];
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Gets everything (folders and items) inside a folder
+        /// </summary>
+        /// <param name="userID"></param>
+        /// <param name="folderID"></param>
+        /// <returns></returns>
+        public InventoryCollection GetFolderContent(UUID userID, UUID folderID)
+        {
+            InventoryCollection inventory = new InventoryCollection();
+            inventory.UserID = userID;
+
+            NameValueCollection requestArgs = new NameValueCollection
+            {
+                { "RequestMethod", "GetInventoryNode" },
+                { "ItemID", folderID.ToString() },
+                { "OwnerID", userID.ToString() },
+                { "IncludeFolders", "1" },
+                { "IncludeItems", "1" },
+                { "ChildrenOnly", "1" }
+            };
+
+            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
+            if (response["Success"].AsBoolean() && response["Items"] is OSDArray)
+            {
+                OSDArray items = (OSDArray)response["Items"];
+
+                inventory.Folders = GetFoldersFromResponse(items, folderID, false);
+                inventory.Items = GetItemsFromResponse(items);
             }
             else
             {
-                // This is actually a folder update
-                InventoryFolderBase folder = new InventoryFolderBase(item.ID, item.Name, item.Owner, (short)item.AssetType, item.Folder, 0);
-                return UpdateFolder(folder);
+                m_log.Warn("[SIMIAN INVENTORY CONNECTOR]: Error fetching folder " + folderID + " content for " + userID + ": " +
+                    response["Message"].AsString());
+                inventory.Folders = new List<InventoryFolderBase>(0);
+                inventory.Items = new List<InventoryItemBase>(0);
             }
+
+            return inventory;
+        }
+
+        /// <summary>
+        /// Gets the user folder for the given folder-type
+        /// </summary>
+        /// <param name="userID"></param>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public InventoryFolderBase GetFolderForType(UUID userID, AssetType type)
+        {
+            string contentType = SLUtil.SLAssetTypeToContentType((int)type);
+
+            NameValueCollection requestArgs = new NameValueCollection
+            {
+                { "RequestMethod", "GetFolderForType" },
+                { "ContentType", contentType },
+                { "OwnerID", userID.ToString() }
+            };
+
+            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
+            if (response["Success"].AsBoolean() && response["Folder"] is OSDMap)
+            {
+                OSDMap folder = (OSDMap)response["Folder"];
+
+                return new InventoryFolderBase(
+                    folder["ID"].AsUUID(),
+                    folder["Name"].AsString(),
+                    folder["OwnerID"].AsUUID(),
+                    (short)SLUtil.ContentTypeToSLAssetType(folder["ContentType"].AsString()),
+                    folder["ParentID"].AsUUID(),
+                    (ushort)folder["Version"].AsInteger()
+                );
+            }
+            else
+            {
+                m_log.Warn("[SIMIAN INVENTORY CONNECTOR]: Default folder not found for content type " + contentType + ": " + response["Message"].AsString());
+                return GetRootFolder(userID);
+            }
+        }
+
+        /// <summary>
+        /// Gets the items inside a folder
+        /// </summary>
+        /// <param name="userID"></param>
+        /// <param name="folderID"></param>
+        /// <returns></returns>
+        public List<InventoryItemBase> GetFolderItems(UUID userID, UUID folderID)
+        {
+            InventoryCollection inventory = new InventoryCollection();
+            inventory.UserID = userID;
+
+            NameValueCollection requestArgs = new NameValueCollection
+            {
+                { "RequestMethod", "GetInventoryNode" },
+                { "ItemID", folderID.ToString() },
+                { "OwnerID", userID.ToString() },
+                { "IncludeFolders", "0" },
+                { "IncludeItems", "1" },
+                { "ChildrenOnly", "1" }
+            };
+
+            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
+            if (response["Success"].AsBoolean() && response["Items"] is OSDArray)
+            {
+                OSDArray items = (OSDArray)response["Items"];
+                return GetItemsFromResponse(items);
+            }
+            else
+            {
+                m_log.Warn("[SIMIAN INVENTORY CONNECTOR]: Error fetching folder " + folderID + " for " + userID + ": " +
+                    response["Message"].AsString());
+                return new List<InventoryItemBase>(0);
+            }
+        }
+
+        /// <summary>
+        /// Gets the skeleton of the inventory -- folders only
+        /// </summary>
+        /// <param name="userID"></param>
+        /// <returns></returns>
+        public List<InventoryFolderBase> GetInventorySkeleton(UUID userID)
+        {
+            NameValueCollection requestArgs = new NameValueCollection
+            {
+                { "RequestMethod", "GetInventoryNode" },
+                { "ItemID", userID.ToString() },
+                { "OwnerID", userID.ToString() },
+                { "IncludeFolders", "1" },
+                { "IncludeItems", "0" },
+                { "ChildrenOnly", "0" }
+            };
+
+            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
+            if (response["Success"].AsBoolean() && response["Items"] is OSDArray)
+            {
+                OSDArray items = (OSDArray)response["Items"];
+                return GetFoldersFromResponse(items, userID, true);
+            }
+            else
+            {
+                m_log.Warn("[SIMIAN INVENTORY CONNECTOR]: Failed to retrieve inventory skeleton for " + userID + ": " +
+                    response["Message"].AsString());
+                return new List<InventoryFolderBase>(0);
+            }
+        }
+
+        /// <summary>
+        /// Get an item, given by its UUID
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public InventoryItemBase GetItem(InventoryItemBase item)
+        {
+            NameValueCollection requestArgs = new NameValueCollection
+            {
+                { "RequestMethod", "GetInventoryNode" },
+                { "ItemID", item.ID.ToString() },
+                { "OwnerID", item.Owner.ToString() },
+                { "IncludeFolders", "1" },
+                { "IncludeItems", "1" },
+                { "ChildrenOnly", "1" }
+            };
+
+            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
+            if (response["Success"].AsBoolean() && response["Items"] is OSDArray)
+            {
+                List<InventoryItemBase> items = GetItemsFromResponse((OSDArray)response["Items"]);
+                if (items.Count > 0)
+                {
+                    // The requested item should be the first in this list, but loop through
+                    // and sanity check just in case
+                    for (int i = 0; i < items.Count; i++)
+                    {
+                        if (items[i].ID == item.ID)
+                            return items[i];
+                    }
+                }
+            }
+
+            m_log.Warn("[SIMIAN INVENTORY CONNECTOR]: Item " + item.ID + " owned by " + item.Owner + " not found");
+            return null;
+        }
+
+        /// <summary>
+        /// Retrieve the root inventory folder for the given user.
+        /// </summary>
+        /// <param name="userID"></param>
+        /// <returns>null if no root folder was found</returns>
+        public InventoryFolderBase GetRootFolder(UUID userID)
+        {
+            NameValueCollection requestArgs = new NameValueCollection
+            {
+                { "RequestMethod", "GetInventoryNode" },
+                { "ItemID", userID.ToString() },
+                { "OwnerID", userID.ToString() },
+                { "IncludeFolders", "1" },
+                { "IncludeItems", "0" },
+                { "ChildrenOnly", "1" }
+            };
+
+            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
+            if (response["Success"].AsBoolean() && response["Items"] is OSDArray)
+            {
+                OSDArray items = (OSDArray)response["Items"];
+                List<InventoryFolderBase> folders = GetFoldersFromResponse(items, userID, true);
+
+                if (folders.Count > 0)
+                    return folders[0];
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Does the given user have an inventory structure?
+        /// </summary>
+        /// <param name="userID"></param>
+        /// <returns></returns>
+        public bool HasInventoryForUser(UUID userID)
+        {
+            return GetRootFolder(userID) != null;
+        }
+
+        public void Initialise(IConfigSource source)
+        {
+            IConfig moduleConfig = source.Configs["Modules"];
+            if (moduleConfig != null)
+            {
+                string name = moduleConfig.GetString("InventoryServices", "");
+                if (name == Name)
+                    CommonInit(source);
+            }
+        }
+
+        /// <summary>
+        /// Move an inventory folder to a new location
+        /// </summary>
+        /// <param name="folder">A folder containing the details of the new location</param>
+        /// <returns>true if the folder was successfully moved</returns>
+        public bool MoveFolder(InventoryFolderBase folder)
+        {
+            return AddFolder(folder);
         }
 
         public bool MoveItems(UUID ownerID, List<InventoryItemBase> items)
@@ -652,58 +639,118 @@ namespace OpenSim.Services.Connectors.SimianGrid
         }
 
         /// <summary>
-        /// Does the given user have an inventory structure?
+        /// Purge an inventory folder of all its items and subfolders.
         /// </summary>
-        /// <param name="userID"></param>
-        /// <returns></returns>
-        public bool HasInventoryForUser(UUID userID)
+        /// <param name="folder"></param>
+        /// <returns>true if the folder was successfully purged</returns>
+        public bool PurgeFolder(InventoryFolderBase folder)
         {
-            return GetRootFolder(userID) != null;
+            NameValueCollection requestArgs = new NameValueCollection
+            {
+                { "RequestMethod", "PurgeInventoryFolder" },
+                { "OwnerID", folder.Owner.ToString() },
+                { "FolderID", folder.ID.ToString() }
+            };
+
+            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
+            bool success = response["Success"].AsBoolean();
+
+            if (!success)
+            {
+                m_log.Warn("[SIMIAN INVENTORY CONNECTOR]: Error purging folder " + folder.ID + " for " + folder.Owner + ": " +
+                    response["Message"].AsString());
+            }
+
+            return success;
         }
 
         /// <summary>
-        /// Get the active gestures of the agent.
+        /// Update a folder in the user's inventory
         /// </summary>
-        /// <param name="userID"></param>
-        /// <returns></returns>
-        public List<InventoryItemBase> GetActiveGestures(UUID userID)
+        /// <param name="folder"></param>
+        /// <returns>true if the folder was successfully updated</returns>
+        public bool UpdateFolder(InventoryFolderBase folder)
         {
-            OSDArray items = FetchGestures(userID);
-
-            string[] itemIDs = new string[items.Count];
-            for (int i = 0; i < items.Count; i++)
-                itemIDs[i] = items[i].AsUUID().ToString();
-
-//            NameValueCollection requestArgs = new NameValueCollection
-//            {
-//                { "RequestMethod", "GetInventoryNodes" },
-//                { "OwnerID", userID.ToString() },
-//                { "Items", String.Join(",", itemIDs) }
-//            };
-
-            // FIXME: Implement this in SimianGrid
-            return new List<InventoryItemBase>(0);
+            return AddFolder(folder);
         }
 
         /// <summary>
-        /// Get the union of permissions of all inventory items
-        /// that hold the given assetID. 
+        /// Update an item in the user's inventory
         /// </summary>
-        /// <param name="userID"></param>
-        /// <param name="assetID"></param>
-        /// <returns>The permissions or 0 if no such asset is found in 
-        /// the user's inventory</returns>
-        public int GetAssetPermissions(UUID userID, UUID assetID)
+        /// <param name="item"></param>
+        /// <returns>true if the item was successfully updated</returns>
+        public bool UpdateItem(InventoryItemBase item)
         {
-//            NameValueCollection requestArgs = new NameValueCollection
-//            {
-//                { "RequestMethod", "GetInventoryNodes" },
-//                { "OwnerID", userID.ToString() },
-//                { "AssetID", assetID.ToString() }
-//            };
+            if (item.AssetID != UUID.Zero)
+            {
+                return AddItem(item);
+            }
+            else
+            {
+                // This is actually a folder update
+                InventoryFolderBase folder = new InventoryFolderBase(item.ID, item.Name, item.Owner, (short)item.AssetType, item.Folder, 0);
+                return UpdateFolder(folder);
+            }
+        }
 
-            // FIXME: Implement this in SimianGrid
-            return (int)PermissionMask.All;
+        private void CommonInit(IConfigSource source)
+        {
+            IConfig gridConfig = source.Configs["InventoryService"];
+            if (gridConfig != null)
+            {
+                string serviceUrl = gridConfig.GetString("InventoryServerURI");
+                if (!String.IsNullOrEmpty(serviceUrl))
+                {
+                    if (!serviceUrl.EndsWith("/") && !serviceUrl.EndsWith("="))
+                        serviceUrl = serviceUrl + '/';
+                    m_serverUrl = serviceUrl;
+
+                    gridConfig = source.Configs["UserAccountService"];
+                    if (gridConfig != null)
+                    {
+                        serviceUrl = gridConfig.GetString("UserAccountServerURI");
+                        if (!String.IsNullOrEmpty(serviceUrl))
+                        {
+                            m_userServerUrl = serviceUrl;
+                            m_Enabled = true;
+                        }
+                    }
+                }
+            }
+
+            if (String.IsNullOrEmpty(m_serverUrl))
+                m_log.Info("[SIMIAN INVENTORY CONNECTOR]: No InventoryServerURI specified, disabling connector");
+            else if (String.IsNullOrEmpty(m_userServerUrl))
+                m_log.Info("[SIMIAN INVENTORY CONNECTOR]: No UserAccountServerURI specified, disabling connector");
+        }
+        private OSDArray FetchGestures(UUID userID)
+        {
+            NameValueCollection requestArgs = new NameValueCollection
+            {
+                { "RequestMethod", "GetUser" },
+                { "UserID", userID.ToString() }
+            };
+
+            OSDMap response = SimianGrid.PostToService(m_userServerUrl, requestArgs);
+            if (response["Success"].AsBoolean())
+            {
+                OSDMap user = response["User"] as OSDMap;
+                if (user != null && response.ContainsKey("Gestures"))
+                {
+                    OSD gestures = OSDParser.DeserializeJson(response["Gestures"].AsString());
+                    if (gestures != null && gestures is OSDArray)
+                        return (OSDArray)gestures;
+                    else
+                        m_log.Error("[SIMIAN INVENTORY CONNECTOR]: Unrecognized active gestures data for " + userID);
+                }
+            }
+            else
+            {
+                m_log.Warn("[SIMIAN INVENTORY CONNECTOR]: Failed to fetch active gestures for " + userID + ": " +
+                    response["Message"].AsString());
+            }
+
+            return new OSDArray();
         }
 
         private List<InventoryFolderBase> GetFoldersFromResponse(OSDArray items, UUID baseFolder, bool includeBaseFolder)
@@ -732,7 +779,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
                 }
             }
 
-//            m_log.Debug("[SIMIAN INVENTORY CONNECTOR]: Parsed " + invFolders.Count + " folders from SimianGrid response");
+            //            m_log.Debug("[SIMIAN INVENTORY CONNECTOR]: Parsed " + invFolders.Count + " folders from SimianGrid response");
             return invFolders;
         }
 
@@ -747,7 +794,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
                 if (item != null && item["Type"].AsString() == "Item")
                 {
                     InventoryItemBase invItem = new InventoryItemBase();
-                    
+
                     invItem.AssetID = item["AssetID"].AsUUID();
                     invItem.AssetType = SLUtil.ContentTypeToSLAssetType(item["ContentType"].AsString());
                     invItem.CreationDate = item["CreationDate"].AsInteger();
@@ -798,7 +845,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
                 }
             }
 
-//            m_log.Debug("[SIMIAN INVENTORY CONNECTOR]: Parsed " + invItems.Count + " items from SimianGrid response");
+            //            m_log.Debug("[SIMIAN INVENTORY CONNECTOR]: Parsed " + invItems.Count + " items from SimianGrid response");
             return invItems;
         }
 
@@ -828,6 +875,23 @@ namespace OpenSim.Services.Connectors.SimianGrid
             return success;
         }
 
+        private void SaveGestures(UUID userID, OSDArray gestures)
+        {
+            NameValueCollection requestArgs = new NameValueCollection
+            {
+                { "RequestMethod", "AddUserData" },
+                { "UserID", userID.ToString() },
+                { "Gestures", OSDParser.SerializeJsonString(gestures) }
+            };
+
+            OSDMap response = SimianGrid.PostToService(m_userServerUrl, requestArgs);
+            if (!response["Success"].AsBoolean())
+            {
+                m_log.Warn("[SIMIAN INVENTORY CONNECTOR]: Failed to save active gestures for " + userID + ": " +
+                    response["Message"].AsString());
+            }
+        }
+
         private void UpdateGesture(UUID userID, UUID itemID, bool enabled)
         {
             OSDArray gestures = FetchGestures(userID);
@@ -844,53 +908,6 @@ namespace OpenSim.Services.Connectors.SimianGrid
                 newGestures.Add(OSD.FromUUID(itemID));
 
             SaveGestures(userID, newGestures);
-        }
-
-        private OSDArray FetchGestures(UUID userID)
-        {
-            NameValueCollection requestArgs = new NameValueCollection
-            {
-                { "RequestMethod", "GetUser" },
-                { "UserID", userID.ToString() }
-            };
-
-            OSDMap response = SimianGrid.PostToService(m_userServerUrl, requestArgs);
-            if (response["Success"].AsBoolean())
-            {
-                OSDMap user = response["User"] as OSDMap;
-                if (user != null && response.ContainsKey("Gestures"))
-                {
-                    OSD gestures = OSDParser.DeserializeJson(response["Gestures"].AsString());
-                    if (gestures != null && gestures is OSDArray)
-                        return (OSDArray)gestures;
-                    else
-                        m_log.Error("[SIMIAN INVENTORY CONNECTOR]: Unrecognized active gestures data for " + userID);
-                }
-            }
-            else
-            {
-                m_log.Warn("[SIMIAN INVENTORY CONNECTOR]: Failed to fetch active gestures for " + userID + ": " +
-                    response["Message"].AsString());
-            }
-
-            return new OSDArray();
-        }
-
-        private void SaveGestures(UUID userID, OSDArray gestures)
-        {
-            NameValueCollection requestArgs = new NameValueCollection
-            {
-                { "RequestMethod", "AddUserData" },
-                { "UserID", userID.ToString() },
-                { "Gestures", OSDParser.SerializeJsonString(gestures) }
-            };
-
-            OSDMap response = SimianGrid.PostToService(m_userServerUrl, requestArgs);
-            if (!response["Success"].AsBoolean())
-            {
-                m_log.Warn("[SIMIAN INVENTORY CONNECTOR]: Failed to save active gestures for " + userID + ": " +
-                    response["Message"].AsString());
-            }
         }
     }
 }

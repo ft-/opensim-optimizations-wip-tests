@@ -24,6 +24,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 using OpenMetaverse;
 
 namespace OpenSim.Region.Framework.Interfaces
@@ -35,11 +36,15 @@ namespace OpenSim.Region.Framework.Interfaces
 
         // Request info
         UUID ItemID { get; set; }
+
         uint LocalID { get; set; }
+
         UUID ReqID { get; set; }
 
         void Process();
+
         void SendRequest();
+
         void Stop();
     }
 }

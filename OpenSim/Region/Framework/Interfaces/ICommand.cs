@@ -38,14 +38,19 @@ namespace OpenSim.Region.Framework.Interfaces
 
     public interface ICommand
     {
-        void AddArgument(string name, string helptext, string type);
         Dictionary<string, string> Arguments { get; }
+
         string Help { get; }
-        string Name { get; }
+
         CommandIntentions Intentions { get; }
 
+        string Name { get; }
+
+        void AddArgument(string name, string helptext, string type);
         void Run(object[] args);
-        void ShowConsoleHelp();
+
         string ShortHelp();
+
+        void ShowConsoleHelp();
     }
 }

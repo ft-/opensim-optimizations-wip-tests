@@ -25,7 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using Nini.Config;
 using NUnit.Framework;
 using OpenMetaverse;
@@ -33,6 +32,7 @@ using OpenSim.Framework;
 using OpenSim.Server.Base;
 using OpenSim.Services.Interfaces;
 using OpenSim.Tests.Common;
+using System;
 
 namespace OpenSim.Services.InventoryService.Tests
 {
@@ -45,16 +45,6 @@ namespace OpenSim.Services.InventoryService.Tests
     [TestFixture]
     public class XInventoryServiceTests : OpenSimTestCase
     {
-        private IInventoryService CreateXInventoryService()
-        {
-            IConfigSource config = new IniConfigSource();            
-            config.AddConfig("InventoryService");
-            config.Configs["InventoryService"].Set("StorageProvider", "OpenSim.Tests.Common.dll");
-
-            return ServerUtils.LoadPlugin<IInventoryService>(
-                "OpenSim.Services.InventoryService.dll:XInventoryService", new Object[] { config });
-        }
-
         /// <summary>
         /// Tests add item operation.
         /// </summary>
@@ -73,19 +63,19 @@ namespace OpenSim.Services.InventoryService.Tests
             UUID folderId = TestHelpers.ParseTail(0x30);
             int invType = (int)InventoryType.Animation;
             int assetType = (int)AssetType.Animation;
-            string itemName = "item1";           
+            string itemName = "item1";
 
             IInventoryService xis = CreateXInventoryService();
 
-            InventoryItemBase itemToStore 
-                = new InventoryItemBase(itemId, ownerId) 
-                { 
-                    CreatorIdentification = creatorId.ToString(), 
-                    AssetID = assetId, 
-                    Name = itemName,  
-                    Folder = folderId, 
-                    InvType = invType, 
-                    AssetType = assetType 
+            InventoryItemBase itemToStore
+                = new InventoryItemBase(itemId, ownerId)
+                {
+                    CreatorIdentification = creatorId.ToString(),
+                    AssetID = assetId,
+                    Name = itemName,
+                    Folder = folderId,
+                    InvType = invType,
+                    AssetType = assetType
                 };
 
             Assert.That(xis.AddItem(itemToStore), Is.True);
@@ -107,7 +97,7 @@ namespace OpenSim.Services.InventoryService.Tests
         public void TestUpdateItem()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             string creatorId = TestHelpers.ParseTail(0x1).ToString();
             UUID ownerId = TestHelpers.ParseTail(0x2);
@@ -116,20 +106,20 @@ namespace OpenSim.Services.InventoryService.Tests
             UUID folderId = TestHelpers.ParseTail(0x30);
             int invType = (int)InventoryType.Animation;
             int assetType = (int)AssetType.Animation;
-            string itemName = "item1";           
+            string itemName = "item1";
             string itemName2 = "item2";
 
             IInventoryService xis = CreateXInventoryService();
 
-            InventoryItemBase itemToStore 
-                = new InventoryItemBase(itemId, ownerId) 
-                { 
-                    CreatorIdentification = creatorId.ToString(), 
-                    AssetID = assetId, 
-                    Name = itemName,  
-                    Folder = folderId, 
-                    InvType = invType, 
-                    AssetType = assetType 
+            InventoryItemBase itemToStore
+                = new InventoryItemBase(itemId, ownerId)
+                {
+                    CreatorIdentification = creatorId.ToString(),
+                    AssetID = assetId,
+                    Name = itemName,
+                    Folder = folderId,
+                    InvType = invType,
+                    AssetType = assetType
                 };
 
             Assert.That(xis.AddItem(itemToStore), Is.True);
@@ -151,7 +141,7 @@ namespace OpenSim.Services.InventoryService.Tests
             UUID folderId2 = TestHelpers.ParseTail(0x70);
             int invType2 = (int)InventoryType.CallingCard;
             int assetType2 = (int)AssetType.CallingCard;
-            string itemName3 = "item3"; 
+            string itemName3 = "item3";
 
             itemToStore.CreatorIdentification = creatorId2.ToString();
             itemToStore.Owner = ownerId2;
@@ -172,6 +162,16 @@ namespace OpenSim.Services.InventoryService.Tests
             Assert.That(itemRetrieved.InvType, Is.EqualTo(invType));
             Assert.That(itemRetrieved.AssetType, Is.EqualTo(assetType));
             Assert.That(itemRetrieved.Name, Is.EqualTo(itemName3));
+        }
+
+        private IInventoryService CreateXInventoryService()
+        {
+            IConfigSource config = new IniConfigSource();
+            config.AddConfig("InventoryService");
+            config.Configs["InventoryService"].Set("StorageProvider", "OpenSim.Tests.Common.dll");
+
+            return ServerUtils.LoadPlugin<IInventoryService>(
+                "OpenSim.Services.InventoryService.dll:XInventoryService", new Object[] { config });
         }
     }
 }

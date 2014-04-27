@@ -25,27 +25,58 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using log4net;
 using Mono.Addins;
 using Nini.Config;
-using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Framework.Console;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.CoreModules.World
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "AccessModule")]
     public class AccessModule : ISharedRegionModule
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-                
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         private List<Scene> m_SceneList = new List<Scene>();
+
+        public string Name
+        {
+            get { return "AccessModule"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
+        public void AddRegion(Scene scene)
+        {
+            if (!m_SceneList.Contains(scene))
+                m_SceneList.Add(scene);
+        }
+
+        public void Close()
+        {
+        }
+
+        public void HandleLoginCommand(string module, string[] cmd)
+        {
+            if ((Scene)MainConsole.Instance.ConsoleScene == null)
+            {
+                foreach (Scene s in m_SceneList)
+                {
+                    if (!ProcessCommand(s, cmd))
+                        break;
+                }
+            }
+            else
+            {
+                ProcessCommand((Scene)MainConsole.Instance.ConsoleScene, cmd);
+            }
+        }
 
         public void Initialise(IConfigSource config)
         {
@@ -74,53 +105,15 @@ namespace OpenSim.Region.CoreModules.World
         public void PostInitialise()
         {
         }
-
-        public void Close()
+        public void RegionLoaded(Scene scene)
         {
-        }
-
-        public string Name
-        {
-            get { return "AccessModule"; }
-        }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            if (!m_SceneList.Contains(scene))
-                m_SceneList.Add(scene);
         }
 
         public void RemoveRegion(Scene scene)
         {
             m_SceneList.Remove(scene);
         }
-
-        public void RegionLoaded(Scene scene)
-        {
-        }
-
-        public void HandleLoginCommand(string module, string[] cmd)
-        {
-            if ((Scene)MainConsole.Instance.ConsoleScene == null)
-            {
-                foreach (Scene s in m_SceneList)
-                {
-                    if (!ProcessCommand(s, cmd))
-                        break;
-                }
-            }
-            else
-            {
-                ProcessCommand((Scene)MainConsole.Instance.ConsoleScene, cmd);
-            }
-        }
-
-        bool ProcessCommand(Scene scene, string[] cmd)
+        private bool ProcessCommand(Scene scene, string[] cmd)
         {
             if (cmd.Length < 2)
             {
@@ -130,23 +123,26 @@ namespace OpenSim.Region.CoreModules.World
 
             switch (cmd[1])
             {
-            case "enable":
-                scene.LoginsEnabled = true;
-                MainConsole.Instance.Output(String.Format("Logins are enabled for region {0}", scene.RegionInfo.RegionName));
-                break;
-            case "disable":
-                scene.LoginsEnabled = false;
-                MainConsole.Instance.Output(String.Format("Logins are disabled for region {0}", scene.RegionInfo.RegionName));
-                break;
-            case "status":
-                if (scene.LoginsEnabled)
-                    MainConsole.Instance.Output(String.Format("Login in {0} are enabled", scene.RegionInfo.RegionName));
-                else
-                    MainConsole.Instance.Output(String.Format("Login in {0} are disabled", scene.RegionInfo.RegionName));
-                break;
-            default:
-                MainConsole.Instance.Output("Syntax: login enable|disable|status");
-                return false;
+                case "enable":
+                    scene.LoginsEnabled = true;
+                    MainConsole.Instance.Output(String.Format("Logins are enabled for region {0}", scene.RegionInfo.RegionName));
+                    break;
+
+                case "disable":
+                    scene.LoginsEnabled = false;
+                    MainConsole.Instance.Output(String.Format("Logins are disabled for region {0}", scene.RegionInfo.RegionName));
+                    break;
+
+                case "status":
+                    if (scene.LoginsEnabled)
+                        MainConsole.Instance.Output(String.Format("Login in {0} are enabled", scene.RegionInfo.RegionName));
+                    else
+                        MainConsole.Instance.Output(String.Format("Login in {0} are disabled", scene.RegionInfo.RegionName));
+                    break;
+
+                default:
+                    MainConsole.Instance.Output("Syntax: login enable|disable|status");
+                    return false;
             }
 
             return true;

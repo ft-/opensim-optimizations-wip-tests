@@ -25,17 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Reflection;
 using log4net;
 using Nini.Config;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
 using OpenSim.Framework;
 using OpenSim.Services.Interfaces;
-
+using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Reflection;
 using FriendInfo = OpenSim.Services.Interfaces.FriendInfo;
 
 namespace OpenSim.Services.Connectors.SimianGrid
@@ -75,6 +74,33 @@ namespace OpenSim.Services.Connectors.SimianGrid
         }
 
         #region IFriendsService
+
+        public bool Delete(UUID principalID, string friend)
+        {
+            return Delete(principalID.ToString(), friend);
+        }
+
+        public bool Delete(string principalID, string friend)
+        {
+            if (String.IsNullOrEmpty(m_serverUrl))
+                return true;
+
+            NameValueCollection requestArgs = new NameValueCollection
+            {
+                { "RequestMethod", "RemoveGeneric" },
+                { "OwnerID", principalID.ToString() },
+                { "Type", "Friend" },
+                { "Key", friend }
+            };
+
+            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
+            bool success = response["Success"].AsBoolean();
+
+            if (!success)
+                m_log.Error("[SIMIAN FRIENDS CONNECTOR]: Failed to remove friend " + friend + " for user " + principalID + ": " + response["Message"].AsString());
+
+            return success;
+        }
 
         public FriendInfo[] GetFriends(UUID principalID)
         {
@@ -161,34 +187,6 @@ namespace OpenSim.Services.Connectors.SimianGrid
 
             return success;
         }
-
-        public bool Delete(UUID principalID, string friend)
-        {
-            return Delete(principalID.ToString(), friend);
-        }
-
-        public bool Delete(string principalID, string friend)
-        {
-            if (String.IsNullOrEmpty(m_serverUrl))
-                return true;
-
-            NameValueCollection requestArgs = new NameValueCollection
-            {
-                { "RequestMethod", "RemoveGeneric" },
-                { "OwnerID", principalID.ToString() },
-                { "Type", "Friend" },
-                { "Key", friend }
-            };
-
-            OSDMap response = SimianGrid.PostToService(m_serverUrl, requestArgs);
-            bool success = response["Success"].AsBoolean();
-
-            if (!success)
-                m_log.Error("[SIMIAN FRIENDS CONNECTOR]: Failed to remove friend " + friend + " for user " + principalID + ": " + response["Message"].AsString());
-
-            return success;
-        }
-
         #endregion IFriendsService
 
         private OSDArray GetFriended(string ownerID)

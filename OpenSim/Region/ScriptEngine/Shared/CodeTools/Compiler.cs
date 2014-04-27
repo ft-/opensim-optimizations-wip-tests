@@ -25,26 +25,33 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Microsoft.CSharp;
+
+//using Microsoft.JScript;
+using Microsoft.VisualBasic;
+using OpenMetaverse;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.ScriptEngine.Interfaces;
 using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Reflection;
 using System.IO;
+using System.Reflection;
 using System.Text;
-using Microsoft.CSharp;
-//using Microsoft.JScript;
-using Microsoft.VisualBasic;
-using log4net;
-
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.ScriptEngine.Interfaces;
-using OpenMetaverse;
 
 namespace OpenSim.Region.ScriptEngine.Shared.CodeTools
 {
     public class Compiler : ICompiler
     {
+        public bool in_startup = true;
+        /// <summary>
+        /// This contains number of lines WE use for header when compiling script. User will get error in line x-LinesToRemoveOnError when error occurs.
+        /// </summary>
+        public int LinesToRemoveOnError = 3;
+
+        public IScriptEngine m_scriptEngine;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         // * Uses "LSL2Converter" to convert LSL to C# if necessary.
@@ -54,6 +61,46 @@ namespace OpenSim.Region.ScriptEngine.Shared.CodeTools
         // Assembly is compiled using LSL_BaseClass as base. Look at debug C# code file created when LSL script is compiled for full details.
         //
 
+        private static CSharpCodeProvider CScodeProvider = new CSharpCodeProvider();
+
+        // private static int instanceID = new Random().Next(0, int.MaxValue);                 // Unique number to use on our compiled files
+        private static UInt64 scriptCompileCounter = 0;
+
+        // private object m_syncy = new object();
+        private static VBCodeProvider VBcodeProvider = new VBCodeProvider();
+
+        private Dictionary<string, bool> AllowedCompilers = new Dictionary<string, bool>(StringComparer.CurrentCultureIgnoreCase);
+
+        private bool CompileWithDebugInformation;
+
+        private enumCompileType DefaultCompileLanguage;
+
+        private string FilePrefix;
+
+        private Dictionary<string, enumCompileType> LanguageMapping = new Dictionary<string, enumCompileType>(StringComparer.CurrentCultureIgnoreCase);
+
+        // mapping between LSL and C# line/column numbers
+        private ICodeConverter LSL_Converter;
+
+        private bool m_insertCoopTerminationCalls;
+
+        // And a counter
+        private Dictionary<string, Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>>> m_lineMaps =
+            new Dictionary<string, Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>>>();
+
+        private List<string> m_warnings = new List<string>();
+
+        private string ScriptEnginesPath = null;
+
+        private bool WriteScriptSourceToDebugFile;
+
+        public Compiler(IScriptEngine scriptEngine)
+        {
+            m_scriptEngine = scriptEngine;
+            ScriptEnginesPath = scriptEngine.ScriptEnginePath;
+            ReadConfig();
+        }
+
         internal enum enumCompileType
         {
             lsl = 0,
@@ -62,44 +109,214 @@ namespace OpenSim.Region.ScriptEngine.Shared.CodeTools
             js = 3,
             yp = 4
         }
+        public static KeyValuePair<int, int> FindErrorPosition(int line,
+                int col, Dictionary<KeyValuePair<int, int>,
+                KeyValuePair<int, int>> positionMap)
+        {
+            if (positionMap == null || positionMap.Count == 0)
+                return new KeyValuePair<int, int>(line, col);
+
+            KeyValuePair<int, int> ret = new KeyValuePair<int, int>();
+
+            if (positionMap.TryGetValue(new KeyValuePair<int, int>(line, col),
+                    out ret))
+                return ret;
+
+            List<KeyValuePair<int, int>> sorted =
+                    new List<KeyValuePair<int, int>>(positionMap.Keys);
+
+            sorted.Sort(new kvpSorter());
+
+            int l = 1;
+            int c = 1;
+
+            foreach (KeyValuePair<int, int> cspos in sorted)
+            {
+                if (cspos.Key >= line)
+                {
+                    if (cspos.Key > line)
+                        return new KeyValuePair<int, int>(l, c);
+                    if (cspos.Value > col)
+                        return new KeyValuePair<int, int>(l, c);
+                    c = cspos.Value;
+                    if (c == 0)
+                        c++;
+                }
+                else
+                {
+                    l = cspos.Key;
+                }
+            }
+            return new KeyValuePair<int, int>(l, c);
+        }
+
+        public string GetCompilerOutput(string assetID)
+        {
+            return Path.Combine(ScriptEnginesPath, Path.Combine(
+                    m_scriptEngine.World.RegionInfo.RegionID.ToString(),
+                    FilePrefix + "_compiled_" + assetID + ".dll"));
+        }
+
+        ////private ICodeCompiler icc = codeProvider.CreateCompiler();
+        //public string CompileFromFile(string LSOFileName)
+        //{
+        //    switch (Path.GetExtension(LSOFileName).ToLower())
+        //    {
+        //        case ".txt":
+        //        case ".lsl":
+        //            Common.ScriptEngineBase.Shared.SendToDebug("Source code is LSL, converting to CS");
+        //            return CompileFromLSLText(File.ReadAllText(LSOFileName));
+        //        case ".cs":
+        //            Common.ScriptEngineBase.Shared.SendToDebug("Source code is CS");
+        //            return CompileFromCSText(File.ReadAllText(LSOFileName));
+        //        default:
+        //            throw new Exception("Unknown script type.");
+        //    }
+        //}
+        public string GetCompilerOutput(UUID assetID)
+        {
+            return GetCompilerOutput(assetID.ToString());
+        }
+
+        public string[] GetWarnings()
+        {
+            return m_warnings.ToArray();
+        }
 
         /// <summary>
-        /// This contains number of lines WE use for header when compiling script. User will get error in line x-LinesToRemoveOnError when error occurs.
+        /// Converts script from LSL to CS and calls CompileFromCSText
         /// </summary>
-        public int LinesToRemoveOnError = 3;
-        private enumCompileType DefaultCompileLanguage;
-        private bool WriteScriptSourceToDebugFile;
-        private bool CompileWithDebugInformation;
-        private Dictionary<string, bool> AllowedCompilers = new Dictionary<string, bool>(StringComparer.CurrentCultureIgnoreCase);
-        private Dictionary<string, enumCompileType> LanguageMapping = new Dictionary<string, enumCompileType>(StringComparer.CurrentCultureIgnoreCase);
-        private bool m_insertCoopTerminationCalls;
-
-        private string FilePrefix;
-        private string ScriptEnginesPath = null;
-        // mapping between LSL and C# line/column numbers
-        private ICodeConverter LSL_Converter;
-
-        private List<string> m_warnings = new List<string>();
-
-        // private object m_syncy = new object();
-
-        private static CSharpCodeProvider CScodeProvider = new CSharpCodeProvider();
-        private static VBCodeProvider VBcodeProvider = new VBCodeProvider();
-
-        // private static int instanceID = new Random().Next(0, int.MaxValue);                 // Unique number to use on our compiled files
-        private static UInt64 scriptCompileCounter = 0;                                     // And a counter
-
-        public IScriptEngine m_scriptEngine;
-        private Dictionary<string, Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>>> m_lineMaps =
-            new Dictionary<string, Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>>>();
-
-        public bool in_startup = true;
-
-        public Compiler(IScriptEngine scriptEngine)
+        /// <param name="Script">LSL script</param>
+        /// <returns>Filename to .dll assembly</returns>
+        public void PerformScriptCompile(string Script, string asset, UUID ownerUUID,
+            out string assembly, out Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>> linemap)
         {
-            m_scriptEngine = scriptEngine;
-            ScriptEnginesPath = scriptEngine.ScriptEnginePath;
-            ReadConfig();
+            //            m_log.DebugFormat("[Compiler]: Compiling script\n{0}", Script);
+
+            IScriptModuleComms comms = m_scriptEngine.World.RequestModuleInterface<IScriptModuleComms>();
+
+            linemap = null;
+            m_warnings.Clear();
+
+            assembly = GetCompilerOutput(asset);
+
+            if (!Directory.Exists(ScriptEnginesPath))
+            {
+                try
+                {
+                    Directory.CreateDirectory(ScriptEnginesPath);
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            if (!Directory.Exists(Path.Combine(ScriptEnginesPath,
+                                               m_scriptEngine.World.RegionInfo.RegionID.ToString())))
+            {
+                try
+                {
+                    Directory.CreateDirectory(ScriptEnginesPath);
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            // Don't recompile if we already have it
+            // Performing 3 file exists tests for every script can still be slow
+            if (File.Exists(assembly) && File.Exists(assembly + ".text") && File.Exists(assembly + ".map"))
+            {
+                // If we have already read this linemap file, then it will be in our dictionary.
+                // Don't build another copy of the dictionary (saves memory) and certainly
+                // don't keep reading the same file from disk multiple times.
+                if (!m_lineMaps.ContainsKey(assembly))
+                    m_lineMaps[assembly] = ReadMapFile(assembly + ".map");
+                linemap = m_lineMaps[assembly];
+                return;
+            }
+
+            if (Script == String.Empty)
+            {
+                throw new Exception("Cannot find script assembly and no script text present");
+            }
+
+            enumCompileType language = DefaultCompileLanguage;
+
+            if (Script.StartsWith("//c#", true, CultureInfo.InvariantCulture))
+                language = enumCompileType.cs;
+            if (Script.StartsWith("//vb", true, CultureInfo.InvariantCulture))
+            {
+                language = enumCompileType.vb;
+                // We need to remove //vb, it won't compile with that
+
+                Script = Script.Substring(4, Script.Length - 4);
+            }
+            if (Script.StartsWith("//lsl", true, CultureInfo.InvariantCulture))
+                language = enumCompileType.lsl;
+
+            if (Script.StartsWith("//js", true, CultureInfo.InvariantCulture))
+                language = enumCompileType.js;
+
+            if (Script.StartsWith("//yp", true, CultureInfo.InvariantCulture))
+                language = enumCompileType.yp;
+
+            //            m_log.DebugFormat("[Compiler]: Compile language is {0}", language);
+
+            if (!AllowedCompilers.ContainsKey(language.ToString()))
+            {
+                // Not allowed to compile to this language!
+                string errtext = String.Empty;
+                errtext += "The compiler for language \"" + language.ToString() + "\" is not in list of allowed compilers. Script will not be executed!";
+                throw new Exception(errtext);
+            }
+
+            if (m_scriptEngine.World.Permissions.CanCompileScript(ownerUUID, (int)language) == false)
+            {
+                // Not allowed to compile to this language!
+                string errtext = String.Empty;
+                errtext += ownerUUID + " is not in list of allowed users for this scripting language. Script will not be executed!";
+                throw new Exception(errtext);
+            }
+
+            string compileScript = Script;
+
+            if (language == enumCompileType.lsl)
+            {
+                // Its LSL, convert it to C#
+                LSL_Converter = (ICodeConverter)new CSCodeGenerator(comms, m_insertCoopTerminationCalls);
+                compileScript = LSL_Converter.Convert(Script);
+
+                // copy converter warnings into our warnings.
+                foreach (string warning in LSL_Converter.GetWarnings())
+                {
+                    AddWarning(warning);
+                }
+
+                linemap = ((CSCodeGenerator)LSL_Converter).PositionMap;
+                // Write the linemap to a file and save it in our dictionary for next time.
+                m_lineMaps[assembly] = linemap;
+                WriteMapFile(assembly + ".map", linemap);
+            }
+
+            switch (language)
+            {
+                case enumCompileType.cs:
+                case enumCompileType.lsl:
+                    compileScript = CreateCSCompilerScript(
+                        compileScript,
+                        m_scriptEngine.ScriptClassName,
+                        m_scriptEngine.ScriptBaseClassName,
+                        m_scriptEngine.ScriptBaseClassParameters);
+                    break;
+
+                case enumCompileType.vb:
+                    compileScript = CreateVBCompilerScript(
+                        compileScript, m_scriptEngine.ScriptClassName, m_scriptEngine.ScriptBaseClassName);
+                    break;
+            }
+
+            assembly = CompileFromDotNetText(compileScript, language, asset, assembly);
         }
 
         public void ReadConfig()
@@ -121,7 +338,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.CodeTools
             {
                 in_startup = false;
                 CreateScriptsDirectory();
-                
+
                 // First time we start? Delete old files
                 if (DeleteScriptsOnStartup)
                     DeleteOldFiles();
@@ -141,7 +358,6 @@ namespace OpenSim.Region.ScriptEngine.Shared.CodeTools
 #if DEBUG
             m_log.Debug("[Compiler]: Allowed languages: " + allowComp);
 #endif
-
 
             foreach (string strl in allowComp.Split(','))
             {
@@ -189,7 +405,352 @@ namespace OpenSim.Region.ScriptEngine.Shared.CodeTools
             }
 
             // We now have an allow-list, a mapping list, and a default language
+        }
 
+        /// <summary>
+        /// Compile .NET script to .Net assembly (.dll)
+        /// </summary>
+        /// <param name="Script">CS script</param>
+        /// <returns>Filename to .dll assembly</returns>
+        internal string CompileFromDotNetText(string Script, enumCompileType lang, string asset, string assembly)
+        {
+            //            m_log.DebugFormat("[Compiler]: Compiling to assembly\n{0}", Script);
+
+            string ext = "." + lang.ToString();
+
+            // Output assembly name
+            scriptCompileCounter++;
+            try
+            {
+                File.Delete(assembly);
+            }
+            catch (Exception e) // NOTLEGIT - Should be just FileIOException
+            {
+                throw new Exception("Unable to delete old existing " +
+                        "script-file before writing new. Compile aborted: " +
+                        e.ToString());
+            }
+
+            // DEBUG - write source to disk
+            if (WriteScriptSourceToDebugFile)
+            {
+                string srcFileName = FilePrefix + "_source_" +
+                        Path.GetFileNameWithoutExtension(assembly) + ext;
+                try
+                {
+                    File.WriteAllText(Path.Combine(Path.Combine(
+                        ScriptEnginesPath,
+                        m_scriptEngine.World.RegionInfo.RegionID.ToString()),
+                        srcFileName), Script);
+                }
+                catch (Exception ex) //NOTLEGIT - Should be just FileIOException
+                {
+                    m_log.Error("[Compiler]: Exception while " +
+                                "trying to write script source to file \"" +
+                                srcFileName + "\": " + ex.ToString());
+                }
+            }
+
+            // Do actual compile
+            CompilerParameters parameters = new CompilerParameters();
+
+            parameters.IncludeDebugInformation = true;
+
+            string rootPath = AppDomain.CurrentDomain.BaseDirectory;
+
+            parameters.ReferencedAssemblies.Add(Path.Combine(rootPath,
+                    "OpenSim.Region.ScriptEngine.Shared.dll"));
+            parameters.ReferencedAssemblies.Add(Path.Combine(rootPath,
+                    "OpenSim.Region.ScriptEngine.Shared.Api.Runtime.dll"));
+            parameters.ReferencedAssemblies.Add(Path.Combine(rootPath,
+                    "OpenMetaverseTypes.dll"));
+
+            if (m_scriptEngine.ScriptReferencedAssemblies != null)
+                Array.ForEach<string>(
+                    m_scriptEngine.ScriptReferencedAssemblies,
+                    a => parameters.ReferencedAssemblies.Add(Path.Combine(rootPath, a)));
+
+            if (lang == enumCompileType.yp)
+            {
+                parameters.ReferencedAssemblies.Add(Path.Combine(rootPath,
+                        "OpenSim.Region.ScriptEngine.Shared.YieldProlog.dll"));
+            }
+
+            parameters.GenerateExecutable = false;
+            parameters.OutputAssembly = assembly;
+            parameters.IncludeDebugInformation = CompileWithDebugInformation;
+            //parameters.WarningLevel = 1; // Should be 4?
+            parameters.TreatWarningsAsErrors = false;
+
+            CompilerResults results;
+            switch (lang)
+            {
+                case enumCompileType.vb:
+                    results = VBcodeProvider.CompileAssemblyFromSource(
+                            parameters, Script);
+                    break;
+
+                case enumCompileType.cs:
+                case enumCompileType.lsl:
+                    bool complete = false;
+                    bool retried = false;
+                    do
+                    {
+                        lock (CScodeProvider)
+                        {
+                            results = CScodeProvider.CompileAssemblyFromSource(
+                                parameters, Script);
+                        }
+
+                        // Deal with an occasional segv in the compiler.
+                        // Rarely, if ever, occurs twice in succession.
+                        // Line # == 0 and no file name are indications that
+                        // this is a native stack trace rather than a normal
+                        // error log.
+                        if (results.Errors.Count > 0)
+                        {
+                            if (!retried && string.IsNullOrEmpty(results.Errors[0].FileName) &&
+                                results.Errors[0].Line == 0)
+                            {
+                                // System.Console.WriteLine("retrying failed compilation");
+                                retried = true;
+                            }
+                            else
+                            {
+                                complete = true;
+                            }
+                        }
+                        else
+                        {
+                            complete = true;
+                        }
+                    } while (!complete);
+                    break;
+
+                default:
+                    throw new Exception("Compiler is not able to recongnize " +
+                                        "language type \"" + lang.ToString() + "\"");
+            }
+
+            //            foreach (Type type in results.CompiledAssembly.GetTypes())
+            //            {
+            //                foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
+            //                {
+            //                    m_log.DebugFormat("[COMPILER]: {0}.{1}", type.FullName, method.Name);
+            //                }
+            //            }
+
+            //
+            // WARNINGS AND ERRORS
+            //
+            bool hadErrors = false;
+            string errtext = String.Empty;
+            if (results.Errors.Count > 0)
+            {
+                foreach (CompilerError CompErr in results.Errors)
+                {
+                    string severity = CompErr.IsWarning ? "Warning" : "Error";
+
+                    KeyValuePair<int, int> errorPos;
+
+                    // Show 5 errors max, but check entire list for errors
+
+                    if (severity == "Error")
+                    {
+                        // C# scripts will not have a linemap since theres no line translation involved.
+                        if (!m_lineMaps.ContainsKey(assembly))
+                            errorPos = new KeyValuePair<int, int>(CompErr.Line, CompErr.Column);
+                        else
+                            errorPos = FindErrorPosition(CompErr.Line, CompErr.Column, m_lineMaps[assembly]);
+
+                        string text = CompErr.ErrorText;
+
+                        // Use LSL type names
+                        if (lang == enumCompileType.lsl)
+                            text = ReplaceTypes(CompErr.ErrorText);
+
+                        // The Second Life viewer's script editor begins
+                        // countingn lines and columns at 0, so we subtract 1.
+                        errtext += String.Format("({0},{1}): {4} {2}: {3}\n",
+                                errorPos.Key - 1, errorPos.Value - 1,
+                                CompErr.ErrorNumber, text, severity);
+                        hadErrors = true;
+                    }
+                }
+            }
+
+            if (hadErrors)
+            {
+                throw new Exception(errtext);
+            }
+
+            //  On today's highly asynchronous systems, the result of
+            //  the compile may not be immediately apparent. Wait a
+            //  reasonable amount of time before giving up on it.
+
+            if (!File.Exists(assembly))
+            {
+                for (int i = 0; i < 20 && !File.Exists(assembly); i++)
+                {
+                    System.Threading.Thread.Sleep(250);
+                }
+                // One final chance...
+                if (!File.Exists(assembly))
+                {
+                    errtext = String.Empty;
+                    errtext += "No compile error. But not able to locate compiled file.";
+                    throw new Exception(errtext);
+                }
+            }
+
+            //            m_log.DebugFormat("[Compiler] Compiled new assembly "+
+            //                    "for {0}", asset);
+
+            // Because windows likes to perform exclusive locks, we simply
+            // write out a textual representation of the file here
+            //
+            // Read the binary file into a buffer
+            //
+            FileInfo fi = new FileInfo(assembly);
+
+            if (fi == null)
+            {
+                errtext = String.Empty;
+                errtext += "No compile error. But not able to stat file.";
+                throw new Exception(errtext);
+            }
+
+            Byte[] data = new Byte[fi.Length];
+
+            try
+            {
+                FileStream fs = File.Open(assembly, FileMode.Open, FileAccess.Read);
+                fs.Read(data, 0, data.Length);
+                fs.Close();
+            }
+            catch (Exception)
+            {
+                errtext = String.Empty;
+                errtext += "No compile error. But not able to open file.";
+                throw new Exception(errtext);
+            }
+
+            // Convert to base64
+            //
+            string filetext = System.Convert.ToBase64String(data);
+
+            Byte[] buf = Encoding.ASCII.GetBytes(filetext);
+
+            FileStream sfs = File.Create(assembly + ".text");
+            sfs.Write(buf, 0, buf.Length);
+            sfs.Close();
+
+            return assembly;
+        }
+
+        private static string CreateCSCompilerScript(
+                    string compileScript, string className, string baseClassName, ParameterInfo[] constructorParameters)
+        {
+            compileScript = string.Format(
+@"using OpenSim.Region.ScriptEngine.Shared;
+using System.Collections.Generic;
+
+namespace SecondLife
+{{
+    public class {0} : {1}
+    {{
+        public {0}({2}) : base({3}) {{}}
+{4}
+    }}
+}}",
+                className,
+                baseClassName,
+                constructorParameters != null
+                    ? string.Join(", ", Array.ConvertAll<ParameterInfo, string>(constructorParameters, pi => pi.ToString()))
+                    : "",
+                constructorParameters != null
+                    ? string.Join(", ", Array.ConvertAll<ParameterInfo, string>(constructorParameters, pi => pi.Name))
+                    : "",
+                compileScript);
+
+            return compileScript;
+        }
+
+        //        private static string CreateJSCompilerScript(string compileScript)
+        //        {
+        //            compileScript = String.Empty +
+        //                "import OpenSim.Region.ScriptEngine.Shared; import System.Collections.Generic;\r\n" +
+        //                "package SecondLife {\r\n" +
+        //                "class Script extends OpenSim.Region.ScriptEngine.Shared.ScriptBase.ScriptBaseClass { \r\n" +
+        //                compileScript +
+        //                "} }\r\n";
+        //            return compileScript;
+        //        }
+        private static string CreateVBCompilerScript(string compileScript, string className, string baseClassName)
+        {
+            compileScript = String.Empty +
+                "Imports OpenSim.Region.ScriptEngine.Shared: Imports System.Collections.Generic: " +
+                String.Empty + "NameSpace SecondLife:" +
+                String.Empty + "Public Class " + className + ": Inherits " + baseClassName +
+                "\r\nPublic Sub New()\r\nEnd Sub: " +
+                compileScript +
+                ":End Class :End Namespace\r\n";
+
+            return compileScript;
+        }
+
+        private static Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>> ReadMapFile(string filename)
+        {
+            Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>> linemap;
+            try
+            {
+                StreamReader r = File.OpenText(filename);
+                linemap = new Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>>();
+
+                string line;
+                while ((line = r.ReadLine()) != null)
+                {
+                    String[] parts = line.Split(new Char[] { ',' });
+                    int kk = System.Convert.ToInt32(parts[0]);
+                    int kv = System.Convert.ToInt32(parts[1]);
+                    int vk = System.Convert.ToInt32(parts[2]);
+                    int vv = System.Convert.ToInt32(parts[3]);
+
+                    KeyValuePair<int, int> k = new KeyValuePair<int, int>(kk, kv);
+                    KeyValuePair<int, int> v = new KeyValuePair<int, int>(vk, vv);
+
+                    linemap[k] = v;
+                }
+            }
+            catch
+            {
+                linemap = new Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>>();
+            }
+            return linemap;
+        }
+
+        private static void WriteMapFile(string filename, Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>> linemap)
+        {
+            string mapstring = String.Empty;
+            foreach (KeyValuePair<KeyValuePair<int, int>, KeyValuePair<int, int>> kvp in linemap)
+            {
+                KeyValuePair<int, int> k = kvp.Key;
+                KeyValuePair<int, int> v = kvp.Value;
+                mapstring += String.Format("{0},{1},{2},{3}\n", k.Key, k.Value, v.Key, v.Value);
+            }
+
+            Byte[] mapbytes = Encoding.ASCII.GetBytes(mapstring);
+            FileStream mfs = File.Create(filename);
+            mfs.Write(mapbytes, 0, mapbytes.Length);
+            mfs.Close();
+        }
+
+        private void AddWarning(string warning)
+        {
+            if (!m_warnings.Contains(warning))
+            {
+                m_warnings.Add(warning);
+            }
         }
 
         /// <summary>
@@ -255,526 +816,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.CodeTools
                 }
             }
         }
-
-        ////private ICodeCompiler icc = codeProvider.CreateCompiler();
-        //public string CompileFromFile(string LSOFileName)
-        //{
-        //    switch (Path.GetExtension(LSOFileName).ToLower())
-        //    {
-        //        case ".txt":
-        //        case ".lsl":
-        //            Common.ScriptEngineBase.Shared.SendToDebug("Source code is LSL, converting to CS");
-        //            return CompileFromLSLText(File.ReadAllText(LSOFileName));
-        //        case ".cs":
-        //            Common.ScriptEngineBase.Shared.SendToDebug("Source code is CS");
-        //            return CompileFromCSText(File.ReadAllText(LSOFileName));
-        //        default:
-        //            throw new Exception("Unknown script type.");
-        //    }
-        //}
-
-        public string GetCompilerOutput(string assetID)
-        {
-            return Path.Combine(ScriptEnginesPath, Path.Combine(
-                    m_scriptEngine.World.RegionInfo.RegionID.ToString(),
-                    FilePrefix + "_compiled_" + assetID + ".dll"));
-        }
-
-        public string GetCompilerOutput(UUID assetID)
-        {
-            return GetCompilerOutput(assetID.ToString());
-        }
-
-        /// <summary>
-        /// Converts script from LSL to CS and calls CompileFromCSText
-        /// </summary>
-        /// <param name="Script">LSL script</param>
-        /// <returns>Filename to .dll assembly</returns>
-        public void PerformScriptCompile(string Script, string asset, UUID ownerUUID,
-            out string assembly, out Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>> linemap)
-        {
-//            m_log.DebugFormat("[Compiler]: Compiling script\n{0}", Script);
-
-            IScriptModuleComms comms = m_scriptEngine.World.RequestModuleInterface<IScriptModuleComms>();
-
-            linemap = null;
-            m_warnings.Clear();
-
-            assembly = GetCompilerOutput(asset);
-
-            if (!Directory.Exists(ScriptEnginesPath))
-            {
-                try
-                {
-                    Directory.CreateDirectory(ScriptEnginesPath);
-                }
-                catch (Exception)
-                {
-                }
-            }
-
-            if (!Directory.Exists(Path.Combine(ScriptEnginesPath,
-                                               m_scriptEngine.World.RegionInfo.RegionID.ToString())))
-            {
-                try
-                {
-                    Directory.CreateDirectory(ScriptEnginesPath);
-                }
-                catch (Exception)
-                {
-                }
-            }
-
-            // Don't recompile if we already have it
-            // Performing 3 file exists tests for every script can still be slow
-            if (File.Exists(assembly) && File.Exists(assembly + ".text") && File.Exists(assembly + ".map"))
-            {
-                // If we have already read this linemap file, then it will be in our dictionary. 
-                // Don't build another copy of the dictionary (saves memory) and certainly
-                // don't keep reading the same file from disk multiple times. 
-                if (!m_lineMaps.ContainsKey(assembly))
-                    m_lineMaps[assembly] = ReadMapFile(assembly + ".map");
-                linemap = m_lineMaps[assembly];
-                return;
-            }
-
-            if (Script == String.Empty)
-            {
-                throw new Exception("Cannot find script assembly and no script text present");
-            }
-
-            enumCompileType language = DefaultCompileLanguage;
-
-            if (Script.StartsWith("//c#", true, CultureInfo.InvariantCulture))
-                language = enumCompileType.cs;
-            if (Script.StartsWith("//vb", true, CultureInfo.InvariantCulture))
-            {
-                language = enumCompileType.vb;
-                // We need to remove //vb, it won't compile with that
-
-                Script = Script.Substring(4, Script.Length - 4);
-            }
-            if (Script.StartsWith("//lsl", true, CultureInfo.InvariantCulture))
-                language = enumCompileType.lsl;
-
-            if (Script.StartsWith("//js", true, CultureInfo.InvariantCulture))
-                language = enumCompileType.js;
-
-            if (Script.StartsWith("//yp", true, CultureInfo.InvariantCulture))
-                language = enumCompileType.yp;
-
-//            m_log.DebugFormat("[Compiler]: Compile language is {0}", language);
-
-            if (!AllowedCompilers.ContainsKey(language.ToString()))
-            {
-                // Not allowed to compile to this language!
-                string errtext = String.Empty;
-                errtext += "The compiler for language \"" + language.ToString() + "\" is not in list of allowed compilers. Script will not be executed!";
-                throw new Exception(errtext);
-            }
-
-            if (m_scriptEngine.World.Permissions.CanCompileScript(ownerUUID, (int)language) == false)
-            {
-                // Not allowed to compile to this language!
-                string errtext = String.Empty;
-                errtext += ownerUUID + " is not in list of allowed users for this scripting language. Script will not be executed!";
-                throw new Exception(errtext);
-            }
-
-            string compileScript = Script;
-
-            if (language == enumCompileType.lsl)
-            {
-                // Its LSL, convert it to C#
-                LSL_Converter = (ICodeConverter)new CSCodeGenerator(comms, m_insertCoopTerminationCalls);
-                compileScript = LSL_Converter.Convert(Script);
-
-                // copy converter warnings into our warnings.
-                foreach (string warning in LSL_Converter.GetWarnings())
-                {
-                    AddWarning(warning);
-                }
-
-                linemap = ((CSCodeGenerator)LSL_Converter).PositionMap;
-                // Write the linemap to a file and save it in our dictionary for next time. 
-                m_lineMaps[assembly] = linemap;
-                WriteMapFile(assembly + ".map", linemap);
-            }
-
-            switch (language)
-            {
-                case enumCompileType.cs:
-                case enumCompileType.lsl:
-                    compileScript = CreateCSCompilerScript(
-                        compileScript, 
-                        m_scriptEngine.ScriptClassName, 
-                        m_scriptEngine.ScriptBaseClassName, 
-                        m_scriptEngine.ScriptBaseClassParameters);
-                    break;
-                case enumCompileType.vb:
-                    compileScript = CreateVBCompilerScript(
-                        compileScript, m_scriptEngine.ScriptClassName, m_scriptEngine.ScriptBaseClassName);
-                    break;
-            }
-
-            assembly = CompileFromDotNetText(compileScript, language, asset, assembly);
-        }
-
-        public string[] GetWarnings()
-        {
-            return m_warnings.ToArray();
-        }
-
-        private void AddWarning(string warning)
-        {
-            if (!m_warnings.Contains(warning))
-            {
-                m_warnings.Add(warning);
-            }
-        }
-
-//        private static string CreateJSCompilerScript(string compileScript)
-//        {
-//            compileScript = String.Empty +
-//                "import OpenSim.Region.ScriptEngine.Shared; import System.Collections.Generic;\r\n" +
-//                "package SecondLife {\r\n" +
-//                "class Script extends OpenSim.Region.ScriptEngine.Shared.ScriptBase.ScriptBaseClass { \r\n" +
-//                compileScript +
-//                "} }\r\n";
-//            return compileScript;
-//        }
-
-        private static string CreateCSCompilerScript(
-            string compileScript, string className, string baseClassName, ParameterInfo[] constructorParameters)
-        {
-            compileScript = string.Format(    
-@"using OpenSim.Region.ScriptEngine.Shared; 
-using System.Collections.Generic;
-
-namespace SecondLife 
-{{ 
-    public class {0} : {1} 
-    {{
-        public {0}({2}) : base({3}) {{}}
-{4}
-    }}
-}}",
-                className,
-                baseClassName, 
-                constructorParameters != null 
-                    ? string.Join(", ", Array.ConvertAll<ParameterInfo, string>(constructorParameters, pi => pi.ToString())) 
-                    : "", 
-                constructorParameters != null 
-                    ? string.Join(", ", Array.ConvertAll<ParameterInfo, string>(constructorParameters, pi => pi.Name)) 
-                    : "", 
-                compileScript);
-
-            return compileScript;
-        }
-
-        private static string CreateVBCompilerScript(string compileScript, string className, string baseClassName)
-        {
-            compileScript = String.Empty +
-                "Imports OpenSim.Region.ScriptEngine.Shared: Imports System.Collections.Generic: " +
-                String.Empty + "NameSpace SecondLife:" +
-                String.Empty + "Public Class " + className + ": Inherits " + baseClassName +
-                "\r\nPublic Sub New()\r\nEnd Sub: " +
-                compileScript +
-                ":End Class :End Namespace\r\n";
-
-            return compileScript;
-        }
-
-        /// <summary>
-        /// Compile .NET script to .Net assembly (.dll)
-        /// </summary>
-        /// <param name="Script">CS script</param>
-        /// <returns>Filename to .dll assembly</returns>
-        internal string CompileFromDotNetText(string Script, enumCompileType lang, string asset, string assembly)
-        {
-//            m_log.DebugFormat("[Compiler]: Compiling to assembly\n{0}", Script);
-            
-            string ext = "." + lang.ToString();
-
-            // Output assembly name
-            scriptCompileCounter++;
-            try
-            {
-                File.Delete(assembly);
-            }
-            catch (Exception e) // NOTLEGIT - Should be just FileIOException
-            {
-                throw new Exception("Unable to delete old existing " +
-                        "script-file before writing new. Compile aborted: " +
-                        e.ToString());
-            }
-
-            // DEBUG - write source to disk
-            if (WriteScriptSourceToDebugFile)
-            {
-                string srcFileName = FilePrefix + "_source_" +
-                        Path.GetFileNameWithoutExtension(assembly) + ext;
-                try
-                {
-                    File.WriteAllText(Path.Combine(Path.Combine(
-                        ScriptEnginesPath,
-                        m_scriptEngine.World.RegionInfo.RegionID.ToString()),
-                        srcFileName), Script);
-                }
-                catch (Exception ex) //NOTLEGIT - Should be just FileIOException
-                {
-                    m_log.Error("[Compiler]: Exception while " +
-                                "trying to write script source to file \"" +
-                                srcFileName + "\": " + ex.ToString());
-                }
-            }
-
-            // Do actual compile
-            CompilerParameters parameters = new CompilerParameters();
-
-            parameters.IncludeDebugInformation = true;
-
-            string rootPath = AppDomain.CurrentDomain.BaseDirectory;
-
-            parameters.ReferencedAssemblies.Add(Path.Combine(rootPath,
-                    "OpenSim.Region.ScriptEngine.Shared.dll"));
-            parameters.ReferencedAssemblies.Add(Path.Combine(rootPath,
-                    "OpenSim.Region.ScriptEngine.Shared.Api.Runtime.dll"));
-            parameters.ReferencedAssemblies.Add(Path.Combine(rootPath,
-                    "OpenMetaverseTypes.dll"));
-
-            if (m_scriptEngine.ScriptReferencedAssemblies != null)
-                Array.ForEach<string>(
-                    m_scriptEngine.ScriptReferencedAssemblies, 
-                    a => parameters.ReferencedAssemblies.Add(Path.Combine(rootPath, a)));
-
-            if (lang == enumCompileType.yp)
-            {
-                parameters.ReferencedAssemblies.Add(Path.Combine(rootPath,
-                        "OpenSim.Region.ScriptEngine.Shared.YieldProlog.dll"));
-            }
-
-            parameters.GenerateExecutable = false;
-            parameters.OutputAssembly = assembly;
-            parameters.IncludeDebugInformation = CompileWithDebugInformation;
-            //parameters.WarningLevel = 1; // Should be 4?
-            parameters.TreatWarningsAsErrors = false;
-
-            CompilerResults results;
-            switch (lang)
-            {
-                case enumCompileType.vb:
-                    results = VBcodeProvider.CompileAssemblyFromSource(
-                            parameters, Script);
-                    break;
-                case enumCompileType.cs:
-                case enumCompileType.lsl:
-                    bool complete = false;
-                    bool retried = false;
-                    do
-                    {
-                        lock (CScodeProvider)
-                        {
-                            results = CScodeProvider.CompileAssemblyFromSource(
-                                parameters, Script);
-                        }
-
-                        // Deal with an occasional segv in the compiler.
-                        // Rarely, if ever, occurs twice in succession.
-                        // Line # == 0 and no file name are indications that
-                        // this is a native stack trace rather than a normal
-                        // error log.
-                        if (results.Errors.Count > 0)
-                        {
-                            if (!retried && string.IsNullOrEmpty(results.Errors[0].FileName) &&
-                                results.Errors[0].Line == 0)
-                            {
-                                // System.Console.WriteLine("retrying failed compilation");
-                                retried = true;
-                            }
-                            else
-                            {
-                                complete = true;
-                            }
-                        }
-                        else
-                        {
-                            complete = true;
-                        }
-                    } while (!complete);
-                    break;
-                default:
-                    throw new Exception("Compiler is not able to recongnize " +
-                                        "language type \"" + lang.ToString() + "\"");
-            }
-
-//            foreach (Type type in results.CompiledAssembly.GetTypes())
-//            {
-//                foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
-//                {
-//                    m_log.DebugFormat("[COMPILER]: {0}.{1}", type.FullName, method.Name);
-//                }
-//            }
-
-            //
-            // WARNINGS AND ERRORS
-            //
-            bool hadErrors = false;
-            string errtext = String.Empty;
-            if (results.Errors.Count > 0)
-            {
-                foreach (CompilerError CompErr in results.Errors)
-                {
-                    string severity = CompErr.IsWarning ? "Warning" : "Error";
-
-                    KeyValuePair<int, int> errorPos;
-
-                    // Show 5 errors max, but check entire list for errors
-
-                    if (severity == "Error")
-                    {
-                        // C# scripts will not have a linemap since theres no line translation involved.
-                        if (!m_lineMaps.ContainsKey(assembly))
-                            errorPos = new KeyValuePair<int, int>(CompErr.Line, CompErr.Column);
-                        else
-                            errorPos = FindErrorPosition(CompErr.Line, CompErr.Column, m_lineMaps[assembly]);
-
-                        string text = CompErr.ErrorText;
-
-                        // Use LSL type names
-                        if (lang == enumCompileType.lsl)
-                            text = ReplaceTypes(CompErr.ErrorText);
-
-                        // The Second Life viewer's script editor begins
-                        // countingn lines and columns at 0, so we subtract 1.
-                        errtext += String.Format("({0},{1}): {4} {2}: {3}\n",
-                                errorPos.Key - 1, errorPos.Value - 1,
-                                CompErr.ErrorNumber, text, severity);
-                        hadErrors = true;
-                    }
-                }
-            }
-
-            if (hadErrors)
-            {
-                throw new Exception(errtext);
-            }
-
-            //  On today's highly asynchronous systems, the result of
-            //  the compile may not be immediately apparent. Wait a 
-            //  reasonable amount of time before giving up on it.
-
-            if (!File.Exists(assembly))
-            {
-                for (int i = 0; i < 20 && !File.Exists(assembly); i++)
-                {
-                    System.Threading.Thread.Sleep(250);
-                }
-                // One final chance...
-                if (!File.Exists(assembly))
-                {
-                    errtext = String.Empty;
-                    errtext += "No compile error. But not able to locate compiled file.";
-                    throw new Exception(errtext);
-                }
-            }
-
-            //            m_log.DebugFormat("[Compiler] Compiled new assembly "+
-            //                    "for {0}", asset);
-
-            // Because windows likes to perform exclusive locks, we simply
-            // write out a textual representation of the file here
-            //
-            // Read the binary file into a buffer
-            //
-            FileInfo fi = new FileInfo(assembly);
-
-            if (fi == null)
-            {
-                errtext = String.Empty;
-                errtext += "No compile error. But not able to stat file.";
-                throw new Exception(errtext);
-            }
-
-            Byte[] data = new Byte[fi.Length];
-
-            try
-            {
-                FileStream fs = File.Open(assembly, FileMode.Open, FileAccess.Read);
-                fs.Read(data, 0, data.Length);
-                fs.Close();
-            }
-            catch (Exception)
-            {
-                errtext = String.Empty;
-                errtext += "No compile error. But not able to open file.";
-                throw new Exception(errtext);
-            }
-
-            // Convert to base64
-            //
-            string filetext = System.Convert.ToBase64String(data);
-
-            Byte[] buf = Encoding.ASCII.GetBytes(filetext);
-
-            FileStream sfs = File.Create(assembly + ".text");
-            sfs.Write(buf, 0, buf.Length);
-            sfs.Close();
-
-            return assembly;
-        }
-
-        private class kvpSorter : IComparer<KeyValuePair<int, int>>
-        {
-            public int Compare(KeyValuePair<int, int> a,
-                    KeyValuePair<int, int> b)
-            {
-                return a.Key.CompareTo(b.Key);
-            }
-        }
-
-        public static KeyValuePair<int, int> FindErrorPosition(int line,
-                int col, Dictionary<KeyValuePair<int, int>,
-                KeyValuePair<int, int>> positionMap)
-        {
-            if (positionMap == null || positionMap.Count == 0)
-                return new KeyValuePair<int, int>(line, col);
-
-            KeyValuePair<int, int> ret = new KeyValuePair<int, int>();
-
-            if (positionMap.TryGetValue(new KeyValuePair<int, int>(line, col),
-                    out ret))
-                return ret;
-
-            List<KeyValuePair<int, int>> sorted =
-                    new List<KeyValuePair<int, int>>(positionMap.Keys);
-
-            sorted.Sort(new kvpSorter());
-
-            int l = 1;
-            int c = 1;
-
-            foreach (KeyValuePair<int, int> cspos in sorted)
-            {
-                if (cspos.Key >= line)
-                {
-                    if (cspos.Key > line)
-                        return new KeyValuePair<int, int>(l, c);
-                    if (cspos.Value > col)
-                        return new KeyValuePair<int, int>(l, c);
-                    c = cspos.Value;
-                    if (c == 0)
-                        c++;
-                }
-                else
-                {
-                    l = cspos.Key;
-                }
-            }
-            return new KeyValuePair<int, int>(l, c);
-        }
-
-        string ReplaceTypes(string message)
+        private string ReplaceTypes(string message)
         {
             message = message.Replace(
                     "OpenSim.Region.ScriptEngine.Shared.LSL_Types.LSLString",
@@ -795,52 +837,13 @@ namespace SecondLife
             return message;
         }
 
-
-        private static void WriteMapFile(string filename, Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>> linemap)
+        private class kvpSorter : IComparer<KeyValuePair<int, int>>
         {
-            string mapstring = String.Empty;
-            foreach (KeyValuePair<KeyValuePair<int, int>, KeyValuePair<int, int>> kvp in linemap)
+            public int Compare(KeyValuePair<int, int> a,
+                    KeyValuePair<int, int> b)
             {
-                KeyValuePair<int, int> k = kvp.Key;
-                KeyValuePair<int, int> v = kvp.Value;
-                mapstring += String.Format("{0},{1},{2},{3}\n", k.Key, k.Value, v.Key, v.Value);
+                return a.Key.CompareTo(b.Key);
             }
-
-            Byte[] mapbytes = Encoding.ASCII.GetBytes(mapstring);
-            FileStream mfs = File.Create(filename);
-            mfs.Write(mapbytes, 0, mapbytes.Length);
-            mfs.Close();
-        }
-
-
-        private static Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>> ReadMapFile(string filename)
-        {
-            Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>> linemap;
-            try
-            {
-                StreamReader r = File.OpenText(filename);
-                linemap = new Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>>();
-
-                string line;
-                while ((line = r.ReadLine()) != null)
-                {
-                    String[] parts = line.Split(new Char[] { ',' });
-                    int kk = System.Convert.ToInt32(parts[0]);
-                    int kv = System.Convert.ToInt32(parts[1]);
-                    int vk = System.Convert.ToInt32(parts[2]);
-                    int vv = System.Convert.ToInt32(parts[3]);
-
-                    KeyValuePair<int, int> k = new KeyValuePair<int, int>(kk, kv);
-                    KeyValuePair<int, int> v = new KeyValuePair<int, int>(vk, vv);
-
-                    linemap[k] = v;
-                }
-            }
-            catch
-            {
-                linemap = new Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>>();
-            }
-            return linemap;
         }
     }
 }

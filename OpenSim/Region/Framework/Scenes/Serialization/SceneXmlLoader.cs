@@ -25,16 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using OpenMetaverse;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Xml;
-using OpenMetaverse;
-using log4net;
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Region.Physics.Manager;
 
 namespace OpenSim.Region.Framework.Scenes.Serialization
 {
@@ -46,6 +43,7 @@ namespace OpenSim.Region.Framework.Scenes.Serialization
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         #region old xml format
+
         public static void LoadPrimsFromXml(Scene scene, string fileName, bool newIDS, Vector3 loadOffset)
         {
             XmlDocument doc = new XmlDocument();
@@ -99,7 +97,7 @@ namespace OpenSim.Region.Framework.Scenes.Serialization
             file.Close();
         }
 
-        #endregion
+        #endregion old xml format
 
         #region XML2 serialization
 
@@ -124,13 +122,6 @@ namespace OpenSim.Region.Framework.Scenes.Serialization
         }
 
         // Called by scene serializer (save xml2)
-        public static void SavePrimsToXml2(Scene scene, string fileName)
-        {
-            EntityBase[] entityList = scene.GetEntities();
-            SavePrimListToXml2(entityList, fileName);
-        }
-
-        // Called by scene serializer (save xml2)
         public static void SaveNamedPrimsToXml2(Scene scene, string primName, string fileName)
         {
             m_log.InfoFormat(
@@ -152,13 +143,6 @@ namespace OpenSim.Region.Framework.Scenes.Serialization
             }
 
             SavePrimListToXml2(primList.ToArray(), fileName);
-        }
-
-        // Called by REST Application plugin
-        public static void SavePrimsToXml2(Scene scene, TextWriter stream, Vector3 min, Vector3 max)
-        {
-            EntityBase[] entityList = scene.GetEntities();
-            SavePrimListToXml2(entityList, stream, min, max);
         }
 
         // Called here only. Should be private?
@@ -206,7 +190,7 @@ namespace OpenSim.Region.Framework.Scenes.Serialization
                     }
 
                     //stream.WriteLine(SceneObjectSerializer.ToXml2Format(g));
-                    SceneObjectSerializer.SOGToXml2(writer, (SceneObjectGroup)ent, new Dictionary<string,object>());
+                    SceneObjectSerializer.SOGToXml2(writer, (SceneObjectGroup)ent, new Dictionary<string, object>());
                     stream.WriteLine();
 
                     primCount++;
@@ -217,7 +201,19 @@ namespace OpenSim.Region.Framework.Scenes.Serialization
             stream.Flush();
         }
 
-        #endregion
+        // Called by scene serializer (save xml2)
+        public static void SavePrimsToXml2(Scene scene, string fileName)
+        {
+            EntityBase[] entityList = scene.GetEntities();
+            SavePrimListToXml2(entityList, fileName);
+        }
+        // Called by REST Application plugin
+        public static void SavePrimsToXml2(Scene scene, TextWriter stream, Vector3 min, Vector3 max)
+        {
+            EntityBase[] entityList = scene.GetEntities();
+            SavePrimListToXml2(entityList, stream, min, max);
+        }
+        #endregion XML2 serialization
 
         #region XML2 deserialization
 
@@ -271,11 +267,11 @@ namespace OpenSim.Region.Framework.Scenes.Serialization
 
             foreach (SceneObjectGroup sceneObject in sceneObjects)
             {
-                 sceneObject.CreateScriptInstances(0, true, scene.DefaultScriptEngine, 0);
-                 sceneObject.ResumeScripts();
+                sceneObject.CreateScriptInstances(0, true, scene.DefaultScriptEngine, 0);
+                sceneObject.ResumeScripts();
             }
         }
 
-        #endregion
+        #endregion XML2 deserialization
     }
 }

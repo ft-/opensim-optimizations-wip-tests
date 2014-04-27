@@ -25,20 +25,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using OpenMetaverse;
+using OpenMetaverse.StructuredData;
+using OpenSim.Framework;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using System.Reflection;
-
-using OpenSim.Framework;
-using OpenSim.Services.Interfaces;
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 using FriendInfo = OpenSim.Services.Interfaces.FriendInfo;
-
-using log4net;
-using OpenMetaverse;
-using OpenMetaverse.StructuredData;
+using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 using OSDArray = OpenMetaverse.StructuredData.OSDArray;
 using OSDMap = OpenMetaverse.StructuredData.OSDMap;
 
@@ -46,21 +44,19 @@ namespace OpenSim.Services.LLLoginService
 {
     public class LLFailedLoginResponse : OpenSim.Services.Interfaces.FailedLoginResponse
     {
-        protected string m_key;
-        protected string m_value;
-        protected string m_login;
-
-        public static LLFailedLoginResponse UserProblem;
-        public static LLFailedLoginResponse GridProblem;
-        public static LLFailedLoginResponse InventoryProblem;
-        public static LLFailedLoginResponse DeadRegionProblem;
-        public static LLFailedLoginResponse LoginBlockedProblem;
         public static LLFailedLoginResponse AlreadyLoggedInProblem;
+        public static LLFailedLoginResponse DeadRegionProblem;
+        public static LLFailedLoginResponse GridProblem;
         public static LLFailedLoginResponse InternalError;
-
+        public static LLFailedLoginResponse InventoryProblem;
+        public static LLFailedLoginResponse LoginBlockedProblem;
+        public static LLFailedLoginResponse UserProblem;
+        protected string m_key;
+        protected string m_login;
+        protected string m_value;
         static LLFailedLoginResponse()
         {
-            UserProblem = new LLFailedLoginResponse("key", 
+            UserProblem = new LLFailedLoginResponse("key",
                 "Could not authenticate your avatar. Please check your username and password, and check the grid if problems persist.",
                 "false");
             GridProblem = new LLFailedLoginResponse("key",
@@ -118,80 +114,73 @@ namespace OpenSim.Services.LLLoginService
     public class LLLoginResponse : OpenSim.Services.Interfaces.LoginResponse
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        private static Hashtable globalTexturesHash;
-        // Global Textures
-        private static string sunTexture = "cce0f112-878f-4586-a2e2-a8f104bba271";
         private static string cloudTexture = "dc4b9f0b-d008-45c6-96a4-01dd947ac621";
+        private static Hashtable globalTexturesHash;
+
         private static string moonTexture = "ec4b9f0b-d008-45c6-96a4-01dd947ac621";
 
-        private Hashtable loginFlagsHash;
-        private Hashtable uiConfigHash;
-
-        private ArrayList loginFlags;
-        private ArrayList globalTextures;
-        private ArrayList eventCategories;
-        private ArrayList uiConfig;
-        private ArrayList classifiedCategories;
-        private ArrayList inventoryRoot;
-        private ArrayList initialOutfit;
-        private ArrayList agentInventory;
-        private ArrayList inventoryLibraryOwner;
-        private ArrayList inventoryLibRoot;
-        private ArrayList inventoryLibrary;
+        // Global Textures
+        private static string sunTexture = "cce0f112-878f-4586-a2e2-a8f104bba271";
         private ArrayList activeGestures;
-
-        private UserInfo userProfile;
-
-        private UUID agentID;
-        private UUID sessionID;
-        private UUID secureSessionID;
-
-        // Login Flags
-        private string dst;
-        private string stipendSinceLogin;
-        private string gendered;
-        private string everLoggedIn;
-        private string login;
-        private uint simPort;
-        private uint simHttpPort;
-        private string simAddress;
         private string agentAccess;
         private string agentAccessMax;
+        private UUID agentID;
+        private ArrayList agentInventory;
+        private string allowFirstLife;
         private Int32 circuitCode;
-        private uint regionX;
-        private uint regionY;
+        private ArrayList classifiedCategories;
+        private string classifiedFee;
+        private string currency;
+        // Login Flags
+        private string dst;
 
+        private string errorMessage;
+        // Error Flags
+        private string errorReason;
+
+        private ArrayList eventCategories;
+        private string everLoggedIn;
         // Login
         private string firstname;
-        private string lastname;
 
+        private string gendered;
+        private ArrayList globalTextures;
+        private string home;
+        private ArrayList initialOutfit;
+        private ArrayList inventoryLibrary;
+        private ArrayList inventoryLibraryOwner;
+        private ArrayList inventoryLibRoot;
+        private ArrayList inventoryRoot;
+        private string lastname;
+        private string login;
+        private ArrayList loginFlags;
+        private Hashtable loginFlagsHash;
+        private string lookAt;
+        private BuddyList m_buddyList = null;
         // Web map
         private string mapTileURL;
-
-        // Web Profiles
-        private string profileURL;
 
         // OpenID
         private string openIDURL;
 
+        // Web Profiles
+        private string profileURL;
+
+        private uint regionX;
+        private uint regionY;
         private string searchURL;
-
-        // Error Flags
-        private string errorReason;
-        private string errorMessage;
-
-        private string welcomeMessage;
-        private string startLocation;
-        private string allowFirstLife;
-        private string home;
+        private UUID secureSessionID;
         private string seedCapability;
-        private string lookAt;
-
-        private BuddyList m_buddyList = null;
-
-        private string currency;
-        private string classifiedFee;
-
+        private UUID sessionID;
+        private string simAddress;
+        private uint simHttpPort;
+        private uint simPort;
+        private string startLocation;
+        private string stipendSinceLogin;
+        private ArrayList uiConfig;
+        private Hashtable uiConfigHash;
+        private UserInfo userProfile;
+        private string welcomeMessage;
         static LLLoginResponse()
         {
             // This is being set, but it's not used
@@ -267,9 +256,11 @@ namespace OpenSim.Services.LLLoginService
                 case "none":
                     DST = "N";
                     break;
+
                 case "local":
                     DST = TimeZone.CurrentTimeZone.IsDaylightSavingTime(DateTime.Now) ? "Y" : "N";
                     break;
+
                 default:
                     TimeZoneInfo dstTimeZone = null;
                     string[] tzList = DSTZone.Split(';');
@@ -297,194 +288,45 @@ namespace OpenSim.Services.LLLoginService
                     {
                         DST = dstTimeZone.IsDaylightSavingTime(DateTime.Now) ? "Y" : "N";
                     }
-                
+
                     break;
             }
         }
 
-        private void FillOutInventoryData(List<InventoryFolderBase> invSkel, ILibraryService libService)
+        public void AddClassifiedCategory(Int32 ID, string categoryName)
         {
-            InventoryData inventData = null;
-
-            try
-            {
-                inventData = GetInventorySkeleton(invSkel);
-            }
-            catch (Exception e)
-            {
-                m_log.WarnFormat(
-                    "[LLLOGIN SERVICE]: Error processing inventory skeleton of agent {0} - {1}",
-                    agentID, e);
-
-                // ignore and continue
-            }
-
-            if (inventData != null)
-            {
-                ArrayList AgentInventoryArray = inventData.InventoryArray;
-
-                Hashtable InventoryRootHash = new Hashtable();
-                InventoryRootHash["folder_id"] = inventData.RootFolderID.ToString();
-                InventoryRoot = new ArrayList();
-                InventoryRoot.Add(InventoryRootHash);
-                InventorySkeleton = AgentInventoryArray;
-            }
-
-            // Inventory Library Section
-            if (libService != null && libService.LibraryRootFolder != null)
-            {
-                Hashtable InventoryLibRootHash = new Hashtable();
-                InventoryLibRootHash["folder_id"] = "00000112-000f-0000-0000-000100bba000";
-                InventoryLibRoot = new ArrayList();
-                InventoryLibRoot.Add(InventoryLibRootHash);
-
-                InventoryLibraryOwner = GetLibraryOwner(libService.LibraryRootFolder);
-                InventoryLibrary = GetInventoryLibrary(libService);
-            }
+            Hashtable hash = new Hashtable();
+            hash["category_name"] = categoryName;
+            hash["category_id"] = ID;
+            classifiedCategories.Add(hash);
+            // this.classifiedCategoriesHash.Clear();
         }
 
-        private void FillOutActiveGestures(List<InventoryItemBase> gestures)
+        public void AddToUIConfig(string itemName, string item)
         {
-            ArrayList list = new ArrayList();
-            if (gestures != null)
+            uiConfigHash[itemName] = item;
+        }
+
+        public OSDArray ArrayListToOSDArray(ArrayList arrlst)
+        {
+            OSDArray llsdBack = new OSDArray();
+            foreach (Hashtable ht in arrlst)
             {
-                foreach (InventoryItemBase gesture in gestures)
+                OSDMap mp = new OSDMap();
+                foreach (DictionaryEntry deHt in ht)
                 {
-                    Hashtable item = new Hashtable();
-                    item["item_id"] = gesture.ID.ToString();
-                    item["asset_id"] = gesture.AssetID.ToString();
-                    list.Add(item);
+                    mp.Add((string)deHt.Key, OSDString.FromObject(deHt.Value));
                 }
+                llsdBack.Add(mp);
             }
-            ActiveGestures = list;
+            return llsdBack;
         }
 
-        private void FillOutHomeData(GridUserInfo pinfo, GridRegion home)
+        public void SetEventCategories(string category, string value)
         {
-            int x = (int)Util.RegionToWorldLoc(1000);
-            int y = (int)Util.RegionToWorldLoc(1000);
-            if (home != null)
-            {
-                x = home.RegionLocX;
-                y = home.RegionLocY;
-            }
-
-            Home = string.Format(
-                        "{{'region_handle':[r{0},r{1}], 'position':[r{2},r{3},r{4}], 'look_at':[r{5},r{6},r{7}]}}",
-                        x,
-                        y,
-                        pinfo.HomePosition.X, pinfo.HomePosition.Y, pinfo.HomePosition.Z,
-                        pinfo.HomeLookAt.X, pinfo.HomeLookAt.Y, pinfo.HomeLookAt.Z);
-
+            //  this.eventCategoriesHash[category] = value;
+            //TODO
         }
-
-        private void FillOutRegionData(GridRegion destination)
-        {
-            IPEndPoint endPoint = destination.ExternalEndPoint;
-            SimAddress = endPoint.Address.ToString();
-            SimPort = (uint)endPoint.Port;
-            RegionX = (uint)destination.RegionLocX;
-            RegionY = (uint)destination.RegionLocY;
-            RegionSizeX = destination.RegionSizeX;
-            RegionSizeY = destination.RegionSizeY;
-        }
-
-        private void FillOutSeedCap(AgentCircuitData aCircuit, GridRegion destination, IPEndPoint ipepClient)
-        {
-            SeedCapability =  destination.ServerURI + CapsUtil.GetCapsSeedPath(aCircuit.CapsPath);
-        }
-
-        private void SetDefaultValues()
-        {
-            TimeZoneInfo gridTimeZone;
-
-            // Disabled for now pending making timezone a config value, which can at some point have a default of
-            // a ; separated list of possible timezones.
-            // The problem here is that US/Pacific (or even the Olsen America/Los_Angeles) is not universal across
-            // windows, mac and various distributions of linux, introducing another element of consistency.
-            // The server operator needs to be able to control this setting
-//            try
-//            {
-//                // First try to fetch DST from Pacific Standard Time, because this is
-//                // the one expected by the viewer. "US/Pacific" is the string to search 
-//                // on linux and mac, and should work also on Windows (to confirm)
-//                gridTimeZone = TimeZoneInfo.FindSystemTimeZoneById("US/Pacific");
-//            }
-//            catch (Exception e)
-//            {
-//                m_log.WarnFormat(
-//                    "[TIMEZONE]: {0} Falling back to system time. System time should be set to Pacific Standard Time to provide the expected time",
-//                    e.Message);
-
-                gridTimeZone = TimeZoneInfo.Local;
-//            }
-
-            DST = gridTimeZone.IsDaylightSavingTime(DateTime.Now) ? "Y" : "N";
-
-            StipendSinceLogin = "N";
-            Gendered = "Y";
-            EverLoggedIn = "Y";
-            login = "false";
-            firstname = "Test";
-            lastname = "User";
-            agentAccess = "M";
-            agentAccessMax = "A";
-            startLocation = "last";
-            allowFirstLife = "Y";
-
-            ErrorMessage = "You have entered an invalid name/password combination.  Check Caps/lock.";
-            ErrorReason = "key";
-            welcomeMessage = "Welcome to OpenSim!";
-            seedCapability = String.Empty;
-            home = "{'region_handle':[" 
-                    + "r" + Util.RegionToWorldLoc(1000).ToString()
-                    + ","
-                    + "r" + Util.RegionToWorldLoc(1000).ToString()
-                    + "], 'position':["
-                    + "r" + userProfile.homepos.X.ToString()
-                    + ","
-                    + "r" + userProfile.homepos.Y.ToString()
-                    + ","
-                    + "r" + userProfile.homepos.Z.ToString()
-                    + "], 'look_at':["
-                    + "r" + userProfile.homelookat.X.ToString()
-                    + ","
-                    + "r" + userProfile.homelookat.Y.ToString()
-                    + ","
-                    + "r" + userProfile.homelookat.Z.ToString()
-                    + "]}";
-            lookAt = "[r0.99949799999999999756,r0.03166859999999999814,r0]";
-            RegionX = (uint) 255232;
-            RegionY = (uint) 254976;
-
-            // Classifieds;
-            AddClassifiedCategory((Int32) 1, "Shopping");
-            AddClassifiedCategory((Int32) 2, "Land Rental");
-            AddClassifiedCategory((Int32) 3, "Property Rental");
-            AddClassifiedCategory((Int32) 4, "Special Attraction");
-            AddClassifiedCategory((Int32) 5, "New Products");
-            AddClassifiedCategory((Int32) 6, "Employment");
-            AddClassifiedCategory((Int32) 7, "Wanted");
-            AddClassifiedCategory((Int32) 8, "Service");
-            AddClassifiedCategory((Int32) 9, "Personal");
-
-            SessionID = UUID.Random();
-            SecureSessionID = UUID.Random();
-            AgentID = UUID.Random();
-
-            Hashtable InitialOutfitHash = new Hashtable();
-            InitialOutfitHash["folder_name"] = "Nightclub Female";
-            InitialOutfitHash["gender"] = "female";
-            initialOutfit.Add(InitialOutfitHash);
-            mapTileURL = String.Empty;
-            profileURL = String.Empty;
-            openIDURL = String.Empty;
-            searchURL = String.Empty;
-
-            currency = String.Empty;
-            ClassifiedFee = "0";
-        }
-
 
         public override Hashtable ToHashtable()
         {
@@ -510,7 +352,7 @@ namespace OpenSim.Services.LLLoginService
                 AddToUIConfig("allow_first_life", allowFirstLife);
                 uiConfig.Add(uiConfigHash);
 
-                responseData["sim_port"] = (Int32) SimPort;
+                responseData["sim_port"] = (Int32)SimPort;
                 responseData["sim_ip"] = SimAddress;
                 responseData["http_port"] = (Int32)SimHttpPort;
 
@@ -518,7 +360,7 @@ namespace OpenSim.Services.LLLoginService
                 responseData["session_id"] = SessionID.ToString();
                 responseData["secure_session_id"] = SecureSessionID.ToString();
                 responseData["circuit_code"] = CircuitCode;
-                responseData["seconds_since_epoch"] = (Int32) (DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+                responseData["seconds_since_epoch"] = (Int32)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
                 responseData["login-flags"] = loginFlags;
                 responseData["global-textures"] = globalTextures;
                 responseData["seed_capability"] = seedCapability;
@@ -578,7 +420,7 @@ namespace OpenSim.Services.LLLoginService
                     // responseData["real_currency"] = currency;
                     responseData["currency"] = currency;
                 }
-                
+
                 if (ClassifiedFee != String.Empty)
                     responseData["classified_fee"] = ClassifiedFee;
 
@@ -705,101 +547,6 @@ namespace OpenSim.Services.LLLoginService
             }
         }
 
-        public OSDArray ArrayListToOSDArray(ArrayList arrlst)
-        {
-            OSDArray llsdBack = new OSDArray();
-            foreach (Hashtable ht in arrlst)
-            {
-                OSDMap mp = new OSDMap();
-                foreach (DictionaryEntry deHt in ht)
-                {
-                    mp.Add((string)deHt.Key, OSDString.FromObject(deHt.Value));
-                }
-                llsdBack.Add(mp);
-            }
-            return llsdBack;
-        }
-
-        private static OSDArray WrapOSDMap(OSDMap wrapMe)
-        {
-            OSDArray array = new OSDArray();
-            array.Add(wrapMe);
-            return array;
-        }
-
-        public void SetEventCategories(string category, string value)
-        {
-            //  this.eventCategoriesHash[category] = value;
-            //TODO
-        }
-
-        public void AddToUIConfig(string itemName, string item)
-        {
-            uiConfigHash[itemName] = item;
-        }
-
-        public void AddClassifiedCategory(Int32 ID, string categoryName)
-        {
-            Hashtable hash = new Hashtable();
-            hash["category_name"] = categoryName;
-            hash["category_id"] = ID;
-            classifiedCategories.Add(hash);
-            // this.classifiedCategoriesHash.Clear();
-        }
-
-
-        private static LLLoginResponse.BuddyList ConvertFriendListItem(FriendInfo[] friendsList)
-        {
-            LLLoginResponse.BuddyList buddylistreturn = new LLLoginResponse.BuddyList();
-            foreach (FriendInfo finfo in friendsList)
-            {
-                if (finfo.TheirFlags == -1)
-                    continue;
-                LLLoginResponse.BuddyList.BuddyInfo buddyitem = new LLLoginResponse.BuddyList.BuddyInfo(finfo.Friend);
-                // finfo.Friend may not be a simple uuid
-                UUID friendID = UUID.Zero;
-                if (UUID.TryParse(finfo.Friend, out friendID))
-                    buddyitem.BuddyID = finfo.Friend;
-                else
-                {
-                    string tmp;
-                    if (Util.ParseUniversalUserIdentifier(finfo.Friend, out friendID, out tmp, out tmp, out tmp, out tmp))
-                        buddyitem.BuddyID = friendID.ToString();
-                    else
-                        // junk entry
-                        continue;
-                }
-                buddyitem.BuddyRightsHave = (int)finfo.TheirFlags;
-                buddyitem.BuddyRightsGiven = (int)finfo.MyFlags;
-                buddylistreturn.AddNewBuddy(buddyitem);
-            }
-            return buddylistreturn;
-        }
-
-        private InventoryData GetInventorySkeleton(List<InventoryFolderBase> folders)
-        {
-            UUID rootID = UUID.Zero;
-            ArrayList AgentInventoryArray = new ArrayList();
-            Hashtable TempHash;
-            foreach (InventoryFolderBase InvFolder in folders)
-            {
-                if (InvFolder.ParentID == UUID.Zero && InvFolder.Name == "My Inventory")
-                {
-                    rootID = InvFolder.ID;
-                }
-                TempHash = new Hashtable();
-                TempHash["name"] = InvFolder.Name;
-                TempHash["parent_id"] = InvFolder.ParentID.ToString();
-                TempHash["version"] = (Int32)InvFolder.Version;
-                TempHash["type_default"] = (Int32)InvFolder.Type;
-                TempHash["folder_id"] = InvFolder.ID.ToString();
-                AgentInventoryArray.Add(TempHash);
-            }
-
-            return new InventoryData(AgentInventoryArray, rootID);
-
-        }
-
         /// <summary>
         /// Converts the inventory library skeleton into the form required by the rpc request.
         /// </summary>
@@ -807,7 +554,7 @@ namespace OpenSim.Services.LLLoginService
         protected virtual ArrayList GetInventoryLibrary(ILibraryService library)
         {
             Dictionary<UUID, InventoryFolderImpl> rootFolders = library.GetAllFolders();
-//            m_log.DebugFormat("[LLOGIN]: Library has {0} folders", rootFolders.Count);
+            //            m_log.DebugFormat("[LLOGIN]: Library has {0} folders", rootFolders.Count);
             //Dictionary<UUID, InventoryFolderImpl> rootFolders = new Dictionary<UUID,InventoryFolderImpl>();
             ArrayList folderHashes = new ArrayList();
 
@@ -839,290 +586,244 @@ namespace OpenSim.Services.LLLoginService
             return inventoryLibOwner;
         }
 
-        public class InventoryData
+        private static LLLoginResponse.BuddyList ConvertFriendListItem(FriendInfo[] friendsList)
         {
-            public ArrayList InventoryArray = null;
-            public UUID RootFolderID = UUID.Zero;
-
-            public InventoryData(ArrayList invList, UUID rootID)
+            LLLoginResponse.BuddyList buddylistreturn = new LLLoginResponse.BuddyList();
+            foreach (FriendInfo finfo in friendsList)
             {
-                InventoryArray = invList;
-                RootFolderID = rootID;
+                if (finfo.TheirFlags == -1)
+                    continue;
+                LLLoginResponse.BuddyList.BuddyInfo buddyitem = new LLLoginResponse.BuddyList.BuddyInfo(finfo.Friend);
+                // finfo.Friend may not be a simple uuid
+                UUID friendID = UUID.Zero;
+                if (UUID.TryParse(finfo.Friend, out friendID))
+                    buddyitem.BuddyID = finfo.Friend;
+                else
+                {
+                    string tmp;
+                    if (Util.ParseUniversalUserIdentifier(finfo.Friend, out friendID, out tmp, out tmp, out tmp, out tmp))
+                        buddyitem.BuddyID = friendID.ToString();
+                    else
+                        // junk entry
+                        continue;
+                }
+                buddyitem.BuddyRightsHave = (int)finfo.TheirFlags;
+                buddyitem.BuddyRightsGiven = (int)finfo.MyFlags;
+                buddylistreturn.AddNewBuddy(buddyitem);
+            }
+            return buddylistreturn;
+        }
+
+        private static OSDArray WrapOSDMap(OSDMap wrapMe)
+        {
+            OSDArray array = new OSDArray();
+            array.Add(wrapMe);
+            return array;
+        }
+
+        private void FillOutActiveGestures(List<InventoryItemBase> gestures)
+        {
+            ArrayList list = new ArrayList();
+            if (gestures != null)
+            {
+                foreach (InventoryItemBase gesture in gestures)
+                {
+                    Hashtable item = new Hashtable();
+                    item["item_id"] = gesture.ID.ToString();
+                    item["asset_id"] = gesture.AssetID.ToString();
+                    list.Add(item);
+                }
+            }
+            ActiveGestures = list;
+        }
+
+        private void FillOutHomeData(GridUserInfo pinfo, GridRegion home)
+        {
+            int x = (int)Util.RegionToWorldLoc(1000);
+            int y = (int)Util.RegionToWorldLoc(1000);
+            if (home != null)
+            {
+                x = home.RegionLocX;
+                y = home.RegionLocY;
+            }
+
+            Home = string.Format(
+                        "{{'region_handle':[r{0},r{1}], 'position':[r{2},r{3},r{4}], 'look_at':[r{5},r{6},r{7}]}}",
+                        x,
+                        y,
+                        pinfo.HomePosition.X, pinfo.HomePosition.Y, pinfo.HomePosition.Z,
+                        pinfo.HomeLookAt.X, pinfo.HomeLookAt.Y, pinfo.HomeLookAt.Z);
+        }
+
+        private void FillOutInventoryData(List<InventoryFolderBase> invSkel, ILibraryService libService)
+        {
+            InventoryData inventData = null;
+
+            try
+            {
+                inventData = GetInventorySkeleton(invSkel);
+            }
+            catch (Exception e)
+            {
+                m_log.WarnFormat(
+                    "[LLLOGIN SERVICE]: Error processing inventory skeleton of agent {0} - {1}",
+                    agentID, e);
+
+                // ignore and continue
+            }
+
+            if (inventData != null)
+            {
+                ArrayList AgentInventoryArray = inventData.InventoryArray;
+
+                Hashtable InventoryRootHash = new Hashtable();
+                InventoryRootHash["folder_id"] = inventData.RootFolderID.ToString();
+                InventoryRoot = new ArrayList();
+                InventoryRoot.Add(InventoryRootHash);
+                InventorySkeleton = AgentInventoryArray;
+            }
+
+            // Inventory Library Section
+            if (libService != null && libService.LibraryRootFolder != null)
+            {
+                Hashtable InventoryLibRootHash = new Hashtable();
+                InventoryLibRootHash["folder_id"] = "00000112-000f-0000-0000-000100bba000";
+                InventoryLibRoot = new ArrayList();
+                InventoryLibRoot.Add(InventoryLibRootHash);
+
+                InventoryLibraryOwner = GetLibraryOwner(libService.LibraryRootFolder);
+                InventoryLibrary = GetInventoryLibrary(libService);
             }
         }
-
-        #region Properties
-
-        public string Login
+        private void FillOutRegionData(GridRegion destination)
         {
-            get { return login; }
-            set { login = value; }
+            IPEndPoint endPoint = destination.ExternalEndPoint;
+            SimAddress = endPoint.Address.ToString();
+            SimPort = (uint)endPoint.Port;
+            RegionX = (uint)destination.RegionLocX;
+            RegionY = (uint)destination.RegionLocY;
+            RegionSizeX = destination.RegionSizeX;
+            RegionSizeY = destination.RegionSizeY;
         }
 
-        public string DST
+        private void FillOutSeedCap(AgentCircuitData aCircuit, GridRegion destination, IPEndPoint ipepClient)
         {
-            get { return dst; }
-            set { dst = value; }
+            SeedCapability = destination.ServerURI + CapsUtil.GetCapsSeedPath(aCircuit.CapsPath);
         }
 
-        public string StipendSinceLogin
+        private InventoryData GetInventorySkeleton(List<InventoryFolderBase> folders)
         {
-            get { return stipendSinceLogin; }
-            set { stipendSinceLogin = value; }
+            UUID rootID = UUID.Zero;
+            ArrayList AgentInventoryArray = new ArrayList();
+            Hashtable TempHash;
+            foreach (InventoryFolderBase InvFolder in folders)
+            {
+                if (InvFolder.ParentID == UUID.Zero && InvFolder.Name == "My Inventory")
+                {
+                    rootID = InvFolder.ID;
+                }
+                TempHash = new Hashtable();
+                TempHash["name"] = InvFolder.Name;
+                TempHash["parent_id"] = InvFolder.ParentID.ToString();
+                TempHash["version"] = (Int32)InvFolder.Version;
+                TempHash["type_default"] = (Int32)InvFolder.Type;
+                TempHash["folder_id"] = InvFolder.ID.ToString();
+                AgentInventoryArray.Add(TempHash);
+            }
+
+            return new InventoryData(AgentInventoryArray, rootID);
         }
 
-        public string Gendered
+        private void SetDefaultValues()
         {
-            get { return gendered; }
-            set { gendered = value; }
+            TimeZoneInfo gridTimeZone;
+
+            // Disabled for now pending making timezone a config value, which can at some point have a default of
+            // a ; separated list of possible timezones.
+            // The problem here is that US/Pacific (or even the Olsen America/Los_Angeles) is not universal across
+            // windows, mac and various distributions of linux, introducing another element of consistency.
+            // The server operator needs to be able to control this setting
+            //            try
+            //            {
+            //                // First try to fetch DST from Pacific Standard Time, because this is
+            //                // the one expected by the viewer. "US/Pacific" is the string to search
+            //                // on linux and mac, and should work also on Windows (to confirm)
+            //                gridTimeZone = TimeZoneInfo.FindSystemTimeZoneById("US/Pacific");
+            //            }
+            //            catch (Exception e)
+            //            {
+            //                m_log.WarnFormat(
+            //                    "[TIMEZONE]: {0} Falling back to system time. System time should be set to Pacific Standard Time to provide the expected time",
+            //                    e.Message);
+
+            gridTimeZone = TimeZoneInfo.Local;
+            //            }
+
+            DST = gridTimeZone.IsDaylightSavingTime(DateTime.Now) ? "Y" : "N";
+
+            StipendSinceLogin = "N";
+            Gendered = "Y";
+            EverLoggedIn = "Y";
+            login = "false";
+            firstname = "Test";
+            lastname = "User";
+            agentAccess = "M";
+            agentAccessMax = "A";
+            startLocation = "last";
+            allowFirstLife = "Y";
+
+            ErrorMessage = "You have entered an invalid name/password combination.  Check Caps/lock.";
+            ErrorReason = "key";
+            welcomeMessage = "Welcome to OpenSim!";
+            seedCapability = String.Empty;
+            home = "{'region_handle':["
+                    + "r" + Util.RegionToWorldLoc(1000).ToString()
+                    + ","
+                    + "r" + Util.RegionToWorldLoc(1000).ToString()
+                    + "], 'position':["
+                    + "r" + userProfile.homepos.X.ToString()
+                    + ","
+                    + "r" + userProfile.homepos.Y.ToString()
+                    + ","
+                    + "r" + userProfile.homepos.Z.ToString()
+                    + "], 'look_at':["
+                    + "r" + userProfile.homelookat.X.ToString()
+                    + ","
+                    + "r" + userProfile.homelookat.Y.ToString()
+                    + ","
+                    + "r" + userProfile.homelookat.Z.ToString()
+                    + "]}";
+            lookAt = "[r0.99949799999999999756,r0.03166859999999999814,r0]";
+            RegionX = (uint)255232;
+            RegionY = (uint)254976;
+
+            // Classifieds;
+            AddClassifiedCategory((Int32)1, "Shopping");
+            AddClassifiedCategory((Int32)2, "Land Rental");
+            AddClassifiedCategory((Int32)3, "Property Rental");
+            AddClassifiedCategory((Int32)4, "Special Attraction");
+            AddClassifiedCategory((Int32)5, "New Products");
+            AddClassifiedCategory((Int32)6, "Employment");
+            AddClassifiedCategory((Int32)7, "Wanted");
+            AddClassifiedCategory((Int32)8, "Service");
+            AddClassifiedCategory((Int32)9, "Personal");
+
+            SessionID = UUID.Random();
+            SecureSessionID = UUID.Random();
+            AgentID = UUID.Random();
+
+            Hashtable InitialOutfitHash = new Hashtable();
+            InitialOutfitHash["folder_name"] = "Nightclub Female";
+            InitialOutfitHash["gender"] = "female";
+            initialOutfit.Add(InitialOutfitHash);
+            mapTileURL = String.Empty;
+            profileURL = String.Empty;
+            openIDURL = String.Empty;
+            searchURL = String.Empty;
+
+            currency = String.Empty;
+            ClassifiedFee = "0";
         }
-
-        public string EverLoggedIn
-        {
-            get { return everLoggedIn; }
-            set { everLoggedIn = value; }
-        }
-
-        public uint SimPort
-        {
-            get { return simPort; }
-            set { simPort = value; }
-        }
-
-        public uint SimHttpPort
-        {
-            get { return simHttpPort; }
-            set { simHttpPort = value; }
-        }
-
-        public string SimAddress
-        {
-            get { return simAddress; }
-            set { simAddress = value; }
-        }
-
-        public UUID AgentID
-        {
-            get { return agentID; }
-            set { agentID = value; }
-        }
-
-        public UUID SessionID
-        {
-            get { return sessionID; }
-            set { sessionID = value; }
-        }
-
-        public UUID SecureSessionID
-        {
-            get { return secureSessionID; }
-            set { secureSessionID = value; }
-        }
-
-        public Int32 CircuitCode
-        {
-            get { return circuitCode; }
-            set { circuitCode = value; }
-        }
-
-        public uint RegionX
-        {
-            get { return regionX; }
-            set { regionX = value; }
-        }
-
-        public uint RegionY
-        {
-            get { return regionY; }
-            set { regionY = value; }
-        }
-
-        public int RegionSizeX { get; private set; }
-        public int RegionSizeY { get; private set; }
-
-        public string SunTexture
-        {
-            get { return sunTexture; }
-            set { sunTexture = value; }
-        }
-
-        public string CloudTexture
-        {
-            get { return cloudTexture; }
-            set { cloudTexture = value; }
-        }
-
-        public string MoonTexture
-        {
-            get { return moonTexture; }
-            set { moonTexture = value; }
-        }
-
-        public string Firstname
-        {
-            get { return firstname; }
-            set { firstname = value; }
-        }
-
-        public string Lastname
-        {
-            get { return lastname; }
-            set { lastname = value; }
-        }
-
-        public string AgentAccess
-        {
-            get { return agentAccess; }
-            set { agentAccess = value; }
-        }
-
-        public string AgentAccessMax
-        {
-            get { return agentAccessMax; }
-            set { agentAccessMax = value; }
-        }
-
-        public string StartLocation
-        {
-            get { return startLocation; }
-            set { startLocation = value; }
-        }
-
-        public string LookAt
-        {
-            get { return lookAt; }
-            set { lookAt = value; }
-        }
-
-        public string SeedCapability
-        {
-            get { return seedCapability; }
-            set { seedCapability = value; }
-        }
-
-        public string ErrorReason
-        {
-            get { return errorReason; }
-            set { errorReason = value; }
-        }
-
-        public string ErrorMessage
-        {
-            get { return errorMessage; }
-            set { errorMessage = value; }
-        }
-
-        public ArrayList InventoryRoot
-        {
-            get { return inventoryRoot; }
-            set { inventoryRoot = value; }
-        }
-
-        public ArrayList InventorySkeleton
-        {
-            get { return agentInventory; }
-            set { agentInventory = value; }
-        }
-
-        public ArrayList InventoryLibrary
-        {
-            get { return inventoryLibrary; }
-            set { inventoryLibrary = value; }
-        }
-
-        public ArrayList InventoryLibraryOwner
-        {
-            get { return inventoryLibraryOwner; }
-            set { inventoryLibraryOwner = value; }
-        }
-
-        public ArrayList InventoryLibRoot
-        {
-            get { return inventoryLibRoot; }
-            set { inventoryLibRoot = value; }
-        }
-
-        public ArrayList ActiveGestures
-        {
-            get { return activeGestures; }
-            set { activeGestures = value; }
-        }
-                
-        public string Home
-        {
-            get { return home; }
-            set { home = value; }
-        }
-
-        public string MapTileURL
-        {
-            get { return mapTileURL; }
-            set { mapTileURL = value; }
-        }
-
-        public string ProfileURL
-        {
-            get { return profileURL; }
-            set { profileURL = value; }
-        }
-
-        public string OpenIDURL
-        {
-            get { return openIDURL; }
-            set { openIDURL = value; }
-        }
-
-        public string SearchURL
-        {
-            get { return searchURL; }
-            set { searchURL = value; }
-        }
-
-        public string Message
-        {
-            get { return welcomeMessage; }
-            set { welcomeMessage = value; }
-        }
-
-        public BuddyList BuddList
-        {
-            get { return m_buddyList; }
-            set { m_buddyList = value; }
-        }
-
-        public string Currency
-        {
-            get { return currency; }
-            set { currency = value; }
-        }
-
-        public string ClassifiedFee
-        {
-            get { return classifiedFee; }
-            set { classifiedFee = value; }
-        }
-
-        public string DestinationsURL
-        {
-            get; set;
-        }
-
-        public string AvatarsURL
-        {
-            get; set;
-        }
-
-        #endregion
-
-        public class UserInfo
-        {
-            public string firstname;
-            public string lastname;
-            public ulong homeregionhandle;
-            public Vector3 homepos;
-            public Vector3 homelookat;
-        }
-
         public class BuddyList
         {
             public List<BuddyInfo> Buddies = new List<BuddyInfo>();
@@ -1147,10 +848,9 @@ namespace OpenSim.Services.LLLoginService
 
             public class BuddyInfo
             {
-                public int BuddyRightsHave = 1;
-                public int BuddyRightsGiven = 1;
                 public string BuddyID;
-
+                public int BuddyRightsGiven = 1;
+                public int BuddyRightsHave = 1;
                 public BuddyInfo(string buddyID)
                 {
                     BuddyID = buddyID;
@@ -1170,6 +870,290 @@ namespace OpenSim.Services.LLLoginService
                     return hTable;
                 }
             }
+        }
+
+        public class InventoryData
+        {
+            public ArrayList InventoryArray = null;
+            public UUID RootFolderID = UUID.Zero;
+
+            public InventoryData(ArrayList invList, UUID rootID)
+            {
+                InventoryArray = invList;
+                RootFolderID = rootID;
+            }
+        }
+
+        #region Properties
+
+        public ArrayList ActiveGestures
+        {
+            get { return activeGestures; }
+            set { activeGestures = value; }
+        }
+
+        public string AgentAccess
+        {
+            get { return agentAccess; }
+            set { agentAccess = value; }
+        }
+
+        public string AgentAccessMax
+        {
+            get { return agentAccessMax; }
+            set { agentAccessMax = value; }
+        }
+
+        public UUID AgentID
+        {
+            get { return agentID; }
+            set { agentID = value; }
+        }
+
+        public string AvatarsURL
+        {
+            get;
+            set;
+        }
+
+        public BuddyList BuddList
+        {
+            get { return m_buddyList; }
+            set { m_buddyList = value; }
+        }
+
+        public Int32 CircuitCode
+        {
+            get { return circuitCode; }
+            set { circuitCode = value; }
+        }
+
+        public string ClassifiedFee
+        {
+            get { return classifiedFee; }
+            set { classifiedFee = value; }
+        }
+
+        public string CloudTexture
+        {
+            get { return cloudTexture; }
+            set { cloudTexture = value; }
+        }
+
+        public string Currency
+        {
+            get { return currency; }
+            set { currency = value; }
+        }
+
+        public string DestinationsURL
+        {
+            get;
+            set;
+        }
+
+        public string DST
+        {
+            get { return dst; }
+            set { dst = value; }
+        }
+
+        public string ErrorMessage
+        {
+            get { return errorMessage; }
+            set { errorMessage = value; }
+        }
+
+        public string ErrorReason
+        {
+            get { return errorReason; }
+            set { errorReason = value; }
+        }
+
+        public string EverLoggedIn
+        {
+            get { return everLoggedIn; }
+            set { everLoggedIn = value; }
+        }
+
+        public string Firstname
+        {
+            get { return firstname; }
+            set { firstname = value; }
+        }
+
+        public string Gendered
+        {
+            get { return gendered; }
+            set { gendered = value; }
+        }
+
+        public string Home
+        {
+            get { return home; }
+            set { home = value; }
+        }
+
+        public ArrayList InventoryLibrary
+        {
+            get { return inventoryLibrary; }
+            set { inventoryLibrary = value; }
+        }
+
+        public ArrayList InventoryLibraryOwner
+        {
+            get { return inventoryLibraryOwner; }
+            set { inventoryLibraryOwner = value; }
+        }
+
+        public ArrayList InventoryLibRoot
+        {
+            get { return inventoryLibRoot; }
+            set { inventoryLibRoot = value; }
+        }
+
+        public ArrayList InventoryRoot
+        {
+            get { return inventoryRoot; }
+            set { inventoryRoot = value; }
+        }
+
+        public ArrayList InventorySkeleton
+        {
+            get { return agentInventory; }
+            set { agentInventory = value; }
+        }
+
+        public string Lastname
+        {
+            get { return lastname; }
+            set { lastname = value; }
+        }
+
+        public string Login
+        {
+            get { return login; }
+            set { login = value; }
+        }
+        public string LookAt
+        {
+            get { return lookAt; }
+            set { lookAt = value; }
+        }
+
+        public string MapTileURL
+        {
+            get { return mapTileURL; }
+            set { mapTileURL = value; }
+        }
+
+        public string Message
+        {
+            get { return welcomeMessage; }
+            set { welcomeMessage = value; }
+        }
+
+        public string MoonTexture
+        {
+            get { return moonTexture; }
+            set { moonTexture = value; }
+        }
+
+        public string OpenIDURL
+        {
+            get { return openIDURL; }
+            set { openIDURL = value; }
+        }
+
+        public string ProfileURL
+        {
+            get { return profileURL; }
+            set { profileURL = value; }
+        }
+
+        public int RegionSizeX { get; private set; }
+
+        public int RegionSizeY { get; private set; }
+
+        public uint RegionX
+        {
+            get { return regionX; }
+            set { regionX = value; }
+        }
+
+        public uint RegionY
+        {
+            get { return regionY; }
+            set { regionY = value; }
+        }
+
+        public string SearchURL
+        {
+            get { return searchURL; }
+            set { searchURL = value; }
+        }
+
+        public UUID SecureSessionID
+        {
+            get { return secureSessionID; }
+            set { secureSessionID = value; }
+        }
+
+        public string SeedCapability
+        {
+            get { return seedCapability; }
+            set { seedCapability = value; }
+        }
+
+        public UUID SessionID
+        {
+            get { return sessionID; }
+            set { sessionID = value; }
+        }
+
+        public string SimAddress
+        {
+            get { return simAddress; }
+            set { simAddress = value; }
+        }
+
+        public uint SimHttpPort
+        {
+            get { return simHttpPort; }
+            set { simHttpPort = value; }
+        }
+
+        public uint SimPort
+        {
+            get { return simPort; }
+            set { simPort = value; }
+        }
+
+        public string StartLocation
+        {
+            get { return startLocation; }
+            set { startLocation = value; }
+        }
+
+        public string StipendSinceLogin
+        {
+            get { return stipendSinceLogin; }
+            set { stipendSinceLogin = value; }
+        }
+        public string SunTexture
+        {
+            get { return sunTexture; }
+            set { sunTexture = value; }
+        }
+        #endregion Properties
+
+        public class UserInfo
+        {
+            public string firstname;
+            public Vector3 homelookat;
+            public Vector3 homepos;
+            public ulong homeregionhandle;
+            public string lastname;
         }
     }
 }

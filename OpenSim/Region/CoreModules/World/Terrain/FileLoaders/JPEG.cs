@@ -25,11 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenSim.Region.Framework.Interfaces;
 using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using OpenSim.Region.Framework.Interfaces;
 
 namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
 {
@@ -64,6 +64,14 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
             colours.Save(filename, ImageFormat.Jpeg);
         }
 
+        public virtual void SaveFile(ITerrainChannel m_channel, string filename,
+                                     int offsetX, int offsetY,
+                                     int fileWidth, int fileHeight,
+                                     int regionSizeX, int regionSizeY)
+        {
+            throw new System.Exception("Not Implemented");
+        }
+
         /// <summary>
         /// Exports a stream using a System.Drawing exporter.
         /// </summary>
@@ -75,21 +83,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
 
             colours.Save(stream, ImageFormat.Jpeg);
         }
-
-        public virtual void SaveFile(ITerrainChannel m_channel, string filename,
-                             int offsetX, int offsetY,
-                             int fileWidth, int fileHeight,
-                             int regionSizeX, int regionSizeY)
-        {
-            throw new System.Exception("Not Implemented");
-        }
-
-        #endregion
-
-        public override string ToString()
-        {
-            return "JPEG";
-        }
+        #endregion ITerrainLoader Members
 
         //Returns true if this extension is supported for terrain save-tile
         public bool SupportsTileSave()
@@ -97,6 +91,10 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
             return false;
         }
 
+        public override string ToString()
+        {
+            return "JPEG";
+        }
         private static Bitmap CreateBitmapFromMap(ITerrainChannel map)
         {
             int pallete;
@@ -106,10 +104,10 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
             using (Bitmap gradientmapLd = new Bitmap("defaultstripe.png"))
             {
                 pallete = gradientmapLd.Height;
-    
+
                 bmp = new Bitmap(map.Width, map.Height);
                 colours = new Color[pallete];
-    
+
                 for (int i = 0; i < pallete; i++)
                 {
                     colours[i] = gradientmapLd.GetPixel(0, i);
@@ -121,7 +119,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
                 for (int x = 0; x < map.Width; x++)
                 {
                     // 512 is the largest possible height before colours clamp
-                    int colorindex = (int) (Math.Max(Math.Min(1.0, map[x, y] / 512.0), 0.0) * (pallete - 1));
+                    int colorindex = (int)(Math.Max(Math.Min(1.0, map[x, y] / 512.0), 0.0) * (pallete - 1));
                     bmp.SetPixel(x, map.Height - y - 1, colours[colorindex]);
                 }
             }

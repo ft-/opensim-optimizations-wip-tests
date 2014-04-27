@@ -25,44 +25,30 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
+using OpenSim.Region.Physics.Manager;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
-using OpenSim.Region.Physics.Manager;
-using PrimMesher;
-using OpenMetaverse;
 
 namespace OpenSim.Region.Physics.Meshing
 {
     public class Mesh : IMesh
     {
-        private Dictionary<Vertex, int> m_vertices;
-        private List<Triangle> m_triangles;
-        GCHandle m_pinnedVertexes;
-        GCHandle m_pinnedIndex;
-        IntPtr m_verticesPtr = IntPtr.Zero;
-        int m_vertexCount = 0;
-        IntPtr m_indicesPtr = IntPtr.Zero;
-        int m_indexCount = 0;
         public float[] m_normals;
-
+        private int m_indexCount = 0;
+        private IntPtr m_indicesPtr = IntPtr.Zero;
+        private GCHandle m_pinnedIndex;
+        private GCHandle m_pinnedVertexes;
+        private List<Triangle> m_triangles;
+        private int m_vertexCount = 0;
+        private Dictionary<Vertex, int> m_vertices;
+        private IntPtr m_verticesPtr = IntPtr.Zero;
         public Mesh()
         {
             m_vertices = new Dictionary<Vertex, int>();
             m_triangles = new List<Triangle>();
-        }
-
-        public Mesh Clone()
-        {
-            Mesh result = new Mesh();
-
-            foreach (Triangle t in m_triangles)
-            {
-                result.Add(new Triangle(t.v1.Clone(), t.v2.Clone(), t.v3.Clone()));
-            }
-
-            return result;
         }
 
         public void Add(Triangle triangle)
@@ -78,6 +64,18 @@ namespace OpenSim.Region.Physics.Meshing
             if (!m_vertices.ContainsKey(triangle.v3))
                 m_vertices[triangle.v3] = m_vertices.Count;
             m_triangles.Add(triangle);
+        }
+
+        public void Append(IMesh newMesh)
+        {
+            if (m_pinnedIndex.IsAllocated || m_pinnedVertexes.IsAllocated || m_indicesPtr != IntPtr.Zero || m_verticesPtr != IntPtr.Zero)
+                throw new NotSupportedException("Attempt to Append to a pinned Mesh");
+
+            if (!(newMesh is Mesh))
+                return;
+
+            foreach (Triangle t in ((Mesh)newMesh).m_triangles)
+                Add(t);
         }
 
         public void CalcNormals()
@@ -105,7 +103,6 @@ namespace OpenSim.Region.Physics.Meshing
                 wy = t.v3.Y;
                 wz = t.v3.Z;
 
-
                 // Vectors for edges
                 float e1x, e1y, e1z;
                 float e2x, e2y, e2z;
@@ -117,7 +114,6 @@ namespace OpenSim.Region.Physics.Meshing
                 e2x = ux - wx;
                 e2y = uy - wy;
                 e2z = uz - wz;
-
 
                 // Cross product for normal
                 float nx, ny, nz;
@@ -140,6 +136,82 @@ namespace OpenSim.Region.Physics.Meshing
 
                 i += 3;
             }
+        }
+
+        public Mesh Clone()
+        {
+            Mesh result = new Mesh();
+
+            foreach (Triangle t in m_triangles)
+            {
+                result.Add(new Triangle(t.v1.Clone(), t.v2.Clone(), t.v3.Clone()));
+            }
+
+            return result;
+        }
+        public void DumpRaw(String path, String name, String title)
+        {
+            if (path == null)
+                return;
+            String fileName = name + "_" + title + ".raw";
+            String completePath = System.IO.Path.Combine(path, fileName);
+            StreamWriter sw = new StreamWriter(completePath);
+            foreach (Triangle t in m_triangles)
+            {
+                String s = t.ToStringRaw();
+                sw.WriteLine(s);
+            }
+            sw.Close();
+        }
+
+        public int[] getIndexListAsInt()
+        {
+            if (m_triangles == null)
+                throw new NotSupportedException();
+            int[] result = new int[m_triangles.Count * 3];
+            for (int i = 0; i < m_triangles.Count; i++)
+            {
+                Triangle t = m_triangles[i];
+                result[3 * i + 0] = m_vertices[t.v1];
+                result[3 * i + 1] = m_vertices[t.v2];
+                result[3 * i + 2] = m_vertices[t.v3];
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// creates a list of index values that defines triangle faces. THIS METHOD FREES ALL NON-PINNED MESH DATA
+        /// </summary>
+        /// <returns></returns>
+        public int[] getIndexListAsIntLocked()
+        {
+            if (m_pinnedIndex.IsAllocated)
+                return (int[])(m_pinnedIndex.Target);
+
+            int[] result = getIndexListAsInt();
+            m_pinnedIndex = GCHandle.Alloc(result, GCHandleType.Pinned);
+            // Inform the garbage collector of this unmanaged allocation so it can schedule
+            // the next GC round more intelligently
+            GC.AddMemoryPressure(Buffer.ByteLength(result));
+
+            return result;
+        }
+
+        public void getIndexListAsPtrToIntArray(out IntPtr indices, out int triStride, out int indexCount)
+        {
+            // If there isn't an unmanaged array allocated yet, do it now
+            if (m_indicesPtr == IntPtr.Zero)
+            {
+                int[] indexList = getIndexListAsInt();
+                m_indexCount = indexList.Length;
+                int byteCount = m_indexCount * sizeof(int);
+                m_indicesPtr = System.Runtime.InteropServices.Marshal.AllocHGlobal(byteCount);
+                System.Runtime.InteropServices.Marshal.Copy(indexList, 0, m_indicesPtr, m_indexCount);
+            }
+            // A triangle is 3 ints (indices)
+            triStride = 3 * sizeof(int);
+            indices = m_indicesPtr;
+            indexCount = m_indexCount;
         }
 
         public List<Vector3> getVertexList()
@@ -200,57 +272,6 @@ namespace OpenSim.Region.Physics.Meshing
             vertices = m_verticesPtr;
             vertexCount = m_vertexCount;
         }
-
-        public int[] getIndexListAsInt()
-        {
-            if (m_triangles == null)
-                throw new NotSupportedException();
-            int[] result = new int[m_triangles.Count * 3];
-            for (int i = 0; i < m_triangles.Count; i++)
-            {
-                Triangle t = m_triangles[i];
-                result[3 * i + 0] = m_vertices[t.v1];
-                result[3 * i + 1] = m_vertices[t.v2];
-                result[3 * i + 2] = m_vertices[t.v3];
-            }
-            return result;
-        }
-
-        /// <summary>
-        /// creates a list of index values that defines triangle faces. THIS METHOD FREES ALL NON-PINNED MESH DATA
-        /// </summary>
-        /// <returns></returns>
-        public int[] getIndexListAsIntLocked()
-        {
-            if (m_pinnedIndex.IsAllocated)
-                return (int[])(m_pinnedIndex.Target);
-        
-            int[] result = getIndexListAsInt();
-            m_pinnedIndex = GCHandle.Alloc(result, GCHandleType.Pinned);
-            // Inform the garbage collector of this unmanaged allocation so it can schedule
-            // the next GC round more intelligently
-            GC.AddMemoryPressure(Buffer.ByteLength(result));
-
-            return result;
-        }
-
-        public void getIndexListAsPtrToIntArray(out IntPtr indices, out int triStride, out int indexCount)
-        {
-            // If there isn't an unmanaged array allocated yet, do it now
-            if (m_indicesPtr == IntPtr.Zero)
-            {
-                int[] indexList = getIndexListAsInt();
-                m_indexCount = indexList.Length;
-                int byteCount = m_indexCount * sizeof(int);
-                m_indicesPtr = System.Runtime.InteropServices.Marshal.AllocHGlobal(byteCount);
-                System.Runtime.InteropServices.Marshal.Copy(indexList, 0, m_indicesPtr, m_indexCount);
-            }
-            // A triangle is 3 ints (indices)
-            triStride = 3 * sizeof(int);
-            indices = m_indicesPtr;
-            indexCount = m_indexCount;
-        }
-
         public void releasePinned()
         {
             if (m_pinnedVertexes.IsAllocated)
@@ -277,54 +298,25 @@ namespace OpenSim.Region.Physics.Meshing
             m_triangles = null;
             m_vertices = null;
         }
-
-        public void Append(IMesh newMesh)
-        {
-            if (m_pinnedIndex.IsAllocated || m_pinnedVertexes.IsAllocated || m_indicesPtr != IntPtr.Zero || m_verticesPtr != IntPtr.Zero)
-                throw new NotSupportedException("Attempt to Append to a pinned Mesh");
-        
-            if (!(newMesh is Mesh))
-                return;
-
-            foreach (Triangle t in ((Mesh)newMesh).m_triangles)
-                Add(t);
-        }
-
         // Do a linear transformation of  mesh.
         public void TransformLinear(float[,] matrix, float[] offset)
         {
             if (m_pinnedIndex.IsAllocated || m_pinnedVertexes.IsAllocated || m_indicesPtr != IntPtr.Zero || m_verticesPtr != IntPtr.Zero)
                 throw new NotSupportedException("Attempt to TransformLinear a pinned Mesh");
-        
+
             foreach (Vertex v in m_vertices.Keys)
             {
                 if (v == null)
                     continue;
                 float x, y, z;
-                x = v.X*matrix[0, 0] + v.Y*matrix[1, 0] + v.Z*matrix[2, 0];
-                y = v.X*matrix[0, 1] + v.Y*matrix[1, 1] + v.Z*matrix[2, 1];
-                z = v.X*matrix[0, 2] + v.Y*matrix[1, 2] + v.Z*matrix[2, 2];
+                x = v.X * matrix[0, 0] + v.Y * matrix[1, 0] + v.Z * matrix[2, 0];
+                y = v.X * matrix[0, 1] + v.Y * matrix[1, 1] + v.Z * matrix[2, 1];
+                z = v.X * matrix[0, 2] + v.Y * matrix[1, 2] + v.Z * matrix[2, 2];
                 v.X = x + offset[0];
                 v.Y = y + offset[1];
                 v.Z = z + offset[2];
             }
         }
-
-        public void DumpRaw(String path, String name, String title)
-        {
-            if (path == null)
-                return;
-            String fileName = name + "_" + title + ".raw";
-            String completePath = System.IO.Path.Combine(path, fileName);
-            StreamWriter sw = new StreamWriter(completePath);
-            foreach (Triangle t in m_triangles)
-            {
-                String s = t.ToStringRaw();
-                sw.WriteLine(s);
-            }
-            sw.Close();
-        }
-
         public void TrimExcess()
         {
             m_triangles.TrimExcess();

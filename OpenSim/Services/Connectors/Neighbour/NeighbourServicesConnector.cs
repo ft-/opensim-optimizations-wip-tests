@@ -26,32 +26,24 @@
  */
 
 using log4net;
+using OpenMetaverse.StructuredData;
+using OpenSim.Framework;
+using OpenSim.Services.Interfaces;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Reflection;
-using System.Text;
-using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Services.Interfaces;
-using OpenMetaverse;
-using OpenMetaverse.StructuredData;
-
 using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 
 namespace OpenSim.Services.Connectors
 {
     public class NeighbourServicesConnector : INeighbourService
     {
+        protected IGridService m_GridService = null;
+
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
-
-        protected IGridService m_GridService = null;
-
         public NeighbourServicesConnector()
         {
         }
@@ -61,33 +53,10 @@ namespace OpenSim.Services.Connectors
             Initialise(gridServices);
         }
 
-        public virtual void Initialise(IGridService gridServices)
-        {
-            m_GridService = gridServices;
-        }
-
-        public virtual GridRegion HelloNeighbour(ulong regionHandle, RegionInfo thisRegion)
-        {
-            uint x = 0, y = 0;
-            Util.RegionHandleToWorldLoc(regionHandle, out x, out y);
-            GridRegion regInfo = m_GridService.GetRegionByPosition(thisRegion.ScopeID, (int)x, (int)y);
-            if ((regInfo != null) &&
-                // Don't remote-call this instance; that's a startup hickup
-                !((regInfo.ExternalHostName == thisRegion.ExternalHostName) && (regInfo.HttpPort == thisRegion.HttpPort)))
-            {
-                if (!DoHelloNeighbourCall(regInfo, thisRegion))
-                    return null;
-            }
-            else
-                return null;
-
-            return regInfo;
-        }
-
         public bool DoHelloNeighbourCall(GridRegion region, RegionInfo thisRegion)
         {
             string uri = region.ServerURI + "region/" + thisRegion.RegionID + "/";
-//            m_log.Debug("   >>> DoHelloNeighbourCall <<< " + uri);
+            //            m_log.Debug("   >>> DoHelloNeighbourCall <<< " + uri);
 
             WebRequest helloNeighbourRequest;
 
@@ -200,6 +169,29 @@ namespace OpenSim.Services.Connectors
             }
 
             return true;
+        }
+
+        public virtual GridRegion HelloNeighbour(ulong regionHandle, RegionInfo thisRegion)
+        {
+            uint x = 0, y = 0;
+            Util.RegionHandleToWorldLoc(regionHandle, out x, out y);
+            GridRegion regInfo = m_GridService.GetRegionByPosition(thisRegion.ScopeID, (int)x, (int)y);
+            if ((regInfo != null) &&
+                // Don't remote-call this instance; that's a startup hickup
+                !((regInfo.ExternalHostName == thisRegion.ExternalHostName) && (regInfo.HttpPort == thisRegion.HttpPort)))
+            {
+                if (!DoHelloNeighbourCall(regInfo, thisRegion))
+                    return null;
+            }
+            else
+                return null;
+
+            return regInfo;
+        }
+
+        public virtual void Initialise(IGridService gridServices)
+        {
+            m_GridService = gridServices;
         }
     }
 }

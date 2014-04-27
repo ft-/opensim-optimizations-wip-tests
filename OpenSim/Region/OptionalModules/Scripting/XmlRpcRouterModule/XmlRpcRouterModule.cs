@@ -25,18 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
-
-using log4net;
+using Mono.Addins;
 using Nini.Config;
 using OpenMetaverse;
-using Mono.Addins;
-
-using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-
+using System;
 
 namespace OpenSim.Region.OptionalModules.Scripting.XmlRpcRouterModule
 {
@@ -49,15 +43,14 @@ namespace OpenSim.Region.OptionalModules.Scripting.XmlRpcRouterModule
 
         #region INonSharedRegionModule
 
-        public void Initialise(IConfigSource config)
+        public string Name
         {
-            IConfig startupConfig = config.Configs["XMLRPC"];
-            if (startupConfig == null)
-                return;
+            get { return "XmlRpcRouterModule"; }
+        }
 
-            if (startupConfig.GetString("XmlRpcRouterModule",
-                    "XmlRpcRouterModule") == "XmlRpcRouterModule")
-                m_Enabled = true;
+        public Type ReplaceableInterface
+        {
+            get { return null; }
         }
 
         public void AddRegion(Scene scene)
@@ -68,6 +61,20 @@ namespace OpenSim.Region.OptionalModules.Scripting.XmlRpcRouterModule
             scene.RegisterModuleInterface<IXmlRpcRouter>(this);
         }
 
+        public void Close()
+        {
+        }
+
+        public void Initialise(IConfigSource config)
+        {
+            IConfig startupConfig = config.Configs["XMLRPC"];
+            if (startupConfig == null)
+                return;
+
+            if (startupConfig.GetString("XmlRpcRouterModule",
+                    "XmlRpcRouterModule") == "XmlRpcRouterModule")
+                m_Enabled = true;
+        }
         public void RegionLoaded(Scene scene)
         {
         }
@@ -79,30 +86,16 @@ namespace OpenSim.Region.OptionalModules.Scripting.XmlRpcRouterModule
 
             scene.UnregisterModuleInterface<IXmlRpcRouter>(this);
         }
+        #endregion INonSharedRegionModule
 
-        public void Close()
+        public void ObjectRemoved(UUID objectID)
         {
+            // System.Console.WriteLine("TEST Obj Removed!");
         }
-
-        public string Name
-        {
-            get { return "XmlRpcRouterModule"; }
-        }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
-        #endregion
 
         public void RegisterNewReceiver(IScriptModule scriptEngine, UUID channel, UUID objectID, UUID itemID, string uri)
         {
-            scriptEngine.PostScriptEvent(itemID, "xmlrpc_uri", new Object[] {uri});
-        }
-
-        public void UnRegisterReceiver(string channelID, UUID itemID)
-        {
+            scriptEngine.PostScriptEvent(itemID, "xmlrpc_uri", new Object[] { uri });
         }
 
         public void ScriptRemoved(UUID itemID)
@@ -110,9 +103,8 @@ namespace OpenSim.Region.OptionalModules.Scripting.XmlRpcRouterModule
             // System.Console.WriteLine("TEST Script Removed!");
         }
 
-        public void ObjectRemoved(UUID objectID)
+        public void UnRegisterReceiver(string channelID, UUID itemID)
         {
-            // System.Console.WriteLine("TEST Obj Removed!");
         }
     }
 }

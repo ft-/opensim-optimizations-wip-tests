@@ -25,44 +25,20 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Server.Base;
+using OpenSim.Server.Handlers.Base;
 using System;
-using System.Reflection;
-using System.Text;
-using System.Xml;
 using System.Collections.Generic;
 using System.IO;
-using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
-using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Server.Handlers.Base;
-using log4net;
-using OpenMetaverse;
+using System.Reflection;
 
 namespace OpenSim.Groups
 {
-    public class GroupsServiceRobustConnector : ServiceConnector
-    {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        private GroupsService m_GroupsService;
-        private string m_ConfigName = "Groups";
-
-        public GroupsServiceRobustConnector(IConfigSource config, IHttpServer server, string configName) :
-            base(config, server, configName)
-        {
-            if (configName != String.Empty)
-                m_ConfigName = configName;
-
-            m_log.DebugFormat("[Groups.RobustConnector]: Starting with config name {0}", m_ConfigName);
-
-            m_GroupsService = new GroupsService(config);
-
-            server.AddStreamHandler(new GroupsServicePostHandler(m_GroupsService));
-        }
-    }
-
     public class GroupsServicePostHandler : BaseStreamHandler
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
@@ -101,38 +77,55 @@ namespace OpenSim.Groups
                 {
                     case "PUTGROUP":
                         return HandleAddOrUpdateGroup(request);
+
                     case "GETGROUP":
                         return HandleGetGroup(request);
+
                     case "ADDAGENTTOGROUP":
                         return HandleAddAgentToGroup(request);
+
                     case "REMOVEAGENTFROMGROUP":
                         return HandleRemoveAgentFromGroup(request);
+
                     case "GETMEMBERSHIP":
                         return HandleGetMembership(request);
+
                     case "GETGROUPMEMBERS":
                         return HandleGetGroupMembers(request);
+
                     case "PUTROLE":
                         return HandlePutRole(request);
+
                     case "REMOVEROLE":
                         return HandleRemoveRole(request);
+
                     case "GETGROUPROLES":
                         return HandleGetGroupRoles(request);
+
                     case "GETROLEMEMBERS":
                         return HandleGetRoleMembers(request);
+
                     case "AGENTROLE":
                         return HandleAgentRole(request);
+
                     case "GETAGENTROLES":
                         return HandleGetAgentRoles(request);
+
                     case "SETACTIVE":
                         return HandleSetActive(request);
+
                     case "UPDATEMEMBERSHIP":
                         return HandleUpdateMembership(request);
+
                     case "INVITE":
                         return HandleInvite(request);
+
                     case "ADDNOTICE":
                         return HandleAddNotice(request);
+
                     case "GETNOTICES":
                         return HandleGetNotices(request);
+
                     case "FINDGROUPS":
                         return HandleFindGroups(request);
                 }
@@ -146,84 +139,7 @@ namespace OpenSim.Groups
             return FailureResult();
         }
 
-        byte[] HandleAddOrUpdateGroup(Dictionary<string, object> request)
-        {
-            Dictionary<string, object> result = new Dictionary<string, object>();
-
-            ExtendedGroupRecord grec = GroupsDataUtils.GroupRecord(request);
-            if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("OP"))
-                NullResult(result, "Bad network data");
-
-            else
-            {
-                string RequestingAgentID = request["RequestingAgentID"].ToString();
-                string reason = string.Empty;
-                string op = request["OP"].ToString();
-                if (op == "ADD")
-                {
-                    grec.GroupID = m_GroupsService.CreateGroup(RequestingAgentID, grec.GroupName, grec.Charter, grec.ShowInList, grec.GroupPicture, grec.MembershipFee,
-                        grec.OpenEnrollment, grec.AllowPublish, grec.MaturePublish, grec.FounderID, out reason);
-
-                }
-                else if (op == "UPDATE")
-                {
-                    m_GroupsService.UpdateGroup(RequestingAgentID, grec.GroupID, grec.Charter, grec.ShowInList, grec.GroupPicture, grec.MembershipFee,
-                        grec.OpenEnrollment, grec.AllowPublish, grec.MaturePublish);
-
-                }
-
-                if (grec.GroupID != UUID.Zero)
-                {
-                    grec = m_GroupsService.GetGroupRecord(RequestingAgentID, grec.GroupID);
-                    if (grec == null)
-                        NullResult(result, "Internal Error");
-                    else
-                        result["RESULT"] = GroupsDataUtils.GroupRecord(grec);
-                }
-                else
-                    NullResult(result, reason);
-            }
-
-            string xmlString = ServerUtils.BuildXmlResponse(result);
-
-            //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
-            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
-        }
-
-        byte[] HandleGetGroup(Dictionary<string, object> request)
-        {
-            Dictionary<string, object> result = new Dictionary<string, object>();
-
-            if (!request.ContainsKey("RequestingAgentID"))
-                NullResult(result, "Bad network data");
-            else
-            {
-                string RequestingAgentID = request["RequestingAgentID"].ToString();
-                ExtendedGroupRecord grec = null;
-                if (request.ContainsKey("GroupID"))
-                {
-                    UUID groupID = new UUID(request["GroupID"].ToString());
-                    grec = m_GroupsService.GetGroupRecord(RequestingAgentID, groupID);
-                }
-                else if (request.ContainsKey("Name"))
-                {
-                    string name = request["Name"].ToString();
-                    grec = m_GroupsService.GetGroupRecord(RequestingAgentID, name);
-                }
-
-                if (grec == null)
-                    NullResult(result, "Group not found");
-                else
-                    result["RESULT"] = GroupsDataUtils.GroupRecord(grec);
-            }
-
-            string xmlString = ServerUtils.BuildXmlResponse(result);
-
-            //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
-            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
-        }
-
-        byte[] HandleAddAgentToGroup(Dictionary<string, object> request)
+        private byte[] HandleAddAgentToGroup(Dictionary<string, object> request)
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
 
@@ -260,11 +176,142 @@ namespace OpenSim.Groups
             return Util.UTF8NoBomEncoding.GetBytes(xmlString);
         }
 
-        byte[] HandleRemoveAgentFromGroup(Dictionary<string, object> request)
+        private byte[] HandleAddNotice(Dictionary<string, object> request)
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
 
-            if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("AgentID") || !request.ContainsKey("GroupID"))
+            if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("GroupID") || !request.ContainsKey("NoticeID") ||
+                !request.ContainsKey("FromName") || !request.ContainsKey("Subject") || !request.ContainsKey("Message") ||
+                !request.ContainsKey("HasAttachment"))
+                NullResult(result, "Bad network data");
+            else
+            {
+                bool hasAtt = bool.Parse(request["HasAttachment"].ToString());
+                byte attType = 0;
+                string attName = string.Empty;
+                string attOwner = string.Empty;
+                UUID attItem = UUID.Zero;
+                if (request.ContainsKey("AttachmentType"))
+                    attType = byte.Parse(request["AttachmentType"].ToString());
+                if (request.ContainsKey("AttachmentName"))
+                    attName = request["AttachmentName"].ToString();
+                if (request.ContainsKey("AttachmentItemID"))
+                    attItem = new UUID(request["AttachmentItemID"].ToString());
+                if (request.ContainsKey("AttachmentOwnerID"))
+                    attOwner = request["AttachmentOwnerID"].ToString();
+
+                bool success = m_GroupsService.AddGroupNotice(request["RequestingAgentID"].ToString(), new UUID(request["GroupID"].ToString()),
+                        new UUID(request["NoticeID"].ToString()), request["FromName"].ToString(), request["Subject"].ToString(),
+                        request["Message"].ToString(), hasAtt, attType, attName, attItem, attOwner);
+
+                result["RESULT"] = success.ToString();
+            }
+
+            string xmlString = ServerUtils.BuildXmlResponse(result);
+
+            //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
+            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
+        }
+
+        private byte[] HandleAddOrUpdateGroup(Dictionary<string, object> request)
+        {
+            Dictionary<string, object> result = new Dictionary<string, object>();
+
+            ExtendedGroupRecord grec = GroupsDataUtils.GroupRecord(request);
+            if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("OP"))
+                NullResult(result, "Bad network data");
+            else
+            {
+                string RequestingAgentID = request["RequestingAgentID"].ToString();
+                string reason = string.Empty;
+                string op = request["OP"].ToString();
+                if (op == "ADD")
+                {
+                    grec.GroupID = m_GroupsService.CreateGroup(RequestingAgentID, grec.GroupName, grec.Charter, grec.ShowInList, grec.GroupPicture, grec.MembershipFee,
+                        grec.OpenEnrollment, grec.AllowPublish, grec.MaturePublish, grec.FounderID, out reason);
+                }
+                else if (op == "UPDATE")
+                {
+                    m_GroupsService.UpdateGroup(RequestingAgentID, grec.GroupID, grec.Charter, grec.ShowInList, grec.GroupPicture, grec.MembershipFee,
+                        grec.OpenEnrollment, grec.AllowPublish, grec.MaturePublish);
+                }
+
+                if (grec.GroupID != UUID.Zero)
+                {
+                    grec = m_GroupsService.GetGroupRecord(RequestingAgentID, grec.GroupID);
+                    if (grec == null)
+                        NullResult(result, "Internal Error");
+                    else
+                        result["RESULT"] = GroupsDataUtils.GroupRecord(grec);
+                }
+                else
+                    NullResult(result, reason);
+            }
+
+            string xmlString = ServerUtils.BuildXmlResponse(result);
+
+            //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
+            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
+        }
+
+        private byte[] HandleAgentRole(Dictionary<string, object> request)
+        {
+            Dictionary<string, object> result = new Dictionary<string, object>();
+
+            if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("GroupID") || !request.ContainsKey("RoleID") ||
+                !request.ContainsKey("AgentID") || !request.ContainsKey("OP"))
+                NullResult(result, "Bad network data");
+            else
+            {
+                string op = request["OP"].ToString();
+
+                bool success = false;
+                if (op == "ADD")
+                    success = m_GroupsService.AddAgentToGroupRole(request["RequestingAgentID"].ToString(), request["AgentID"].ToString(),
+                        new UUID(request["GroupID"].ToString()), new UUID(request["RoleID"].ToString()));
+                else if (op == "DELETE")
+                    success = m_GroupsService.RemoveAgentFromGroupRole(request["RequestingAgentID"].ToString(), request["AgentID"].ToString(),
+                        new UUID(request["GroupID"].ToString()), new UUID(request["RoleID"].ToString()));
+
+                result["RESULT"] = success.ToString();
+            }
+
+            string xmlString = ServerUtils.BuildXmlResponse(result);
+
+            //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
+            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
+        }
+
+        private byte[] HandleFindGroups(Dictionary<string, object> request)
+        {
+            Dictionary<string, object> result = new Dictionary<string, object>();
+
+            if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("Query"))
+                NullResult(result, "Bad network data");
+
+            List<DirGroupsReplyData> hits = m_GroupsService.FindGroups(request["RequestingAgentID"].ToString(), request["Query"].ToString());
+
+            if (hits == null || (hits != null && hits.Count == 0))
+                NullResult(result, "No hits");
+            else
+            {
+                Dictionary<string, object> dict = new Dictionary<string, object>();
+                int i = 0;
+                foreach (DirGroupsReplyData n in hits)
+                    dict["n-" + i++] = GroupsDataUtils.DirGroupsReplyData(n);
+
+                result["RESULT"] = dict;
+            }
+
+            string xmlString = ServerUtils.BuildXmlResponse(result);
+            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
+        }
+
+        private byte[] HandleGetAgentRoles(Dictionary<string, object> request)
+        {
+            Dictionary<string, object> result = new Dictionary<string, object>();
+
+            if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("GroupID") || !request.ContainsKey("AgentID"))
                 NullResult(result, "Bad network data");
             else
             {
@@ -272,15 +319,129 @@ namespace OpenSim.Groups
                 string agentID = request["AgentID"].ToString();
                 string requestingAgentID = request["RequestingAgentID"].ToString();
 
-                m_GroupsService.RemoveAgentFromGroup(requestingAgentID, agentID, groupID);
+                List<GroupRolesData> roles = m_GroupsService.GetAgentGroupRoles(requestingAgentID, agentID, groupID);
+                if (roles == null || (roles != null && roles.Count == 0))
+                {
+                    NullResult(result, "No members");
+                }
+                else
+                {
+                    Dictionary<string, object> dict = new Dictionary<string, object>();
+                    int i = 0;
+                    foreach (GroupRolesData r in roles)
+                        dict["r-" + i++] = GroupsDataUtils.GroupRolesData(r);
+
+                    result["RESULT"] = dict;
+                }
             }
 
+            string xmlString = ServerUtils.BuildXmlResponse(result);
+
             //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
-            result["RESULT"] = "true";
-            return Util.UTF8NoBomEncoding.GetBytes(ServerUtils.BuildXmlResponse(result));
+            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
         }
 
-        byte[] HandleGetMembership(Dictionary<string, object> request)
+        private byte[] HandleGetGroup(Dictionary<string, object> request)
+        {
+            Dictionary<string, object> result = new Dictionary<string, object>();
+
+            if (!request.ContainsKey("RequestingAgentID"))
+                NullResult(result, "Bad network data");
+            else
+            {
+                string RequestingAgentID = request["RequestingAgentID"].ToString();
+                ExtendedGroupRecord grec = null;
+                if (request.ContainsKey("GroupID"))
+                {
+                    UUID groupID = new UUID(request["GroupID"].ToString());
+                    grec = m_GroupsService.GetGroupRecord(RequestingAgentID, groupID);
+                }
+                else if (request.ContainsKey("Name"))
+                {
+                    string name = request["Name"].ToString();
+                    grec = m_GroupsService.GetGroupRecord(RequestingAgentID, name);
+                }
+
+                if (grec == null)
+                    NullResult(result, "Group not found");
+                else
+                    result["RESULT"] = GroupsDataUtils.GroupRecord(grec);
+            }
+
+            string xmlString = ServerUtils.BuildXmlResponse(result);
+
+            //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
+            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
+        }
+        private byte[] HandleGetGroupMembers(Dictionary<string, object> request)
+        {
+            Dictionary<string, object> result = new Dictionary<string, object>();
+
+            if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("GroupID"))
+                NullResult(result, "Bad network data");
+            else
+            {
+                UUID groupID = new UUID(request["GroupID"].ToString());
+                string requestingAgentID = request["RequestingAgentID"].ToString();
+
+                List<ExtendedGroupMembersData> members = m_GroupsService.GetGroupMembers(requestingAgentID, groupID);
+                if (members == null || (members != null && members.Count == 0))
+                {
+                    NullResult(result, "No members");
+                }
+                else
+                {
+                    Dictionary<string, object> dict = new Dictionary<string, object>();
+                    int i = 0;
+                    foreach (ExtendedGroupMembersData m in members)
+                    {
+                        dict["m-" + i++] = GroupsDataUtils.GroupMembersData(m);
+                    }
+
+                    result["RESULT"] = dict;
+                }
+            }
+
+            string xmlString = ServerUtils.BuildXmlResponse(result);
+
+            //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
+            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
+        }
+
+        private byte[] HandleGetGroupRoles(Dictionary<string, object> request)
+        {
+            Dictionary<string, object> result = new Dictionary<string, object>();
+
+            if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("GroupID"))
+                NullResult(result, "Bad network data");
+            else
+            {
+                UUID groupID = new UUID(request["GroupID"].ToString());
+                string requestingAgentID = request["RequestingAgentID"].ToString();
+
+                List<GroupRolesData> roles = m_GroupsService.GetGroupRoles(requestingAgentID, groupID);
+                if (roles == null || (roles != null && roles.Count == 0))
+                {
+                    NullResult(result, "No members");
+                }
+                else
+                {
+                    Dictionary<string, object> dict = new Dictionary<string, object>();
+                    int i = 0;
+                    foreach (GroupRolesData r in roles)
+                        dict["r-" + i++] = GroupsDataUtils.GroupRolesData(r);
+
+                    result["RESULT"] = dict;
+                }
+            }
+
+            string xmlString = ServerUtils.BuildXmlResponse(result);
+
+            //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
+            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
+        }
+
+        private byte[] HandleGetMembership(Dictionary<string, object> request)
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
 
@@ -337,127 +498,45 @@ namespace OpenSim.Groups
             return Util.UTF8NoBomEncoding.GetBytes(xmlString);
         }
 
-        byte[] HandleGetGroupMembers(Dictionary<string, object> request)
+        private byte[] HandleGetNotices(Dictionary<string, object> request)
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
 
-            if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("GroupID"))
+            if (!request.ContainsKey("RequestingAgentID"))
                 NullResult(result, "Bad network data");
-            else
+            else if (request.ContainsKey("NoticeID")) // just one
             {
-                UUID groupID = new UUID(request["GroupID"].ToString());
-                string requestingAgentID = request["RequestingAgentID"].ToString();
+                GroupNoticeInfo notice = m_GroupsService.GetGroupNotice(request["RequestingAgentID"].ToString(), new UUID(request["NoticeID"].ToString()));
 
-                List<ExtendedGroupMembersData> members = m_GroupsService.GetGroupMembers(requestingAgentID, groupID);
-                if (members == null || (members != null && members.Count == 0))
-                {
-                    NullResult(result, "No members");
-                }
+                if (notice == null)
+                    NullResult(result, "NO such notice");
+                else
+                    result["RESULT"] = GroupsDataUtils.GroupNoticeInfo(notice);
+            }
+            else if (request.ContainsKey("GroupID")) // all notices for group
+            {
+                List<ExtendedGroupNoticeData> notices = m_GroupsService.GetGroupNotices(request["RequestingAgentID"].ToString(), new UUID(request["GroupID"].ToString()));
+
+                if (notices == null || (notices != null && notices.Count == 0))
+                    NullResult(result, "No notices");
                 else
                 {
                     Dictionary<string, object> dict = new Dictionary<string, object>();
                     int i = 0;
-                    foreach (ExtendedGroupMembersData m in members)
-                    {
-                        dict["m-" + i++] = GroupsDataUtils.GroupMembersData(m);
-                    }
+                    foreach (ExtendedGroupNoticeData n in notices)
+                        dict["n-" + i++] = GroupsDataUtils.GroupNoticeData(n);
 
                     result["RESULT"] = dict;
                 }
             }
+            else
+                NullResult(result, "Bad OP in request");
 
             string xmlString = ServerUtils.BuildXmlResponse(result);
-
-            //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
             return Util.UTF8NoBomEncoding.GetBytes(xmlString);
         }
 
-        byte[] HandlePutRole(Dictionary<string, object> request)
-        {
-            Dictionary<string, object> result = new Dictionary<string, object>();
-
-            if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("GroupID") || !request.ContainsKey("RoleID") ||
-                !request.ContainsKey("Name") || !request.ContainsKey("Description") || !request.ContainsKey("Title") ||
-                !request.ContainsKey("Powers") || !request.ContainsKey("OP")) 
-                NullResult(result, "Bad network data");
-
-            else
-            {
-                string op = request["OP"].ToString();
-                string reason = string.Empty;
-
-                bool success = false;
-                if (op == "ADD")
-                    success = m_GroupsService.AddGroupRole(request["RequestingAgentID"].ToString(), new UUID(request["GroupID"].ToString()),
-                        new UUID(request["RoleID"].ToString()), request["Name"].ToString(), request["Description"].ToString(),
-                        request["Title"].ToString(), UInt64.Parse(request["Powers"].ToString()), out reason);
-
-                else if (op == "UPDATE")
-                    success = m_GroupsService.UpdateGroupRole(request["RequestingAgentID"].ToString(), new UUID(request["GroupID"].ToString()),
-                        new UUID(request["RoleID"].ToString()), request["Name"].ToString(), request["Description"].ToString(),
-                        request["Title"].ToString(), UInt64.Parse(request["Powers"].ToString()));
-
-                result["RESULT"] = success.ToString();
-            }
-
-            string xmlString = ServerUtils.BuildXmlResponse(result);
-
-            //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
-            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
-        }
-
-        byte[] HandleRemoveRole(Dictionary<string, object> request)
-        {
-            Dictionary<string, object> result = new Dictionary<string, object>();
-
-            if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("GroupID") || !request.ContainsKey("RoleID"))
-                NullResult(result, "Bad network data");
-
-            else
-            {
-                m_GroupsService.RemoveGroupRole(request["RequestingAgentID"].ToString(), new UUID(request["GroupID"].ToString()),
-                    new UUID(request["RoleID"].ToString()));
-                result["RESULT"] = "true";
-            }
-
-            //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
-            return Util.UTF8NoBomEncoding.GetBytes(ServerUtils.BuildXmlResponse(result));
-        }
-
-        byte[] HandleGetGroupRoles(Dictionary<string, object> request)
-        {
-            Dictionary<string, object> result = new Dictionary<string, object>();
-
-            if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("GroupID"))
-                NullResult(result, "Bad network data");
-            else
-            {
-                UUID groupID = new UUID(request["GroupID"].ToString());
-                string requestingAgentID = request["RequestingAgentID"].ToString();
-
-                List<GroupRolesData> roles = m_GroupsService.GetGroupRoles(requestingAgentID, groupID);
-                if (roles == null || (roles != null && roles.Count == 0))
-                {
-                    NullResult(result, "No members");
-                }
-                else
-                {
-                    Dictionary<string, object> dict = new Dictionary<string, object>();
-                    int i = 0;
-                    foreach (GroupRolesData r in roles)
-                        dict["r-" + i++] = GroupsDataUtils.GroupRolesData(r);
-
-                    result["RESULT"] = dict;
-                }
-            }
-
-            string xmlString = ServerUtils.BuildXmlResponse(result);
-
-            //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
-            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
-        }
-
-        byte[] HandleGetRoleMembers(Dictionary<string, object> request)
+        private byte[] HandleGetRoleMembers(Dictionary<string, object> request)
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
 
@@ -490,26 +569,71 @@ namespace OpenSim.Groups
             return Util.UTF8NoBomEncoding.GetBytes(xmlString);
         }
 
-        byte[] HandleAgentRole(Dictionary<string, object> request)
+        private byte[] HandleInvite(Dictionary<string, object> request)
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
 
-            if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("GroupID") || !request.ContainsKey("RoleID") ||
-                !request.ContainsKey("AgentID") || !request.ContainsKey("OP"))
+            if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("InviteID"))
+            {
                 NullResult(result, "Bad network data");
-
+                string xmlString = ServerUtils.BuildXmlResponse(result);
+                return Util.UTF8NoBomEncoding.GetBytes(xmlString);
+            }
             else
             {
                 string op = request["OP"].ToString();
 
+                if (op == "ADD" && request.ContainsKey("GroupID") && request.ContainsKey("RoleID") && request.ContainsKey("AgentID"))
+                {
+                    bool success = m_GroupsService.AddAgentToGroupInvite(request["RequestingAgentID"].ToString(),
+                        new UUID(request["InviteID"].ToString()), new UUID(request["GroupID"].ToString()),
+                        new UUID(request["RoleID"].ToString()), request["AgentID"].ToString());
+
+                    result["RESULT"] = success.ToString();
+                    return Util.UTF8NoBomEncoding.GetBytes(ServerUtils.BuildXmlResponse(result));
+                }
+                else if (op == "DELETE")
+                {
+                    m_GroupsService.RemoveAgentToGroupInvite(request["RequestingAgentID"].ToString(), new UUID(request["InviteID"].ToString()));
+                    result["RESULT"] = "true";
+                    return Util.UTF8NoBomEncoding.GetBytes(ServerUtils.BuildXmlResponse(result));
+                }
+                else if (op == "GET")
+                {
+                    GroupInviteInfo invite = m_GroupsService.GetAgentToGroupInvite(request["RequestingAgentID"].ToString(),
+                        new UUID(request["InviteID"].ToString()));
+
+                    result["RESULT"] = GroupsDataUtils.GroupInviteInfo(invite);
+                    return Util.UTF8NoBomEncoding.GetBytes(ServerUtils.BuildXmlResponse(result));
+                }
+
+                NullResult(result, "Bad OP in request");
+                return Util.UTF8NoBomEncoding.GetBytes(ServerUtils.BuildXmlResponse(result));
+            }
+        }
+
+        private byte[] HandlePutRole(Dictionary<string, object> request)
+        {
+            Dictionary<string, object> result = new Dictionary<string, object>();
+
+            if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("GroupID") || !request.ContainsKey("RoleID") ||
+                !request.ContainsKey("Name") || !request.ContainsKey("Description") || !request.ContainsKey("Title") ||
+                !request.ContainsKey("Powers") || !request.ContainsKey("OP"))
+                NullResult(result, "Bad network data");
+            else
+            {
+                string op = request["OP"].ToString();
+                string reason = string.Empty;
+
                 bool success = false;
                 if (op == "ADD")
-                    success = m_GroupsService.AddAgentToGroupRole(request["RequestingAgentID"].ToString(), request["AgentID"].ToString(), 
-                        new UUID(request["GroupID"].ToString()), new UUID(request["RoleID"].ToString()));
-
-                else if (op == "DELETE")
-                    success = m_GroupsService.RemoveAgentFromGroupRole(request["RequestingAgentID"].ToString(), request["AgentID"].ToString(), 
-                        new UUID(request["GroupID"].ToString()), new UUID(request["RoleID"].ToString()));
+                    success = m_GroupsService.AddGroupRole(request["RequestingAgentID"].ToString(), new UUID(request["GroupID"].ToString()),
+                        new UUID(request["RoleID"].ToString()), request["Name"].ToString(), request["Description"].ToString(),
+                        request["Title"].ToString(), UInt64.Parse(request["Powers"].ToString()), out reason);
+                else if (op == "UPDATE")
+                    success = m_GroupsService.UpdateGroupRole(request["RequestingAgentID"].ToString(), new UUID(request["GroupID"].ToString()),
+                        new UUID(request["RoleID"].ToString()), request["Name"].ToString(), request["Description"].ToString(),
+                        request["Title"].ToString(), UInt64.Parse(request["Powers"].ToString()));
 
                 result["RESULT"] = success.ToString();
             }
@@ -520,11 +644,11 @@ namespace OpenSim.Groups
             return Util.UTF8NoBomEncoding.GetBytes(xmlString);
         }
 
-        byte[] HandleGetAgentRoles(Dictionary<string, object> request)
+        private byte[] HandleRemoveAgentFromGroup(Dictionary<string, object> request)
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
 
-            if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("GroupID") || !request.ContainsKey("AgentID"))
+            if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("AgentID") || !request.ContainsKey("GroupID"))
                 NullResult(result, "Bad network data");
             else
             {
@@ -532,29 +656,30 @@ namespace OpenSim.Groups
                 string agentID = request["AgentID"].ToString();
                 string requestingAgentID = request["RequestingAgentID"].ToString();
 
-                List<GroupRolesData> roles = m_GroupsService.GetAgentGroupRoles(requestingAgentID, agentID, groupID);
-                if (roles == null || (roles != null && roles.Count == 0))
-                {
-                    NullResult(result, "No members");
-                }
-                else
-                {
-                    Dictionary<string, object> dict = new Dictionary<string, object>();
-                    int i = 0;
-                    foreach (GroupRolesData r in roles)
-                        dict["r-" + i++] = GroupsDataUtils.GroupRolesData(r);
-
-                    result["RESULT"] = dict;
-                }
+                m_GroupsService.RemoveAgentFromGroup(requestingAgentID, agentID, groupID);
             }
 
-            string xmlString = ServerUtils.BuildXmlResponse(result);
+            //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
+            result["RESULT"] = "true";
+            return Util.UTF8NoBomEncoding.GetBytes(ServerUtils.BuildXmlResponse(result));
+        }
+        private byte[] HandleRemoveRole(Dictionary<string, object> request)
+        {
+            Dictionary<string, object> result = new Dictionary<string, object>();
+
+            if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("GroupID") || !request.ContainsKey("RoleID"))
+                NullResult(result, "Bad network data");
+            else
+            {
+                m_GroupsService.RemoveGroupRole(request["RequestingAgentID"].ToString(), new UUID(request["GroupID"].ToString()),
+                    new UUID(request["RoleID"].ToString()));
+                result["RESULT"] = "true";
+            }
 
             //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
-            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
+            return Util.UTF8NoBomEncoding.GetBytes(ServerUtils.BuildXmlResponse(result));
         }
-
-        byte[] HandleSetActive(Dictionary<string, object> request)
+        private byte[] HandleSetActive(Dictionary<string, object> request)
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
 
@@ -583,7 +708,6 @@ namespace OpenSim.Groups
 
                     //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
                     return Util.UTF8NoBomEncoding.GetBytes(xmlString);
-
                 }
                 else if (op == "ROLE" && request.ContainsKey("RoleID"))
                 {
@@ -594,17 +718,15 @@ namespace OpenSim.Groups
 
                 return Util.UTF8NoBomEncoding.GetBytes(ServerUtils.BuildXmlResponse(result));
             }
-
         }
 
-        byte[] HandleUpdateMembership(Dictionary<string, object> request)
+        private byte[] HandleUpdateMembership(Dictionary<string, object> request)
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
 
             if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("AgentID") || !request.ContainsKey("GroupID") ||
                 !request.ContainsKey("AcceptNotices") || !request.ContainsKey("ListInProfile"))
                 NullResult(result, "Bad network data");
-
             else
             {
                 m_GroupsService.UpdateMembership(request["RequestingAgentID"].ToString(), request["AgentID"].ToString(), new UUID(request["GroupID"].ToString()),
@@ -616,166 +738,7 @@ namespace OpenSim.Groups
             //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
             return Util.UTF8NoBomEncoding.GetBytes(ServerUtils.BuildXmlResponse(result));
         }
-
-        byte[] HandleInvite(Dictionary<string, object> request)
-        {
-            Dictionary<string, object> result = new Dictionary<string, object>();
-
-            if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("InviteID"))
-            {
-                NullResult(result, "Bad network data");
-                string xmlString = ServerUtils.BuildXmlResponse(result);
-                return Util.UTF8NoBomEncoding.GetBytes(xmlString);
-            }
-            else
-            {
-                string op = request["OP"].ToString();
-
-                if (op == "ADD" && request.ContainsKey("GroupID") && request.ContainsKey("RoleID") && request.ContainsKey("AgentID"))
-                {   
-                    bool success = m_GroupsService.AddAgentToGroupInvite(request["RequestingAgentID"].ToString(), 
-                        new UUID(request["InviteID"].ToString()), new UUID(request["GroupID"].ToString()),
-                        new UUID(request["RoleID"].ToString()), request["AgentID"].ToString());
-
-                    result["RESULT"] = success.ToString();
-                    return Util.UTF8NoBomEncoding.GetBytes(ServerUtils.BuildXmlResponse(result));
-
-                }
-                else if (op == "DELETE")
-                {
-                    m_GroupsService.RemoveAgentToGroupInvite(request["RequestingAgentID"].ToString(), new UUID(request["InviteID"].ToString()));
-                    result["RESULT"] = "true";
-                    return Util.UTF8NoBomEncoding.GetBytes(ServerUtils.BuildXmlResponse(result));
-                }
-                else if (op == "GET")
-                {
-                    GroupInviteInfo invite = m_GroupsService.GetAgentToGroupInvite(request["RequestingAgentID"].ToString(), 
-                        new UUID(request["InviteID"].ToString()));
-
-                    result["RESULT"] = GroupsDataUtils.GroupInviteInfo(invite);
-                    return Util.UTF8NoBomEncoding.GetBytes(ServerUtils.BuildXmlResponse(result));
-                }
-
-                NullResult(result, "Bad OP in request");
-                return Util.UTF8NoBomEncoding.GetBytes(ServerUtils.BuildXmlResponse(result));
-            }
-
-        }
-
-        byte[] HandleAddNotice(Dictionary<string, object> request)
-        {
-            Dictionary<string, object> result = new Dictionary<string, object>();
-
-            if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("GroupID") || !request.ContainsKey("NoticeID") ||
-                !request.ContainsKey("FromName") || !request.ContainsKey("Subject") || !request.ContainsKey("Message") ||
-                !request.ContainsKey("HasAttachment"))
-                NullResult(result, "Bad network data");
-
-            else
-            {
-
-                bool hasAtt = bool.Parse(request["HasAttachment"].ToString());
-                byte attType = 0;
-                string attName = string.Empty;
-                string attOwner = string.Empty;
-                UUID attItem = UUID.Zero;
-                if (request.ContainsKey("AttachmentType"))
-                    attType = byte.Parse(request["AttachmentType"].ToString());
-                if (request.ContainsKey("AttachmentName"))
-                    attName = request["AttachmentName"].ToString();
-                if (request.ContainsKey("AttachmentItemID"))
-                    attItem = new UUID(request["AttachmentItemID"].ToString());
-                if (request.ContainsKey("AttachmentOwnerID"))
-                    attOwner = request["AttachmentOwnerID"].ToString();
-
-                bool success = m_GroupsService.AddGroupNotice(request["RequestingAgentID"].ToString(), new UUID(request["GroupID"].ToString()),
-                        new UUID(request["NoticeID"].ToString()), request["FromName"].ToString(), request["Subject"].ToString(),
-                        request["Message"].ToString(), hasAtt, attType, attName, attItem, attOwner);
-
-                result["RESULT"] = success.ToString();
-            }
-
-            string xmlString = ServerUtils.BuildXmlResponse(result);
-
-            //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
-            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
-        }
-
-        byte[] HandleGetNotices(Dictionary<string, object> request)
-        {
-            Dictionary<string, object> result = new Dictionary<string, object>();
-
-            if (!request.ContainsKey("RequestingAgentID"))
-                NullResult(result, "Bad network data");
-
-            else if (request.ContainsKey("NoticeID")) // just one
-            {
-                GroupNoticeInfo notice =  m_GroupsService.GetGroupNotice(request["RequestingAgentID"].ToString(), new UUID(request["NoticeID"].ToString()));
-
-                if (notice == null)
-                    NullResult(result, "NO such notice");
-                else
-                    result["RESULT"] = GroupsDataUtils.GroupNoticeInfo(notice);
-
-            }
-            else if (request.ContainsKey("GroupID")) // all notices for group
-            {
-                List<ExtendedGroupNoticeData> notices = m_GroupsService.GetGroupNotices(request["RequestingAgentID"].ToString(), new UUID(request["GroupID"].ToString()));
-
-                if (notices == null || (notices != null && notices.Count == 0))
-                    NullResult(result, "No notices");
-                else
-                {
-                    Dictionary<string, object> dict = new Dictionary<string, object>();
-                    int i = 0;
-                    foreach (ExtendedGroupNoticeData n in notices)
-                        dict["n-" + i++] = GroupsDataUtils.GroupNoticeData(n);
-
-                    result["RESULT"] = dict;
-                }
-
-            }
-            else
-                NullResult(result, "Bad OP in request");
-
-            string xmlString = ServerUtils.BuildXmlResponse(result);
-            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
-        }
-
-        byte[] HandleFindGroups(Dictionary<string, object> request)
-        {
-            Dictionary<string, object> result = new Dictionary<string, object>();
-
-            if (!request.ContainsKey("RequestingAgentID") || !request.ContainsKey("Query"))
-                NullResult(result, "Bad network data");
-
-            List<DirGroupsReplyData> hits = m_GroupsService.FindGroups(request["RequestingAgentID"].ToString(), request["Query"].ToString());
-
-            if (hits == null || (hits != null && hits.Count == 0))
-                NullResult(result, "No hits");
-            else
-            {
-                Dictionary<string, object> dict = new Dictionary<string, object>();
-                int i = 0;
-                foreach (DirGroupsReplyData n in hits)
-                    dict["n-" + i++] = GroupsDataUtils.DirGroupsReplyData(n);
-
-                result["RESULT"] = dict;
-            }
-
-
-            string xmlString = ServerUtils.BuildXmlResponse(result);
-            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
-        }
-
-
         #region Helpers
-
-        private void NullResult(Dictionary<string, object> result, string reason)
-        {
-            result["RESULT"] = "NULL";
-            result["REASON"] = reason;
-        }
 
         private byte[] FailureResult()
         {
@@ -784,6 +747,32 @@ namespace OpenSim.Groups
             string xmlString = ServerUtils.BuildXmlResponse(result);
             return Util.UTF8NoBomEncoding.GetBytes(xmlString);
         }
-        #endregion
+
+        private void NullResult(Dictionary<string, object> result, string reason)
+        {
+            result["RESULT"] = "NULL";
+            result["REASON"] = reason;
+        }
+        #endregion Helpers
+    }
+
+    public class GroupsServiceRobustConnector : ServiceConnector
+    {
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        private string m_ConfigName = "Groups";
+        private GroupsService m_GroupsService;
+        public GroupsServiceRobustConnector(IConfigSource config, IHttpServer server, string configName) :
+            base(config, server, configName)
+        {
+            if (configName != String.Empty)
+                m_ConfigName = configName;
+
+            m_log.DebugFormat("[Groups.RobustConnector]: Starting with config name {0}", m_ConfigName);
+
+            m_GroupsService = new GroupsService(config);
+
+            server.AddStreamHandler(new GroupsServicePostHandler(m_GroupsService));
+        }
     }
 }

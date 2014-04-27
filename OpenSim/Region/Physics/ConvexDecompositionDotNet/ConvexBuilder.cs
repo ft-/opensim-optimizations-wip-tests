@@ -1,21 +1,21 @@
 ﻿/* The MIT License
- * 
+ *
  * Copyright (c) 2010 Intel Corporation.
  * All rights reserved.
  *
- * Based on the convexdecomposition library from 
+ * Based on the convexdecomposition library from
  * <http://codesuppository.googlecode.com> by John W. Ratcliff and Stan Melax.
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -31,39 +31,13 @@ using System.Diagnostics;
 
 namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
 {
-    public class DecompDesc
-    {
-        public List<float3> mVertices;
-        public List<int> mIndices;
-
-        // options
-        public uint mDepth; // depth to split, a maximum of 10, generally not over 7.
-        public float mCpercent; // the concavity threshold percentage. 0=20 is reasonable.
-        public float mPpercent; // the percentage volume conservation threshold to collapse hulls. 0-30 is reasonable.
-
-        // hull output limits.
-        public uint mMaxVertices; // maximum number of vertices in the output hull. Recommended 32 or less.
-        public float mSkinWidth; // a skin width to apply to the output hulls.
-
-        public ConvexDecompositionCallback mCallback; // the interface to receive back the results.
-
-        public DecompDesc()
-        {
-            mDepth = 5;
-            mCpercent = 5;
-            mPpercent = 5;
-            mMaxVertices = 32;
-        }
-    }
-
     public class CHull
     {
-        public float[] mMin = new float[3];
-        public float[] mMax = new float[3];
-        public float mVolume;
         public float mDiagonal;
+        public float[] mMax = new float[3];
+        public float[] mMin = new float[3];
         public ConvexResult mResult;
-
+        public float mVolume;
         public CHull(ConvexResult result)
         {
             mResult = new ConvexResult(result);
@@ -149,62 +123,14 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
     public class ConvexBuilder
     {
         public List<CHull> mChulls = new List<CHull>();
-        private ConvexDecompositionCallback mCallback;
-
-        private int MAXDEPTH = 8;
         private float CONCAVE_PERCENT = 1f;
+        private int MAXDEPTH = 8;
+        private ConvexDecompositionCallback mCallback;
         private float MERGE_PERCENT = 2f;
 
         public ConvexBuilder(ConvexDecompositionCallback callback)
         {
             mCallback = callback;
-        }
-
-        public void Dispose()
-        {
-            int i;
-            for (i = 0; i < mChulls.Count; i++)
-            {
-                CHull cr = mChulls[i];
-                cr.Dispose();
-            }
-        }
-
-        public bool isDuplicate(uint i1, uint i2, uint i3, uint ci1, uint ci2, uint ci3)
-        {
-            uint dcount = 0;
-
-            Debug.Assert(i1 != i2 && i1 != i3 && i2 != i3);
-            Debug.Assert(ci1 != ci2 && ci1 != ci3 && ci2 != ci3);
-
-            if (i1 == ci1 || i1 == ci2 || i1 == ci3)
-                dcount++;
-            if (i2 == ci1 || i2 == ci2 || i2 == ci3)
-                dcount++;
-            if (i3 == ci1 || i3 == ci2 || i3 == ci3)
-                dcount++;
-
-            return dcount == 3;
-        }
-
-        public void getMesh(ConvexResult cr, VertexPool vc, List<int> indices)
-        {
-            List<int> src = cr.HullIndices;
-
-            for (int i = 0; i < src.Count / 3; i++)
-            {
-                int i1 = src[i * 3 + 0];
-                int i2 = src[i * 3 + 1];
-                int i3 = src[i * 3 + 2];
-
-                float3 p1 = cr.HullVertices[i1];
-                float3 p2 = cr.HullVertices[i2];
-                float3 p3 = cr.HullVertices[i3];
-
-                i1 = vc.getIndex(p1);
-                i2 = vc.getIndex(p2);
-                i3 = vc.getIndex(p3);
-            }
         }
 
         public CHull canMerge(CHull a, CHull b)
@@ -280,7 +206,6 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
 
                     if (cr != match) // don't try to merge a hull with itself, that be stoopid
                     {
-
                         CHull merge = canMerge(cr, match); // if we can merge these two....
 
                         if (merge != null)
@@ -326,6 +251,58 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
             return combine;
         }
 
+        public void ConvexDecompResult(ConvexResult result)
+        {
+            CHull ch = new CHull(result);
+            mChulls.Add(ch);
+        }
+
+        public void Dispose()
+        {
+            int i;
+            for (i = 0; i < mChulls.Count; i++)
+            {
+                CHull cr = mChulls[i];
+                cr.Dispose();
+            }
+        }
+
+        public void getMesh(ConvexResult cr, VertexPool vc, List<int> indices)
+        {
+            List<int> src = cr.HullIndices;
+
+            for (int i = 0; i < src.Count / 3; i++)
+            {
+                int i1 = src[i * 3 + 0];
+                int i2 = src[i * 3 + 1];
+                int i3 = src[i * 3 + 2];
+
+                float3 p1 = cr.HullVertices[i1];
+                float3 p2 = cr.HullVertices[i2];
+                float3 p3 = cr.HullVertices[i3];
+
+                i1 = vc.getIndex(p1);
+                i2 = vc.getIndex(p2);
+                i3 = vc.getIndex(p3);
+            }
+        }
+
+        public bool isDuplicate(uint i1, uint i2, uint i3, uint ci1, uint ci2, uint ci3)
+        {
+            uint dcount = 0;
+
+            Debug.Assert(i1 != i2 && i1 != i3 && i2 != i3);
+            Debug.Assert(ci1 != ci2 && ci1 != ci3 && ci2 != ci3);
+
+            if (i1 == ci1 || i1 == ci2 || i1 == ci3)
+                dcount++;
+            if (i2 == ci1 || i2 == ci2 || i2 == ci3)
+                dcount++;
+            if (i3 == ci1 || i3 == ci2 || i3 == ci3)
+                dcount++;
+
+            return dcount == 3;
+        }
         public int process(DecompDesc desc)
         {
             int ret = 0;
@@ -396,16 +373,44 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
 
             return ret;
         }
-
-        public void ConvexDecompResult(ConvexResult result)
-        {
-            CHull ch = new CHull(result);
-            mChulls.Add(ch);
-        }
-
         public void sortChulls(List<CHull> hulls)
         {
             hulls.Sort(delegate(CHull a, CHull b) { return a.mVolume.CompareTo(b.mVolume); });
+        }
+    }
+
+    public class DecompDesc
+    {
+        public ConvexDecompositionCallback mCallback;
+        public float mCpercent;
+        // options
+        public uint mDepth;
+
+        public List<int> mIndices;
+        // hull output limits.
+        public uint mMaxVertices;
+
+        // the concavity threshold percentage. 0=20 is reasonable.
+        public float mPpercent;
+
+        public float mSkinWidth;
+        public List<float3> mVertices;
+ // depth to split, a maximum of 10, generally not over 7.
+
+ // the percentage volume conservation threshold to collapse hulls. 0-30 is reasonable.
+
+ // maximum number of vertices in the output hull. Recommended 32 or less.
+
+         // a skin width to apply to the output hulls.
+
+         // the interface to receive back the results.
+
+        public DecompDesc()
+        {
+            mDepth = 5;
+            mCpercent = 5;
+            mPpercent = 5;
+            mMaxVertices = 32;
         }
     }
 }

@@ -25,13 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
 using Nini.Config;
-using OpenSim.Framework;
 using OpenSim.Data;
-using OpenSim.Services.Interfaces;
 using OpenSim.Services.Base;
+using System;
 
 namespace OpenSim.Services.HypergridService
 {
@@ -78,7 +75,6 @@ namespace OpenSim.Services.HypergridService
             m_Database = LoadPlugin<IHGTravelingData>(dllName, new Object[] { connString, realm });
             if (m_Database == null)
                 throw new Exception("Could not find a storage interface in the given module");
-
         }
     }
 }

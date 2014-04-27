@@ -25,20 +25,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections;
-using System.Collections.Generic;
-using System.Security;
 using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Region.Framework.Scenes;
 using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
+using System.Collections.Generic;
+using System.Security;
 
 namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
-    class SPAvatar : System.MarshalByRefObject, IAvatar
+    internal class SPAvatar : System.MarshalByRefObject, IAvatar
     {
-        private readonly Scene m_rootScene;
         private readonly UUID m_ID;
+        private readonly Scene m_rootScene;
         private readonly ISecurityCredential m_security;
         //private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
@@ -49,9 +48,14 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             m_ID = ID;
         }
 
-        private ScenePresence GetSP()
+        public UUID GlobalID
         {
-            return m_rootScene.GetScenePresence(m_ID);
+            get { return m_ID; }
+        }
+
+        public bool IsChildAgent
+        {
+            get { return GetSP().IsChildAgent; }
         }
 
         public string Name
@@ -60,28 +64,24 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             set { throw new SecurityException("Avatar Names are a read-only property."); }
         }
 
-        public UUID GlobalID
-        {
-            get { return m_ID; }
-        }
-
         public Vector3 WorldPosition
         {
             get { return GetSP().AbsolutePosition; }
             set { GetSP().Teleport(value); }
         }
-        
-        public bool IsChildAgent
+
+        private ScenePresence GetSP()
         {
-            get { return GetSP().IsChildAgent; }
+            return m_rootScene.GetScenePresence(m_ID);
         }
-        
         #region IAvatar implementation
+
         public IAvatarAttachment[] Attachments
         {
-            get {
+            get
+            {
                 List<IAvatarAttachment> attachments = new List<IAvatarAttachment>();
-                
+
                 List<AvatarAttachment> internalAttachments = GetSP().Appearance.GetAttachments();
                 foreach (AvatarAttachment attach in internalAttachments)
                 {
@@ -89,7 +89,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
                                                            new UUID(attach.ItemID),
                                                            new UUID(attach.AssetID), m_security));
                 }
-                
+
                 return attachments.ToArray();
             }
         }
@@ -100,6 +100,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             if (dm != null)
                 dm.SendUrlToUser(GetSP().UUID, sender.Name, sender.GlobalID, GetSP().UUID, false, message, url);
         }
-        #endregion
+
+        #endregion IAvatar implementation
     }
 }

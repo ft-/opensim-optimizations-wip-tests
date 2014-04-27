@@ -25,21 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.IO;
-using System.Reflection;
-using System.Threading;
-using System.Timers;
 using log4net;
 using OpenMetaverse;
 using OpenMetaverse.Assets;
-using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Framework.Console;
 using pCampBot.Interfaces;
-using Timer = System.Timers.Timer;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Threading;
 using PermissionMask = OpenSim.Framework.PermissionMask;
 
 namespace pCampBot
@@ -54,101 +48,17 @@ namespace pCampBot
 
     public class Bot
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        public delegate void AnEvent(Bot callbot, EventType someevent); // event delegate for bot events
-
-        /// <summary>
-        /// Controls whether bots request textures for the object information they receive
-        /// </summary>
-        public bool RequestObjectTextures { get; set; }
-
-        /// <summary>
-        /// Bot manager.
-        /// </summary>
-        public BotManager Manager { get; private set; }
-
-        /// <summary>
-        /// Behaviours implemented by this bot.
-        /// </summary>
-        /// <remarks>
-        /// Indexed by abbreviated name.  There can only be one instance of a particular behaviour.
-        /// Lock this structure before manipulating it.
-        /// </remarks>
-        public Dictionary<string, IBehaviour> Behaviours { get; private set; }
-
-        /// <summary>
-        /// Objects that the bot has discovered.
-        /// </summary>
-        /// <remarks>
-        /// Returns a list copy.  Inserting new objects manually will have no effect.
-        /// </remarks>
-        public Dictionary<UUID, Primitive> Objects
-        {
-            get
-            {
-                lock (m_objects)
-                    return new Dictionary<UUID, Primitive>(m_objects);
-            }
-        }
-        private Dictionary<UUID, Primitive> m_objects = new Dictionary<UUID, Primitive>();
-
-        /// <summary>
-        /// Is this bot connected to the grid?
-        /// </summary>
-        public ConnectionState ConnectionState { get; private set; }
-
-        public List<Simulator> Simulators
-        {
-            get
-            {
-                lock (Client.Network.Simulators)
-                    return new List<Simulator>(Client.Network.Simulators);
-            }
-        }
-
-        /// <summary>
-        /// The number of connections that this bot has to different simulators.
-        /// </summary>
-        /// <value>Includes both root and child connections.</value>
-        public int SimulatorsCount
-        {
-            get
-            {
-                lock (Client.Network.Simulators)
-                    return Client.Network.Simulators.Count;
-            }
-        }
-
-        public string FirstName { get; private set; }
-        public string LastName { get; private set; }
-        public string Name { get; private set; }
-        public string Password { get; private set; }
-        public string LoginUri { get; private set; }
-        public string StartLocation { get; private set; }
-
         public string saveDir;
         public string wear;
-
-        public event AnEvent OnConnected;
-        public event AnEvent OnDisconnected;
+        protected List<uint> objectIDs = new List<uint>();
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         /// <summary>
         /// Keep a track of the continuously acting thread so that we can abort it.
         /// </summary>
         private Thread m_actionThread;
 
-        protected List<uint> objectIDs = new List<uint>();
-
-        /// <summary>
-        /// Random number generator.
-        /// </summary>
-        public Random Random { get; private set; }
-
-        /// <summary>
-        /// New instance of a SecondLife client
-        /// </summary>
-        public GridClient Client { get; private set; }
+        private Dictionary<UUID, Primitive> m_objects = new Dictionary<UUID, Primitive>();
 
         /// <summary>
         /// Constructor
@@ -184,18 +94,98 @@ namespace pCampBot
             CreateLibOmvClient();
         }
 
-        public bool TryGetBehaviour(string abbreviatedName, out IBehaviour behaviour)
+        public delegate void AnEvent(Bot callbot, EventType someevent); // event delegate for bot events
+
+        public event AnEvent OnConnected;
+
+        public event AnEvent OnDisconnected;
+
+        /// <summary>
+        /// Behaviours implemented by this bot.
+        /// </summary>
+        /// <remarks>
+        /// Indexed by abbreviated name.  There can only be one instance of a particular behaviour.
+        /// Lock this structure before manipulating it.
+        /// </remarks>
+        public Dictionary<string, IBehaviour> Behaviours { get; private set; }
+
+        /// <summary>
+        /// New instance of a SecondLife client
+        /// </summary>
+        public GridClient Client { get; private set; }
+
+        /// <summary>
+        /// Is this bot connected to the grid?
+        /// </summary>
+        public ConnectionState ConnectionState { get; private set; }
+
+        public string FirstName { get; private set; }
+
+        public string LastName { get; private set; }
+
+        public string LoginUri { get; private set; }
+
+        /// <summary>
+        /// Bot manager.
+        /// </summary>
+        public BotManager Manager { get; private set; }
+
+        public string Name { get; private set; }
+
+        /// <summary>
+        /// Objects that the bot has discovered.
+        /// </summary>
+        /// <remarks>
+        /// Returns a list copy.  Inserting new objects manually will have no effect.
+        /// </remarks>
+        public Dictionary<UUID, Primitive> Objects
         {
-            lock (Behaviours)
-                return Behaviours.TryGetValue(abbreviatedName, out behaviour);
+            get
+            {
+                lock (m_objects)
+                    return new Dictionary<UUID, Primitive>(m_objects);
+            }
         }
 
+        public string Password { get; private set; }
+
+        /// <summary>
+        /// Random number generator.
+        /// </summary>
+        public Random Random { get; private set; }
+
+        /// <summary>
+        /// Controls whether bots request textures for the object information they receive
+        /// </summary>
+        public bool RequestObjectTextures { get; set; }
+        public List<Simulator> Simulators
+        {
+            get
+            {
+                lock (Client.Network.Simulators)
+                    return new List<Simulator>(Client.Network.Simulators);
+            }
+        }
+
+        /// <summary>
+        /// The number of connections that this bot has to different simulators.
+        /// </summary>
+        /// <value>Includes both root and child connections.</value>
+        public int SimulatorsCount
+        {
+            get
+            {
+                lock (Client.Network.Simulators)
+                    return Client.Network.Simulators.Count;
+            }
+        }
+        public string StartLocation { get; private set; }
         public bool AddBehaviour(IBehaviour behaviour)
         {
             lock (Behaviours)
             {
                 if (!Behaviours.ContainsKey(behaviour.AbbreviatedName))
-                {                    
+                {
                     behaviour.Initialize(this);
                     Behaviours.Add(behaviour.AbbreviatedName, behaviour);
 
@@ -204,6 +194,261 @@ namespace pCampBot
             }
 
             return false;
+        }
+
+        public void Asset_ReceivedCallback(AssetDownload transfer, Asset asset)
+        {
+            lock (Manager.AssetsReceived)
+                Manager.AssetsReceived[asset.AssetID] = true;
+
+            //            if (wear == "save")
+            //            {
+            //                SaveAsset((AssetWearable) asset);
+            //            }
+        }
+
+        public void Asset_TextureCallback_Texture(TextureRequestState state, AssetTexture assetTexture)
+        {
+            //TODO: Implement texture saving and applying
+        }
+
+        public void Connect()
+        {
+            Thread connectThread = new Thread(ConnectInternal);
+            connectThread.Name = Name;
+            connectThread.IsBackground = true;
+
+            connectThread.Start();
+        }
+
+        /// <summary>
+        /// Tells LibSecondLife to logout and disconnect.  Raises the disconnect events once it finishes.
+        /// </summary>
+        public void Disconnect()
+        {
+            ConnectionState = ConnectionState.Disconnecting;
+
+            //            if (m_actionThread != null)
+            //                m_actionThread.Abort();
+
+            Client.Network.Logout();
+        }
+
+        public InventoryFolder FindClothingFolder()
+        {
+            UUID rootfolder = Client.Inventory.Store.RootFolder.UUID;
+            List<InventoryBase> listfolders = Client.Inventory.Store.GetContents(rootfolder);
+            InventoryFolder clothfolder = new InventoryFolder(UUID.Random());
+            foreach (InventoryBase folder in listfolders)
+            {
+                if (folder.Name == "Clothing")
+                {
+                    clothfolder = (InventoryFolder)folder;
+                    break;
+                }
+            }
+            return clothfolder;
+        }
+
+        public WearableType GetWearableType(string path)
+        {
+            string type = ((((path.Split('/'))[2]).Split('.'))[0]).Trim();
+            switch (type)
+            {
+                case "Eyes":
+                    return WearableType.Eyes;
+
+                case "Hair":
+                    return WearableType.Hair;
+
+                case "Pants":
+                    return WearableType.Pants;
+
+                case "Shape":
+                    return WearableType.Shape;
+
+                case "Shirt":
+                    return WearableType.Shirt;
+
+                case "Skin":
+                    return WearableType.Skin;
+
+                default:
+                    return WearableType.Shape;
+            }
+        }
+
+        public void MakeDefaultAppearance(string wear)
+        {
+            try
+            {
+                if (wear == "yes")
+                {
+                    //TODO: Implement random outfit picking
+                    m_log.DebugFormat("Picks a random outfit. Not yet implemented.");
+                }
+                else if (wear != "save")
+                    saveDir = "MyAppearance/" + wear;
+                saveDir = saveDir + "/";
+
+                string[] clothing = Directory.GetFiles(saveDir, "*.clothing", SearchOption.TopDirectoryOnly);
+                string[] bodyparts = Directory.GetFiles(saveDir, "*.bodypart", SearchOption.TopDirectoryOnly);
+                InventoryFolder clothfolder = FindClothingFolder();
+                UUID transid = UUID.Random();
+                List<InventoryBase> listwearables = new List<InventoryBase>();
+
+                for (int i = 0; i < clothing.Length; i++)
+                {
+                    UUID assetID = UUID.Random();
+                    AssetClothing asset = new AssetClothing(assetID, File.ReadAllBytes(clothing[i]));
+                    asset.Decode();
+                    asset.Owner = Client.Self.AgentID;
+                    asset.WearableType = GetWearableType(clothing[i]);
+                    asset.Encode();
+                    transid = Client.Assets.RequestUpload(asset, true);
+                    Client.Inventory.RequestCreateItem(clothfolder.UUID, "MyClothing" + i.ToString(), "MyClothing", AssetType.Clothing,
+                         transid, InventoryType.Wearable, asset.WearableType, (OpenMetaverse.PermissionMask)PermissionMask.All, delegate(bool success, InventoryItem item)
+                    {
+                        if (success)
+                        {
+                            listwearables.Add(item);
+                        }
+                        else
+                        {
+                            m_log.WarnFormat("Failed to create item {0}", item.Name);
+                        }
+                    }
+                    );
+                }
+
+                for (int i = 0; i < bodyparts.Length; i++)
+                {
+                    UUID assetID = UUID.Random();
+                    AssetBodypart asset = new AssetBodypart(assetID, File.ReadAllBytes(bodyparts[i]));
+                    asset.Decode();
+                    asset.Owner = Client.Self.AgentID;
+                    asset.WearableType = GetWearableType(bodyparts[i]);
+                    asset.Encode();
+                    transid = Client.Assets.RequestUpload(asset, true);
+                    Client.Inventory.RequestCreateItem(clothfolder.UUID, "MyBodyPart" + i.ToString(), "MyBodyPart", AssetType.Bodypart,
+                         transid, InventoryType.Wearable, asset.WearableType, (OpenMetaverse.PermissionMask)PermissionMask.All, delegate(bool success, InventoryItem item)
+                    {
+                        if (success)
+                        {
+                            listwearables.Add(item);
+                        }
+                        else
+                        {
+                            m_log.WarnFormat("Failed to create item {0}", item.Name);
+                        }
+                    }
+                    );
+                }
+
+                Thread.Sleep(1000);
+
+                if (listwearables == null || listwearables.Count == 0)
+                {
+                    m_log.DebugFormat("Nothing to send on this folder!");
+                }
+                else
+                {
+                    m_log.DebugFormat("Sending {0} wearables...", listwearables.Count);
+                    Client.Appearance.WearOutfit(listwearables, false);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+        public void Network_LoginProgress(object sender, LoginProgressEventArgs args)
+        {
+            m_log.DebugFormat("[BOT]: Bot {0} {1} in Network_LoginProcess", Name, args.Status);
+
+            if (args.Status == LoginStatus.Success)
+            {
+                if (OnConnected != null)
+                {
+                    OnConnected(this, EventType.CONNECTED);
+                }
+            }
+        }
+
+        public void Network_OnDisconnected(object sender, DisconnectedEventArgs args)
+        {
+            ConnectionState = ConnectionState.Disconnected;
+
+            m_log.DebugFormat(
+                "[BOT]: Bot {0} disconnected from grid, reason {1}, message {2}", Name, args.Reason, args.Message);
+
+            //            m_log.ErrorFormat("Fired Network_OnDisconnected");
+
+            //           if (
+            //               (args.Reason == NetworkManager.DisconnectType.SimShutdown
+            //                    || args.Reason == NetworkManager.DisconnectType.NetworkTimeout)
+            //               && OnDisconnected != null)
+
+            if (
+                (args.Reason == NetworkManager.DisconnectType.ClientInitiated
+                     || args.Reason == NetworkManager.DisconnectType.ServerInitiated
+                     || args.Reason == NetworkManager.DisconnectType.NetworkTimeout)
+                && OnDisconnected != null)
+            //            if (OnDisconnected != null)
+            {
+                OnDisconnected(this, EventType.DISCONNECTED);
+            }
+        }
+
+        public void Network_SimConnected(object sender, SimConnectedEventArgs args)
+        {
+            m_log.DebugFormat(
+                "[BOT]: Bot {0} connected to region {1} at {2}", Name, args.Simulator.Name, args.Simulator.IPEndPoint);
+        }
+
+        public void Network_SimDisconnected(object sender, SimDisconnectedEventArgs args)
+        {
+            m_log.DebugFormat(
+                "[BOT]: Bot {0} disconnected from region {1} at {2}", Name, args.Simulator.Name, args.Simulator.IPEndPoint);
+        }
+
+        public void Objects_NewPrim(object sender, PrimEventArgs args)
+        {
+            if (!RequestObjectTextures)
+                return;
+
+            Primitive prim = args.Prim;
+
+            if (prim != null)
+            {
+                lock (m_objects)
+                    m_objects[prim.ID] = prim;
+
+                if (prim.Textures != null)
+                {
+                    if (prim.Textures.DefaultTexture.TextureID != UUID.Zero)
+                    {
+                        GetTexture(prim.Textures.DefaultTexture.TextureID);
+                    }
+
+                    for (int i = 0; i < prim.Textures.FaceTextures.Length; i++)
+                    {
+                        Primitive.TextureEntryFace face = prim.Textures.FaceTextures[i];
+
+                        if (face != null)
+                        {
+                            UUID textureID = prim.Textures.FaceTextures[i].TextureID;
+
+                            if (textureID != UUID.Zero)
+                                GetTexture(textureID);
+                        }
+                    }
+                }
+
+                if (prim.Sculpt != null && prim.Sculpt.SculptTexture != UUID.Zero)
+                    GetTexture(prim.Sculpt.SculptTexture);
+            }
         }
 
         public bool RemoveBehaviour(string abbreviatedName)
@@ -219,6 +464,160 @@ namespace pCampBot
                 Behaviours.Remove(abbreviatedName);
 
                 return true;
+            }
+        }
+
+        public void SaveAsset(AssetWearable asset)
+        {
+            if (asset != null)
+            {
+                try
+                {
+                    if (asset.Decode())
+                    {
+                        File.WriteAllBytes(Path.Combine(saveDir, String.Format("{1}.{0}",
+                        asset.AssetType.ToString().ToLower(),
+                        asset.WearableType)), asset.AssetData);
+                    }
+                    else
+                    {
+                        m_log.WarnFormat("Failed to decode {0} asset {1}", asset.AssetType, asset.AssetID);
+                    }
+                }
+                catch (Exception e)
+                {
+                    m_log.ErrorFormat("Exception: {0}{1}", e.Message, e.StackTrace);
+                }
+            }
+        }
+
+        public void SaveDefaultAppearance()
+        {
+            saveDir = "MyAppearance/" + FirstName + "_" + LastName;
+            if (!Directory.Exists(saveDir))
+            {
+                Directory.CreateDirectory(saveDir);
+            }
+
+            Array wtypes = Enum.GetValues(typeof(WearableType));
+            foreach (WearableType wtype in wtypes)
+            {
+                UUID wearable = Client.Appearance.GetWearableAsset(wtype);
+                if (wearable != UUID.Zero)
+                {
+                    Client.Assets.RequestAsset(wearable, AssetType.Clothing, false, Asset_ReceivedCallback);
+                    Client.Assets.RequestAsset(wearable, AssetType.Bodypart, false, Asset_ReceivedCallback);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Sit this bot on the ground.
+        /// </summary>
+        public void SitOnGround()
+        {
+            if (ConnectionState == ConnectionState.Connected)
+                Client.Self.SitOnGround();
+        }
+
+        /// <summary>
+        /// Stand this bot
+        /// </summary>
+        public void Stand()
+        {
+            if (ConnectionState == ConnectionState.Connected)
+            {
+                // Unlike sit on ground, here libomv checks whether we have SEND_AGENT_UPDATES enabled.
+                bool prevUpdatesSetting = Client.Settings.SEND_AGENT_UPDATES;
+                Client.Settings.SEND_AGENT_UPDATES = true;
+                Client.Self.Stand();
+                Client.Settings.SEND_AGENT_UPDATES = prevUpdatesSetting;
+            }
+        }
+
+        public bool TryGetBehaviour(string abbreviatedName, out IBehaviour behaviour)
+        {
+            lock (Behaviours)
+                return Behaviours.TryGetValue(abbreviatedName, out behaviour);
+        }
+        //We do our actions here.  This is where one would
+        //add additional steps and/or things the bot should do
+        private void Action()
+        {
+            while (ConnectionState == ConnectionState.Connected)
+            {
+                lock (Behaviours)
+                {
+                    foreach (IBehaviour behaviour in Behaviours.Values)
+                    {
+                        //                        Thread.Sleep(Random.Next(3000, 10000));
+
+                        // m_log.DebugFormat("[pCAMPBOT]: For {0} performing action {1}", Name, b.GetType());
+                        behaviour.Action();
+                    }
+                }
+
+                // XXX: This is a really shitty way of yielding so that behaviours can be added/removed
+                Thread.Sleep(100);
+            }
+
+            lock (Behaviours)
+                foreach (IBehaviour b in Behaviours.Values)
+                    b.Close();
+        }
+
+        /// <summary>
+        /// This is the bot startup loop.
+        /// </summary>
+        private void ConnectInternal()
+        {
+            ConnectionState = ConnectionState.Connecting;
+
+            // Current create a new client on each connect.  libomv doesn't seem to process new sim
+            // information (e.g. EstablishAgentCommunication events) if connecting after a disceonnect with the same
+            // client
+            CreateLibOmvClient();
+
+            if (Client.Network.Login(FirstName, LastName, Password, "pCampBot", StartLocation, "Your name"))
+            {
+                ConnectionState = ConnectionState.Connected;
+
+                Thread.Sleep(Random.Next(1000, 10000));
+                m_actionThread = new Thread(Action);
+                m_actionThread.Start();
+
+                //                    OnConnected(this, EventType.CONNECTED);
+                if (wear == "save")
+                {
+                    SaveDefaultAppearance();
+                }
+                else if (wear != "no")
+                {
+                    MakeDefaultAppearance(wear);
+                }
+
+                // Extract nearby region information.
+                Client.Grid.GridRegion += Manager.Grid_GridRegion;
+                uint xUint, yUint;
+                Utils.LongToUInts(Client.Network.CurrentSim.Handle, out xUint, out yUint);
+                ushort minX, minY, maxX, maxY;
+                minX = (ushort)Math.Min(0, xUint - 5);
+                minY = (ushort)Math.Min(0, yUint - 5);
+                maxX = (ushort)(xUint + 5);
+                maxY = (ushort)(yUint + 5);
+                Client.Grid.RequestMapBlocks(GridLayerType.Terrain, minX, minY, maxX, maxY, false);
+            }
+            else
+            {
+                ConnectionState = ConnectionState.Disconnected;
+
+                m_log.ErrorFormat(
+                    "{0} {1} cannot login: {2}", FirstName, LastName, Client.Network.LoginMessage);
+
+                if (OnDisconnected != null)
+                {
+                    OnDisconnected(this, EventType.DISCONNECTED);
+                }
             }
         }
 
@@ -272,391 +671,6 @@ namespace pCampBot
 
             Client = newClient;
         }
-
-        //We do our actions here.  This is where one would
-        //add additional steps and/or things the bot should do
-        private void Action()
-        {
-            while (ConnectionState == ConnectionState.Connected)
-            {
-                lock (Behaviours)
-                {
-                    foreach (IBehaviour behaviour in Behaviours.Values)
-                    {
-//                        Thread.Sleep(Random.Next(3000, 10000));
-                    
-                        // m_log.DebugFormat("[pCAMPBOT]: For {0} performing action {1}", Name, b.GetType());
-                        behaviour.Action();
-                    }
-                }
-
-                // XXX: This is a really shitty way of yielding so that behaviours can be added/removed
-                Thread.Sleep(100);
-            }
-
-            lock (Behaviours)
-                foreach (IBehaviour b in Behaviours.Values)
-                    b.Close();
-        }
-
-        /// <summary>
-        /// Tells LibSecondLife to logout and disconnect.  Raises the disconnect events once it finishes.
-        /// </summary>
-        public void Disconnect()
-        {
-            ConnectionState = ConnectionState.Disconnecting;
-
-//            if (m_actionThread != null)
-//                m_actionThread.Abort();
-
-            Client.Network.Logout();
-        }
-
-        public void Connect()
-        {            
-            Thread connectThread = new Thread(ConnectInternal);
-            connectThread.Name = Name;
-            connectThread.IsBackground = true;
-
-            connectThread.Start();
-        }
-
-        /// <summary>
-        /// This is the bot startup loop.
-        /// </summary>
-        private void ConnectInternal()
-        {
-            ConnectionState = ConnectionState.Connecting;
-
-            // Current create a new client on each connect.  libomv doesn't seem to process new sim
-            // information (e.g. EstablishAgentCommunication events) if connecting after a disceonnect with the same
-            // client
-            CreateLibOmvClient();
-
-            if (Client.Network.Login(FirstName, LastName, Password, "pCampBot", StartLocation, "Your name"))
-            {
-                ConnectionState = ConnectionState.Connected;
-
-                Thread.Sleep(Random.Next(1000, 10000));
-                m_actionThread = new Thread(Action);
-                m_actionThread.Start();
-
-//                    OnConnected(this, EventType.CONNECTED);
-                if (wear == "save")
-                {
-                    SaveDefaultAppearance();
-                }
-                else if (wear != "no")
-                {
-                    MakeDefaultAppearance(wear);
-                }
-
-                // Extract nearby region information.
-                Client.Grid.GridRegion += Manager.Grid_GridRegion;
-                uint xUint, yUint;
-                Utils.LongToUInts(Client.Network.CurrentSim.Handle, out xUint, out yUint);
-                ushort minX, minY, maxX, maxY;
-                minX = (ushort)Math.Min(0, xUint - 5);
-                minY = (ushort)Math.Min(0, yUint - 5);
-                maxX = (ushort)(xUint + 5);
-                maxY = (ushort)(yUint + 5);
-                Client.Grid.RequestMapBlocks(GridLayerType.Terrain, minX, minY, maxX, maxY, false);
-            }
-            else
-            {
-                ConnectionState = ConnectionState.Disconnected;
-
-                m_log.ErrorFormat(
-                    "{0} {1} cannot login: {2}", FirstName, LastName, Client.Network.LoginMessage);
-
-                if (OnDisconnected != null)
-                {
-                    OnDisconnected(this, EventType.DISCONNECTED);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Sit this bot on the ground.
-        /// </summary>
-        public void SitOnGround()
-        {
-            if (ConnectionState == ConnectionState.Connected)
-                Client.Self.SitOnGround();
-        }
-
-        /// <summary>
-        /// Stand this bot
-        /// </summary>
-        public void Stand()
-        {
-            if (ConnectionState == ConnectionState.Connected)
-            {
-                // Unlike sit on ground, here libomv checks whether we have SEND_AGENT_UPDATES enabled.
-                bool prevUpdatesSetting = Client.Settings.SEND_AGENT_UPDATES;
-                Client.Settings.SEND_AGENT_UPDATES = true;
-                Client.Self.Stand();
-                Client.Settings.SEND_AGENT_UPDATES = prevUpdatesSetting;
-            }
-        }
-
-        public void SaveDefaultAppearance()
-        {
-            saveDir = "MyAppearance/" + FirstName + "_" + LastName;
-            if (!Directory.Exists(saveDir))
-            {
-                Directory.CreateDirectory(saveDir);
-            }
-
-            Array wtypes = Enum.GetValues(typeof(WearableType));
-            foreach (WearableType wtype in wtypes)
-            {
-                UUID wearable = Client.Appearance.GetWearableAsset(wtype);
-                if (wearable != UUID.Zero)
-                {
-                    Client.Assets.RequestAsset(wearable, AssetType.Clothing, false, Asset_ReceivedCallback);
-                    Client.Assets.RequestAsset(wearable, AssetType.Bodypart, false, Asset_ReceivedCallback);
-                }
-            }
-        }
-
-        public void SaveAsset(AssetWearable asset)
-        {
-            if (asset != null)
-            {
-                try
-                {
-                    if (asset.Decode())
-                    {
-                        File.WriteAllBytes(Path.Combine(saveDir, String.Format("{1}.{0}",
-                        asset.AssetType.ToString().ToLower(),
-                        asset.WearableType)), asset.AssetData);
-                    }
-                    else
-                    {
-                        m_log.WarnFormat("Failed to decode {0} asset {1}", asset.AssetType, asset.AssetID);
-                    }
-                }
-                catch (Exception e)
-                {
-                    m_log.ErrorFormat("Exception: {0}{1}", e.Message, e.StackTrace);
-                }
-            }
-        }
-
-        public WearableType GetWearableType(string path)
-        {
-            string type = ((((path.Split('/'))[2]).Split('.'))[0]).Trim();
-            switch (type)
-            {
-                case "Eyes":
-                    return WearableType.Eyes;
-                case "Hair":
-                    return WearableType.Hair;
-                case "Pants":
-                    return WearableType.Pants;
-                case "Shape":
-                    return WearableType.Shape;
-                case "Shirt":
-                    return WearableType.Shirt;
-                case "Skin":
-                    return WearableType.Skin;
-                default:
-                    return WearableType.Shape;
-            }
-        }
-
-        public void MakeDefaultAppearance(string wear)
-        {
-            try
-            {
-                if (wear == "yes")
-                {
-                    //TODO: Implement random outfit picking
-                    m_log.DebugFormat("Picks a random outfit. Not yet implemented.");
-                }
-                else if (wear != "save")
-                    saveDir = "MyAppearance/" + wear;
-                saveDir = saveDir + "/";
-
-                string[] clothing = Directory.GetFiles(saveDir, "*.clothing", SearchOption.TopDirectoryOnly);
-                string[] bodyparts = Directory.GetFiles(saveDir, "*.bodypart", SearchOption.TopDirectoryOnly);
-                InventoryFolder clothfolder = FindClothingFolder();
-                UUID transid = UUID.Random();
-                List<InventoryBase> listwearables = new List<InventoryBase>();
-                
-                for (int i = 0; i < clothing.Length; i++)
-                {
-                    UUID assetID = UUID.Random();
-                    AssetClothing asset = new AssetClothing(assetID, File.ReadAllBytes(clothing[i]));
-                    asset.Decode();
-                    asset.Owner = Client.Self.AgentID;
-                    asset.WearableType = GetWearableType(clothing[i]);
-                    asset.Encode();
-                    transid = Client.Assets.RequestUpload(asset,true);
-                    Client.Inventory.RequestCreateItem(clothfolder.UUID, "MyClothing" + i.ToString(), "MyClothing", AssetType.Clothing,
-                         transid, InventoryType.Wearable, asset.WearableType, (OpenMetaverse.PermissionMask)PermissionMask.All, delegate(bool success, InventoryItem item)
-                    {
-                        if (success)
-                        {
-                            listwearables.Add(item);
-                        }
-                        else
-                        {
-                            m_log.WarnFormat("Failed to create item {0}", item.Name);
-                        }
-                    }
-                    );
-                }
-
-                for (int i = 0; i < bodyparts.Length; i++)
-                {
-                    UUID assetID = UUID.Random();
-                    AssetBodypart asset = new AssetBodypart(assetID, File.ReadAllBytes(bodyparts[i]));
-                    asset.Decode();
-                    asset.Owner = Client.Self.AgentID;
-                    asset.WearableType = GetWearableType(bodyparts[i]);
-                    asset.Encode();
-                    transid = Client.Assets.RequestUpload(asset,true);
-                    Client.Inventory.RequestCreateItem(clothfolder.UUID, "MyBodyPart" + i.ToString(), "MyBodyPart", AssetType.Bodypart,
-                         transid, InventoryType.Wearable, asset.WearableType, (OpenMetaverse.PermissionMask)PermissionMask.All, delegate(bool success, InventoryItem item)
-                    {
-                        if (success)
-                        {
-                            listwearables.Add(item);
-                        }
-                        else
-                        {
-                            m_log.WarnFormat("Failed to create item {0}", item.Name);
-                        }
-                    }
-                    );
-                }
-
-                Thread.Sleep(1000);
-
-                if (listwearables == null || listwearables.Count == 0)
-                {
-                    m_log.DebugFormat("Nothing to send on this folder!");
-                }
-                else
-                {
-                    m_log.DebugFormat("Sending {0} wearables...", listwearables.Count);
-                    Client.Appearance.WearOutfit(listwearables, false);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-            }
-        }
-
-        public InventoryFolder FindClothingFolder()
-        {
-            UUID rootfolder = Client.Inventory.Store.RootFolder.UUID;
-            List<InventoryBase> listfolders = Client.Inventory.Store.GetContents(rootfolder);
-            InventoryFolder clothfolder = new InventoryFolder(UUID.Random());
-            foreach (InventoryBase folder in listfolders)
-            {
-                if (folder.Name == "Clothing")
-                {
-                    clothfolder = (InventoryFolder)folder;
-                    break;
-                }
-            }
-            return clothfolder;
-        }
-
-        public void Network_LoginProgress(object sender, LoginProgressEventArgs args)
-        {
-            m_log.DebugFormat("[BOT]: Bot {0} {1} in Network_LoginProcess", Name, args.Status);
-
-            if (args.Status == LoginStatus.Success)
-            {
-                if (OnConnected != null)
-                {
-                    OnConnected(this, EventType.CONNECTED);
-                }
-            }
-        }
-
-        public void Network_SimConnected(object sender, SimConnectedEventArgs args)
-        {
-            m_log.DebugFormat(
-                "[BOT]: Bot {0} connected to region {1} at {2}", Name, args.Simulator.Name, args.Simulator.IPEndPoint);
-        }
-
-        public void Network_SimDisconnected(object sender, SimDisconnectedEventArgs args)
-        {
-            m_log.DebugFormat(
-                "[BOT]: Bot {0} disconnected from region {1} at {2}", Name, args.Simulator.Name, args.Simulator.IPEndPoint);
-        }
-
-        public void Network_OnDisconnected(object sender, DisconnectedEventArgs args)
-        {
-            ConnectionState = ConnectionState.Disconnected;
-
-            m_log.DebugFormat(
-                "[BOT]: Bot {0} disconnected from grid, reason {1}, message {2}", Name, args.Reason, args.Message);
-
-//            m_log.ErrorFormat("Fired Network_OnDisconnected");
-
-//           if (
-//               (args.Reason == NetworkManager.DisconnectType.SimShutdown
-//                    || args.Reason == NetworkManager.DisconnectType.NetworkTimeout)
-//               && OnDisconnected != null)
-
-
-
-           if (
-               (args.Reason == NetworkManager.DisconnectType.ClientInitiated
-                    || args.Reason == NetworkManager.DisconnectType.ServerInitiated
-                    || args.Reason == NetworkManager.DisconnectType.NetworkTimeout)
-               && OnDisconnected != null)
-//            if (OnDisconnected != null)
-            {
-                OnDisconnected(this, EventType.DISCONNECTED);
-            }
-        }
-
-        public void Objects_NewPrim(object sender, PrimEventArgs args)
-        {
-            if (!RequestObjectTextures)
-                return;
-
-            Primitive prim = args.Prim;
-
-            if (prim != null)
-            {
-                lock (m_objects)
-                    m_objects[prim.ID] = prim;
-
-                if (prim.Textures != null)
-                {
-                    if (prim.Textures.DefaultTexture.TextureID != UUID.Zero)
-                    {
-                        GetTexture(prim.Textures.DefaultTexture.TextureID);
-                    }
-
-                    for (int i = 0; i < prim.Textures.FaceTextures.Length; i++)
-                    {
-                        Primitive.TextureEntryFace face = prim.Textures.FaceTextures[i];
-
-                        if (face != null)
-                        {
-                            UUID textureID = prim.Textures.FaceTextures[i].TextureID;
-
-                            if (textureID != UUID.Zero)
-                                GetTexture(textureID);
-                        }
-                    }
-                }
-
-                if (prim.Sculpt != null && prim.Sculpt.SculptTexture != UUID.Zero)
-                    GetTexture(prim.Sculpt.SculptTexture);
-            }
-        }
-
         private void GetTexture(UUID textureID)
         {
             lock (Manager.AssetsReceived)
@@ -668,22 +682,6 @@ namespace pCampBot
                 Manager.AssetsReceived[textureID] = false;
                 Client.Assets.RequestImage(textureID, ImageType.Normal, Asset_TextureCallback_Texture);
             }
-        }
-        
-        public void Asset_TextureCallback_Texture(TextureRequestState state, AssetTexture assetTexture)
-        {
-            //TODO: Implement texture saving and applying
-        }
-        
-        public void Asset_ReceivedCallback(AssetDownload transfer, Asset asset)
-        {
-            lock (Manager.AssetsReceived)
-                Manager.AssetsReceived[asset.AssetID] = true;
-
-//            if (wear == "save")
-//            {
-//                SaveAsset((AssetWearable) asset);
-//            }
         }
     }
 }

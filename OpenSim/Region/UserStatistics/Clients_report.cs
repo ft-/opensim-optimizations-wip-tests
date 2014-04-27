@@ -25,17 +25,25 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Text;
 using Mono.Data.SqliteClient;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Text;
 
 namespace OpenSim.Region.UserStatistics
 {
+    public struct ClientVersionData
+    {
+        public int count;
+        public float fps;
+        public UUID region_id;
+        public string version;
+    }
+
     public class Clients_report : IStatsController
     {
         #region IStatsController Members
@@ -45,36 +53,9 @@ namespace OpenSim.Region.UserStatistics
             get { return "Client"; }
         }
 
-        /// <summary>
-        /// Return summar information in the form:
-        /// <pre>
-        /// {"totalUsers": "34",
-        ///  "totalSessions": "233",
-        ///  ...
-        /// }
-        /// </pre>
-        /// </summary>
-        /// <param name="pModelResult"></param>
-        /// <returns></returns>
-        public string RenderJson(Hashtable pModelResult) {
-            stats_default_page_values values = (stats_default_page_values) pModelResult["hdata"];
-
-            OSDMap summaryInfo = new OpenMetaverse.StructuredData.OSDMap();
-            summaryInfo.Add("totalUsers", new OSDString(values.total_num_users.ToString()));
-            summaryInfo.Add("totalSessions", new OSDString(values.total_num_sessions.ToString()));
-            summaryInfo.Add("averageClientFPS", new OSDString(values.avg_client_fps.ToString()));
-            summaryInfo.Add("averageClientMem", new OSDString(values.avg_client_mem_use.ToString()));
-            summaryInfo.Add("averageSimFPS", new OSDString(values.avg_sim_fps.ToString()));
-            summaryInfo.Add("averagePingTime", new OSDString(values.avg_ping.ToString()));
-            summaryInfo.Add("totalKBOut", new OSDString(values.total_kb_out.ToString()));
-            summaryInfo.Add("totalKBIn", new OSDString(values.total_kb_in.ToString()));
-            return summaryInfo.ToString();
-        }
-
         public Hashtable ProcessModel(Hashtable pParams)
         {
             SqliteConnection dbConn = (SqliteConnection)pParams["DatabaseConnection"];
-
 
             List<ClientVersionData> clidata = new List<ClientVersionData>();
             List<ClientVersionData> cliRegData = new List<ClientVersionData>();
@@ -116,7 +97,6 @@ namespace OpenSim.Region.UserStatistics
                         udata.fps = Convert.ToSingle(sdr["simfps"]);
                         clidata.Add(udata);
                         totalclients += udata.count;
-                        
                     }
                 }
                 sdr.Close();
@@ -127,9 +107,9 @@ namespace OpenSim.Region.UserStatistics
                     sql =
                         "select region_id, client_version, count(*) as cnt, avg(avg_sim_fps) as simfps from stats_session_data group by region_id, client_version order by region_id, count(*) desc;";
                     cmd = new SqliteCommand(sql, dbConn);
-                    
+
                     sdr = cmd.ExecuteReader();
-                    
+
                     if (sdr.HasRows)
                     {
                         while (sdr.Read())
@@ -144,15 +124,11 @@ namespace OpenSim.Region.UserStatistics
                     }
                     sdr.Close();
                     sdr.Dispose();
-
-
                 }
-
             }
-            
+
             foreach (ClientVersionData cvd in cliRegData)
             {
-                
                 if (regionTotals.ContainsKey(cvd.region_id))
                 {
                     int regiontotal = (int)regionTotals[cvd.region_id];
@@ -163,9 +139,6 @@ namespace OpenSim.Region.UserStatistics
                 {
                     regionTotals.Add(cvd.region_id, cvd.count);
                 }
-                
-                
-
             }
 
             modeldata["ClientData"] = clidata;
@@ -176,12 +149,58 @@ namespace OpenSim.Region.UserStatistics
             return modeldata;
         }
 
+        public string regionNamefromUUID(List<Scene> scenes, UUID region_id)
+        {
+            string returnstring = string.Empty;
+            foreach (Scene sn in scenes)
+            {
+                if (region_id == sn.RegionInfo.originRegionID)
+                {
+                    returnstring = sn.RegionInfo.RegionName;
+                    break;
+                }
+            }
+
+            if (returnstring.Length == 0)
+            {
+                returnstring = region_id.ToString();
+            }
+
+            return returnstring;
+        }
+
+        /// <summary>
+        /// Return summar information in the form:
+        /// <pre>
+        /// {"totalUsers": "34",
+        ///  "totalSessions": "233",
+        ///  ...
+        /// }
+        /// </pre>
+        /// </summary>
+        /// <param name="pModelResult"></param>
+        /// <returns></returns>
+        public string RenderJson(Hashtable pModelResult)
+        {
+            stats_default_page_values values = (stats_default_page_values)pModelResult["hdata"];
+
+            OSDMap summaryInfo = new OpenMetaverse.StructuredData.OSDMap();
+            summaryInfo.Add("totalUsers", new OSDString(values.total_num_users.ToString()));
+            summaryInfo.Add("totalSessions", new OSDString(values.total_num_sessions.ToString()));
+            summaryInfo.Add("averageClientFPS", new OSDString(values.avg_client_fps.ToString()));
+            summaryInfo.Add("averageClientMem", new OSDString(values.avg_client_mem_use.ToString()));
+            summaryInfo.Add("averageSimFPS", new OSDString(values.avg_sim_fps.ToString()));
+            summaryInfo.Add("averagePingTime", new OSDString(values.avg_ping.ToString()));
+            summaryInfo.Add("totalKBOut", new OSDString(values.total_kb_out.ToString()));
+            summaryInfo.Add("totalKBIn", new OSDString(values.total_kb_in.ToString()));
+            return summaryInfo.ToString();
+        }
         public string RenderView(Hashtable pModelResult)
         {
-            List<ClientVersionData> clidata = (List<ClientVersionData>) pModelResult["ClientData"];
+            List<ClientVersionData> clidata = (List<ClientVersionData>)pModelResult["ClientData"];
             int totalclients = (int)pModelResult["Total"];
-            Hashtable regionTotals = (Hashtable) pModelResult["RegionTotals"];
-            List<ClientVersionData> cliRegData = (List<ClientVersionData>) pModelResult["ClientRegionData"];
+            Hashtable regionTotals = (Hashtable)pModelResult["RegionTotals"];
+            List<ClientVersionData> cliRegData = (List<ClientVersionData>)pModelResult["ClientRegionData"];
             List<Scene> m_scenes = (List<Scene>)pModelResult["Scenes"];
             Dictionary<string, IStatsController> reports = (Dictionary<string, IStatsController>)pModelResult["Reports"];
 
@@ -233,7 +252,7 @@ TD.align_top { vertical-align: top; }
                 output.Append(cvd.count);
                 output.Append("/");
                 if (totalclients > 0)
-                    output.Append((((float)cvd.count / (float)totalclients)*100).ToString());
+                    output.Append((((float)cvd.count / (float)totalclients) * 100).ToString());
                 else
                     output.Append(0);
 
@@ -289,41 +308,12 @@ TD.align_top { vertical-align: top; }
                     HTMLUtil.TR_C(ref output);
                 }
                 HTMLUtil.TABLE_C(ref output);
-
             }
 
             output.Append("</BODY>");
             output.Append("</HTML>");
             return output.ToString();
         }
-        public string regionNamefromUUID(List<Scene> scenes, UUID region_id)
-        {
-            string returnstring = string.Empty;
-            foreach (Scene sn in scenes)
-            {
-                if (region_id == sn.RegionInfo.originRegionID)
-                {
-                    returnstring = sn.RegionInfo.RegionName;
-                    break;
-                }
-            }
-
-            if (returnstring.Length == 0)
-            {
-                returnstring = region_id.ToString();
-            }
-
-            return returnstring;
-        }
-
-        #endregion
-    }
-
-    public struct ClientVersionData
-    {
-        public UUID region_id;
-        public string version;
-        public int count;
-        public float fps;
+        #endregion IStatsController Members
     }
 }

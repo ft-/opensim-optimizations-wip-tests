@@ -25,35 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
 using OpenMetaverse;
 using OpenSim.Framework;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
     public interface IEstateDataStore
     {
-        /// <summary>
-        /// Initialise the data store.
-        /// </summary>
-        /// <param name="connectstring"></param>
-        void Initialise(string connectstring);
-
-        /// <summary>
-        /// Load estate settings for a region.
-        /// </summary>
-        /// <param name="regionID"></param>
-        /// <param name="create">If true, then an estate is created if one is not found.</param>
-        /// <returns></returns>
-        EstateSettings LoadEstateSettings(UUID regionID, bool create);
-        
-        /// <summary>
-        /// Load estate settings for an estate ID.
-        /// </summary>
-        /// <param name="estateID"></param>
-        /// <returns></returns>
-        EstateSettings LoadEstateSettings(int estateID);
-        
         /// <summary>
         /// Create a new estate.
         /// </summary>
@@ -63,19 +42,12 @@ namespace OpenSim.Region.Framework.Interfaces
         EstateSettings CreateNewEstate();
 
         /// <summary>
-        /// Load/Get all estate settings.
+        /// Delete an estate
         /// </summary>
-        /// <returns>An empty list if no estates were found.</returns>
-        List<EstateSettings> LoadEstateSettingsAll();
-        
-        /// <summary>
-        /// Store estate settings.
-        /// </summary>
-        /// <remarks>
-        /// This is also called by EstateSettings.Save()</remarks>
-        /// <param name="es"></param>
-        void StoreEstateSettings(EstateSettings es);
-        
+        /// <param name="estateID"></param>
+        /// <returns>true if the delete succeeded, false otherwise</returns>
+        bool DeleteEstate(int estateID);
+
         /// <summary>
         /// Get estate IDs.
         /// </summary>
@@ -84,17 +56,30 @@ namespace OpenSim.Region.Framework.Interfaces
         List<int> GetEstates(string search);
 
         /// <summary>
-        /// Get the IDs of all estates owned by the given user.
-        /// </summary>
-        /// <returns>An empty list if no estates were found.</returns>
-        List<int> GetEstatesByOwner(UUID ownerID);
-        
-        /// <summary>
         /// Get the IDs of all estates.
         /// </summary>
         /// <returns>An empty list if no estates were found.</returns>
         List<int> GetEstatesAll();
-        
+
+        /// <summary>
+        /// Get the IDs of all estates owned by the given user.
+        /// </summary>
+        /// <returns>An empty list if no estates were found.</returns>
+        List<int> GetEstatesByOwner(UUID ownerID);
+
+        /// <summary>
+        /// Get the UUIDs of all the regions in an estate.
+        /// </summary>
+        /// <param name="estateID"></param>
+        /// <returns></returns>
+        List<UUID> GetRegions(int estateID);
+
+        /// <summary>
+        /// Initialise the data store.
+        /// </summary>
+        /// <param name="connectstring"></param>
+        void Initialise(string connectstring);
+
         /// <summary>
         /// Link a region to an estate.
         /// </summary>
@@ -102,19 +87,33 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="estateID"></param>
         /// <returns>true if the link succeeded, false otherwise</returns>
         bool LinkRegion(UUID regionID, int estateID);
-        
+
         /// <summary>
-        /// Get the UUIDs of all the regions in an estate.
+        /// Load estate settings for a region.
+        /// </summary>
+        /// <param name="regionID"></param>
+        /// <param name="create">If true, then an estate is created if one is not found.</param>
+        /// <returns></returns>
+        EstateSettings LoadEstateSettings(UUID regionID, bool create);
+
+        /// <summary>
+        /// Load estate settings for an estate ID.
         /// </summary>
         /// <param name="estateID"></param>
         /// <returns></returns>
-        List<UUID> GetRegions(int estateID);
-        
+        EstateSettings LoadEstateSettings(int estateID);
         /// <summary>
-        /// Delete an estate
+        /// Load/Get all estate settings.
         /// </summary>
-        /// <param name="estateID"></param>
-        /// <returns>true if the delete succeeded, false otherwise</returns>
-        bool DeleteEstate(int estateID);
+        /// <returns>An empty list if no estates were found.</returns>
+        List<EstateSettings> LoadEstateSettingsAll();
+
+        /// <summary>
+        /// Store estate settings.
+        /// </summary>
+        /// <remarks>
+        /// This is also called by EstateSettings.Save()</remarks>
+        /// <param name="es"></param>
+        void StoreEstateSettings(EstateSettings es);
     }
 }

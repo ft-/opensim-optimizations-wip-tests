@@ -25,36 +25,36 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Threading;
-
+using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
-
-using OpenMetaverse;
+using System;
+using System.Collections.Generic;
+using System.Threading;
 
 namespace OpenSim.Groups
 {
-    public delegate ExtendedGroupRecord GroupRecordDelegate();
-    public delegate GroupMembershipData GroupMembershipDelegate();
-    public delegate List<GroupMembershipData> GroupMembershipListDelegate();
-    public delegate List<ExtendedGroupMembersData> GroupMembersListDelegate();
-    public delegate List<GroupRolesData> GroupRolesListDelegate();
-    public delegate List<ExtendedGroupRoleMembersData> RoleMembersListDelegate();
-    public delegate GroupNoticeInfo NoticeDelegate();
-    public delegate List<ExtendedGroupNoticeData> NoticeListDelegate();
-    public delegate void VoidDelegate();
     public delegate bool BooleanDelegate();
 
+    public delegate GroupMembershipData GroupMembershipDelegate();
+
+    public delegate List<GroupMembershipData> GroupMembershipListDelegate();
+
+    public delegate List<ExtendedGroupMembersData> GroupMembersListDelegate();
+
+    public delegate ExtendedGroupRecord GroupRecordDelegate();
+    public delegate List<GroupRolesData> GroupRolesListDelegate();
+
+    public delegate GroupNoticeInfo NoticeDelegate();
+
+    public delegate List<ExtendedGroupNoticeData> NoticeListDelegate();
+
+    public delegate List<ExtendedGroupRoleMembersData> RoleMembersListDelegate();
+    public delegate void VoidDelegate();
     public class RemoteConnectorCacheWrapper
     {
-        private ForeignImporter m_ForeignImporter;
-
+        private const int GROUPS_CACHE_TIMEOUT = 1 * 60;
         private Dictionary<string, bool> m_ActiveRequests = new Dictionary<string, bool>();
-        private const int GROUPS_CACHE_TIMEOUT = 1 * 60; // 1 minutes
-
         // This all important cache cahces objects of different types:
         // group-<GroupID> or group-<Name>          => ExtendedGroupRecord
         // active-<AgentID>                         => GroupMembershipData
@@ -69,9 +69,120 @@ namespace OpenSim.Groups
         // notices-<GroupID>                        => List<ExtendedGroupNoticeData>
         private ExpiringCache<string, object> m_Cache = new ExpiringCache<string, object>();
 
+        private ForeignImporter m_ForeignImporter;
+         // 1 minutes
         public RemoteConnectorCacheWrapper(IUserManagement uman)
         {
             m_ForeignImporter = new ForeignImporter(uman);
+        }
+
+        public bool AddAgentToGroup(string RequestingAgentID, string AgentID, UUID GroupID, GroupMembershipDelegate d)
+        {
+            GroupMembershipData membership = d();
+            if (membership == null)
+                return false;
+
+            lock (m_Cache)
+            {
+                // first, remove everything! add a user is a heavy-duty op
+                m_Cache.Clear();
+
+                m_Cache.AddOrUpdate("active-" + AgentID.ToString(), membership, GROUPS_CACHE_TIMEOUT);
+                m_Cache.AddOrUpdate("membership-" + AgentID.ToString() + "-" + GroupID.ToString(), membership, GROUPS_CACHE_TIMEOUT);
+            }
+
+            return true;
+        }
+
+        public void AddAgentToGroupRole(string RequestingAgentID, string AgentID, UUID GroupID, UUID RoleID, BooleanDelegate d)
+        {
+            if (d())
+            {
+                lock (m_Cache)
+                {
+                    // update the cached role
+                    string cacheKey = "role-" + RoleID.ToString();
+                    object obj;
+                    if (m_Cache.TryGetValue(cacheKey, out obj))
+                    {
+                        GroupRolesData r = (GroupRolesData)obj;
+                        r.Members++;
+                    }
+
+                    // add this agent to the list of role members
+                    cacheKey = "rolemembers-" + RequestingAgentID.ToString() + "-" + GroupID.ToString();
+                    if (m_Cache.TryGetValue(cacheKey, out obj))
+                    {
+                        try
+                        {
+                            // This may throw an exception, in which case the agentID is not a UUID but a full ID
+                            // In that case, let's just remove the whoe things from the cache
+                            UUID id = new UUID(AgentID);
+                            List<ExtendedGroupRoleMembersData> xx = (List<ExtendedGroupRoleMembersData>)obj;
+                            List<GroupRoleMembersData> rmlist = xx.ConvertAll<GroupRoleMembersData>(m_ForeignImporter.ConvertGroupRoleMembersData);
+                            GroupRoleMembersData rm = new GroupRoleMembersData();
+                            rm.MemberID = id;
+                            rm.RoleID = RoleID;
+                            rmlist.Add(rm);
+                        }
+                        catch
+                        {
+                            m_Cache.Remove(cacheKey);
+                        }
+                    }
+
+                    // Remove the cached info about this agent's roles
+                    // because we don't have enough local info about the new role
+                    cacheKey = "roles-" + GroupID.ToString() + "-" + AgentID.ToString();
+                    if (m_Cache.Contains(cacheKey))
+                        m_Cache.Remove(cacheKey);
+                }
+            }
+        }
+
+        public bool AddGroupNotice(UUID groupID, UUID noticeID, GroupNoticeInfo notice, BooleanDelegate d)
+        {
+            if (d())
+            {
+                lock (m_Cache)
+                {
+                    m_Cache.AddOrUpdate("notice-" + noticeID.ToString(), notice, GROUPS_CACHE_TIMEOUT);
+                    string cacheKey = "notices-" + groupID.ToString();
+                    if (m_Cache.Contains(cacheKey))
+                        m_Cache.Remove(cacheKey);
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool AddGroupRole(UUID groupID, UUID roleID, string description, string name, ulong powers, string title, BooleanDelegate d)
+        {
+            if (d())
+            {
+                GroupRolesData role = new GroupRolesData();
+                role.Description = description;
+                role.Members = 0;
+                role.Name = name;
+                role.Powers = powers;
+                role.RoleID = roleID;
+                role.Title = title;
+
+                lock (m_Cache)
+                {
+                    m_Cache.AddOrUpdate("role-" + roleID.ToString(), role, GROUPS_CACHE_TIMEOUT);
+
+                    // also remove this list
+                    if (m_Cache.Contains("roles-" + groupID.ToString()))
+                        m_Cache.Remove("roles-" + groupID.ToString());
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         public UUID CreateGroup(UUID RequestingAgentID, GroupRecordDelegate d)
@@ -95,124 +206,6 @@ namespace OpenSim.Groups
                 }
 
             return group.GroupID;
-        }
-
-        public bool UpdateGroup(UUID groupID, GroupRecordDelegate d)
-        {
-            //reason = string.Empty;
-            //ExtendedGroupRecord group = m_GroupsService.UpdateGroup(RequestingAgentID, groupID, charter, showInList, insigniaID, membershipFee, openEnrollment, allowPublish, maturePublish);
-            ExtendedGroupRecord group = d();
-
-            if (group != null && group.GroupID != UUID.Zero)
-                lock (m_Cache)
-                    m_Cache.AddOrUpdate("group-" + group.GroupID.ToString(), group, GROUPS_CACHE_TIMEOUT);
-            return true;
-        }
-
-        public ExtendedGroupRecord GetGroupRecord(string RequestingAgentID, UUID GroupID, string GroupName, GroupRecordDelegate d)
-        {
-            //if (GroupID == UUID.Zero && (GroupName == null || GroupName != null && GroupName == string.Empty))
-            //    return null;
-
-            object group = null;
-            bool firstCall = false;
-            string cacheKey = "group-";
-            if (GroupID != UUID.Zero)
-                cacheKey += GroupID.ToString();
-            else
-                cacheKey += GroupName;
-
-            //m_log.DebugFormat("[XXX]: GetGroupRecord {0}", cacheKey);
-
-            while (true)
-            {
-                lock (m_Cache)
-                {
-                    if (m_Cache.TryGetValue(cacheKey, out group))
-                    {
-                        //m_log.DebugFormat("[XXX]: GetGroupRecord {0} cached!", cacheKey);
-                        return (ExtendedGroupRecord)group;
-                    }
-
-                    // not cached
-                    if (!m_ActiveRequests.ContainsKey(cacheKey))
-                    {
-                        m_ActiveRequests.Add(cacheKey, true);
-                        firstCall = true;
-                    }
-                }
-
-                if (firstCall)
-                {
-                    //group = m_GroupsService.GetGroupRecord(RequestingAgentID, GroupID, GroupName);
-                    group = d();
-
-                    lock (m_Cache)
-                    {
-                        m_Cache.AddOrUpdate(cacheKey, group, GROUPS_CACHE_TIMEOUT);
-                        m_ActiveRequests.Remove(cacheKey);
-                        return (ExtendedGroupRecord)group;
-                    }
-                }
-                else
-                    Thread.Sleep(50);
-            }
-        }
-
-        public bool AddAgentToGroup(string RequestingAgentID, string AgentID, UUID GroupID, GroupMembershipDelegate d)
-        {
-            GroupMembershipData membership = d();
-            if (membership == null)
-                return false;
-
-            lock (m_Cache)
-            {
-                // first, remove everything! add a user is a heavy-duty op
-                m_Cache.Clear();
-
-                m_Cache.AddOrUpdate("active-" + AgentID.ToString(), membership, GROUPS_CACHE_TIMEOUT);
-                m_Cache.AddOrUpdate("membership-" + AgentID.ToString() + "-" + GroupID.ToString(), membership, GROUPS_CACHE_TIMEOUT);
-            }
-
-
-            return true;
-        }
-
-        public void RemoveAgentFromGroup(string RequestingAgentID, string AgentID, UUID GroupID, VoidDelegate d)
-        {
-            d();
-
-            lock (m_Cache)
-            {
-                string cacheKey = "active-" + AgentID.ToString();
-                if (m_Cache.Contains(cacheKey))
-                    m_Cache.Remove(cacheKey);
-
-                cacheKey = "memberships-" + AgentID.ToString();
-                if (m_Cache.Contains(cacheKey))
-                    m_Cache.Remove(cacheKey);
-
-                cacheKey = "membership-" + AgentID.ToString() + "-" + GroupID.ToString();
-                if (m_Cache.Contains(cacheKey))
-                    m_Cache.Remove(cacheKey);
-
-                cacheKey = "members-" + RequestingAgentID.ToString() + "-" + GroupID.ToString();
-                if (m_Cache.Contains(cacheKey))
-                    m_Cache.Remove(cacheKey);
-
-                cacheKey = "roles-" + "-" + GroupID.ToString() + "-" + AgentID.ToString();
-                if (m_Cache.Contains(cacheKey))
-                    m_Cache.Remove(cacheKey);
-            }
-        }
-
-        public void SetAgentActiveGroup(string AgentID, GroupMembershipDelegate d)
-        {
-            GroupMembershipData activeGroup = d();
-            string cacheKey = "active-" + AgentID.ToString();
-            lock (m_Cache)
-                if (m_Cache.Contains(cacheKey))
-                    m_Cache.AddOrUpdate(cacheKey, activeGroup, GROUPS_CACHE_TIMEOUT);
         }
 
         public ExtendedGroupMembershipData GetAgentActiveMembership(string AgentID, GroupMembershipDelegate d)
@@ -255,7 +248,6 @@ namespace OpenSim.Groups
                 else
                     Thread.Sleep(50);
             }
-
         }
 
         public ExtendedGroupMembershipData GetAgentGroupMembership(string AgentID, UUID GroupID, GroupMembershipDelegate d)
@@ -340,6 +332,47 @@ namespace OpenSim.Groups
             }
         }
 
+        public List<GroupRolesData> GetAgentGroupRoles(string RequestingAgentID, string AgentID, UUID GroupID, GroupRolesListDelegate d)
+        {
+            object roles = null;
+            bool firstCall = false;
+            string cacheKey = "roles-" + GroupID.ToString() + "-" + AgentID.ToString();
+
+            //m_log.DebugFormat("[XXX]: GetAgentGroupRoles {0}", cacheKey);
+
+            while (true)
+            {
+                lock (m_Cache)
+                {
+                    if (m_Cache.TryGetValue(cacheKey, out roles))
+                    {
+                        //m_log.DebugFormat("[XXX]: GetAgentGroupRoles {0} cached!", cacheKey);
+                        return (List<GroupRolesData>)roles;
+                    }
+
+                    // not cached
+                    if (!m_ActiveRequests.ContainsKey(cacheKey))
+                    {
+                        m_ActiveRequests.Add(cacheKey, true);
+                        firstCall = true;
+                    }
+                }
+
+                if (firstCall)
+                {
+                    roles = d();
+                    lock (m_Cache)
+                    {
+                        m_Cache.AddOrUpdate(cacheKey, roles, GROUPS_CACHE_TIMEOUT);
+                        m_ActiveRequests.Remove(cacheKey);
+                        return (List<GroupRolesData>)roles;
+                    }
+                }
+                else
+                    Thread.Sleep(50);
+            }
+        }
+
         public List<GroupMembersData> GetGroupMembers(string RequestingAgentID, UUID GroupID, GroupMembersListDelegate d)
         {
             object members = null;
@@ -388,356 +421,6 @@ namespace OpenSim.Groups
                 else
                     Thread.Sleep(50);
             }
-        }
-
-        public bool AddGroupRole(UUID groupID, UUID roleID, string description, string name, ulong powers, string title, BooleanDelegate d)
-        {
-            if (d())
-            {
-                GroupRolesData role = new GroupRolesData();
-                role.Description = description;
-                role.Members = 0;
-                role.Name = name;
-                role.Powers = powers;
-                role.RoleID = roleID;
-                role.Title = title;
-
-                lock (m_Cache)
-                {
-                    m_Cache.AddOrUpdate("role-" + roleID.ToString(), role, GROUPS_CACHE_TIMEOUT);
-
-                    // also remove this list
-                    if (m_Cache.Contains("roles-" + groupID.ToString()))
-                        m_Cache.Remove("roles-" + groupID.ToString());
-
-                }
-
-                return true;
-            }
-
-            return false;
-        }
-
-        public bool UpdateGroupRole(UUID groupID, UUID roleID, string name, string description, string title, ulong powers, BooleanDelegate d)
-        {
-            if (d())
-            {
-                object role;
-                lock (m_Cache)
-                    if (m_Cache.TryGetValue("role-" + roleID.ToString(), out role))
-                    {
-                        GroupRolesData r = (GroupRolesData)role;
-                        r.Description = description;
-                        r.Name = name;
-                        r.Powers = powers;
-                        r.Title = title;
-
-                        m_Cache.Update("role-" + roleID.ToString(), r, GROUPS_CACHE_TIMEOUT);
-                    }
-                return true;
-            }
-            else
-            {
-                lock (m_Cache)
-                {
-                    if (m_Cache.Contains("role-" + roleID.ToString()))
-                        m_Cache.Remove("role-" + roleID.ToString());
-
-                    // also remove these lists, because they will have an outdated role
-                    if (m_Cache.Contains("roles-" + groupID.ToString()))
-                        m_Cache.Remove("roles-" + groupID.ToString());
-
-                }
-
-                return false;
-            }
-        }
-
-        public void RemoveGroupRole(string RequestingAgentID, UUID groupID, UUID roleID, VoidDelegate d)
-        {
-            d();
-
-            lock (m_Cache)
-            {
-                if (m_Cache.Contains("role-" + roleID.ToString()))
-                    m_Cache.Remove("role-" + roleID.ToString());
-
-                // also remove the list, because it will have an removed role
-                if (m_Cache.Contains("roles-" + groupID.ToString()))
-                    m_Cache.Remove("roles-" + groupID.ToString());
-
-                if (m_Cache.Contains("roles-" + groupID.ToString() + "-" + RequestingAgentID.ToString()))
-                    m_Cache.Remove("roles-" + groupID.ToString() + "-" + RequestingAgentID.ToString());
-
-                if (m_Cache.Contains("rolemembers-" + RequestingAgentID.ToString() + "-" + groupID.ToString()))
-                    m_Cache.Remove("rolemembers-" + RequestingAgentID.ToString() + "-" + groupID.ToString());
-            }
-        }
-
-        public List<GroupRolesData> GetGroupRoles(string RequestingAgentID, UUID GroupID, GroupRolesListDelegate d)
-        {
-            object roles = null;
-            bool firstCall = false;
-            string cacheKey = "roles-" + GroupID.ToString();
-
-            while (true)
-            {
-                lock (m_Cache)
-                {
-                    if (m_Cache.TryGetValue(cacheKey, out roles))
-                        return (List<GroupRolesData>)roles;
-
-                    // not cached
-                    if (!m_ActiveRequests.ContainsKey(cacheKey))
-                    {
-                        m_ActiveRequests.Add(cacheKey, true);
-                        firstCall = true;
-                    }
-                }
-
-                if (firstCall)
-                {
-                    roles = d();
-                    if (roles != null)
-                    {
-                        lock (m_Cache)
-                        {
-                            m_Cache.AddOrUpdate(cacheKey, roles, GROUPS_CACHE_TIMEOUT);
-                            m_ActiveRequests.Remove(cacheKey);
-                            return (List<GroupRolesData>)roles;
-                        }
-                    }
-                }
-                else
-                    Thread.Sleep(50);
-            }
-        }
-
-        public List<GroupRoleMembersData> GetGroupRoleMembers(string RequestingAgentID, UUID GroupID, RoleMembersListDelegate d)
-        {
-            object rmembers = null;
-            bool firstCall = false;
-            // we need to key in also on the requester, because different ppl have different view privileges
-            string cacheKey = "rolemembers-" + RequestingAgentID.ToString() + "-" + GroupID.ToString();
-
-            //m_log.DebugFormat("[XXX]: GetGroupRoleMembers {0}", cacheKey);
-            while (true)
-            {
-                lock (m_Cache)
-                {
-                    if (m_Cache.TryGetValue(cacheKey, out rmembers))
-                    {
-                        List<ExtendedGroupRoleMembersData> xx = (List<ExtendedGroupRoleMembersData>)rmembers;
-                        return xx.ConvertAll<GroupRoleMembersData>(m_ForeignImporter.ConvertGroupRoleMembersData);
-                    }
-
-                    // not cached
-                    if (!m_ActiveRequests.ContainsKey(cacheKey))
-                    {
-                        m_ActiveRequests.Add(cacheKey, true);
-                        firstCall = true;
-                    }
-                }
-
-                if (firstCall)
-                {
-                    List<ExtendedGroupRoleMembersData> _rmembers = d();
-
-                    if (_rmembers != null && _rmembers.Count > 0)
-                        rmembers = _rmembers.ConvertAll<GroupRoleMembersData>(new Converter<ExtendedGroupRoleMembersData, GroupRoleMembersData>(m_ForeignImporter.ConvertGroupRoleMembersData));
-                    else
-                        rmembers = new List<GroupRoleMembersData>();
-
-                    lock (m_Cache)
-                    {
-                        // For some strange reason, when I cache the list of GroupRoleMembersData,
-                        // it gets emptied out. The TryGet gets an empty list...
-                        //m_Cache.AddOrUpdate(cacheKey, rmembers, GROUPS_CACHE_TIMEOUT);
-                        // Caching the list of ExtendedGroupRoleMembersData doesn't show that issue
-                        // I don't get it.
-                        m_Cache.AddOrUpdate(cacheKey, _rmembers, GROUPS_CACHE_TIMEOUT);
-                        m_ActiveRequests.Remove(cacheKey);
-                        return (List<GroupRoleMembersData>)rmembers;
-                    }
-                }
-                else
-                    Thread.Sleep(50);
-            }
-        }
-
-        public void AddAgentToGroupRole(string RequestingAgentID, string AgentID, UUID GroupID, UUID RoleID, BooleanDelegate d)
-        {
-            if (d())
-            {
-                lock (m_Cache)
-                {
-                    // update the cached role
-                    string cacheKey = "role-" + RoleID.ToString();
-                    object obj;
-                    if (m_Cache.TryGetValue(cacheKey, out obj))
-                    {
-                        GroupRolesData r = (GroupRolesData)obj;
-                        r.Members++;
-                    }
-
-                    // add this agent to the list of role members
-                    cacheKey = "rolemembers-" + RequestingAgentID.ToString() + "-" + GroupID.ToString();
-                    if (m_Cache.TryGetValue(cacheKey, out obj))
-                    {
-                        try
-                        {
-                            // This may throw an exception, in which case the agentID is not a UUID but a full ID
-                            // In that case, let's just remove the whoe things from the cache
-                            UUID id = new UUID(AgentID);
-                            List<ExtendedGroupRoleMembersData> xx = (List<ExtendedGroupRoleMembersData>)obj;
-                            List<GroupRoleMembersData> rmlist = xx.ConvertAll<GroupRoleMembersData>(m_ForeignImporter.ConvertGroupRoleMembersData);
-                            GroupRoleMembersData rm = new GroupRoleMembersData();
-                            rm.MemberID = id;
-                            rm.RoleID = RoleID;
-                            rmlist.Add(rm);
-                        }
-                        catch
-                        {
-                            m_Cache.Remove(cacheKey);
-                        }
-                    }
-
-                    // Remove the cached info about this agent's roles
-                    // because we don't have enough local info about the new role
-                    cacheKey = "roles-" + GroupID.ToString() + "-" + AgentID.ToString();
-                    if (m_Cache.Contains(cacheKey))
-                        m_Cache.Remove(cacheKey);
-
-                }
-            }
-        }
-
-        public void RemoveAgentFromGroupRole(string RequestingAgentID, string AgentID, UUID GroupID, UUID RoleID, BooleanDelegate d)
-        {
-            if (d())
-            {
-                lock (m_Cache)
-                {
-                    // update the cached role
-                    string cacheKey = "role-" + RoleID.ToString();
-                    object obj;
-                    if (m_Cache.TryGetValue(cacheKey, out obj))
-                    {
-                        GroupRolesData r = (GroupRolesData)obj;
-                        r.Members--;
-                    }
-
-                    cacheKey = "roles-" + GroupID.ToString() + "-" + AgentID.ToString();
-                    if (m_Cache.Contains(cacheKey))
-                        m_Cache.Remove(cacheKey);
-
-                    cacheKey = "rolemembers-" + RequestingAgentID.ToString() + "-" + GroupID.ToString();
-                    if (m_Cache.Contains(cacheKey))
-                        m_Cache.Remove(cacheKey);
-                }
-            }
-        }
-
-        public List<GroupRolesData> GetAgentGroupRoles(string RequestingAgentID, string AgentID, UUID GroupID, GroupRolesListDelegate d)
-        {
-            object roles = null;
-            bool firstCall = false;
-            string cacheKey = "roles-" + GroupID.ToString() + "-" + AgentID.ToString();
-
-            //m_log.DebugFormat("[XXX]: GetAgentGroupRoles {0}", cacheKey);
-
-            while (true)
-            {
-                lock (m_Cache)
-                {
-                    if (m_Cache.TryGetValue(cacheKey, out roles))
-                    {
-                        //m_log.DebugFormat("[XXX]: GetAgentGroupRoles {0} cached!", cacheKey);
-                        return (List<GroupRolesData>)roles;
-                    }
-
-                    // not cached
-                    if (!m_ActiveRequests.ContainsKey(cacheKey))
-                    {
-                        m_ActiveRequests.Add(cacheKey, true);
-                        firstCall = true;
-                    }
-                }
-
-                if (firstCall)
-                {
-                    roles = d();
-                    lock (m_Cache)
-                    {
-                        m_Cache.AddOrUpdate(cacheKey, roles, GROUPS_CACHE_TIMEOUT);
-                        m_ActiveRequests.Remove(cacheKey);
-                        return (List<GroupRolesData>)roles;
-                    }
-                }
-                else
-                    Thread.Sleep(50);
-            }
-        }
-
-        public void SetAgentActiveGroupRole(string AgentID, UUID GroupID, VoidDelegate d)
-        {
-            d();
-
-            lock (m_Cache)
-            {
-                // Invalidate cached info, because it has ActiveRoleID and Powers
-                string cacheKey = "membership-" + AgentID.ToString() + "-" + GroupID.ToString();
-                if (m_Cache.Contains(cacheKey))
-                    m_Cache.Remove(cacheKey);
-
-                cacheKey = "memberships-" + AgentID.ToString();
-                if (m_Cache.Contains(cacheKey))
-                    m_Cache.Remove(cacheKey);
-            }
-        }
-
-        public void UpdateMembership(string AgentID, UUID GroupID, bool AcceptNotices, bool ListInProfile, VoidDelegate d)
-        {
-            d();
-
-            lock (m_Cache)
-            {
-                string cacheKey = "membership-" + AgentID.ToString() + "-" + GroupID.ToString();
-                if (m_Cache.Contains(cacheKey))
-                    m_Cache.Remove(cacheKey);
-
-                cacheKey = "memberships-" + AgentID.ToString();
-                if (m_Cache.Contains(cacheKey))
-                    m_Cache.Remove(cacheKey);
-
-                cacheKey = "active-" + AgentID.ToString();
-                object m = null;
-                if (m_Cache.TryGetValue(cacheKey, out m))
-                {
-                    GroupMembershipData membership = (GroupMembershipData)m;
-                    membership.ListInProfile = ListInProfile;
-                    membership.AcceptNotices = AcceptNotices;
-                }
-            }
-        }
-
-        public bool AddGroupNotice(UUID groupID, UUID noticeID, GroupNoticeInfo notice, BooleanDelegate d)
-        {
-            if (d())
-            {
-                lock (m_Cache)
-                {
-                    m_Cache.AddOrUpdate("notice-" + noticeID.ToString(), notice, GROUPS_CACHE_TIMEOUT);
-                    string cacheKey = "notices-" + groupID.ToString();
-                    if (m_Cache.Contains(cacheKey))
-                        m_Cache.Remove(cacheKey);
-
-                }
-
-                return true;
-            }
-
-            return false;
         }
 
         public GroupNoticeInfo GetGroupNotice(UUID noticeID, NoticeDelegate d)
@@ -823,6 +506,315 @@ namespace OpenSim.Groups
             }
         }
 
+        public ExtendedGroupRecord GetGroupRecord(string RequestingAgentID, UUID GroupID, string GroupName, GroupRecordDelegate d)
+        {
+            //if (GroupID == UUID.Zero && (GroupName == null || GroupName != null && GroupName == string.Empty))
+            //    return null;
 
+            object group = null;
+            bool firstCall = false;
+            string cacheKey = "group-";
+            if (GroupID != UUID.Zero)
+                cacheKey += GroupID.ToString();
+            else
+                cacheKey += GroupName;
+
+            //m_log.DebugFormat("[XXX]: GetGroupRecord {0}", cacheKey);
+
+            while (true)
+            {
+                lock (m_Cache)
+                {
+                    if (m_Cache.TryGetValue(cacheKey, out group))
+                    {
+                        //m_log.DebugFormat("[XXX]: GetGroupRecord {0} cached!", cacheKey);
+                        return (ExtendedGroupRecord)group;
+                    }
+
+                    // not cached
+                    if (!m_ActiveRequests.ContainsKey(cacheKey))
+                    {
+                        m_ActiveRequests.Add(cacheKey, true);
+                        firstCall = true;
+                    }
+                }
+
+                if (firstCall)
+                {
+                    //group = m_GroupsService.GetGroupRecord(RequestingAgentID, GroupID, GroupName);
+                    group = d();
+
+                    lock (m_Cache)
+                    {
+                        m_Cache.AddOrUpdate(cacheKey, group, GROUPS_CACHE_TIMEOUT);
+                        m_ActiveRequests.Remove(cacheKey);
+                        return (ExtendedGroupRecord)group;
+                    }
+                }
+                else
+                    Thread.Sleep(50);
+            }
+        }
+
+        public List<GroupRoleMembersData> GetGroupRoleMembers(string RequestingAgentID, UUID GroupID, RoleMembersListDelegate d)
+        {
+            object rmembers = null;
+            bool firstCall = false;
+            // we need to key in also on the requester, because different ppl have different view privileges
+            string cacheKey = "rolemembers-" + RequestingAgentID.ToString() + "-" + GroupID.ToString();
+
+            //m_log.DebugFormat("[XXX]: GetGroupRoleMembers {0}", cacheKey);
+            while (true)
+            {
+                lock (m_Cache)
+                {
+                    if (m_Cache.TryGetValue(cacheKey, out rmembers))
+                    {
+                        List<ExtendedGroupRoleMembersData> xx = (List<ExtendedGroupRoleMembersData>)rmembers;
+                        return xx.ConvertAll<GroupRoleMembersData>(m_ForeignImporter.ConvertGroupRoleMembersData);
+                    }
+
+                    // not cached
+                    if (!m_ActiveRequests.ContainsKey(cacheKey))
+                    {
+                        m_ActiveRequests.Add(cacheKey, true);
+                        firstCall = true;
+                    }
+                }
+
+                if (firstCall)
+                {
+                    List<ExtendedGroupRoleMembersData> _rmembers = d();
+
+                    if (_rmembers != null && _rmembers.Count > 0)
+                        rmembers = _rmembers.ConvertAll<GroupRoleMembersData>(new Converter<ExtendedGroupRoleMembersData, GroupRoleMembersData>(m_ForeignImporter.ConvertGroupRoleMembersData));
+                    else
+                        rmembers = new List<GroupRoleMembersData>();
+
+                    lock (m_Cache)
+                    {
+                        // For some strange reason, when I cache the list of GroupRoleMembersData,
+                        // it gets emptied out. The TryGet gets an empty list...
+                        //m_Cache.AddOrUpdate(cacheKey, rmembers, GROUPS_CACHE_TIMEOUT);
+                        // Caching the list of ExtendedGroupRoleMembersData doesn't show that issue
+                        // I don't get it.
+                        m_Cache.AddOrUpdate(cacheKey, _rmembers, GROUPS_CACHE_TIMEOUT);
+                        m_ActiveRequests.Remove(cacheKey);
+                        return (List<GroupRoleMembersData>)rmembers;
+                    }
+                }
+                else
+                    Thread.Sleep(50);
+            }
+        }
+
+        public List<GroupRolesData> GetGroupRoles(string RequestingAgentID, UUID GroupID, GroupRolesListDelegate d)
+        {
+            object roles = null;
+            bool firstCall = false;
+            string cacheKey = "roles-" + GroupID.ToString();
+
+            while (true)
+            {
+                lock (m_Cache)
+                {
+                    if (m_Cache.TryGetValue(cacheKey, out roles))
+                        return (List<GroupRolesData>)roles;
+
+                    // not cached
+                    if (!m_ActiveRequests.ContainsKey(cacheKey))
+                    {
+                        m_ActiveRequests.Add(cacheKey, true);
+                        firstCall = true;
+                    }
+                }
+
+                if (firstCall)
+                {
+                    roles = d();
+                    if (roles != null)
+                    {
+                        lock (m_Cache)
+                        {
+                            m_Cache.AddOrUpdate(cacheKey, roles, GROUPS_CACHE_TIMEOUT);
+                            m_ActiveRequests.Remove(cacheKey);
+                            return (List<GroupRolesData>)roles;
+                        }
+                    }
+                }
+                else
+                    Thread.Sleep(50);
+            }
+        }
+
+        public void RemoveAgentFromGroup(string RequestingAgentID, string AgentID, UUID GroupID, VoidDelegate d)
+        {
+            d();
+
+            lock (m_Cache)
+            {
+                string cacheKey = "active-" + AgentID.ToString();
+                if (m_Cache.Contains(cacheKey))
+                    m_Cache.Remove(cacheKey);
+
+                cacheKey = "memberships-" + AgentID.ToString();
+                if (m_Cache.Contains(cacheKey))
+                    m_Cache.Remove(cacheKey);
+
+                cacheKey = "membership-" + AgentID.ToString() + "-" + GroupID.ToString();
+                if (m_Cache.Contains(cacheKey))
+                    m_Cache.Remove(cacheKey);
+
+                cacheKey = "members-" + RequestingAgentID.ToString() + "-" + GroupID.ToString();
+                if (m_Cache.Contains(cacheKey))
+                    m_Cache.Remove(cacheKey);
+
+                cacheKey = "roles-" + "-" + GroupID.ToString() + "-" + AgentID.ToString();
+                if (m_Cache.Contains(cacheKey))
+                    m_Cache.Remove(cacheKey);
+            }
+        }
+
+        public void RemoveAgentFromGroupRole(string RequestingAgentID, string AgentID, UUID GroupID, UUID RoleID, BooleanDelegate d)
+        {
+            if (d())
+            {
+                lock (m_Cache)
+                {
+                    // update the cached role
+                    string cacheKey = "role-" + RoleID.ToString();
+                    object obj;
+                    if (m_Cache.TryGetValue(cacheKey, out obj))
+                    {
+                        GroupRolesData r = (GroupRolesData)obj;
+                        r.Members--;
+                    }
+
+                    cacheKey = "roles-" + GroupID.ToString() + "-" + AgentID.ToString();
+                    if (m_Cache.Contains(cacheKey))
+                        m_Cache.Remove(cacheKey);
+
+                    cacheKey = "rolemembers-" + RequestingAgentID.ToString() + "-" + GroupID.ToString();
+                    if (m_Cache.Contains(cacheKey))
+                        m_Cache.Remove(cacheKey);
+                }
+            }
+        }
+
+        public void RemoveGroupRole(string RequestingAgentID, UUID groupID, UUID roleID, VoidDelegate d)
+        {
+            d();
+
+            lock (m_Cache)
+            {
+                if (m_Cache.Contains("role-" + roleID.ToString()))
+                    m_Cache.Remove("role-" + roleID.ToString());
+
+                // also remove the list, because it will have an removed role
+                if (m_Cache.Contains("roles-" + groupID.ToString()))
+                    m_Cache.Remove("roles-" + groupID.ToString());
+
+                if (m_Cache.Contains("roles-" + groupID.ToString() + "-" + RequestingAgentID.ToString()))
+                    m_Cache.Remove("roles-" + groupID.ToString() + "-" + RequestingAgentID.ToString());
+
+                if (m_Cache.Contains("rolemembers-" + RequestingAgentID.ToString() + "-" + groupID.ToString()))
+                    m_Cache.Remove("rolemembers-" + RequestingAgentID.ToString() + "-" + groupID.ToString());
+            }
+        }
+
+        public void SetAgentActiveGroup(string AgentID, GroupMembershipDelegate d)
+        {
+            GroupMembershipData activeGroup = d();
+            string cacheKey = "active-" + AgentID.ToString();
+            lock (m_Cache)
+                if (m_Cache.Contains(cacheKey))
+                    m_Cache.AddOrUpdate(cacheKey, activeGroup, GROUPS_CACHE_TIMEOUT);
+        }
+
+        public void SetAgentActiveGroupRole(string AgentID, UUID GroupID, VoidDelegate d)
+        {
+            d();
+
+            lock (m_Cache)
+            {
+                // Invalidate cached info, because it has ActiveRoleID and Powers
+                string cacheKey = "membership-" + AgentID.ToString() + "-" + GroupID.ToString();
+                if (m_Cache.Contains(cacheKey))
+                    m_Cache.Remove(cacheKey);
+
+                cacheKey = "memberships-" + AgentID.ToString();
+                if (m_Cache.Contains(cacheKey))
+                    m_Cache.Remove(cacheKey);
+            }
+        }
+
+        public bool UpdateGroup(UUID groupID, GroupRecordDelegate d)
+        {
+            //reason = string.Empty;
+            //ExtendedGroupRecord group = m_GroupsService.UpdateGroup(RequestingAgentID, groupID, charter, showInList, insigniaID, membershipFee, openEnrollment, allowPublish, maturePublish);
+            ExtendedGroupRecord group = d();
+
+            if (group != null && group.GroupID != UUID.Zero)
+                lock (m_Cache)
+                    m_Cache.AddOrUpdate("group-" + group.GroupID.ToString(), group, GROUPS_CACHE_TIMEOUT);
+            return true;
+        }
+        public bool UpdateGroupRole(UUID groupID, UUID roleID, string name, string description, string title, ulong powers, BooleanDelegate d)
+        {
+            if (d())
+            {
+                object role;
+                lock (m_Cache)
+                    if (m_Cache.TryGetValue("role-" + roleID.ToString(), out role))
+                    {
+                        GroupRolesData r = (GroupRolesData)role;
+                        r.Description = description;
+                        r.Name = name;
+                        r.Powers = powers;
+                        r.Title = title;
+
+                        m_Cache.Update("role-" + roleID.ToString(), r, GROUPS_CACHE_TIMEOUT);
+                    }
+                return true;
+            }
+            else
+            {
+                lock (m_Cache)
+                {
+                    if (m_Cache.Contains("role-" + roleID.ToString()))
+                        m_Cache.Remove("role-" + roleID.ToString());
+
+                    // also remove these lists, because they will have an outdated role
+                    if (m_Cache.Contains("roles-" + groupID.ToString()))
+                        m_Cache.Remove("roles-" + groupID.ToString());
+                }
+
+                return false;
+            }
+        }
+        public void UpdateMembership(string AgentID, UUID GroupID, bool AcceptNotices, bool ListInProfile, VoidDelegate d)
+        {
+            d();
+
+            lock (m_Cache)
+            {
+                string cacheKey = "membership-" + AgentID.ToString() + "-" + GroupID.ToString();
+                if (m_Cache.Contains(cacheKey))
+                    m_Cache.Remove(cacheKey);
+
+                cacheKey = "memberships-" + AgentID.ToString();
+                if (m_Cache.Contains(cacheKey))
+                    m_Cache.Remove(cacheKey);
+
+                cacheKey = "active-" + AgentID.ToString();
+                object m = null;
+                if (m_Cache.TryGetValue(cacheKey, out m))
+                {
+                    GroupMembershipData membership = (GroupMembershipData)m;
+                    membership.ListInProfile = ListInProfile;
+                    membership.AcceptNotices = AcceptNotices;
+                }
+            }
+        }
     }
 }

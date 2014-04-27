@@ -25,16 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using OpenMetaverse;
-using Nini.Config;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.ScriptEngine.Interfaces
 {
     public interface ICompiler
     {
-        void PerformScriptCompile(string source, string asset, UUID ownerID, out string assembly, out Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>> linemap);
         string[] GetWarnings();
+
+        void PerformScriptCompile(string source, string asset, UUID ownerID, out string assembly, out Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>> linemap);
     }
 }

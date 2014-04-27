@@ -1,21 +1,21 @@
 ﻿/* The MIT License
- * 
+ *
  * Copyright (c) 2010 Intel Corporation.
  * All rights reserved.
  *
- * Based on the convexdecomposition library from 
+ * Based on the convexdecomposition library from
  * <http://codesuppository.googlecode.com> by John W. Ratcliff and Stan Melax.
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -70,18 +70,19 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
             }
         }
 
-        public override int GetHashCode()
+        public static bool b2b(int3 a, int3 b)
         {
-            return x.GetHashCode() ^ y.GetHashCode() ^ z.GetHashCode();
+            return isa(a, new int3(b[2], b[1], b[0]));
         }
 
-        public override bool Equals(object obj)
+        public static bool isa(int3 a, int3 b)
         {
-            int3 i = obj as int3;
-            if (i == null)
-                return false;
+            return (a == b || roll3(a) == b || a == roll3(b));
+        }
 
-            return this == i;
+        public static bool operator !=(int3 a, int3 b)
+        {
+            return !(a == b);
         }
 
         public static bool operator ==(int3 a, int3 b)
@@ -101,11 +102,6 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
             return true;
         }
 
-        public static bool operator !=(int3 a, int3 b)
-        {
-            return !(a == b);
-        }
-
         public static int3 roll3(int3 a)
         {
             int tmp = a[0];
@@ -115,14 +111,18 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
             return a;
         }
 
-        public static bool isa(int3 a, int3 b)
+        public override bool Equals(object obj)
         {
-            return (a == b || roll3(a) == b || a == roll3(b));
+            int3 i = obj as int3;
+            if (i == null)
+                return false;
+
+            return this == i;
         }
 
-        public static bool b2b(int3 a, int3 b)
+        public override int GetHashCode()
         {
-            return isa(a, new int3(b[2], b[1], b[0]));
+            return x.GetHashCode() ^ y.GetHashCode() ^ z.GetHashCode();
         }
     }
 }

@@ -25,55 +25,59 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Region.Framework.Interfaces;
 using System;
-using System.Timers;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading;
-using OpenMetaverse;
-using log4net;
-using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Framework.Monitoring;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
+using System.Timers;
 
 namespace OpenSim.Region.OptionalModules.Avatar.Chat
 {
     public class IRCConnector
     {
-
         #region Global (static) state
 
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        // Local constants
-
+        private const int WD_INTERVAL = 1000;
         // This computation is not the real region center if the region is larger than 256.
         //     This computation isn't fixed because there is not a handle back to the region.
         private static readonly Vector3 CenterOfRegion = new Vector3(((int)Constants.RegionSize * 0.5f), ((int)Constants.RegionSize * 0.5f), 20);
+
+        // Local constants
         private static readonly char[] CS_SPACE = { ' ' };
 
-        private const int WD_INTERVAL = 1000;     // base watchdog interval
-        private static int PING_PERIOD = 15;       // WD intervals per PING
-        private static int ICCD_PERIOD = 10;       // WD intervals between Connects
-        private static int L_TIMEOUT = 25;       // Login time out interval
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private static int _icc_ = ICCD_PERIOD;
 
-        private static int _idk_ = 0;        // core connector identifier
-        private static int _pdk_ = 0;        // ping interval counter
-        private static int _icc_ = ICCD_PERIOD; // IRC connect counter
+        private static int _idk_ = 0;
 
-        // List of configured connectors
+        // core connector identifier
+        private static int _pdk_ = 0;
+
+        private static int ICCD_PERIOD = 10;
+
+        // WD intervals between Connects
+        private static int L_TIMEOUT = 25;
 
         private static List<IRCConnector> m_connectors = new List<IRCConnector>();
 
-        // Watchdog state
-
         private static System.Timers.Timer m_watchdog = null;
 
+        // base watchdog interval
+        private static int PING_PERIOD = 15;       // WD intervals per PING
+       // Login time out interval
+
+        // ping interval counter
+         // IRC connect counter
+
+        // List of configured connectors
+        // Watchdog state
         // The watch-dog gets started as soon as the class is instantiated, and
         // ticks once every second (WD_INTERVAL)
 
@@ -87,37 +91,80 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
             m_log.DebugFormat("[IRC-Connector]: Static initialization complete");
         }
 
-        #endregion
+        #endregion Global (static) state
 
         #region Instance state
 
         // Connector identity
 
+        internal string chanmod = String.Empty;
+        internal int depends = 0;
         internal int idn = _idk_++;
 
         // How many regions depend upon this connection
         // This count is updated by the ChannelState object and reflects the sum
-        // of the region clients associated with the set of associated channel 
+        // of the region clients associated with the set of associated channel
         // state instances. That's why it cannot be managed here.
-
-        internal int depends = 0;
-
         // This variable counts the number of resets that have been performed
-        // on the connector. When a listener thread terminates, it checks to 
-        // see of the reset count has changed before it schedules another 
+        // on the connector. When a listener thread terminates, it checks to
+        // see of the reset count has changed before it schedules another
         // reset.
 
+        internal string m_baseNick = null;
+        // base name for randomizing
+        internal string m_nick = null;
+
+        internal bool m_randomizeNick = true;
         internal int m_resetk = 0;
 
         // Working threads
 
+        internal bool motd = false;
+        internal string usermod = String.Empty;
+        // Channel characteristic info (if available)
+        internal string version = String.Empty;
+
+        private bool m_connected = false;
+        private bool m_enabled = false;
+        private string m_ircChannel;
         private Thread m_listener = null;
+
+        private string m_password = null;
+        // connection status
+        private bool m_pending = false;
+
+        private uint m_port = 6667;
+        private StreamReader m_reader;
+        private string m_server = null;
+        private NetworkStream m_stream = null;
+        private TcpClient m_tcp;
+        // login disposition
+        private int m_timeout = L_TIMEOUT;
+
+        private string m_user = "USER OpenSimBot 8 * :I'm an OpenSim to IRC bot";
+        // Network interface
+        private StreamWriter m_writer;
 
         private Object msyncConnect = new Object();
 
-        internal bool m_randomizeNick = true; // add random suffix
-        internal string m_baseNick = null;      // base name for randomizing
-        internal string m_nick = null;          // effective nickname
+         // add random suffix
+          // effective nickname
+
+        public bool Connected
+        {
+            get { return m_connected; }
+        }
+
+        public bool Enabled
+        {
+            get { return m_enabled; }
+        }
+
+        public string IrcChannel
+        {
+            get { return m_ircChannel; }
+            set { m_ircChannel = value; }
+        }
 
         public string Nick                        // Public property
         {
@@ -125,74 +172,40 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
             set { m_nick = value; }
         }
 
-        private bool m_enabled = false;            // connector enablement
-        public bool Enabled
-        {
-            get { return m_enabled; }
-        }
+                    // connector enablement
+    // login timeout counter
+                    // associated channel id
+                        // session port
 
-        private bool m_connected = false;        // connection status
-        private bool m_pending = false;        // login disposition
-        private int m_timeout = L_TIMEOUT;    // login timeout counter
-        public bool Connected
-        {
-            get { return m_connected; }
-        }
-
-        private string m_ircChannel;            // associated channel id
-        public string IrcChannel
-        {
-            get { return m_ircChannel; }
-            set { m_ircChannel = value; }
-        }
-
-        private uint m_port = 6667;                // session port
-        public uint Port
-        {
-            get { return m_port; }
-            set { m_port = value; }
-        }
-
-        private string m_server = null;            // IRC server name
-        public string Server
-        {
-            get { return m_server; }
-            set { m_server = value; }
-        }
-        private string m_password = null;
         public string Password
         {
             get { return m_password; }
             set { m_password = value; }
         }
 
-        private string m_user = "USER OpenSimBot 8 * :I'm an OpenSim to IRC bot";
+        public uint Port
+        {
+            get { return m_port; }
+            set { m_port = value; }
+        }
+
+                    // IRC server name
+
+        public string Server
+        {
+            get { return m_server; }
+            set { m_server = value; }
+        }
         public string User
         {
             get { return m_user; }
         }
-
-        // Network interface
-
-        private TcpClient m_tcp;
-        private NetworkStream m_stream = null;
-        private StreamReader m_reader;
-        private StreamWriter m_writer;
-
-        // Channel characteristic info (if available)
-
-        internal string usermod = String.Empty;
-        internal string chanmod = String.Empty;
-        internal string version = String.Empty;
-        internal bool motd = false;
-
-        #endregion
+        #endregion Instance state
 
         #region connector instance management
 
         internal IRCConnector(ChannelState cs)
         {
-
             // Prepare network interface
 
             m_tcp = null;
@@ -225,7 +238,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
                     PING_PERIOD = 5;
 
                 _icc_ = ICCD_PERIOD;    // get started right away!
-
             }
 
             // The last line of defense
@@ -241,7 +253,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
                 m_nick = m_baseNick;
 
             m_log.InfoFormat("[IRC-Connector-{0}]: Initialization complete", idn);
-
         }
 
         ~IRCConnector()
@@ -252,37 +263,14 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
 
         // Mark the connector as connectable. Harmless if already enabled.
 
-        public void Open()
-        {
-            if (!m_enabled)
-            {
-
-                if (!Connected)
-                {
-                    Connect();
-                }
-
-                lock (m_connectors)
-                    m_connectors.Add(this);
-
-                m_enabled = true;
-
-            }
-        }
-
-        // Only close the connector if the dependency count is zero.
-
         public void Close()
         {
-
             m_log.InfoFormat("[IRC-Connector-{0}] Closing", idn);
 
             lock (msyncConnect)
             {
-
                 if ((depends == 0) && Enabled)
                 {
-
                     m_enabled = false;
 
                     if (Connected)
@@ -299,7 +287,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
                         }
                         catch (Exception) { }
 
-
                         m_connected = false;
 
                         try { m_writer.Close(); }
@@ -310,20 +297,34 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
                         catch (Exception) { }
                         try { m_tcp.Close(); }
                         catch (Exception) { }
-
                     }
 
                     lock (m_connectors)
                         m_connectors.Remove(this);
-
                 }
             }
 
             m_log.InfoFormat("[IRC-Connector-{0}] Closed", idn);
-
         }
 
-        #endregion
+        public void Open()
+        {
+            if (!m_enabled)
+            {
+                if (!Connected)
+                {
+                    Connect();
+                }
+
+                lock (m_connectors)
+                    m_connectors.Add(this);
+
+                m_enabled = true;
+            }
+        }
+
+        // Only close the connector if the dependency count is zero.
+        #endregion connector instance management
 
         #region session management
 
@@ -331,7 +332,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
 
         public void Connect()
         {
-
             if (!m_enabled)
                 return;
 
@@ -344,12 +344,10 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
 
             lock (msyncConnect)
             {
-
                 _icc_ = 0;
 
                 try
                 {
-
                     if (m_connected) return;
 
                     m_connected = true;
@@ -379,7 +377,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
                     m_writer.Flush();
 
                     m_log.InfoFormat("[IRC-Connector-{0}]: {1} has asked to join {2}", idn, m_nick, m_ircChannel);
-
                 }
                 catch (Exception e)
                 {
@@ -391,11 +388,9 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
                     // expires. By leaving them as they are, the connection will be retried
                     // when the login timeout expires. Which is preferred.
                 }
-
             }
 
             return;
-
         }
 
         // Reconnect is used to force a re-cycle of the IRC connection. Should generally
@@ -409,15 +404,12 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
 
             lock (msyncConnect)
             {
-
                 if (m_connected)
                 {
-
                     m_log.InfoFormat("[IRC-Connector-{0}] Resetting connector", idn);
 
                     // Mark as disconnected. This will allow the listener thread
                     // to exit if still in-flight.
-
 
                     // The listener thread is not aborted - it *might* actually be
                     // the thread that is running the Reconnect! Instead just close
@@ -434,23 +426,19 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
                     m_connected = false;
                     m_pending = false;
                     m_resetk++;
-
                 }
-
             }
 
             Connect();
-
         }
 
-        #endregion
+        #endregion session management
 
         #region Outbound (to-IRC) message handlers
 
         public void PrivMsg(string pattern, string from, string region, string msg)
         {
-
-            // m_log.DebugFormat("[IRC-Connector-{0}] PrivMsg to IRC from {1}: <{2}>", idn, from, 
+            // m_log.DebugFormat("[IRC-Connector-{0}] PrivMsg to IRC from {1}: <{2}>", idn, from,
             //     String.Format(pattern, m_ircChannel, from, region, msg));
 
             // One message to the IRC server
@@ -471,12 +459,10 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
                 m_log.ErrorFormat("[IRC-Connector-{0}]: PrivMsg exception : {1}", idn, ex.Message);
                 m_log.Debug(ex);
             }
-
         }
 
         public void Send(string msg)
         {
-
             // m_log.DebugFormat("[IRC-Connector-{0}] Send to IRC : <{1}>", idn,  msg);
 
             try
@@ -495,14 +481,35 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
                 m_log.ErrorFormat("[IRC-Connector-{0}] Send exception trap: {0}", idn, ex.Message);
                 m_log.Debug(ex);
             }
-
         }
 
-        #endregion
+        #endregion Outbound (to-IRC) message handlers
+
+        private Regex RE = new Regex(@":(?<nick>[\w-]*)!(?<user>\S*) PRIVMSG (?<channel>\S+) :(?<msg>.*)",
+                                     RegexOptions.Multiline);
+
+        public void BroadcastSim(string sender, string format, params string[] args)
+        {
+            try
+            {
+                OSChatMessage c = new OSChatMessage();
+                c.From = sender;
+                c.Message = String.Format(format, args);
+                c.Type = ChatTypeEnum.Region; // ChatTypeEnum.Say;
+                c.Position = CenterOfRegion;
+                c.Sender = null;
+                c.SenderUUID = UUID.Zero;
+
+                ChannelState.OSChat(this, c, true);
+            }
+            catch (Exception ex) // IRC gate should not crash Sim
+            {
+                m_log.ErrorFormat("[IRC-Connector-{0}]: BroadcastSim Exception Trap: {1}\n{2}", idn, ex.Message, ex.StackTrace);
+            }
+        }
 
         public void ListenerRun()
         {
-
             string inputLine;
             int resetk = m_resetk;
 
@@ -510,7 +517,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
             {
                 while (m_enabled && m_connected)
                 {
-
                     if ((inputLine = m_reader.ReadLine()) == null)
                         throw new Exception("Listener input socket closed");
 
@@ -518,13 +524,11 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
 
                     if (inputLine.Contains("PRIVMSG"))
                     {
-
                         Dictionary<string, string> data = ExtractMsg(inputLine);
 
                         // Any chat ???
                         if (data != null)
                         {
-
                             OSChatMessage c = new OSChatMessage();
                             c.Message = data["msg"];
                             c.Type = ChatTypeEnum.Region;
@@ -533,16 +537,14 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
                             c.Sender = null;
                             c.SenderUUID = UUID.Zero;
 
-                            // Is message "\001ACTION foo bar\001"? 
+                            // Is message "\001ACTION foo bar\001"?
                             // Then change to: "/me foo bar"
 
                             if ((1 == c.Message[0]) && c.Message.Substring(1).StartsWith("ACTION"))
                                 c.Message = String.Format("/me {0}", c.Message.Substring(8, c.Message.Length - 9));
 
                             ChannelState.OSChat(this, c, false);
-
                         }
-
                     }
                     else
                     {
@@ -563,10 +565,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
             if (m_enabled && (m_resetk == resetk))
                 Reconnect();
         }
-
-        private Regex RE = new Regex(@":(?<nick>[\w-]*)!(?<user>\S*) PRIVMSG (?<channel>\S+) :(?<msg>.*)",
-                                     RegexOptions.Multiline);
-
         private Dictionary<string, string> ExtractMsg(string input)
         {
             //examines IRC commands and extracts any private messages
@@ -596,175 +594,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
 
             return result;
         }
-
-        public void BroadcastSim(string sender, string format, params string[] args)
-        {
-            try
-            {
-                OSChatMessage c = new OSChatMessage();
-                c.From = sender;
-                c.Message = String.Format(format, args);
-                c.Type = ChatTypeEnum.Region; // ChatTypeEnum.Say;
-                c.Position = CenterOfRegion;
-                c.Sender = null;
-                c.SenderUUID = UUID.Zero;
-
-                ChannelState.OSChat(this, c, true);
-
-            }
-            catch (Exception ex) // IRC gate should not crash Sim
-            {
-                m_log.ErrorFormat("[IRC-Connector-{0}]: BroadcastSim Exception Trap: {1}\n{2}", idn, ex.Message, ex.StackTrace);
-            }
-        }
-
         #region IRC Command Handlers
-
-        public void ProcessIRCCommand(string command)
-        {
-
-            string[] commArgs;
-            string c_server = m_server;
-
-            string pfx = String.Empty;
-            string cmd = String.Empty;
-            string parms = String.Empty;
-
-            // ":" indicates that a prefix is present
-            // There are NEVER more than 17 real 
-            // fields. A parameter that starts with 
-            // ":" indicates that the remainder of the
-            // line is a single parameter value.
-
-            commArgs = command.Split(CS_SPACE, 2);
-
-            if (commArgs[0].StartsWith(":"))
-            {
-                pfx = commArgs[0].Substring(1);
-                commArgs = commArgs[1].Split(CS_SPACE, 2);
-            }
-
-            cmd = commArgs[0];
-            parms = commArgs[1];
-
-            // m_log.DebugFormat("[IRC-Connector-{0}] prefix = <{1}> cmd = <{2}>", idn, pfx, cmd);
-
-            switch (cmd)
-            {
-
-                // Messages 001-004 are always sent
-                // following signon.
-
-                case "001": // Welcome ...
-                case "002": // Server information
-                case "003": // Welcome ...
-                    break;
-                case "004": // Server information
-                    m_log.DebugFormat("[IRC-Connector-{0}] [{1}] parms = <{2}>", idn, cmd, parms);
-                    commArgs = parms.Split(CS_SPACE);
-                    c_server = commArgs[1];
-                    m_server = c_server;
-                    version = commArgs[2];
-                    usermod = commArgs[3];
-                    chanmod = commArgs[4];
-                    break;
-                case "005": // Server information
-                    break;
-                case "042":
-                case "250":
-                case "251":
-                case "252":
-                case "254":
-                case "255":
-                case "265":
-                case "266":
-                case "332": // Subject
-                case "333": // Subject owner (?)
-                case "353": // Name list
-                case "366": // End-of-Name list marker
-                case "372": // MOTD body
-                case "375": // MOTD start
-                    // m_log.InfoFormat("[IRC-Connector-{0}] [{1}] {2}", idn, cmd, parms.Split(CS_SPACE,2)[1]);
-                    break;
-                case "376": // MOTD end
-                    // m_log.InfoFormat("[IRC-Connector-{0}] [{1}] {2}", idn, cmd, parms.Split(CS_SPACE,2)[1]);
-                    motd = true;
-                    break;
-                case "451": // Not registered
-                    break;
-                case "433": // Nickname in use
-                    // Gen a new name
-                    m_nick = m_baseNick + Util.RandomClass.Next(1, 99);
-                    m_log.ErrorFormat("[IRC-Connector-{0}]: [{1}] IRC SERVER reports NicknameInUse, trying {2}", idn, cmd, m_nick);
-                    // Retry
-                    m_writer.WriteLine(String.Format("NICK {0}", m_nick));
-                    m_writer.Flush();
-                    m_writer.WriteLine(m_user);
-                    m_writer.Flush();
-                    m_writer.WriteLine(String.Format("JOIN {0}", m_ircChannel));
-                    m_writer.Flush();
-                    break;
-                case "479": // Bad channel name, etc. This will never work, so disable the connection
-                    m_log.ErrorFormat("[IRC-Connector-{0}] [{1}] {2}", idn, cmd, parms.Split(CS_SPACE, 2)[1]);
-                    m_log.ErrorFormat("[IRC-Connector-{0}] [{1}] Connector disabled", idn, cmd);
-                    m_enabled = false;
-                    m_connected = false;
-                    m_pending = false;
-                    break;
-                case "NOTICE":
-                    // m_log.WarnFormat("[IRC-Connector-{0}] [{1}] {2}", idn, cmd, parms.Split(CS_SPACE,2)[1]);
-                    break;
-                case "ERROR":
-                    m_log.ErrorFormat("[IRC-Connector-{0}] [{1}] {2}", idn, cmd, parms.Split(CS_SPACE, 2)[1]);
-                    if (parms.Contains("reconnect too fast"))
-                        ICCD_PERIOD++;
-                    m_pending = false;
-                    Reconnect();
-                    break;
-                case "PING":
-                    m_log.DebugFormat("[IRC-Connector-{0}] [{1}] parms = <{2}>", idn, cmd, parms);
-                    m_writer.WriteLine(String.Format("PONG {0}", parms));
-                    m_writer.Flush();
-                    break;
-                case "PONG":
-                    break;
-                case "JOIN":
-                    if (m_pending)
-                    {
-                        m_log.InfoFormat("[IRC-Connector-{0}] [{1}] Connected", idn, cmd);
-                        m_pending = false;
-                    }
-                    m_log.DebugFormat("[IRC-Connector-{0}] [{1}] parms = <{2}>", idn, cmd, parms);
-                    eventIrcJoin(pfx, cmd, parms);
-                    break;
-                case "PART":
-                    m_log.DebugFormat("[IRC-Connector-{0}] [{1}] parms = <{2}>", idn, cmd, parms);
-                    eventIrcPart(pfx, cmd, parms);
-                    break;
-                case "MODE":
-                    m_log.DebugFormat("[IRC-Connector-{0}] [{1}] parms = <{2}>", idn, cmd, parms);
-                    eventIrcMode(pfx, cmd, parms);
-                    break;
-                case "NICK":
-                    m_log.DebugFormat("[IRC-Connector-{0}] [{1}] parms = <{2}>", idn, cmd, parms);
-                    eventIrcNickChange(pfx, cmd, parms);
-                    break;
-                case "KICK":
-                    m_log.DebugFormat("[IRC-Connector-{0}] [{1}] parms = <{2}>", idn, cmd, parms);
-                    eventIrcKick(pfx, cmd, parms);
-                    break;
-                case "QUIT":
-                    m_log.DebugFormat("[IRC-Connector-{0}] [{1}] parms = <{2}>", idn, cmd, parms);
-                    eventIrcQuit(pfx, cmd, parms);
-                    break;
-                default:
-                    m_log.DebugFormat("[IRC-Connector-{0}] Command '{1}' ignored, parms = {2}", idn, cmd, parms);
-                    break;
-            }
-
-            // m_log.DebugFormat("[IRC-Connector-{0}] prefix = <{1}> cmd = <{2}> complete", idn, pfx, cmd);
-
-        }
 
         public void eventIrcJoin(string prefix, string command, string parms)
         {
@@ -779,14 +609,21 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
             BroadcastSim(IrcUser, "/me joins {0}", IrcChannel);
         }
 
-        public void eventIrcPart(string prefix, string command, string parms)
+        public void eventIrcKick(string prefix, string command, string parms)
         {
-            string[] args = parms.Split(CS_SPACE, 2);
-            string IrcUser = prefix.Split('!')[0];
+            string[] args = parms.Split(CS_SPACE, 3);
+            string UserKicker = prefix.Split('!')[0];
             string IrcChannel = args[0];
+            string UserKicked = args[1];
+            string KickMessage = args[2];
 
-            m_log.DebugFormat("[IRC-Connector-{0}] Event: IRCPart {1}:{2}", idn, m_server, m_ircChannel);
-            BroadcastSim(IrcUser, "/me parts {0}", IrcChannel);
+            m_log.DebugFormat("[IRC-Connector-{0}] Event: IRCKick {1}:{2}", idn, m_server, m_ircChannel);
+            BroadcastSim(UserKicker, "/me kicks kicks {0} off {1} saying \"{2}\"", UserKicked, IrcChannel, KickMessage);
+
+            if (UserKicked == m_nick)
+            {
+                BroadcastSim(m_nick, "Hey, that was me!!!");
+            }
         }
 
         public void eventIrcMode(string prefix, string command, string parms)
@@ -811,22 +648,14 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
             BroadcastSim(UserOldNick, "/me is now known as {0}", UserNewNick);
         }
 
-        public void eventIrcKick(string prefix, string command, string parms)
+        public void eventIrcPart(string prefix, string command, string parms)
         {
-            string[] args = parms.Split(CS_SPACE, 3);
-            string UserKicker = prefix.Split('!')[0];
+            string[] args = parms.Split(CS_SPACE, 2);
+            string IrcUser = prefix.Split('!')[0];
             string IrcChannel = args[0];
-            string UserKicked = args[1];
-            string KickMessage = args[2];
 
-            m_log.DebugFormat("[IRC-Connector-{0}] Event: IRCKick {1}:{2}", idn, m_server, m_ircChannel);
-            BroadcastSim(UserKicker, "/me kicks kicks {0} off {1} saying \"{2}\"", UserKicked, IrcChannel, KickMessage);
-
-            if (UserKicked == m_nick)
-            {
-                BroadcastSim(m_nick, "Hey, that was me!!!");
-            }
-
+            m_log.DebugFormat("[IRC-Connector-{0}] Event: IRCPart {1}:{2}", idn, m_server, m_ircChannel);
+            BroadcastSim(IrcUser, "/me parts {0}", IrcChannel);
         }
 
         public void eventIrcQuit(string prefix, string command, string parms)
@@ -838,7 +667,167 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
             BroadcastSim(IrcUser, "/me quits saying \"{0}\"", QuitMessage);
         }
 
-        #endregion
+        public void ProcessIRCCommand(string command)
+        {
+            string[] commArgs;
+            string c_server = m_server;
+
+            string pfx = String.Empty;
+            string cmd = String.Empty;
+            string parms = String.Empty;
+
+            // ":" indicates that a prefix is present
+            // There are NEVER more than 17 real
+            // fields. A parameter that starts with
+            // ":" indicates that the remainder of the
+            // line is a single parameter value.
+
+            commArgs = command.Split(CS_SPACE, 2);
+
+            if (commArgs[0].StartsWith(":"))
+            {
+                pfx = commArgs[0].Substring(1);
+                commArgs = commArgs[1].Split(CS_SPACE, 2);
+            }
+
+            cmd = commArgs[0];
+            parms = commArgs[1];
+
+            // m_log.DebugFormat("[IRC-Connector-{0}] prefix = <{1}> cmd = <{2}>", idn, pfx, cmd);
+
+            switch (cmd)
+            {
+                // Messages 001-004 are always sent
+                // following signon.
+
+                case "001": // Welcome ...
+                case "002": // Server information
+                case "003": // Welcome ...
+                    break;
+
+                case "004": // Server information
+                    m_log.DebugFormat("[IRC-Connector-{0}] [{1}] parms = <{2}>", idn, cmd, parms);
+                    commArgs = parms.Split(CS_SPACE);
+                    c_server = commArgs[1];
+                    m_server = c_server;
+                    version = commArgs[2];
+                    usermod = commArgs[3];
+                    chanmod = commArgs[4];
+                    break;
+
+                case "005": // Server information
+                    break;
+
+                case "042":
+                case "250":
+                case "251":
+                case "252":
+                case "254":
+                case "255":
+                case "265":
+                case "266":
+                case "332": // Subject
+                case "333": // Subject owner (?)
+                case "353": // Name list
+                case "366": // End-of-Name list marker
+                case "372": // MOTD body
+                case "375": // MOTD start
+                    // m_log.InfoFormat("[IRC-Connector-{0}] [{1}] {2}", idn, cmd, parms.Split(CS_SPACE,2)[1]);
+                    break;
+
+                case "376": // MOTD end
+                    // m_log.InfoFormat("[IRC-Connector-{0}] [{1}] {2}", idn, cmd, parms.Split(CS_SPACE,2)[1]);
+                    motd = true;
+                    break;
+
+                case "451": // Not registered
+                    break;
+
+                case "433": // Nickname in use
+                    // Gen a new name
+                    m_nick = m_baseNick + Util.RandomClass.Next(1, 99);
+                    m_log.ErrorFormat("[IRC-Connector-{0}]: [{1}] IRC SERVER reports NicknameInUse, trying {2}", idn, cmd, m_nick);
+                    // Retry
+                    m_writer.WriteLine(String.Format("NICK {0}", m_nick));
+                    m_writer.Flush();
+                    m_writer.WriteLine(m_user);
+                    m_writer.Flush();
+                    m_writer.WriteLine(String.Format("JOIN {0}", m_ircChannel));
+                    m_writer.Flush();
+                    break;
+
+                case "479": // Bad channel name, etc. This will never work, so disable the connection
+                    m_log.ErrorFormat("[IRC-Connector-{0}] [{1}] {2}", idn, cmd, parms.Split(CS_SPACE, 2)[1]);
+                    m_log.ErrorFormat("[IRC-Connector-{0}] [{1}] Connector disabled", idn, cmd);
+                    m_enabled = false;
+                    m_connected = false;
+                    m_pending = false;
+                    break;
+
+                case "NOTICE":
+                    // m_log.WarnFormat("[IRC-Connector-{0}] [{1}] {2}", idn, cmd, parms.Split(CS_SPACE,2)[1]);
+                    break;
+
+                case "ERROR":
+                    m_log.ErrorFormat("[IRC-Connector-{0}] [{1}] {2}", idn, cmd, parms.Split(CS_SPACE, 2)[1]);
+                    if (parms.Contains("reconnect too fast"))
+                        ICCD_PERIOD++;
+                    m_pending = false;
+                    Reconnect();
+                    break;
+
+                case "PING":
+                    m_log.DebugFormat("[IRC-Connector-{0}] [{1}] parms = <{2}>", idn, cmd, parms);
+                    m_writer.WriteLine(String.Format("PONG {0}", parms));
+                    m_writer.Flush();
+                    break;
+
+                case "PONG":
+                    break;
+
+                case "JOIN":
+                    if (m_pending)
+                    {
+                        m_log.InfoFormat("[IRC-Connector-{0}] [{1}] Connected", idn, cmd);
+                        m_pending = false;
+                    }
+                    m_log.DebugFormat("[IRC-Connector-{0}] [{1}] parms = <{2}>", idn, cmd, parms);
+                    eventIrcJoin(pfx, cmd, parms);
+                    break;
+
+                case "PART":
+                    m_log.DebugFormat("[IRC-Connector-{0}] [{1}] parms = <{2}>", idn, cmd, parms);
+                    eventIrcPart(pfx, cmd, parms);
+                    break;
+
+                case "MODE":
+                    m_log.DebugFormat("[IRC-Connector-{0}] [{1}] parms = <{2}>", idn, cmd, parms);
+                    eventIrcMode(pfx, cmd, parms);
+                    break;
+
+                case "NICK":
+                    m_log.DebugFormat("[IRC-Connector-{0}] [{1}] parms = <{2}>", idn, cmd, parms);
+                    eventIrcNickChange(pfx, cmd, parms);
+                    break;
+
+                case "KICK":
+                    m_log.DebugFormat("[IRC-Connector-{0}] [{1}] parms = <{2}>", idn, cmd, parms);
+                    eventIrcKick(pfx, cmd, parms);
+                    break;
+
+                case "QUIT":
+                    m_log.DebugFormat("[IRC-Connector-{0}] [{1}] parms = <{2}>", idn, cmd, parms);
+                    eventIrcQuit(pfx, cmd, parms);
+                    break;
+
+                default:
+                    m_log.DebugFormat("[IRC-Connector-{0}] Command '{1}' ignored, parms = {2}", idn, cmd, parms);
+                    break;
+            }
+
+            // m_log.DebugFormat("[IRC-Connector-{0}] prefix = <{1}> cmd = <{2}> complete", idn, pfx, cmd);
+        }
+        #endregion IRC Command Handlers
 
         #region Connector Watch Dog
 
@@ -848,7 +837,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
 
         protected static void WatchdogHandler(Object source, ElapsedEventArgs args)
         {
-
             // m_log.InfoFormat("[IRC-Watchdog] Status scan, pdk = {0}, icc = {1}", _pdk_, _icc_);
 
             _pdk_ = (_pdk_ + 1) % PING_PERIOD;    // cycle the ping trigger
@@ -857,7 +845,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
             lock (m_connectors)
                 foreach (IRCConnector connector in m_connectors)
                 {
-
                     // m_log.InfoFormat("[IRC-Watchdog] Scanning {0}", connector);
 
                     if (connector.Enabled)
@@ -876,7 +863,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
                         }
                         else
                         {
-
                             if (connector.m_pending)
                             {
                                 if (connector.m_timeout == 0)
@@ -889,9 +875,8 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
                             }
 
                             // Being marked connected is not enough to ping. Socket establishment can sometimes take a long
-                            // time, in which case the watch dog might try to ping the server before the socket has been 
+                            // time, in which case the watch dog might try to ping the server before the socket has been
                             // set up, with nasty side-effects.
-
                             else if (_pdk_ == 0)
                             {
                                 try
@@ -906,16 +891,13 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
                                     connector.Reconnect();
                                 }
                             }
-
                         }
                     }
                 }
 
             // m_log.InfoFormat("[IRC-Watchdog] Status scan completed");
-
         }
 
-        #endregion
-
+        #endregion Connector Watch Dog
     }
 }

@@ -25,14 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-
 namespace pCampBot.Interfaces
 {
     public interface IBehaviour
     {
         /// <summary>
-        /// Abbreviated name of this behaviour. 
+        /// Abbreviated name of this behaviour.
         /// </summary>
         string AbbreviatedName { get; }
 
@@ -42,13 +40,10 @@ namespace pCampBot.Interfaces
         string Name { get; }
 
         /// <summary>
-        /// Initialize the behaviour for this bot.
+        /// Action to take when this behaviour is invoked.
         /// </summary>
-        /// <remarks>
-        /// This must be invoked before Action() is called.
-        /// </remarks>
         /// <param name="bot"></param>
-        void Initialize(Bot bot);
+        void Action();
 
         /// <summary>
         /// Close down this behaviour.
@@ -59,9 +54,12 @@ namespace pCampBot.Interfaces
         void Close();
 
         /// <summary>
-        /// Action to take when this behaviour is invoked.
+        /// Initialize the behaviour for this bot.
         /// </summary>
+        /// <remarks>
+        /// This must be invoked before Action() is called.
+        /// </remarks>
         /// <param name="bot"></param>
-        void Action();
+        void Initialize(Bot bot);
     }
 }

@@ -25,14 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using OpenMetaverse;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Threading;
 using log4net;
-using pCampBot.Interfaces;
+using OpenMetaverse;
+using System.Reflection;
 
 namespace pCampBot
 {
@@ -43,20 +38,19 @@ namespace pCampBot
     /// </summary>
     public class PhysicsBehaviour2 : AbstractBehaviour
     {
+        private const int TIME_WALKING = 5 * 10;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        public PhysicsBehaviour2() 
-        { 
-            AbbreviatedName = "ph2";
-            Name = "Physics2"; 
-        }
-
-        private const int TIME_WALKING = 5 * 10; // 5 seconds
+        // 5 seconds
         private int counter = 0;
 
+        public PhysicsBehaviour2()
+        {
+            AbbreviatedName = "ph2";
+            Name = "Physics2";
+        }
         public override void Action()
         {
-
             if (counter >= TIME_WALKING)
             {
                 counter = 0;
@@ -65,7 +59,6 @@ namespace pCampBot
                 MyTurnToward(target);
 
                 Bot.Client.Self.Movement.AtPos = true;
-
             }
             else
                 counter++;
@@ -76,7 +69,7 @@ namespace pCampBot
         private void MyTurnToward(Vector3 target)
         {
             Quaternion between = Vector3.RotationBetween(Vector3.UnitX, Vector3.Normalize(target - Bot.Client.Self.SimPosition));
-            Quaternion rot = between ;
+            Quaternion rot = between;
 
             Bot.Client.Self.Movement.BodyRotation = rot;
             Bot.Client.Self.Movement.HeadRotation = rot;

@@ -25,16 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using log4net;
 using Nini.Config;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
 using OpenSim.Framework;
 using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Server.Base;
 using OpenSim.Server.Handlers.Base;
+using OpenSim.Services.Interfaces;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Server.Handlers.Login
 {
@@ -42,12 +41,11 @@ namespace OpenSim.Server.Handlers.Login
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
+        private BasicDosProtectorOptions m_DosProtectionOptions;
         private ILoginService m_LoginService;
         private bool m_Proxy;
-        private BasicDosProtectorOptions m_DosProtectionOptions;
-
         public LLLoginServiceInConnector(IConfigSource config, IHttpServer server, IScene scene) :
-                base(config, server, String.Empty)
+            base(config, server, String.Empty)
         {
             m_log.Debug("[LLLOGIN IN CONNECTOR]: Starting...");
             string loginService = ReadLocalServiceFromConfig(config);
@@ -78,6 +76,17 @@ namespace OpenSim.Server.Handlers.Login
         {
         }
 
+        private void InitializeHandlers(IHttpServer server)
+        {
+            LLLoginHandlers loginHandlers = new LLLoginHandlers(m_LoginService, m_Proxy);
+            server.AddXmlRPCHandler("login_to_simulator",
+                new XmlRpcBasicDOSProtector(loginHandlers.HandleXMLRPCLogin, loginHandlers.HandleXMLRPCLoginBlocked,
+                    m_DosProtectionOptions).Process, false);
+            server.AddXmlRPCHandler("set_login_level", loginHandlers.HandleXMLRPCSetLoginLevel, false);
+            server.SetDefaultLLSDHandler(loginHandlers.HandleLLSDLogin);
+            server.AddWebSocketHandler("/WebSocket/GridLogin", loginHandlers.HandleWebSocketLoginEvents);
+        }
+
         private string ReadLocalServiceFromConfig(IConfigSource config)
         {
             IConfig serverConfig = config.Configs["LoginService"];
@@ -98,20 +107,8 @@ namespace OpenSim.Server.Handlers.Login
             m_DosProtectionOptions.ForgetTimeSpan =
                 TimeSpan.FromMilliseconds(serverConfig.GetInt("DOSForgiveClientAfterMS", 120000));
             m_DosProtectionOptions.ReportingName = "LOGINDOSPROTECTION";
-            
 
             return loginService;
-        }
-
-        private void InitializeHandlers(IHttpServer server)
-        {
-            LLLoginHandlers loginHandlers = new LLLoginHandlers(m_LoginService, m_Proxy);
-            server.AddXmlRPCHandler("login_to_simulator", 
-                new XmlRpcBasicDOSProtector(loginHandlers.HandleXMLRPCLogin,loginHandlers.HandleXMLRPCLoginBlocked,
-                    m_DosProtectionOptions).Process, false);
-            server.AddXmlRPCHandler("set_login_level", loginHandlers.HandleXMLRPCSetLoginLevel, false);
-            server.SetDefaultLLSDHandler(loginHandlers.HandleLLSDLogin);
-            server.AddWebSocketHandler("/WebSocket/GridLogin", loginHandlers.HandleWebSocketLoginEvents);
         }
     }
 }

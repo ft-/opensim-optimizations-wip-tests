@@ -25,16 +25,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
-using System.IO;
 using OpenMetaverse;
 using OpenSim.Region.Framework.Scenes;
+using System.Collections.Generic;
+using System.IO;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
     public interface IRegionSerialiserModule
     {
-        List<string> SerialiseRegion(Scene scene, string saveDir);
+        /// <summary>
+        /// Deserializes a scene object from its xml2 representation.  This does not load the object into the scene.
+        /// </summary>
+        /// <param name="xmlString"></param>
+        /// <returns>The scene object created</returns>
+        SceneObjectGroup DeserializeGroupFromXml2(string xmlString);
 
         /// <summary>
         /// Load prims from the xml format
@@ -44,13 +49,6 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="newIDS"></param>
         /// <param name="loadOffset"></param>
         void LoadPrimsFromXml(Scene scene, string fileName, bool newIDS, Vector3 loadOffset);
-
-        /// <summary>
-        /// Save prims in the xml format
-        /// </summary>
-        /// <param name="scene"> </param>
-        /// <param name="fileName"></param>
-        void SavePrimsToXml(Scene scene, string fileName);
 
         /// <summary>
         /// Load prims from the xml2 format
@@ -66,6 +64,33 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="reader"></param>
         /// <param name="startScripts"></param>
         void LoadPrimsFromXml2(Scene scene, TextReader reader, bool startScripts);
+
+        void SaveNamedPrimsToXml2(Scene scene, string primName, string fileName);
+
+        /// <summary>
+        /// Save a set of prims in the xml2 format
+        /// </summary>
+        /// <param name="entityList"></param>
+        /// <param name="fileName"></param>
+        void SavePrimListToXml2(EntityBase[] entityList, string fileName);
+
+        /// <summary>
+        /// Save a set of prims in the xml2 format, optionally specifying a bounding box for which
+        /// prims should be saved.  If both min and max vectors are Vector3.Zero, then all prims
+        /// are exported.
+        /// </summary>
+        /// <param name="entityList"></param>
+        /// <param name="stream"></param>
+        /// <param name="min"></param>
+        /// <param name="max"></param>
+        void SavePrimListToXml2(EntityBase[] entityList, TextWriter stream, Vector3 min, Vector3 max);
+
+        /// <summary>
+        /// Save prims in the xml format
+        /// </summary>
+        /// <param name="scene"> </param>
+        /// <param name="fileName"></param>
+        void SavePrimsToXml(Scene scene, string fileName);
 
         /// <summary>
         /// Save prims in the xml2 format
@@ -85,33 +110,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="max"></param>
         void SavePrimsToXml2(Scene scene, TextWriter stream, Vector3 min, Vector3 max);
 
-        /// <summary>
-        /// Save a set of prims in the xml2 format
-        /// </summary>
-        /// <param name="entityList"></param>
-        /// <param name="fileName"></param>
-        void SavePrimListToXml2(EntityBase[] entityList, string fileName);
-
-        /// <summary>
-        /// Save a set of prims in the xml2 format, optionally specifying a bounding box for which
-        /// prims should be saved.  If both min and max vectors are Vector3.Zero, then all prims
-        /// are exported.
-        /// </summary>
-        /// <param name="entityList"></param>
-        /// <param name="stream"></param>
-        /// <param name="min"></param>
-        /// <param name="max"></param>
-        void SavePrimListToXml2(EntityBase[] entityList, TextWriter stream, Vector3 min, Vector3 max);
-        
-        void SaveNamedPrimsToXml2(Scene scene, string primName, string fileName);
-            
-        /// <summary>
-        /// Deserializes a scene object from its xml2 representation.  This does not load the object into the scene.
-        /// </summary>
-        /// <param name="xmlString"></param>
-        /// <returns>The scene object created</returns>
-        SceneObjectGroup DeserializeGroupFromXml2(string xmlString);
-
+        List<string> SerialiseRegion(Scene scene, string saveDir);
         /// <summary>
         /// Serialize an individual scene object into the xml2 format
         /// </summary>

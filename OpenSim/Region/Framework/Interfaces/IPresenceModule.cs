@@ -29,26 +29,27 @@ using OpenMetaverse;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
+    public delegate void BulkPresenceData(PresenceInfo[] info);
+
+    public delegate void PresenceChange(PresenceInfo info);
+
+    public interface IPresenceModule
+    {
+        event BulkPresenceData OnBulkPresenceData;
+
+        event PresenceChange OnPresenceChange;
+
+        void RequestBulkPresenceData(UUID[] users);
+    }
+
     public struct PresenceInfo
     {
-        public string UserID;
         public UUID RegionID;
-        
+        public string UserID;
         public PresenceInfo(string userID, UUID regionID)
         {
             UserID = userID;
             RegionID = regionID;
         }
-    }
-
-    public delegate void PresenceChange(PresenceInfo info);
-    public delegate void BulkPresenceData(PresenceInfo[] info);
-
-    public interface IPresenceModule
-    {
-        void RequestBulkPresenceData(UUID[] users);
-
-        event PresenceChange OnPresenceChange;
-        event BulkPresenceData OnBulkPresenceData;
     }
 }

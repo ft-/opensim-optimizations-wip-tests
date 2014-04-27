@@ -25,16 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Threading;
 using OpenMetaverse;
-using log4net;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Region.ScriptEngine.Shared;
-using OpenSim.Region.ScriptEngine.Interfaces;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.ScriptEngine.Interfaces
 {
@@ -51,6 +48,7 @@ namespace OpenSim.Region.ScriptEngine.Interfaces
     public interface IScriptWorkItem
     {
         bool Cancel();
+
         bool Abort();
 
         /// <summary>
@@ -118,10 +116,15 @@ namespace OpenSim.Region.ScriptEngine.Interfaces
         SceneObjectPart Part { get; }
 
         IScriptEngine Engine { get; }
+
         UUID AppDomain { get; set; }
+
         string PrimName { get; }
+
         string ScriptName { get; }
+
         UUID ItemID { get; }
+
         UUID ObjectID { get; }
 
         /// <summary>
@@ -135,6 +138,7 @@ namespace OpenSim.Region.ScriptEngine.Interfaces
         uint RootLocalID { get; }
 
         uint LocalID { get; }
+
         UUID AssetID { get; }
 
         /// <summary>
@@ -155,11 +159,13 @@ namespace OpenSim.Region.ScriptEngine.Interfaces
         long EventsProcessed { get; }
 
         void ClearQueue();
+
         int StartParam { get; set; }
 
         void RemoveState();
 
         void Init();
+
         void Start();
 
         /// <summary>
@@ -182,8 +188,9 @@ namespace OpenSim.Region.ScriptEngine.Interfaces
         /// </summary>
         /// <param name="data"></param>
         void PostEvent(EventParams data);
-        
+
         void Suspend();
+
         void Resume();
 
         /// <summary>
@@ -212,27 +219,35 @@ namespace OpenSim.Region.ScriptEngine.Interfaces
         /// Reset the script.
         /// </summary>
         /// <remarks>
-        /// This must not be called by any thread other than the one executing the scripts current event.  This is 
+        /// This must not be called by any thread other than the one executing the scripts current event.  This is
         /// because there is no wait or abort logic if another thread is in the middle of processing a script event.
         /// Such an external thread should use ResetScript() instead.
         /// </remarks>
         void ApiResetScript();
 
         Dictionary<string, object> GetVars();
+
         void SetVars(Dictionary<string, object> vars);
+
         DetectParams GetDetectParams(int idx);
+
         UUID GetDetectID(int idx);
+
         void SaveState(string assembly);
+
         void DestroyScriptInstance();
 
         IScriptApi GetApi(string name);
 
         Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>> LineMap
-                { get; set; }
+        { get; set; }
 
         string GetAssemblyName();
+
         string GetXMLState();
+
         double MinEventDelay { set; }
+
         UUID RegionID { get; }
     }
 }

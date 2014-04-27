@@ -25,123 +25,307 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Threading;
 using OpenMetaverse;
 using OpenMetaverse.Packets;
 using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Framework.Scenes
 {
     public partial class Scene
     {
+        private delegate void PurgeFolderDelegate(UUID userID, UUID folder);
+
+        private delegate void SendInventoryDelegate(IClientAPI remoteClient, UUID folderID, UUID ownerID, bool fetchFolders, bool fetchItems, int sortOrder);
+
         /// <summary>
-        /// Send chat to listeners.
+        /// Handle the deselection of a prim from the client.
         /// </summary>
-        /// <param name='message'></param>
-        /// <param name='type'>/param>
-        /// <param name='channel'></param>
-        /// <param name='fromPos'></param>
-        /// <param name='fromName'></param>
-        /// <param name='fromID'></param>
-        /// <param name='targetID'></param>
-        /// <param name='fromAgent'></param>
-        /// <param name='broadcast'></param>
-        protected void SimChat(byte[] message, ChatTypeEnum type, int channel, Vector3 fromPos, string fromName,
-                               UUID fromID, UUID targetID, bool fromAgent, bool broadcast)
+        /// <param name="primLocalID"></param>
+        /// <param name="remoteClient"></param>
+        public void DeselectPrim(uint primLocalID, IClientAPI remoteClient)
         {
-            OSChatMessage args = new OSChatMessage();
+            SceneObjectPart part = GetSceneObjectPart(primLocalID);
+            if (part == null)
+                return;
 
-            args.Message = Utils.BytesToString(message);
-            args.Channel = channel;
-            args.Type = type;
-            args.Position = fromPos;
-            args.SenderUUID = fromID;
-            args.Scene = this;
+            // A deselect packet contains all the local prims being deselected.  However, since selection is still
+            // group based we only want the root prim to trigger a full update - otherwise on objects with many prims
+            // we end up sending many duplicate ObjectUpdates
+            if (part.ParentGroup.RootPart.LocalId != part.LocalId)
+                return;
 
-            if (fromAgent)
+            // This is wrong, wrong, wrong. Selection should not be
+            // handled by group, but by prim. Legacy cruft.
+            // TODO: Make selection flagging per prim!
+            //
+            part.ParentGroup.IsSelected = false;
+
+            part.ParentGroup.ScheduleGroupForFullUpdate();
+
+            // If it's not an attachment, and we are allowed to move it,
+            // then we might have done so. If we moved across a parcel
+            // boundary, we will need to recount prims on the parcels.
+            // For attachments, that makes no sense.
+            //
+            if (!part.ParentGroup.IsAttachment)
             {
-                ScenePresence user = GetScenePresence(fromID);
-                if (user != null)
-                    args.Sender = user.ControllingClient;
+                if (Permissions.CanEditObject(
+                        part.UUID, remoteClient.AgentId)
+                        || Permissions.CanMoveObject(
+                        part.UUID, remoteClient.AgentId))
+                    EventManager.TriggerParcelPrimCountTainted();
+            }
+        }
+
+        /// <summary>
+        /// Handle an inventory folder creation request from the client.
+        /// </summary>
+        /// <param name="remoteClient"></param>
+        /// <param name="folderID"></param>
+        /// <param name="folderType"></param>
+        /// <param name="folderName"></param>
+        /// <param name="parentID"></param>
+        public void HandleCreateInventoryFolder(IClientAPI remoteClient, UUID folderID, ushort folderType,
+                                                string folderName, UUID parentID)
+        {
+            InventoryFolderBase folder = new InventoryFolderBase(folderID, folderName, remoteClient.AgentId, (short)folderType, parentID, 1);
+            if (!InventoryService.AddFolder(folder))
+            {
+                m_log.WarnFormat(
+                     "[AGENT INVENTORY]: Failed to create folder for user {0} {1}",
+                     remoteClient.Name, remoteClient.AgentId);
+            }
+        }
+
+        /// <summary>
+        /// Tell the client about the various child items and folders contained in the requested folder.
+        /// </summary>
+        /// <param name="remoteClient"></param>
+        /// <param name="folderID"></param>
+        /// <param name="ownerID"></param>
+        /// <param name="fetchFolders"></param>
+        /// <param name="fetchItems"></param>
+        /// <param name="sortOrder"></param>
+        public void HandleFetchInventoryDescendents(IClientAPI remoteClient, UUID folderID, UUID ownerID,
+                                                    bool fetchFolders, bool fetchItems, int sortOrder)
+        {
+            //            m_log.DebugFormat(
+            //                "[USER INVENTORY]: HandleFetchInventoryDescendents() for {0}, folder={1}, fetchFolders={2}, fetchItems={3}, sortOrder={4}",
+            //                remoteClient.Name, folderID, fetchFolders, fetchItems, sortOrder);
+
+            if (folderID == UUID.Zero)
+                return;
+
+            // FIXME MAYBE: We're not handling sortOrder!
+
+            // TODO: This code for looking in the folder for the library should be folded somewhere else
+            // so that this class doesn't have to know the details (and so that multiple libraries, etc.
+            // can be handled transparently).
+            InventoryFolderImpl fold = null;
+            if (LibraryService != null && LibraryService.LibraryRootFolder != null)
+            {
+                if ((fold = LibraryService.LibraryRootFolder.FindFolder(folderID)) != null)
+                {
+                    remoteClient.SendInventoryFolderDetails(
+                        fold.Owner, folderID, fold.RequestListOfItems(),
+                        fold.RequestListOfFolders(), fold.Version, fetchFolders, fetchItems);
+                    return;
+                }
+            }
+
+            // We're going to send the reply async, because there may be
+            // an enormous quantity of packets -- basically the entire inventory!
+            // We don't want to block the client thread while all that is happening.
+            SendInventoryDelegate d = SendInventoryAsync;
+            d.BeginInvoke(remoteClient, folderID, ownerID, fetchFolders, fetchItems, sortOrder, SendInventoryComplete, d);
+        }
+
+        public void HandleMoveInventoryFolder(IClientAPI remoteClient, UUID folderID, UUID parentID)
+        {
+            InventoryFolderBase folder = new InventoryFolderBase(folderID, remoteClient.AgentId);
+            folder = InventoryService.GetFolder(folder);
+            if (folder != null)
+            {
+                folder.ParentID = parentID;
+                if (!InventoryService.MoveFolder(folder))
+                    m_log.WarnFormat("[AGENT INVENTORY]: could not move folder {0}", folderID);
+                else
+                    m_log.DebugFormat("[AGENT INVENTORY]: folder {0} moved to parent {1}", folderID, parentID);
             }
             else
             {
-                SceneObjectPart obj = GetSceneObjectPart(fromID);
-                args.SenderObject = obj;
+                m_log.WarnFormat("[AGENT INVENTORY]: request to move folder {0} but folder not found", folderID);
             }
+        }
 
-            args.From = fromName;
-            args.TargetUUID = targetID;
+        /// <summary>
+        /// This should delete all the items and folders in the given directory.
+        /// </summary>
+        /// <param name="remoteClient"></param>
+        /// <param name="folderID"></param>
+        public void HandlePurgeInventoryDescendents(IClientAPI remoteClient, UUID folderID)
+        {
+            PurgeFolderDelegate d = PurgeFolderAsync;
+            try
+            {
+                d.BeginInvoke(remoteClient.AgentId, folderID, PurgeFolderCompleted, d);
+            }
+            catch (Exception e)
+            {
+                m_log.WarnFormat("[AGENT INVENTORY]: Exception on purge folder for user {0}: {1}", remoteClient.AgentId, e.Message);
+            }
+        }
 
-//            m_log.DebugFormat(
-//                "[SCENE]: Sending message {0} on channel {1}, type {2} from {3}, broadcast {4}",
-//                args.Message.Replace("\n", "\\n"), args.Channel, args.Type, fromName, broadcast);
+        /// <summary>
+        /// Handle a client request to update the inventory folder
+        /// </summary>
+        ///
+        /// FIXME: We call add new inventory folder because in the data layer, we happen to use an SQL REPLACE
+        /// so this will work to rename an existing folder.  Needless to say, to rely on this is very confusing,
+        /// and needs to be changed.
+        ///
+        /// <param name="remoteClient"></param>
+        /// <param name="folderID"></param>
+        /// <param name="type"></param>
+        /// <param name="name"></param>
+        /// <param name="parentID"></param>
+        public void HandleUpdateInventoryFolder(IClientAPI remoteClient, UUID folderID, ushort type, string name,
+                                                UUID parentID)
+        {
+            //            m_log.DebugFormat(
+            //                "[AGENT INVENTORY]: Updating inventory folder {0} {1} for {2} {3}", folderID, name, remoteClient.Name, remoteClient.AgentId);
 
-            if (broadcast)
-                EventManager.TriggerOnChatBroadcast(this, args);
+            InventoryFolderBase folder = new InventoryFolderBase(folderID, remoteClient.AgentId);
+            folder = InventoryService.GetFolder(folder);
+            if (folder != null)
+            {
+                folder.Name = name;
+                folder.Type = (short)type;
+                folder.ParentID = parentID;
+                if (!InventoryService.UpdateFolder(folder))
+                {
+                    m_log.ErrorFormat(
+                         "[AGENT INVENTORY]: Failed to update folder for user {0} {1}",
+                         remoteClient.Name, remoteClient.AgentId);
+                }
+            }
+        }
+
+        public virtual void ProcessMoneyTransferRequest(UUID source, UUID destination, int amount,
+                                                                int transactiontype, string description)
+        {
+            EventManager.MoneyTransferArgs args = new EventManager.MoneyTransferArgs(source, destination, amount,
+                                                                                     transactiontype, description);
+
+            EventManager.TriggerMoneyTransfer(this, args);
+        }
+
+        public virtual void ProcessObjectDeGrab(uint localID, IClientAPI remoteClient, List<SurfaceTouchEventArgs> surfaceArgs)
+        {
+            SceneObjectPart part = GetSceneObjectPart(localID);
+            if (part == null)
+                return;
+
+            SceneObjectGroup obj = part.ParentGroup;
+
+            SurfaceTouchEventArgs surfaceArg = null;
+            if (surfaceArgs != null && surfaceArgs.Count > 0)
+                surfaceArg = surfaceArgs[0];
+
+            // If the touched prim handles touches, deliver it
+            // If not, deliver to root prim
+            if ((part.ScriptEvents & scriptEvents.touch_end) != 0)
+                EventManager.TriggerObjectDeGrab(part.LocalId, 0, remoteClient, surfaceArg);
             else
-                EventManager.TriggerOnChatFromWorld(this, args);
+                EventManager.TriggerObjectDeGrab(obj.RootPart.LocalId, part.LocalId, remoteClient, surfaceArg);
         }
 
-        protected void SimChat(byte[] message, ChatTypeEnum type, int channel, Vector3 fromPos, string fromName,
-                               UUID fromID, bool fromAgent, bool broadcast)
+        public virtual void ProcessObjectGrab(uint localID, Vector3 offsetPos, IClientAPI remoteClient, List<SurfaceTouchEventArgs> surfaceArgs)
         {
-            SimChat(message, type, channel, fromPos, fromName, fromID, UUID.Zero, fromAgent, broadcast);
+            SceneObjectPart part = GetSceneObjectPart(localID);
+
+            if (part == null)
+                return;
+
+            SceneObjectGroup obj = part.ParentGroup;
+
+            SurfaceTouchEventArgs surfaceArg = null;
+            if (surfaceArgs != null && surfaceArgs.Count > 0)
+                surfaceArg = surfaceArgs[0];
+
+            // Currently only grab/touch for the single prim
+            // the client handles rez correctly
+            obj.ObjectGrabHandler(localID, offsetPos, remoteClient);
+
+            // If the touched prim handles touches, deliver it
+            // If not, deliver to root prim
+            if ((part.ScriptEvents & scriptEvents.touch_start) != 0)
+                EventManager.TriggerObjectGrab(part.LocalId, 0, part.OffsetPosition, remoteClient, surfaceArg);
+
+            // Deliver to the root prim if the touched prim doesn't handle touches
+            // or if we're meant to pass on touches anyway. Don't send to root prim
+            // if prim touched is the root prim as we just did it
+            if (((part.ScriptEvents & scriptEvents.touch_start) == 0) ||
+                (part.PassTouches && (part.LocalId != obj.RootPart.LocalId)))
+            {
+                EventManager.TriggerObjectGrab(obj.RootPart.LocalId, part.LocalId, part.OffsetPosition, remoteClient, surfaceArg);
+            }
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="message"></param>
-        /// <param name="type"></param>
-        /// <param name="fromPos"></param>
-        /// <param name="fromName"></param>
-        /// <param name="fromAgentID"></param>
-        public void SimChat(byte[] message, ChatTypeEnum type, int channel, Vector3 fromPos, string fromName,
-                            UUID fromID, bool fromAgent)
+        public virtual void ProcessObjectGrabUpdate(
+                    UUID objectID, Vector3 offset, Vector3 pos, IClientAPI remoteClient, List<SurfaceTouchEventArgs> surfaceArgs)
         {
-            SimChat(message, type, channel, fromPos, fromName, fromID, fromAgent, false);
+            SceneObjectPart part = GetSceneObjectPart(objectID);
+            if (part == null)
+                return;
+
+            SceneObjectGroup obj = part.ParentGroup;
+
+            SurfaceTouchEventArgs surfaceArg = null;
+            if (surfaceArgs != null && surfaceArgs.Count > 0)
+                surfaceArg = surfaceArgs[0];
+
+            // If the touched prim handles touches, deliver it
+            // If not, deliver to root prim
+            if ((part.ScriptEvents & scriptEvents.touch) != 0)
+                EventManager.TriggerObjectGrabbing(part.LocalId, 0, part.OffsetPosition, remoteClient, surfaceArg);
+            // Deliver to the root prim if the touched prim doesn't handle touches
+            // or if we're meant to pass on touches anyway. Don't send to root prim
+            // if prim touched is the root prim as we just did it
+            if (((part.ScriptEvents & scriptEvents.touch) == 0) ||
+                (part.PassTouches && (part.LocalId != obj.RootPart.LocalId)))
+            {
+                EventManager.TriggerObjectGrabbing(obj.RootPart.LocalId, part.LocalId, part.OffsetPosition, remoteClient, surfaceArg);
+            }
         }
 
-        public void SimChat(string message, ChatTypeEnum type, Vector3 fromPos, string fromName, UUID fromID, bool fromAgent)
+        public virtual void ProcessParcelBuy(UUID agentId, UUID groupId, bool final, bool groupOwned,
+                        bool removeContribution, int parcelLocalID, int parcelArea, int parcelPrice, bool authenticated)
         {
-            SimChat(Utils.StringToBytes(message), type, 0, fromPos, fromName, fromID, fromAgent);
+            EventManager.LandBuyArgs args = new EventManager.LandBuyArgs(agentId, groupId, final, groupOwned,
+                                                                         removeContribution, parcelLocalID, parcelArea,
+                                                                         parcelPrice, authenticated);
+
+            // First, allow all validators a stab at it
+            m_eventManager.TriggerValidateLandBuy(this, args);
+
+            // Then, check validation and transfer
+            m_eventManager.TriggerLandBuy(this, args);
         }
 
-        public void SimChat(string message, string fromName)
+        public void ProcessScriptReset(IClientAPI remoteClient, UUID objectID,
+                        UUID itemID)
         {
-            SimChat(message, ChatTypeEnum.Broadcast, Vector3.Zero, fromName, UUID.Zero, false);
-        }
+            SceneObjectPart part = GetSceneObjectPart(objectID);
+            if (part == null)
+                return;
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="message"></param>
-        /// <param name="type"></param>
-        /// <param name="fromPos"></param>
-        /// <param name="fromName"></param>
-        /// <param name="fromAgentID"></param>
-        public void SimChatBroadcast(byte[] message, ChatTypeEnum type, int channel, Vector3 fromPos, string fromName,
-                                     UUID fromID, bool fromAgent)
-        {
-            SimChat(message, type, channel, fromPos, fromName, fromID, fromAgent, true);
-        }
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="message"></param>
-        /// <param name="type"></param>
-        /// <param name="fromPos"></param>
-        /// <param name="fromName"></param>
-        /// <param name="fromAgentID"></param>
-        /// <param name="targetID"></param>
-        public void SimChatToAgent(UUID targetID, byte[] message, Vector3 fromPos, string fromName, UUID fromID, bool fromAgent)
-        {
-            SimChat(message, ChatTypeEnum.Say, 0, fromPos, fromName, fromID, targetID, fromAgent, false);
+            if (Permissions.CanResetScript(objectID, itemID, remoteClient.AgentId))
+            {
+                EventManager.TriggerScriptReset(part.LocalId, itemID);
+            }
         }
 
         /// <summary>
@@ -184,10 +368,116 @@ namespace OpenSim.Region.Framework.Scenes
             }
             else
             {
-                 part.SendPropertiesToClient(remoteClient);
+                part.SendPropertiesToClient(remoteClient);
             }
         }
 
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="type"></param>
+        /// <param name="fromPos"></param>
+        /// <param name="fromName"></param>
+        /// <param name="fromAgentID"></param>
+        public void SimChat(byte[] message, ChatTypeEnum type, int channel, Vector3 fromPos, string fromName,
+                            UUID fromID, bool fromAgent)
+        {
+            SimChat(message, type, channel, fromPos, fromName, fromID, fromAgent, false);
+        }
+
+        public void SimChat(string message, ChatTypeEnum type, Vector3 fromPos, string fromName, UUID fromID, bool fromAgent)
+        {
+            SimChat(Utils.StringToBytes(message), type, 0, fromPos, fromName, fromID, fromAgent);
+        }
+
+        public void SimChat(string message, string fromName)
+        {
+            SimChat(message, ChatTypeEnum.Broadcast, Vector3.Zero, fromName, UUID.Zero, false);
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="type"></param>
+        /// <param name="fromPos"></param>
+        /// <param name="fromName"></param>
+        /// <param name="fromAgentID"></param>
+        public void SimChatBroadcast(byte[] message, ChatTypeEnum type, int channel, Vector3 fromPos, string fromName,
+                                     UUID fromID, bool fromAgent)
+        {
+            SimChat(message, type, channel, fromPos, fromName, fromID, fromAgent, true);
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="type"></param>
+        /// <param name="fromPos"></param>
+        /// <param name="fromName"></param>
+        /// <param name="fromAgentID"></param>
+        /// <param name="targetID"></param>
+        public void SimChatToAgent(UUID targetID, byte[] message, Vector3 fromPos, string fromName, UUID fromID, bool fromAgent)
+        {
+            SimChat(message, ChatTypeEnum.Say, 0, fromPos, fromName, fromID, targetID, fromAgent, false);
+        }
+
+        /// <summary>
+        /// Send chat to listeners.
+        /// </summary>
+        /// <param name='message'></param>
+        /// <param name='type'>/param>
+        /// <param name='channel'></param>
+        /// <param name='fromPos'></param>
+        /// <param name='fromName'></param>
+        /// <param name='fromID'></param>
+        /// <param name='targetID'></param>
+        /// <param name='fromAgent'></param>
+        /// <param name='broadcast'></param>
+        protected void SimChat(byte[] message, ChatTypeEnum type, int channel, Vector3 fromPos, string fromName,
+                               UUID fromID, UUID targetID, bool fromAgent, bool broadcast)
+        {
+            OSChatMessage args = new OSChatMessage();
+
+            args.Message = Utils.BytesToString(message);
+            args.Channel = channel;
+            args.Type = type;
+            args.Position = fromPos;
+            args.SenderUUID = fromID;
+            args.Scene = this;
+
+            if (fromAgent)
+            {
+                ScenePresence user = GetScenePresence(fromID);
+                if (user != null)
+                    args.Sender = user.ControllingClient;
+            }
+            else
+            {
+                SceneObjectPart obj = GetSceneObjectPart(fromID);
+                args.SenderObject = obj;
+            }
+
+            args.From = fromName;
+            args.TargetUUID = targetID;
+
+            //            m_log.DebugFormat(
+            //                "[SCENE]: Sending message {0} on channel {1}, type {2} from {3}, broadcast {4}",
+            //                args.Message.Replace("\n", "\\n"), args.Channel, args.Type, fromName, broadcast);
+
+            if (broadcast)
+                EventManager.TriggerOnChatBroadcast(this, args);
+            else
+                EventManager.TriggerOnChatFromWorld(this, args);
+        }
+
+        protected void SimChat(byte[] message, ChatTypeEnum type, int channel, Vector3 fromPos, string fromName,
+                               UUID fromID, bool fromAgent, bool broadcast)
+        {
+            SimChat(message, type, channel, fromPos, fromName, fromID, UUID.Zero, fromAgent, broadcast);
+        }
         /// <summary>
         /// Handle the update of an object's user group.
         /// </summary>
@@ -206,13 +496,13 @@ namespace OpenSim.Region.Framework.Scenes
             if (groupID != UUID.Zero)
             {
                 GroupMembershipData gmd = m_groupsModule.GetMembershipData(groupID, remoteClient.AgentId);
-    
+
                 if (gmd == null)
                 {
-//                    m_log.WarnFormat(
-//                        "[GROUPS]: User {0} is not a member of group {1} so they can't update {2} to this group",
-//                        remoteClient.Name, GroupID, objectLocalID);
-    
+                    //                    m_log.WarnFormat(
+                    //                        "[GROUPS]: User {0} is not a member of group {1} so they can't update {2} to this group",
+                    //                        remoteClient.Name, GroupID, objectLocalID);
+
                     return;
                 }
             }
@@ -226,163 +516,7 @@ namespace OpenSim.Region.Framework.Scenes
                 }
             }
         }
-
-        /// <summary>
-        /// Handle the deselection of a prim from the client.
-        /// </summary>
-        /// <param name="primLocalID"></param>
-        /// <param name="remoteClient"></param>
-        public void DeselectPrim(uint primLocalID, IClientAPI remoteClient)
-        {
-            SceneObjectPart part = GetSceneObjectPart(primLocalID);
-            if (part == null)
-                return;
-            
-            // A deselect packet contains all the local prims being deselected.  However, since selection is still
-            // group based we only want the root prim to trigger a full update - otherwise on objects with many prims
-            // we end up sending many duplicate ObjectUpdates
-            if (part.ParentGroup.RootPart.LocalId != part.LocalId)
-                return;
-
-            // This is wrong, wrong, wrong. Selection should not be
-            // handled by group, but by prim. Legacy cruft.
-            // TODO: Make selection flagging per prim!
-            //
-            part.ParentGroup.IsSelected = false;
-            
-            part.ParentGroup.ScheduleGroupForFullUpdate();
-
-            // If it's not an attachment, and we are allowed to move it,
-            // then we might have done so. If we moved across a parcel
-            // boundary, we will need to recount prims on the parcels.
-            // For attachments, that makes no sense.
-            //
-            if (!part.ParentGroup.IsAttachment)
-            {
-                if (Permissions.CanEditObject(
-                        part.UUID, remoteClient.AgentId) 
-                        || Permissions.CanMoveObject(
-                        part.UUID, remoteClient.AgentId))
-                    EventManager.TriggerParcelPrimCountTainted();
-            }
-        }
-
-        public virtual void ProcessMoneyTransferRequest(UUID source, UUID destination, int amount, 
-                                                        int transactiontype, string description)
-        {
-            EventManager.MoneyTransferArgs args = new EventManager.MoneyTransferArgs(source, destination, amount, 
-                                                                                     transactiontype, description);
-
-            EventManager.TriggerMoneyTransfer(this, args);
-        }
-
-        public virtual void ProcessParcelBuy(UUID agentId, UUID groupId, bool final, bool groupOwned,
-                bool removeContribution, int parcelLocalID, int parcelArea, int parcelPrice, bool authenticated)
-        {
-            EventManager.LandBuyArgs args = new EventManager.LandBuyArgs(agentId, groupId, final, groupOwned, 
-                                                                         removeContribution, parcelLocalID, parcelArea, 
-                                                                         parcelPrice, authenticated);
-
-            // First, allow all validators a stab at it
-            m_eventManager.TriggerValidateLandBuy(this, args);
-
-            // Then, check validation and transfer
-            m_eventManager.TriggerLandBuy(this, args);
-        }
-
-        public virtual void ProcessObjectGrab(uint localID, Vector3 offsetPos, IClientAPI remoteClient, List<SurfaceTouchEventArgs> surfaceArgs)
-        {
-            SceneObjectPart part = GetSceneObjectPart(localID);
-            
-            if (part == null)
-                return;
-
-            SceneObjectGroup obj = part.ParentGroup;
-
-            SurfaceTouchEventArgs surfaceArg = null;
-            if (surfaceArgs != null && surfaceArgs.Count > 0)
-                surfaceArg = surfaceArgs[0];
-
-            // Currently only grab/touch for the single prim
-            // the client handles rez correctly
-            obj.ObjectGrabHandler(localID, offsetPos, remoteClient);
-    
-            // If the touched prim handles touches, deliver it
-            // If not, deliver to root prim
-            if ((part.ScriptEvents & scriptEvents.touch_start) != 0)
-                EventManager.TriggerObjectGrab(part.LocalId, 0, part.OffsetPosition, remoteClient, surfaceArg);
-
-            // Deliver to the root prim if the touched prim doesn't handle touches
-            // or if we're meant to pass on touches anyway. Don't send to root prim
-            // if prim touched is the root prim as we just did it
-            if (((part.ScriptEvents & scriptEvents.touch_start) == 0) ||
-                (part.PassTouches && (part.LocalId != obj.RootPart.LocalId))) 
-            {
-                EventManager.TriggerObjectGrab(obj.RootPart.LocalId, part.LocalId, part.OffsetPosition, remoteClient, surfaceArg);
-            }
-        }
-
-        public virtual void ProcessObjectGrabUpdate(
-            UUID objectID, Vector3 offset, Vector3 pos, IClientAPI remoteClient, List<SurfaceTouchEventArgs> surfaceArgs)
-        {
-            SceneObjectPart part = GetSceneObjectPart(objectID);
-            if (part == null)
-                return;
-
-            SceneObjectGroup obj = part.ParentGroup;
-
-            SurfaceTouchEventArgs surfaceArg = null;
-            if (surfaceArgs != null && surfaceArgs.Count > 0)
-                surfaceArg = surfaceArgs[0];
-
-            // If the touched prim handles touches, deliver it
-            // If not, deliver to root prim
-            if ((part.ScriptEvents & scriptEvents.touch) != 0)
-                EventManager.TriggerObjectGrabbing(part.LocalId, 0, part.OffsetPosition, remoteClient, surfaceArg);
-            // Deliver to the root prim if the touched prim doesn't handle touches
-            // or if we're meant to pass on touches anyway. Don't send to root prim
-            // if prim touched is the root prim as we just did it
-            if (((part.ScriptEvents & scriptEvents.touch) == 0) ||
-                (part.PassTouches && (part.LocalId != obj.RootPart.LocalId)))
-            {
-                EventManager.TriggerObjectGrabbing(obj.RootPart.LocalId, part.LocalId, part.OffsetPosition, remoteClient, surfaceArg);
-            }
-        }
-
-        public virtual void ProcessObjectDeGrab(uint localID, IClientAPI remoteClient, List<SurfaceTouchEventArgs> surfaceArgs)
-        {
-            SceneObjectPart part = GetSceneObjectPart(localID);
-            if (part == null)
-                return;
-
-            SceneObjectGroup obj = part.ParentGroup;
-
-            SurfaceTouchEventArgs surfaceArg = null;
-            if (surfaceArgs != null && surfaceArgs.Count > 0)
-                surfaceArg = surfaceArgs[0];
-
-            // If the touched prim handles touches, deliver it
-            // If not, deliver to root prim
-            if ((part.ScriptEvents & scriptEvents.touch_end) != 0)
-                EventManager.TriggerObjectDeGrab(part.LocalId, 0, remoteClient, surfaceArg);
-            else
-                EventManager.TriggerObjectDeGrab(obj.RootPart.LocalId, part.LocalId, remoteClient, surfaceArg);
-        }
-
-        public void ProcessScriptReset(IClientAPI remoteClient, UUID objectID,
-                UUID itemID)
-        {
-            SceneObjectPart part=GetSceneObjectPart(objectID);
-            if (part == null)
-                return;
-
-            if (Permissions.CanResetScript(objectID, itemID, remoteClient.AgentId))
-            {
-                EventManager.TriggerScriptReset(part.LocalId, itemID);
-            }
-        }
-
-        void ProcessViewerEffect(IClientAPI remoteClient, List<ViewerEffectEventHandlerArg> args)
+        private void ProcessViewerEffect(IClientAPI remoteClient, List<ViewerEffectEventHandlerArg> args)
         {
             // TODO: don't create new blocks if recycling an old packet
             bool discardableEffects = true;
@@ -420,160 +554,6 @@ namespace OpenSim.Region.Framework.Scenes
                 });
         }
 
-        private bool ShouldSendDiscardableEffect(IClientAPI thisClient, ScenePresence other)
-        {
-            return Vector3.Distance(other.CameraPosition, thisClient.SceneAgent.AbsolutePosition) < 10;
-        }
-
-        /// <summary>
-        /// Tell the client about the various child items and folders contained in the requested folder.
-        /// </summary>
-        /// <param name="remoteClient"></param>
-        /// <param name="folderID"></param>
-        /// <param name="ownerID"></param>
-        /// <param name="fetchFolders"></param>
-        /// <param name="fetchItems"></param>
-        /// <param name="sortOrder"></param>
-        public void HandleFetchInventoryDescendents(IClientAPI remoteClient, UUID folderID, UUID ownerID,
-                                                    bool fetchFolders, bool fetchItems, int sortOrder)
-        {
-//            m_log.DebugFormat(
-//                "[USER INVENTORY]: HandleFetchInventoryDescendents() for {0}, folder={1}, fetchFolders={2}, fetchItems={3}, sortOrder={4}",
-//                remoteClient.Name, folderID, fetchFolders, fetchItems, sortOrder);
-
-            if (folderID == UUID.Zero)
-                return;
-
-            // FIXME MAYBE: We're not handling sortOrder!
-
-            // TODO: This code for looking in the folder for the library should be folded somewhere else
-            // so that this class doesn't have to know the details (and so that multiple libraries, etc.
-            // can be handled transparently).
-            InventoryFolderImpl fold = null;
-            if (LibraryService != null && LibraryService.LibraryRootFolder != null)
-            {
-                if ((fold = LibraryService.LibraryRootFolder.FindFolder(folderID)) != null)
-                {
-                    remoteClient.SendInventoryFolderDetails(
-                        fold.Owner, folderID, fold.RequestListOfItems(),
-                        fold.RequestListOfFolders(), fold.Version, fetchFolders, fetchItems);
-                    return;
-                }
-            }
-
-            // We're going to send the reply async, because there may be
-            // an enormous quantity of packets -- basically the entire inventory!
-            // We don't want to block the client thread while all that is happening.
-            SendInventoryDelegate d = SendInventoryAsync;
-            d.BeginInvoke(remoteClient, folderID, ownerID, fetchFolders, fetchItems, sortOrder, SendInventoryComplete, d);
-        }
-
-        delegate void SendInventoryDelegate(IClientAPI remoteClient, UUID folderID, UUID ownerID, bool fetchFolders, bool fetchItems, int sortOrder);
-
-        void SendInventoryAsync(IClientAPI remoteClient, UUID folderID, UUID ownerID, bool fetchFolders, bool fetchItems, int sortOrder)
-        {
-            SendInventoryUpdate(remoteClient, new InventoryFolderBase(folderID), fetchFolders, fetchItems);
-        }
-
-        void SendInventoryComplete(IAsyncResult iar)
-        {
-            SendInventoryDelegate d = (SendInventoryDelegate)iar.AsyncState;
-            d.EndInvoke(iar);
-        }
-        
-        /// <summary>
-        /// Handle an inventory folder creation request from the client.
-        /// </summary>
-        /// <param name="remoteClient"></param>
-        /// <param name="folderID"></param>
-        /// <param name="folderType"></param>
-        /// <param name="folderName"></param>
-        /// <param name="parentID"></param>
-        public void HandleCreateInventoryFolder(IClientAPI remoteClient, UUID folderID, ushort folderType,
-                                                string folderName, UUID parentID)
-        {
-            InventoryFolderBase folder = new InventoryFolderBase(folderID, folderName, remoteClient.AgentId, (short)folderType, parentID, 1);
-            if (!InventoryService.AddFolder(folder))
-            {
-                m_log.WarnFormat(
-                     "[AGENT INVENTORY]: Failed to create folder for user {0} {1}",
-                     remoteClient.Name, remoteClient.AgentId);
-            }
-        }
-
-        /// <summary>
-        /// Handle a client request to update the inventory folder
-        /// </summary>
-        ///
-        /// FIXME: We call add new inventory folder because in the data layer, we happen to use an SQL REPLACE
-        /// so this will work to rename an existing folder.  Needless to say, to rely on this is very confusing,
-        /// and needs to be changed.
-        ///
-        /// <param name="remoteClient"></param>
-        /// <param name="folderID"></param>
-        /// <param name="type"></param>
-        /// <param name="name"></param>
-        /// <param name="parentID"></param>
-        public void HandleUpdateInventoryFolder(IClientAPI remoteClient, UUID folderID, ushort type, string name,
-                                                UUID parentID)
-        {
-//            m_log.DebugFormat(
-//                "[AGENT INVENTORY]: Updating inventory folder {0} {1} for {2} {3}", folderID, name, remoteClient.Name, remoteClient.AgentId);
-
-            InventoryFolderBase folder = new InventoryFolderBase(folderID, remoteClient.AgentId);
-            folder = InventoryService.GetFolder(folder);
-            if (folder != null)
-            {
-                folder.Name = name;
-                folder.Type = (short)type;
-                folder.ParentID = parentID;
-                if (!InventoryService.UpdateFolder(folder))
-                {
-                    m_log.ErrorFormat(
-                         "[AGENT INVENTORY]: Failed to update folder for user {0} {1}",
-                         remoteClient.Name, remoteClient.AgentId);
-                }
-            }
-        }
-        
-        public void HandleMoveInventoryFolder(IClientAPI remoteClient, UUID folderID, UUID parentID)
-        {
-            InventoryFolderBase folder = new InventoryFolderBase(folderID, remoteClient.AgentId);
-            folder = InventoryService.GetFolder(folder);
-            if (folder != null)
-            {
-                folder.ParentID = parentID;
-                if (!InventoryService.MoveFolder(folder))
-                    m_log.WarnFormat("[AGENT INVENTORY]: could not move folder {0}", folderID);
-                else
-                    m_log.DebugFormat("[AGENT INVENTORY]: folder {0} moved to parent {1}", folderID, parentID);
-            }
-            else
-            {
-                m_log.WarnFormat("[AGENT INVENTORY]: request to move folder {0} but folder not found", folderID);
-            }
-        }
-
-        delegate void PurgeFolderDelegate(UUID userID, UUID folder);
-
-        /// <summary>
-        /// This should delete all the items and folders in the given directory.
-        /// </summary>
-        /// <param name="remoteClient"></param>
-        /// <param name="folderID"></param>
-        public void HandlePurgeInventoryDescendents(IClientAPI remoteClient, UUID folderID)
-        {
-            PurgeFolderDelegate d = PurgeFolderAsync;
-            try
-            {
-                d.BeginInvoke(remoteClient.AgentId, folderID, PurgeFolderCompleted, d);
-            }
-            catch (Exception e)
-            {
-                m_log.WarnFormat("[AGENT INVENTORY]: Exception on purge folder for user {0}: {1}", remoteClient.AgentId, e.Message);
-            }
-        }
-
         private void PurgeFolderAsync(UUID userID, UUID folderID)
         {
             InventoryFolderBase folder = new InventoryFolderBase(folderID, userID);
@@ -588,6 +568,22 @@ namespace OpenSim.Region.Framework.Scenes
         {
             PurgeFolderDelegate d = (PurgeFolderDelegate)iar.AsyncState;
             d.EndInvoke(iar);
+        }
+
+        private void SendInventoryAsync(IClientAPI remoteClient, UUID folderID, UUID ownerID, bool fetchFolders, bool fetchItems, int sortOrder)
+        {
+            SendInventoryUpdate(remoteClient, new InventoryFolderBase(folderID), fetchFolders, fetchItems);
+        }
+
+        private void SendInventoryComplete(IAsyncResult iar)
+        {
+            SendInventoryDelegate d = (SendInventoryDelegate)iar.AsyncState;
+            d.EndInvoke(iar);
+        }
+
+        private bool ShouldSendDiscardableEffect(IClientAPI thisClient, ScenePresence other)
+        {
+            return Vector3.Distance(other.CameraPosition, thisClient.SceneAgent.AbsolutePosition) < 10;
         }
     }
 }

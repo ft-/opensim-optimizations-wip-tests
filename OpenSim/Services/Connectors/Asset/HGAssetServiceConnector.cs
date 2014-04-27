@@ -27,16 +27,13 @@
 
 using log4net;
 using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Services.Connectors.SimianGrid;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Reflection;
-using System.Web;
-using OpenSim.Framework;
-using OpenSim.Services.Interfaces;
-using OpenSim.Services.Connectors.Hypergrid;
-using OpenSim.Services.Connectors.SimianGrid;
-using OpenMetaverse;
 
 namespace OpenSim.Services.Connectors
 {
@@ -46,25 +43,8 @@ namespace OpenSim.Services.Connectors
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
-        private Dictionary<IAssetService, object> m_endpointSerializer = new Dictionary<IAssetService, object>();
-        private object EndPointLock(IAssetService connector)
-        {
-            lock (m_endpointSerializer)
-            {
-                object eplock = null;
-
-                if (! m_endpointSerializer.TryGetValue(connector, out eplock))
-                {
-                    eplock = new object();
-                    m_endpointSerializer.Add(connector, eplock);
-                    // m_log.WarnFormat("[WEB UTIL] add a new host to end point serializer {0}",endpoint);
-                }
-
-                return eplock;
-            }
-        }
-
         private Dictionary<string, IAssetService> m_connectors = new Dictionary<string, IAssetService>();
+        private Dictionary<IAssetService, object> m_endpointSerializer = new Dictionary<IAssetService, object>();
 
         public HGAssetServiceConnector(IConfigSource source)
         {
@@ -81,108 +61,6 @@ namespace OpenSim.Services.Connectors
                 }
 
                 m_log.Info("[HG ASSET SERVICE]: HG asset service enabled");
-            }
-        }
-
-        private IAssetService GetConnector(string url)
-        {
-            IAssetService connector = null;
-            lock (m_connectors)
-            {
-                if (m_connectors.ContainsKey(url))
-                {
-                    connector = m_connectors[url];
-                }
-                else
-                {
-                    // Still not as flexible as I would like this to be,
-                    // but good enough for now
-                    string connectorType = new HeloServicesConnector(url).Helo();
-                    m_log.DebugFormat("[HG ASSET SERVICE]: HELO returned {0}", connectorType);
-                    if (connectorType == "opensim-simian")
-                    {
-                        connector = new SimianAssetServiceConnector(url);
-                    }
-                    else
-                        connector = new AssetServicesConnector(url);
-
-                    m_connectors.Add(url, connector);
-                }
-            }
-            return connector;
-        }
-
-        public AssetBase Get(string id)
-        {
-            string url = string.Empty;
-            string assetID = string.Empty;
-
-            if (Util.ParseForeignAssetID(id, out url, out assetID))
-            {
-                IAssetService connector = GetConnector(url);
-                return connector.Get(assetID);
-            }
-
-            return null;
-        }
-
-        public AssetBase GetCached(string id)
-        {
-            string url = string.Empty;
-            string assetID = string.Empty;
-
-            if (Util.ParseForeignAssetID(id, out url, out assetID))
-            {
-                IAssetService connector = GetConnector(url);
-                return connector.GetCached(assetID);
-            }
-
-            return null;
-        }
-
-        public AssetMetadata GetMetadata(string id)
-        {
-            string url = string.Empty;
-            string assetID = string.Empty;
-
-            if (Util.ParseForeignAssetID(id, out url, out assetID))
-            {
-                IAssetService connector = GetConnector(url);
-                return connector.GetMetadata(assetID);
-            }
-
-            return null;
-        }
-
-        public byte[] GetData(string id)
-        {
-            return null;
-        }
-
-        public bool Get(string id, Object sender, AssetRetrieved handler)
-        {
-            string url = string.Empty;
-            string assetID = string.Empty;
-
-            if (Util.ParseForeignAssetID(id, out url, out assetID))
-            {
-                IAssetService connector = GetConnector(url);
-                return connector.Get(assetID, sender, handler);
-            }
-
-            return false;
-        }
-
-
-        private struct AssetAndIndex
-        {
-            public UUID assetID;
-            public int index;
-
-            public AssetAndIndex(UUID assetID, int index)
-            {
-                this.assetID = assetID;
-                this.index = index;
             }
         }
 
@@ -233,6 +111,72 @@ namespace OpenSim.Services.Connectors
             return exist;
         }
 
+        public bool Delete(string id)
+        {
+            return false;
+        }
+
+        public AssetBase Get(string id)
+        {
+            string url = string.Empty;
+            string assetID = string.Empty;
+
+            if (Util.ParseForeignAssetID(id, out url, out assetID))
+            {
+                IAssetService connector = GetConnector(url);
+                return connector.Get(assetID);
+            }
+
+            return null;
+        }
+
+        public bool Get(string id, Object sender, AssetRetrieved handler)
+        {
+            string url = string.Empty;
+            string assetID = string.Empty;
+
+            if (Util.ParseForeignAssetID(id, out url, out assetID))
+            {
+                IAssetService connector = GetConnector(url);
+                return connector.Get(assetID, sender, handler);
+            }
+
+            return false;
+        }
+
+        public AssetBase GetCached(string id)
+        {
+            string url = string.Empty;
+            string assetID = string.Empty;
+
+            if (Util.ParseForeignAssetID(id, out url, out assetID))
+            {
+                IAssetService connector = GetConnector(url);
+                return connector.GetCached(assetID);
+            }
+
+            return null;
+        }
+
+        public byte[] GetData(string id)
+        {
+            return null;
+        }
+
+        public AssetMetadata GetMetadata(string id)
+        {
+            string url = string.Empty;
+            string assetID = string.Empty;
+
+            if (Util.ParseForeignAssetID(id, out url, out assetID))
+            {
+                IAssetService connector = GetConnector(url);
+                return connector.GetMetadata(assetID);
+            }
+
+            return null;
+        }
+
         public string Store(AssetBase asset)
         {
             string url = string.Empty;
@@ -255,9 +199,59 @@ namespace OpenSim.Services.Connectors
             return false;
         }
 
-        public bool Delete(string id)
+        private object EndPointLock(IAssetService connector)
         {
-            return false;
+            lock (m_endpointSerializer)
+            {
+                object eplock = null;
+
+                if (!m_endpointSerializer.TryGetValue(connector, out eplock))
+                {
+                    eplock = new object();
+                    m_endpointSerializer.Add(connector, eplock);
+                    // m_log.WarnFormat("[WEB UTIL] add a new host to end point serializer {0}",endpoint);
+                }
+
+                return eplock;
+            }
+        }
+        private IAssetService GetConnector(string url)
+        {
+            IAssetService connector = null;
+            lock (m_connectors)
+            {
+                if (m_connectors.ContainsKey(url))
+                {
+                    connector = m_connectors[url];
+                }
+                else
+                {
+                    // Still not as flexible as I would like this to be,
+                    // but good enough for now
+                    string connectorType = new HeloServicesConnector(url).Helo();
+                    m_log.DebugFormat("[HG ASSET SERVICE]: HELO returned {0}", connectorType);
+                    if (connectorType == "opensim-simian")
+                    {
+                        connector = new SimianAssetServiceConnector(url);
+                    }
+                    else
+                        connector = new AssetServicesConnector(url);
+
+                    m_connectors.Add(url, connector);
+                }
+            }
+            return connector;
+        }
+        private struct AssetAndIndex
+        {
+            public UUID assetID;
+            public int index;
+
+            public AssetAndIndex(UUID assetID, int index)
+            {
+                this.assetID = assetID;
+                this.index = index;
+            }
         }
     }
 }

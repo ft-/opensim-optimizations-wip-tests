@@ -25,20 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using System.Text;
-using log4net;
 using Mono.Addins;
 using Nini.Config;
 using OpenMetaverse;
 using OpenMetaverse.Imaging;
 using OpenSim.Framework;
-using OpenSim.Framework.Console;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
 
 namespace OpenSim.Region.OptionalModules.Agent.TextureSender
 {
@@ -51,42 +45,36 @@ namespace OpenSim.Region.OptionalModules.Agent.TextureSender
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "J2KDecoderCommandModule")]
     public class J2KDecoderCommandModule : ISharedRegionModule
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private Scene m_scene;
-        
+
         public string Name { get { return "Asset Information Module"; } }
-        
+
         public Type ReplaceableInterface { get { return null; } }
-        
-        public void Initialise(IConfigSource source)
-        {
-//            m_log.DebugFormat("[J2K DECODER COMMAND MODULE]: INITIALIZED MODULE");
-        }
-        
-        public void PostInitialise()
-        {
-//            m_log.DebugFormat("[J2K DECODER COMMAND MODULE]: POST INITIALIZED MODULE");
-        }
-        
-        public void Close()
-        {
-//            m_log.DebugFormat("[J2K DECODER COMMAND MODULE]: CLOSED MODULE");
-        }
-        
+
         public void AddRegion(Scene scene)
         {
-//            m_log.DebugFormat("[J2K DECODER COMMAND MODULE]: REGION {0} ADDED", scene.RegionInfo.RegionName);
+            //            m_log.DebugFormat("[J2K DECODER COMMAND MODULE]: REGION {0} ADDED", scene.RegionInfo.RegionName);
         }
-        
-        public void RemoveRegion(Scene scene)
+
+        public void Close()
         {
-//            m_log.DebugFormat("[J2K DECODER COMMAND MODULE]: REGION {0} REMOVED", scene.RegionInfo.RegionName);
+            //            m_log.DebugFormat("[J2K DECODER COMMAND MODULE]: CLOSED MODULE");
         }
-        
+
+        public void Initialise(IConfigSource source)
+        {
+            //            m_log.DebugFormat("[J2K DECODER COMMAND MODULE]: INITIALIZED MODULE");
+        }
+
+        public void PostInitialise()
+        {
+            //            m_log.DebugFormat("[J2K DECODER COMMAND MODULE]: POST INITIALIZED MODULE");
+        }
         public void RegionLoaded(Scene scene)
         {
-//            m_log.DebugFormat("[J2K DECODER COMMAND MODULE]: REGION {0} LOADED", scene.RegionInfo.RegionName);
+            //            m_log.DebugFormat("[J2K DECODER COMMAND MODULE]: REGION {0} LOADED", scene.RegionInfo.RegionName);
 
             if (m_scene == null)
                 m_scene = scene;
@@ -101,7 +89,11 @@ namespace OpenSim.Region.OptionalModules.Agent.TextureSender
                 HandleDecode);
         }
 
-        void HandleDecode(string module, string[] args)
+        public void RemoveRegion(Scene scene)
+        {
+            //            m_log.DebugFormat("[J2K DECODER COMMAND MODULE]: REGION {0} REMOVED", scene.RegionInfo.RegionName);
+        }
+        private void HandleDecode(string module, string[] args)
         {
             if (args.Length < 3)
             {
@@ -117,10 +109,10 @@ namespace OpenSim.Region.OptionalModules.Agent.TextureSender
                 MainConsole.Instance.OutputFormat("ERROR: {0} is not a valid ID format", rawAssetId);
                 return;
             }
-            
+
             AssetBase asset = m_scene.AssetService.Get(assetId.ToString());
             if (asset == null)
-            {                
+            {
                 MainConsole.Instance.OutputFormat("ERROR: No asset found with ID {0}", assetId);
                 return;
             }

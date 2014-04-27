@@ -25,19 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using OpenMetaverse;
 using log4net;
 using Nini.Config;
-using System.Reflection;
-using OpenSim.Services.Base;
-using OpenSim.Services.Interfaces;
-using OpenSim.Services.InventoryService;
+using OpenMetaverse;
 using OpenSim.Data;
 using OpenSim.Framework;
 using OpenSim.Server.Base;
+using OpenSim.Services.Interfaces;
+using OpenSim.Services.InventoryService;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.Services.HypergridService
 {
@@ -54,15 +52,15 @@ namespace OpenSim.Services.HypergridService
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
-//        private string m_HomeURL;
-        private IUserAccountService m_UserAccountService;
-        private IAvatarService m_AvatarService;
-
-//        private UserAccountCache m_Cache;
-
-        private ExpiringCache<UUID, List<XInventoryFolder>> m_SuitcaseTrees = new ExpiringCache<UUID, List<XInventoryFolder>>();
         private ExpiringCache<UUID, AvatarAppearance> m_Appearances = new ExpiringCache<UUID, AvatarAppearance>();
 
+        private IAvatarService m_AvatarService;
+
+        private ExpiringCache<UUID, List<XInventoryFolder>> m_SuitcaseTrees = new ExpiringCache<UUID, List<XInventoryFolder>>();
+
+        //        private string m_HomeURL;
+        private IUserAccountService m_UserAccountService;
+        //        private UserAccountCache m_Cache;
         public HGSuitcaseInventoryService(IConfigSource config, string configName)
             : base(config, configName)
         {
@@ -96,19 +94,131 @@ namespace OpenSim.Services.HypergridService
                 if (m_AvatarService == null)
                     throw new Exception(String.Format("Unable to create m_AvatarService from {0}", avatarDll));
 
-//                m_HomeURL = Util.GetConfigVarFromSections<string>(config, "HomeURI",
-//                    new string[] { "Startup", "Hypergrid", m_ConfigName }, String.Empty); 
+                //                m_HomeURL = Util.GetConfigVarFromSections<string>(config, "HomeURI",
+                //                    new string[] { "Startup", "Hypergrid", m_ConfigName }, String.Empty);
 
-//                m_Cache = UserAccountCache.CreateUserAccountCache(m_UserAccountService);
+                //                m_Cache = UserAccountCache.CreateUserAccountCache(m_UserAccountService);
             }
 
             m_log.Debug("[HG SUITCASE INVENTORY SERVICE]: Starting...");
+        }
+
+        public override bool AddFolder(InventoryFolderBase folder)
+        {
+            //m_log.WarnFormat("[HG SUITCASE INVENTORY SERVICE]: AddFolder {0} {1}", folder.Name, folder.ParentID);
+            // Let's do a bit of sanity checking, more than the base service does
+            // make sure the given folder's parent folder exists under the suitcase tree of this user
+
+            if (!IsWithinSuitcaseTree(folder.Owner, folder.ParentID))
+                return false;
+
+            // OK, it's legit
+            if (base.AddFolder(folder))
+            {
+                List<XInventoryFolder> tree;
+                if (m_SuitcaseTrees.TryGetValue(folder.Owner, out tree))
+                    tree.Add(ConvertFromOpenSim(folder));
+
+                return true;
+            }
+
+            return false;
+        }
+
+        public override bool AddItem(InventoryItemBase item)
+        {
+            // Let's do a bit of sanity checking, more than the base service does
+            // make sure the given folder's parent folder exists under the suitcase tree of this user
+            if (!IsWithinSuitcaseTree(item.Owner, item.Folder))
+                return false;
+
+            // OK, it's legit
+            return base.AddItem(item);
         }
 
         public override bool CreateUserInventory(UUID principalID)
         {
             // NOGO
             return false;
+        }
+
+        public override bool DeleteFolders(UUID principalID, List<UUID> folderIDs)
+        {
+            // NOGO
+            return false;
+        }
+
+        public override bool DeleteItems(UUID principalID, List<UUID> itemIDs)
+        {
+            return false;
+        }
+
+        public new InventoryFolderBase GetFolder(InventoryFolderBase folder)
+        {
+            InventoryFolderBase f = base.GetFolder(folder);
+
+            if (f != null)
+            {
+                if (!IsWithinSuitcaseTree(f.Owner, f.ID))
+                    return null;
+            }
+
+            return f;
+        }
+
+        public override InventoryCollection GetFolderContent(UUID principalID, UUID folderID)
+        {
+            InventoryCollection coll = null;
+
+            if (!IsWithinSuitcaseTree(principalID, folderID))
+                return new InventoryCollection();
+
+            coll = base.GetFolderContent(principalID, folderID);
+
+            if (coll == null)
+            {
+                m_log.WarnFormat("[HG SUITCASE INVENTORY SERVICE]: Something wrong with user {0}'s suitcase folder", principalID);
+                coll = new InventoryCollection();
+            }
+            return coll;
+        }
+
+        public override InventoryFolderBase GetFolderForType(UUID principalID, AssetType type)
+        {
+            //m_log.DebugFormat("[HG INVENTORY SERVICE]: GetFolderForType for {0} {0}", principalID, type);
+            XInventoryFolder suitcase = GetSuitcaseXFolder(principalID);
+
+            if (suitcase == null)
+            {
+                m_log.WarnFormat("[HG SUITCASE INVENTORY SERVICE]: Found no suitcase folder for user {0} when looking for child type folder {1}", principalID, type);
+                return null;
+            }
+
+            XInventoryFolder[] folders = m_Database.GetFolders(
+                    new string[] { "agentID", "type", "parentFolderID" },
+                    new string[] { principalID.ToString(), ((int)type).ToString(), suitcase.folderID.ToString() });
+
+            if (folders.Length == 0)
+            {
+                m_log.WarnFormat("[HG SUITCASE INVENTORY SERVICE]: Found no folder for type {0} for user {1}", type, principalID);
+                return null;
+            }
+
+            m_log.DebugFormat(
+                "[HG SUITCASE INVENTORY SERVICE]: Found folder {0} {1} for type {2} for user {3}",
+                folders[0].folderName, folders[0].folderID, type, principalID);
+
+            return ConvertToOpenSim(folders[0]);
+        }
+
+        public override List<InventoryItemBase> GetFolderItems(UUID principalID, UUID folderID)
+        {
+            // Let's do a bit of sanity checking, more than the base service does
+            // make sure the given folder exists under the suitcase tree of this user
+            if (!IsWithinSuitcaseTree(principalID, folderID))
+                return new List<InventoryItemBase>();
+
+            return base.GetFolderItems(principalID, folderID);
         }
 
         public override List<InventoryFolderBase> GetInventorySkeleton(UUID principalID)
@@ -135,6 +245,33 @@ namespace OpenSim.Services.HypergridService
             folders.Add(ConvertToOpenSim(suitcase));
 
             return folders;
+        }
+
+        public new InventoryItemBase GetItem(InventoryItemBase item)
+        {
+            InventoryItemBase it = base.GetItem(item);
+            if (it == null)
+            {
+                m_log.DebugFormat("[HG SUITCASE INVENTORY SERVICE]: Unable to retrieve item {0} ({1}) in folder {2}",
+                    item.Name, item.ID, item.Folder);
+                return null;
+            }
+
+            if (!IsWithinSuitcaseTree(it.Owner, it.Folder) && !IsPartOfAppearance(it.Owner, it.ID))
+            {
+                m_log.DebugFormat("[HG SUITCASE INVENTORY SERVICE]: Item {0} (folder {1}) is not within Suitcase",
+                    it.Name, it.Folder);
+                return null;
+            }
+
+            //    UserAccount user = m_Cache.GetUser(it.CreatorId);
+
+            //    // Adjust the creator data
+            //    if (user != null && it != null && (it.CreatorData == null || it.CreatorData == string.Empty))
+            //        it.CreatorData = m_HomeURL + ";" + user.FirstName + " " + user.LastName;
+            //}
+
+            return it;
         }
 
         public override InventoryFolderBase GetRootFolder(UUID principalID)
@@ -164,7 +301,7 @@ namespace OpenSim.Services.HypergridService
                     m_log.ErrorFormat("[HG SUITCASE INVENTORY SERVICE]: Unable to create suitcase folder");
                     return null;
                 }
-                
+
                 m_Database.StoreFolder(suitcase);
 
                 CreateSystemFolders(principalID, suitcase.folderID);
@@ -173,6 +310,52 @@ namespace OpenSim.Services.HypergridService
             SetAsNormalFolder(suitcase);
 
             return ConvertToOpenSim(suitcase);
+        }
+
+        public override bool MoveFolder(InventoryFolderBase folder)
+        {
+            if (!IsWithinSuitcaseTree(folder.Owner, folder.ID) ||
+                !IsWithinSuitcaseTree(folder.Owner, folder.ParentID))
+                return false;
+
+            return base.MoveFolder(folder);
+        }
+
+        public override bool MoveItems(UUID principalID, List<InventoryItemBase> items)
+        {
+            // Principal is b0rked. *sigh*
+
+            if (!IsWithinSuitcaseTree(items[0].Owner, items[0].Folder))
+                return false;
+
+            return base.MoveItems(principalID, items);
+        }
+
+        public override bool PurgeFolder(InventoryFolderBase folder)
+        {
+            // NOGO
+            return false;
+        }
+
+        public override bool UpdateFolder(InventoryFolderBase folder)
+        {
+            //m_log.DebugFormat("[HG SUITCASE INVENTORY SERVICE]: Update folder {0}, version {1}", folder.ID, folder.Version);
+            if (!IsWithinSuitcaseTree(folder.Owner, folder.ID))
+            {
+                m_log.DebugFormat("[HG SUITCASE INVENTORY SERVICE]: folder {0} not within Suitcase tree", folder.Name);
+                return false;
+            }
+
+            // For all others
+            return base.UpdateFolder(folder);
+        }
+
+        public override bool UpdateItem(InventoryItemBase item)
+        {
+            if (!IsWithinSuitcaseTree(item.Owner, item.Folder))
+                return false;
+
+            return base.UpdateItem(item);
         }
 
         protected void CreateSystemFolders(UUID principalID, UUID rootID)
@@ -212,196 +395,7 @@ namespace OpenSim.Services.HypergridService
                 CreateFolder(principalID, rootID, (int)AssetType.FavoriteFolder, "Favorites");
             if (!Array.Exists(sysFolders, delegate(XInventoryFolder f) { if (f.type == (int)AssetType.CurrentOutfitFolder) return true; return false; }))
                 CreateFolder(principalID, rootID, (int)AssetType.CurrentOutfitFolder, "Current Outfit");
-
         }
-
-        public override InventoryFolderBase GetFolderForType(UUID principalID, AssetType type)
-        {
-            //m_log.DebugFormat("[HG INVENTORY SERVICE]: GetFolderForType for {0} {0}", principalID, type);
-            XInventoryFolder suitcase = GetSuitcaseXFolder(principalID);
-
-            if (suitcase == null)
-            {
-                m_log.WarnFormat("[HG SUITCASE INVENTORY SERVICE]: Found no suitcase folder for user {0} when looking for child type folder {1}", principalID, type);
-                return null;
-            }
-
-            XInventoryFolder[] folders = m_Database.GetFolders(
-                    new string[] { "agentID", "type", "parentFolderID" },
-                    new string[] { principalID.ToString(), ((int)type).ToString(), suitcase.folderID.ToString() });
-
-            if (folders.Length == 0)
-            {
-                m_log.WarnFormat("[HG SUITCASE INVENTORY SERVICE]: Found no folder for type {0} for user {1}", type, principalID);
-                return null;
-            }
-
-            m_log.DebugFormat(
-                "[HG SUITCASE INVENTORY SERVICE]: Found folder {0} {1} for type {2} for user {3}",
-                folders[0].folderName, folders[0].folderID, type, principalID);
-
-            return ConvertToOpenSim(folders[0]);
-        }
-
-        public override InventoryCollection GetFolderContent(UUID principalID, UUID folderID)
-        {
-            InventoryCollection coll = null;
-
-            if (!IsWithinSuitcaseTree(principalID, folderID))
-                return new InventoryCollection();
-
-            coll = base.GetFolderContent(principalID, folderID);
-
-            if (coll == null)
-            {
-                m_log.WarnFormat("[HG SUITCASE INVENTORY SERVICE]: Something wrong with user {0}'s suitcase folder", principalID);
-                coll = new InventoryCollection();
-            }
-            return coll;
-        }
-
-        public override List<InventoryItemBase> GetFolderItems(UUID principalID, UUID folderID)
-        {
-            // Let's do a bit of sanity checking, more than the base service does
-            // make sure the given folder exists under the suitcase tree of this user
-            if (!IsWithinSuitcaseTree(principalID, folderID))
-                return new List<InventoryItemBase>();
-
-            return base.GetFolderItems(principalID, folderID);
-        }
-
-        public override bool AddFolder(InventoryFolderBase folder)
-        {
-            //m_log.WarnFormat("[HG SUITCASE INVENTORY SERVICE]: AddFolder {0} {1}", folder.Name, folder.ParentID);
-            // Let's do a bit of sanity checking, more than the base service does
-            // make sure the given folder's parent folder exists under the suitcase tree of this user
-
-            if (!IsWithinSuitcaseTree(folder.Owner, folder.ParentID))
-                return false;
-
-            // OK, it's legit
-            if (base.AddFolder(folder))
-            {
-                List<XInventoryFolder> tree;
-                if (m_SuitcaseTrees.TryGetValue(folder.Owner, out tree))
-                    tree.Add(ConvertFromOpenSim(folder));
-
-                return true;
-            }
-
-            return false;
-        }
-
-        public override bool UpdateFolder(InventoryFolderBase folder)
-        {
-            //m_log.DebugFormat("[HG SUITCASE INVENTORY SERVICE]: Update folder {0}, version {1}", folder.ID, folder.Version);
-            if (!IsWithinSuitcaseTree(folder.Owner, folder.ID))
-            {
-                m_log.DebugFormat("[HG SUITCASE INVENTORY SERVICE]: folder {0} not within Suitcase tree", folder.Name);
-                return false;
-            }
-
-            // For all others
-            return base.UpdateFolder(folder);
-        }
-
-        public override bool MoveFolder(InventoryFolderBase folder)
-        {
-            if (!IsWithinSuitcaseTree(folder.Owner, folder.ID) || 
-                !IsWithinSuitcaseTree(folder.Owner, folder.ParentID))
-                return false;
-
-            return base.MoveFolder(folder);
-        }
-
-        public override bool DeleteFolders(UUID principalID, List<UUID> folderIDs)
-        {
-            // NOGO
-            return false;
-        }
-
-        public override bool PurgeFolder(InventoryFolderBase folder)
-        {
-            // NOGO
-            return false;
-        }
-
-        public override bool AddItem(InventoryItemBase item)
-        {
-            // Let's do a bit of sanity checking, more than the base service does
-            // make sure the given folder's parent folder exists under the suitcase tree of this user
-            if (!IsWithinSuitcaseTree(item.Owner, item.Folder))
-                return false;
-
-            // OK, it's legit
-            return base.AddItem(item);
-
-        }
-
-        public override bool UpdateItem(InventoryItemBase item)
-        {
-            if (!IsWithinSuitcaseTree(item.Owner, item.Folder))
-                return false;
-
-            return base.UpdateItem(item);
-        }
-
-        public override bool MoveItems(UUID principalID, List<InventoryItemBase> items)
-        {
-            // Principal is b0rked. *sigh*
-
-            if (!IsWithinSuitcaseTree(items[0].Owner, items[0].Folder))
-                return false;
-
-            return base.MoveItems(principalID, items);
-
-        }
-
-        public override bool DeleteItems(UUID principalID, List<UUID> itemIDs)
-        {
-            return false;
-        }
-
-        public new InventoryItemBase GetItem(InventoryItemBase item)
-        {
-            InventoryItemBase it = base.GetItem(item);
-            if (it == null)
-            {
-                m_log.DebugFormat("[HG SUITCASE INVENTORY SERVICE]: Unable to retrieve item {0} ({1}) in folder {2}",
-                    item.Name, item.ID, item.Folder);
-                return null;
-            }
-
-            if (!IsWithinSuitcaseTree(it.Owner, it.Folder) && !IsPartOfAppearance(it.Owner, it.ID))
-            {
-                m_log.DebugFormat("[HG SUITCASE INVENTORY SERVICE]: Item {0} (folder {1}) is not within Suitcase",
-                    it.Name, it.Folder);
-                return null;
-            }
-
-            //    UserAccount user = m_Cache.GetUser(it.CreatorId);
-
-            //    // Adjust the creator data
-            //    if (user != null && it != null && (it.CreatorData == null || it.CreatorData == string.Empty))
-            //        it.CreatorData = m_HomeURL + ";" + user.FirstName + " " + user.LastName;
-            //}
-
-            return it;
-        }
-
-        public new InventoryFolderBase GetFolder(InventoryFolderBase folder)
-        {
-            InventoryFolderBase f = base.GetFolder(folder);
-
-            if (f != null)
-            {
-                if (!IsWithinSuitcaseTree(f.Owner, f.ID))
-                    return null;
-            }
-
-            return f;
-        }
-
         //public List<InventoryItemBase> GetActiveGestures(UUID principalID)
         //{
         //}
@@ -411,16 +405,53 @@ namespace OpenSim.Services.HypergridService
         //}
 
         #region Auxiliary functions
-        private XInventoryFolder GetXFolder(UUID userID, UUID folderID)
+
+        private XInventoryFolder GetCurrentOutfitXFolder(UUID userID)
         {
+            XInventoryFolder root = GetRootXFolder(userID);
+            if (root == null)
+                return null;
+
             XInventoryFolder[] folders = m_Database.GetFolders(
-                    new string[] { "agentID", "folderID" },
-                    new string[] { userID.ToString(), folderID.ToString() });
+                    new string[] { "agentID", "type", "parentFolderID" },
+                    new string[] { userID.ToString(), ((int)AssetType.CurrentOutfitFolder).ToString(), root.folderID.ToString() });
 
             if (folders.Length == 0)
                 return null;
 
             return folders[0];
+        }
+
+        private List<XInventoryFolder> GetFolderTree(UUID principalID, UUID folder)
+        {
+            List<XInventoryFolder> t = null;
+            if (m_SuitcaseTrees.TryGetValue(principalID, out t))
+                return t;
+
+            // Get the tree of the suitcase folder
+            t = GetFolderTreeRecursive(folder);
+            m_SuitcaseTrees.AddOrUpdate(principalID, t, 5 * 60); // 5minutes
+            return t;
+        }
+
+        private List<XInventoryFolder> GetFolderTreeRecursive(UUID root)
+        {
+            List<XInventoryFolder> tree = new List<XInventoryFolder>();
+            XInventoryFolder[] folders = m_Database.GetFolders(
+                    new string[] { "parentFolderID" },
+                    new string[] { root.ToString() });
+
+            if (folders == null || (folders != null && folders.Length == 0))
+                return tree; // empty tree
+            else
+            {
+                foreach (XInventoryFolder f in folders)
+                {
+                    tree.Add(f);
+                    tree.AddRange(GetFolderTreeRecursive(f.folderID));
+                }
+                return tree;
+            }
         }
 
         private XInventoryFolder GetRootXFolder(UUID principalID)
@@ -443,22 +474,6 @@ namespace OpenSim.Services.HypergridService
             return null;
         }
 
-        private XInventoryFolder GetCurrentOutfitXFolder(UUID userID)
-        {
-            XInventoryFolder root = GetRootXFolder(userID);
-            if (root == null)
-                return null;
-
-            XInventoryFolder[] folders = m_Database.GetFolders(
-                    new string[] { "agentID", "type", "parentFolderID" },
-                    new string[] { userID.ToString(), ((int)AssetType.CurrentOutfitFolder).ToString(), root.folderID.ToString() });
-
-            if (folders.Length == 0)
-                return null;
-
-            return folders[0];
-        }
-
         private XInventoryFolder GetSuitcaseXFolder(UUID principalID)
         {
             // Warp! Root folder for travelers
@@ -468,7 +483,7 @@ namespace OpenSim.Services.HypergridService
 
             if (folders != null && folders.Length > 0)
                 return folders[0];
-            
+
             // check to see if we have the old Suitcase folder
             folders = m_Database.GetFolders(
                     new string[] { "agentID", "folderName", "parentFolderID" },
@@ -486,44 +501,17 @@ namespace OpenSim.Services.HypergridService
             return null;
         }
 
-        private void SetAsNormalFolder(XInventoryFolder suitcase)
+        private XInventoryFolder GetXFolder(UUID userID, UUID folderID)
         {
-            suitcase.type = (short)AssetType.Folder;
-        }
-
-        private List<XInventoryFolder> GetFolderTree(UUID principalID, UUID folder)
-        {
-            List<XInventoryFolder> t = null;
-            if (m_SuitcaseTrees.TryGetValue(principalID, out t))
-                return t;
-
-            // Get the tree of the suitcase folder
-            t = GetFolderTreeRecursive(folder);
-            m_SuitcaseTrees.AddOrUpdate(principalID, t, 5*60); // 5minutes
-            return t;
-        }
-
-        private List<XInventoryFolder> GetFolderTreeRecursive(UUID root)
-        {
-            List<XInventoryFolder> tree = new List<XInventoryFolder>();
             XInventoryFolder[] folders = m_Database.GetFolders(
-                    new string[] { "parentFolderID" },
-                    new string[] { root.ToString() });
+                    new string[] { "agentID", "folderID" },
+                    new string[] { userID.ToString(), folderID.ToString() });
 
-            if (folders == null || (folders != null && folders.Length == 0))
-                return tree; // empty tree
-            else
-            {
-                foreach (XInventoryFolder f in folders)
-                {
-                    tree.Add(f);
-                    tree.AddRange(GetFolderTreeRecursive(f.folderID));
-                }
-                return tree;
-            }
+            if (folders.Length == 0)
+                return null;
 
+            return folders[0];
         }
-
         /// <summary>
         /// Return true if the folderID is a subfolder of the Suitcase or the suitcase folder  itself
         /// </summary>
@@ -556,7 +544,12 @@ namespace OpenSim.Services.HypergridService
             if (f == null) return false;
             else return true;
         }
-        #endregion
+
+        private void SetAsNormalFolder(XInventoryFolder suitcase)
+        {
+            suitcase.type = (short)AssetType.Folder;
+        }
+        #endregion Auxiliary functions
 
         #region Avatar Appearance
 
@@ -585,7 +578,7 @@ namespace OpenSim.Services.HypergridService
                 {
                     if (a.Wearables[i][j].ItemID == itemID)
                     {
-                        //m_log.DebugFormat("[HG SUITCASE INVENTORY SERVICE]: item {0} is a wearable", itemID); 
+                        //m_log.DebugFormat("[HG SUITCASE INVENTORY SERVICE]: item {0} is a wearable", itemID);
                         return true;
                     }
                 }
@@ -594,15 +587,13 @@ namespace OpenSim.Services.HypergridService
             // Check attachments
             if (a.GetAttachmentForItem(itemID) != null)
             {
-                //m_log.DebugFormat("[HG SUITCASE INVENTORY SERVICE]: item {0} is an attachment", itemID); 
+                //m_log.DebugFormat("[HG SUITCASE INVENTORY SERVICE]: item {0} is an attachment", itemID);
                 return true;
             }
 
             return false;
         }
 
-        #endregion
-
+        #endregion Avatar Appearance
     }
-
 }

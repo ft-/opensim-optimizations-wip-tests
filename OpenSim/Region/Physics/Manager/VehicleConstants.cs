@@ -37,7 +37,7 @@ namespace OpenSim.Region.Physics.Manager
         TYPE_NONE = 0,
 
         /// <summary>
-        /// No Angular motor, High Left right friction, No Hover, Linear Deflection 1, no angular deflection 
+        /// No Angular motor, High Left right friction, No Hover, Linear Deflection 1, no angular deflection
         /// no vertical attractor, No banking, Identity rotation frame
         /// </summary>
         TYPE_SLED = 1,
@@ -49,14 +49,17 @@ namespace OpenSim.Region.Physics.Manager
         /// Vertical Attractor locked UP
         /// </summary>
         TYPE_CAR = 2,
+
         TYPE_BOAT = 3,
         TYPE_AIRPLANE = 4,
         TYPE_BALLOON = 5,
         LINEAR_FRICTION_TIMESCALE = 16,
+
         /// <summary>
         /// vector of timescales for exponential decay of angular velocity about three axis
         /// </summary>
         ANGULAR_FRICTION_TIMESCALE = 17,
+
         /// <summary>
         /// linear velocity vehicle will try for
         /// </summary>
@@ -66,10 +69,12 @@ namespace OpenSim.Region.Physics.Manager
         /// Offset from center of mass where linear motor forces are added
         /// </summary>
         LINEAR_MOTOR_OFFSET = 20,
+
         /// <summary>
         /// angular velocity that vehicle will try for
         /// </summary>
         ANGULAR_MOTOR_DIRECTION = 19,
+
         HOVER_HEIGHT = 24,
         HOVER_EFFICIENCY = 25,
         HOVER_TIMESCALE = 26,
@@ -83,6 +88,7 @@ namespace OpenSim.Region.Physics.Manager
         /// slide between 0 and 1
         /// </summary>
         ANGULAR_DEFLECTION_EFFICIENCY = 32,
+
         ANGULAR_DEFLECTION_TIMESCALE = 33,
         ANGULAR_MOTOR_TIMESCALE = 34,
         ANGULAR_MOTOR_DECAY_TIMESCALE = 35,
@@ -94,7 +100,6 @@ namespace OpenSim.Region.Physics.Manager
         REFERENCE_FRAME = 44,
         BLOCK_EXIT = 45,
         ROLL_FRAME = 46
-
     }
 
     [Flags]
@@ -117,5 +122,4 @@ namespace OpenSim.Region.Physics.Manager
         NO_DEFLECTION = 16392,
         LOCK_ROTATION = 32784
     }
-        
 }

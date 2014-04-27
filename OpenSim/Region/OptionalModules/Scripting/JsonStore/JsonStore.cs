@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Contributors 
+ * Copyright (c) Contributors
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,71 +24,117 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-using Mono.Addins;
 
-using System;
-using System.Reflection;
-using System.Threading;
-using System.Text;
-using System.Net;
-using System.Net.Sockets;
 using log4net;
-using Nini.Config;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
-using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
 {
-    public class JsonStore
+    // -----------------------------------------------------------------
+    /// <summary>
+    /// </summary>
+    // -----------------------------------------------------------------
+    public class JsonObjectStore : JsonStore
     {
         private static readonly ILog m_log =
             LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        protected virtual OSD ValueStore { get; set; }
-
-        protected class TakeValueCallbackClass
+        private UUID m_objectID;
+        private Scene m_scene;
+        public JsonObjectStore(Scene scene, UUID oid)
+            : base()
         {
-            public string Path { get; set; }
-            public bool UseJson { get; set; }
-            public TakeValueCallback Callback { get; set; }
+            m_scene = scene;
+            m_objectID = oid;
 
-            public TakeValueCallbackClass(string spath, bool usejson, TakeValueCallback cback)
-            {
-                Path = spath;
-                UseJson = usejson;
-                Callback = cback;
-            }
+            // the size limit is imposed on whatever is already in the store
+            StringSpace = ComputeSizeOf(ValueStore);
         }
 
-        protected List<TakeValueCallbackClass> m_TakeStore;
-        protected List<TakeValueCallbackClass> m_ReadStore;
-        
+        protected override OSD ValueStore
+        {
+            get
+            {
+                SceneObjectPart sop = m_scene.GetSceneObjectPart(m_objectID);
+                if (sop == null)
+                {
+                    // This is bad
+                    return null;
+                }
+
+                return sop.DynAttrs.TopLevelMap;
+            }
+
+            // cannot set the top level
+            set
+            {
+                m_log.InfoFormat("[JsonStore] cannot set top level value in object store");
+            }
+        }
+    }
+
+    public class JsonStore
+    {
+        protected static Regex m_ArrayPattern = new Regex("^\\[([0-9]+|\\+)\\]$");
+
+        // extract the internals of a has reference
+        protected static Regex m_HashPattern = new Regex("^{([^}]+)}$");
+
+        // remove extra separator characters
+        protected static Regex m_ParsePassFour = new Regex("\\.+");
+
         // add separators for quoted paths and array references
         protected static Regex m_ParsePassOne = new Regex("({[^}]+}|\\[[0-9]+\\]|\\[\\+\\])");
 
         // add quotes to bare identifiers which are limited to alphabetic characters
         protected static Regex m_ParsePassThree = new Regex("(?<!{[^}]*)\\.([a-zA-Z]+)(?=\\.)");
 
-        // remove extra separator characters
-        protected static Regex m_ParsePassFour = new Regex("\\.+");
-
-        // expression used to validate the full path, this is canonical representation
-        protected static Regex m_ValidatePath = new Regex("^\\.(({[^}]+}|\\[[0-9]+\\]|\\[\\+\\])\\.)*$");
-
         // expression used to match path components
         protected static Regex m_PathComponent = new Regex("\\.({[^}]+}|\\[[0-9]+\\]|\\[\\+\\])");
 
         // extract the internals of an array reference
         protected static Regex m_SimpleArrayPattern = new Regex("^\\[([0-9]+)\\]$");
-        protected static Regex m_ArrayPattern = new Regex("^\\[([0-9]+|\\+)\\]$");
 
-        // extract the internals of a has reference
-        protected static Regex m_HashPattern = new Regex("^{([^}]+)}$");
+        // expression used to validate the full path, this is canonical representation
+        protected static Regex m_ValidatePath = new Regex("^\\.(({[^}]+}|\\[[0-9]+\\]|\\[\\+\\])\\.)*$");
+
+        protected List<TakeValueCallbackClass> m_ReadStore;
+
+        protected List<TakeValueCallbackClass> m_TakeStore;
+
+        private static readonly ILog m_log =
+            LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        // -----------------------------------------------------------------
+        /// <summary>
+        ///
+        /// </summary>
+        // -----------------------------------------------------------------
+        public JsonStore()
+        {
+            StringSpace = 0;
+            m_TakeStore = new List<TakeValueCallbackClass>();
+            m_ReadStore = new List<TakeValueCallbackClass>();
+        }
+
+        public JsonStore(string value)
+            : this()
+        {
+            // This is going to throw an exception if the value is not
+            // a valid JSON chunk. Calling routines should catch the
+            // exception and handle it appropriately
+            if (String.IsNullOrEmpty(value))
+                ValueStore = new OSDMap();
+            else
+                ValueStore = OSDParser.DeserializeJson(value);
+        }
 
         // -----------------------------------------------------------------
         /// <summary>
@@ -98,16 +144,18 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
         /// </summary>
         // -----------------------------------------------------------------
         public int StringSpace { get; set; }
-        
+
+        protected virtual OSD ValueStore { get; set; }
+
         // -----------------------------------------------------------------
         /// <summary>
-        /// 
+        ///
         /// </summary>
         // -----------------------------------------------------------------
         public static bool CanonicalPathExpression(string ipath, out string opath)
         {
             Stack<string> path;
-            if (! ParsePathExpression(ipath,out path))
+            if (!ParsePathExpression(ipath, out path))
             {
                 opath = "";
                 return false;
@@ -116,80 +164,96 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
             opath = PathExpressionToKey(path);
             return true;
         }
-        
+
         // -----------------------------------------------------------------
         /// <summary>
-        /// 
+        ///
         /// </summary>
         // -----------------------------------------------------------------
-        public JsonStore() 
+        public int ArrayLength(string expr)
         {
-            StringSpace = 0;
-            m_TakeStore = new List<TakeValueCallbackClass>();
-            m_ReadStore = new List<TakeValueCallbackClass>();
+            Stack<string> path;
+            if (!ParsePathExpression(expr, out path))
+                return -1;
+
+            OSD result = ProcessPathExpression(ValueStore, path);
+            if (result != null && result.Type == OSDType.Array)
+            {
+                OSDArray arr = result as OSDArray;
+                return arr.Count;
+            }
+
+            return -1;
         }
 
-        public JsonStore(string value) : this()
-        {
-            // This is going to throw an exception if the value is not
-            // a valid JSON chunk. Calling routines should catch the 
-            // exception and handle it appropriately
-            if (String.IsNullOrEmpty(value))
-                ValueStore = new OSDMap();
-            else
-                ValueStore = OSDParser.DeserializeJson(value);
-        }
-        
         // -----------------------------------------------------------------
         /// <summary>
-        /// 
+        ///
         /// </summary>
         // -----------------------------------------------------------------
         public JsonStoreNodeType GetNodeType(string expr)
         {
             Stack<string> path;
-            if (! ParsePathExpression(expr,out path))
+            if (!ParsePathExpression(expr, out path))
                 return JsonStoreNodeType.Undefined;
-            
-            OSD result = ProcessPathExpression(ValueStore,path);
+
+            OSD result = ProcessPathExpression(ValueStore, path);
 
             if (result == null)
                 return JsonStoreNodeType.Undefined;
-            
+
             if (result is OSDMap)
                 return JsonStoreNodeType.Object;
-            
+
             if (result is OSDArray)
                 return JsonStoreNodeType.Array;
-            
+
             if (OSDBaseType(result.Type))
                 return JsonStoreNodeType.Value;
-            
+
             return JsonStoreNodeType.Undefined;
         }
-        
+
         // -----------------------------------------------------------------
         /// <summary>
-        /// 
+        ///
+        /// </summary>
+        // -----------------------------------------------------------------
+        public bool GetValue(string expr, out string value, bool useJson)
+        {
+            Stack<string> path;
+            if (!ParsePathExpression(expr, out path))
+            {
+                value = "";
+                return false;
+            }
+
+            OSD result = ProcessPathExpression(ValueStore, path);
+            return ConvertOutputValue(result, out value, useJson);
+        }
+
+        // -----------------------------------------------------------------
+        /// <summary>
+        ///
         /// </summary>
         // -----------------------------------------------------------------
         public JsonStoreValueType GetValueType(string expr)
         {
             Stack<string> path;
-            if (! ParsePathExpression(expr,out path))
+            if (!ParsePathExpression(expr, out path))
                 return JsonStoreValueType.Undefined;
-            
-            OSD result = ProcessPathExpression(ValueStore,path);
+
+            OSD result = ProcessPathExpression(ValueStore, path);
 
             if (result == null)
                 return JsonStoreValueType.Undefined;
-            
+
             if (result is OSDMap)
                 return JsonStoreValueType.Undefined;
-            
+
             if (result is OSDArray)
                 return JsonStoreValueType.Undefined;
-            
+
             if (result is OSDBoolean)
                 return JsonStoreValueType.Boolean;
 
@@ -204,60 +268,53 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
 
             return JsonStoreValueType.Undefined;
         }
-        
-        // -----------------------------------------------------------------
-        /// <summary>
-        /// 
-        /// </summary>
-        // -----------------------------------------------------------------
-        public int ArrayLength(string expr)
-        {
-            Stack<string> path;
-            if (! ParsePathExpression(expr,out path))
-                return -1;
-
-            OSD result = ProcessPathExpression(ValueStore,path);
-            if (result != null && result.Type == OSDType.Array)
-            {
-                OSDArray arr = result as OSDArray;
-                return arr.Count;
-            }
-
-            return -1;
-        }
 
         // -----------------------------------------------------------------
         /// <summary>
-        /// 
+        ///
         /// </summary>
         // -----------------------------------------------------------------
-        public bool GetValue(string expr, out string value, bool useJson)
+        public bool ReadValue(string expr, bool useJson, TakeValueCallback cback)
         {
             Stack<string> path;
-            if (! ParsePathExpression(expr,out path))
+            if (!ParsePathExpression(expr, out path))
+                return false;
+
+            string pexpr = PathExpressionToKey(path);
+
+            OSD result = ProcessPathExpression(ValueStore, path);
+            if (result == null)
             {
-                value = "";
+                m_ReadStore.Add(new TakeValueCallbackClass(pexpr, useJson, cback));
                 return false;
             }
 
-            OSD result = ProcessPathExpression(ValueStore,path);
-            return ConvertOutputValue(result,out value,useJson); 
+            string value = String.Empty;
+            if (!ConvertOutputValue(result, out value, useJson))
+            {
+                // the structure does not match the request so i guess we'll wait
+                m_ReadStore.Add(new TakeValueCallbackClass(pexpr, useJson, cback));
+                return false;
+            }
+
+            cback(value);
+
+            return true;
         }
-     
-                
+
         // -----------------------------------------------------------------
         /// <summary>
-        /// 
+        ///
         /// </summary>
         // -----------------------------------------------------------------
         public bool RemoveValue(string expr)
         {
-            return SetValueFromExpression(expr,null);
+            return SetValueFromExpression(expr, null);
         }
-       
+
         // -----------------------------------------------------------------
         /// <summary>
-        /// 
+        ///
         /// </summary>
         // -----------------------------------------------------------------
         public bool SetValue(string expr, string value, bool useJson)
@@ -272,7 +329,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
             {
                 // There doesn't appear to be a good way to determine if the
                 // value is valid Json other than to let the parser crash
-                try 
+                try
                 {
                     ovalue = OSDParser.DeserializeJson(value);
                 }
@@ -280,7 +337,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
                 {
                     if (value.StartsWith("'") && value.EndsWith("'"))
                     {
-                        ovalue = new OSDString(value.Substring(1,value.Length - 2));
+                        ovalue = new OSDString(value.Substring(1, value.Length - 2));
                     }
                     else
                     {
@@ -292,39 +349,39 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
             {
                 ovalue = new OSDString(value);
             }
-            
-            return SetValueFromExpression(expr,ovalue);
+
+            return SetValueFromExpression(expr, ovalue);
         }
-        
+
         // -----------------------------------------------------------------
         /// <summary>
-        /// 
+        ///
         /// </summary>
         // -----------------------------------------------------------------
         public bool TakeValue(string expr, bool useJson, TakeValueCallback cback)
         {
             Stack<string> path;
-            if (! ParsePathExpression(expr,out path))
+            if (!ParsePathExpression(expr, out path))
                 return false;
 
             string pexpr = PathExpressionToKey(path);
 
-            OSD result = ProcessPathExpression(ValueStore,path);
+            OSD result = ProcessPathExpression(ValueStore, path);
             if (result == null)
             {
-                m_TakeStore.Add(new TakeValueCallbackClass(pexpr,useJson,cback));
-                return false;
-            }
-            
-            string value = String.Empty;
-            if (! ConvertOutputValue(result,out value,useJson))
-            {
-                // the structure does not match the request so i guess we'll wait
-                m_TakeStore.Add(new TakeValueCallbackClass(pexpr,useJson,cback));
+                m_TakeStore.Add(new TakeValueCallbackClass(pexpr, useJson, cback));
                 return false;
             }
 
-            SetValueFromExpression(expr,null);
+            string value = String.Empty;
+            if (!ConvertOutputValue(result, out value, useJson))
+            {
+                // the structure does not match the request so i guess we'll wait
+                m_TakeStore.Add(new TakeValueCallbackClass(pexpr, useJson, cback));
+                return false;
+            }
+
+            SetValueFromExpression(expr, null);
             cback(value);
 
             return true;
@@ -332,46 +389,250 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
 
         // -----------------------------------------------------------------
         /// <summary>
-        /// 
+        ///
         /// </summary>
         // -----------------------------------------------------------------
-        public bool ReadValue(string expr, bool useJson, TakeValueCallback cback)
+        protected static int ComputeSizeOf(OSD value)
         {
-            Stack<string> path;
-            if (! ParsePathExpression(expr,out path))
-                return false;
+            string sval;
 
-            string pexpr = PathExpressionToKey(path);
+            if (ConvertOutputValue(value, out sval, true))
+                return sval.Length;
 
-            OSD result = ProcessPathExpression(ValueStore,path);
-            if (result == null)
-            {
-                m_ReadStore.Add(new TakeValueCallbackClass(pexpr,useJson,cback));
-                return false;
-            }
-            
-            string value = String.Empty;
-            if (! ConvertOutputValue(result,out value,useJson))
-            {
-                // the structure does not match the request so i guess we'll wait
-                m_ReadStore.Add(new TakeValueCallbackClass(pexpr,useJson,cback));
-                return false;
-            }
-
-            cback(value);
-
-            return true;
+            return 0;
         }
-     
+
         // -----------------------------------------------------------------
         /// <summary>
-        /// 
+        ///
+        /// </summary>
+        // -----------------------------------------------------------------
+        protected static bool ConvertOutputValue(OSD result, out string value, bool useJson)
+        {
+            value = String.Empty;
+
+            // If we couldn't process the path
+            if (result == null)
+                return false;
+
+            if (useJson)
+            {
+                // The path pointed to an intermediate hash structure
+                if (result.Type == OSDType.Map)
+                {
+                    value = OSDParser.SerializeJsonString(result as OSDMap, true);
+                    return true;
+                }
+
+                // The path pointed to an intermediate hash structure
+                if (result.Type == OSDType.Array)
+                {
+                    value = OSDParser.SerializeJsonString(result as OSDArray, true);
+                    return true;
+                }
+
+                value = "'" + result.AsString() + "'";
+                return true;
+            }
+
+            if (OSDBaseType(result.Type))
+            {
+                value = result.AsString();
+                return true;
+            }
+
+            return false;
+        }
+
+        // -----------------------------------------------------------------
+        /// <summary>
+        ///
+        /// </summary>
+        // -----------------------------------------------------------------
+        protected static bool OSDBaseType(OSDType type)
+        {
+            // Should be the list of base types for which AsString() returns
+            // something useful
+            if (type == OSDType.Boolean)
+                return true;
+            if (type == OSDType.Integer)
+                return true;
+            if (type == OSDType.Real)
+                return true;
+            if (type == OSDType.String)
+                return true;
+            if (type == OSDType.UUID)
+                return true;
+            if (type == OSDType.Date)
+                return true;
+            if (type == OSDType.URI)
+                return true;
+
+            return false;
+        }
+
+        // -----------------------------------------------------------------
+        /// <summary>
+        /// Parse the path expression and put the components into a stack. We
+        /// use a stack because we process the path in inverse order later
+        /// </summary>
+        // -----------------------------------------------------------------
+        protected static bool ParsePathExpression(string expr, out Stack<string> path)
+        {
+            path = new Stack<string>();
+
+            // add front and rear separators
+            expr = "." + expr + ".";
+
+            // add separators for quoted exprs and array references
+            expr = m_ParsePassOne.Replace(expr, ".$1.", -1, 0);
+
+            // add quotes to bare identifier
+            expr = m_ParsePassThree.Replace(expr, ".{$1}", -1, 0);
+
+            // remove extra separators
+            expr = m_ParsePassFour.Replace(expr, ".", -1, 0);
+
+            // validate the results (catches extra quote characters for example)
+            if (m_ValidatePath.IsMatch(expr))
+            {
+                MatchCollection matches = m_PathComponent.Matches(expr, 0);
+                foreach (Match match in matches)
+                    path.Push(match.Groups[1].Value);
+
+                return true;
+            }
+
+            return false;
+        }
+
+        // -----------------------------------------------------------------
+        /// <summary>
+        ///
+        /// </summary>
+        // -----------------------------------------------------------------
+        protected static string PathExpressionToKey(Stack<string> path)
+        {
+            if (path.Count == 0)
+                return "";
+
+            string pkey = "";
+            foreach (string k in path)
+                pkey = (pkey == "") ? k : (k + "." + pkey);
+
+            return pkey;
+        }
+
+        // -----------------------------------------------------------------
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param>path is a stack where the top level of the path is at the bottom of the stack</param>
+        // -----------------------------------------------------------------
+        protected static OSD ProcessPathExpression(OSD map, Stack<string> path)
+        {
+            if (path.Count == 0)
+                return map;
+
+            string pkey = path.Pop();
+
+            OSD rmap = ProcessPathExpression(map, path);
+            if (rmap == null)
+                return null;
+
+            // ---------- Check for an array index ----------
+            MatchCollection amatches = m_SimpleArrayPattern.Matches(pkey, 0);
+
+            if (amatches.Count > 0)
+            {
+                if (rmap.Type != OSDType.Array)
+                {
+                    m_log.WarnFormat("[JsonStore] wrong type for key {2}, expecting {0}, got {1}", OSDType.Array, rmap.Type, pkey);
+                    return null;
+                }
+
+                OSDArray amap = rmap as OSDArray;
+
+                Match match = amatches[0];
+                GroupCollection groups = match.Groups;
+                string akey = groups[1].Value;
+                int aval = Convert.ToInt32(akey);
+
+                if (aval < amap.Count)
+                    return (OSD)amap[aval];
+
+                return null;
+            }
+
+            // ---------- Check for a hash index ----------
+            MatchCollection hmatches = m_HashPattern.Matches(pkey, 0);
+
+            if (hmatches.Count > 0)
+            {
+                if (rmap.Type != OSDType.Map)
+                {
+                    m_log.WarnFormat("[JsonStore] wrong type for key {2}, expecting {0}, got {1}", OSDType.Map, rmap.Type, pkey);
+                    return null;
+                }
+
+                OSDMap hmap = rmap as OSDMap;
+
+                Match match = hmatches[0];
+                GroupCollection groups = match.Groups;
+                string hkey = groups[1].Value;
+
+                if (hmap.ContainsKey(hkey))
+                    return (OSD)hmap[hkey];
+
+                return null;
+            }
+
+            // Shouldn't get here if the path was checked correctly
+            m_log.WarnFormat("[JsonStore] Path type (unknown) does not match the structure");
+            return null;
+        }
+
+        // -----------------------------------------------------------------
+        /// <summary>
+        ///
+        /// </summary>
+        // -----------------------------------------------------------------
+        protected bool InvokeNextCallback(string pexpr)
+        {
+            // Process all of the reads that match the expression first
+            List<TakeValueCallbackClass> reads =
+                m_ReadStore.FindAll(delegate(TakeValueCallbackClass tb) { return pexpr.StartsWith(tb.Path); });
+
+            foreach (TakeValueCallbackClass readcb in reads)
+            {
+                m_ReadStore.Remove(readcb);
+                ReadValue(readcb.Path, readcb.UseJson, readcb.Callback);
+            }
+
+            // Process one take next
+            TakeValueCallbackClass takecb =
+                m_TakeStore.Find(delegate(TakeValueCallbackClass tb) { return pexpr.StartsWith(tb.Path); });
+
+            if (takecb != null)
+            {
+                m_TakeStore.Remove(takecb);
+                TakeValue(takecb.Path, takecb.UseJson, takecb.Callback);
+
+                return true;
+            }
+
+            return false;
+        }
+
+        // -----------------------------------------------------------------
+        /// <summary>
+        ///
         /// </summary>
         // -----------------------------------------------------------------
         protected bool SetValueFromExpression(string expr, OSD ovalue)
         {
             Stack<string> path;
-            if (! ParsePathExpression(expr,out path))
+            if (!ParsePathExpression(expr, out path))
                 return false;
 
             if (path.Count == 0)
@@ -388,12 +649,12 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
             if (pexpr != "")
                 pexpr += ".";
 
-            OSD result = ProcessPathExpression(ValueStore,path);
+            OSD result = ProcessPathExpression(ValueStore, path);
             if (result == null)
                 return false;
 
             // Check pkey, the last element in the path, for and extract array references
-            MatchCollection amatches = m_ArrayPattern.Matches(pkey,0);
+            MatchCollection amatches = m_ArrayPattern.Matches(pkey, 0);
             if (amatches.Count > 0)
             {
                 if (result.Type != OSDType.Array)
@@ -407,7 +668,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
 
                 if (akey == "+")
                 {
-                    string npkey = String.Format("[{0}]",amap.Count);
+                    string npkey = String.Format("[{0}]", amap.Count);
 
                     if (ovalue != null)
                     {
@@ -441,13 +702,13 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
             }
 
             // Check for and extract hash references
-            MatchCollection hmatches = m_HashPattern.Matches(pkey,0);
+            MatchCollection hmatches = m_HashPattern.Matches(pkey, 0);
             if (hmatches.Count > 0)
             {
                 Match match = hmatches[0];
                 GroupCollection groups = match.Groups;
                 string hkey = groups[1].Value;
-                
+
                 if (result is OSDMap)
                 {
                     // this is the assignment case
@@ -456,7 +717,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
                     {
                         StringSpace -= ComputeSizeOf(hmap[hkey]);
                         StringSpace += ComputeSizeOf(ovalue);
-                        
+
                         hmap[hkey] = ovalue;
                         InvokeNextCallback(pexpr + pkey);
                         return true;
@@ -481,285 +742,20 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
             return false;
         }
 
-        // -----------------------------------------------------------------
-        /// <summary>
-        /// 
-        /// </summary>
-        // -----------------------------------------------------------------
-        protected bool InvokeNextCallback(string pexpr)
+        protected class TakeValueCallbackClass
         {
-            // Process all of the reads that match the expression first
-            List<TakeValueCallbackClass> reads = 
-                m_ReadStore.FindAll(delegate(TakeValueCallbackClass tb) { return pexpr.StartsWith(tb.Path); });
-
-            foreach (TakeValueCallbackClass readcb in reads)
+            public TakeValueCallbackClass(string spath, bool usejson, TakeValueCallback cback)
             {
-                m_ReadStore.Remove(readcb);
-                ReadValue(readcb.Path,readcb.UseJson,readcb.Callback);
+                Path = spath;
+                UseJson = usejson;
+                Callback = cback;
             }
 
-            // Process one take next
-            TakeValueCallbackClass takecb =
-                m_TakeStore.Find(delegate(TakeValueCallbackClass tb) { return pexpr.StartsWith(tb.Path); });
-                                                               
-            if (takecb != null)
-            {
-                m_TakeStore.Remove(takecb);
-                TakeValue(takecb.Path,takecb.UseJson,takecb.Callback);
+            public TakeValueCallback Callback { get; set; }
 
-                return true;
-            }
+            public string Path { get; set; }
 
-            return false;
-        }
-
-        // -----------------------------------------------------------------
-        /// <summary>
-        /// Parse the path expression and put the components into a stack. We
-        /// use a stack because we process the path in inverse order later
-        /// </summary>
-        // -----------------------------------------------------------------
-        protected static bool ParsePathExpression(string expr, out Stack<string> path)
-        {
-            path = new Stack<string>();
-
-            // add front and rear separators
-            expr = "." + expr + ".";
-            
-            // add separators for quoted exprs and array references
-            expr = m_ParsePassOne.Replace(expr,".$1.",-1,0);
-                
-            // add quotes to bare identifier
-            expr = m_ParsePassThree.Replace(expr,".{$1}",-1,0);
-                
-            // remove extra separators
-            expr = m_ParsePassFour.Replace(expr,".",-1,0);
-
-            // validate the results (catches extra quote characters for example)
-            if (m_ValidatePath.IsMatch(expr))
-            {
-                MatchCollection matches = m_PathComponent.Matches(expr,0);
-                foreach (Match match in matches)
-                    path.Push(match.Groups[1].Value);
-
-                return true;
-            }
-
-            return false;
-        }
-
-        // -----------------------------------------------------------------
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param>path is a stack where the top level of the path is at the bottom of the stack</param>
-        // -----------------------------------------------------------------
-        protected static OSD ProcessPathExpression(OSD map, Stack<string> path)
-        {
-            if (path.Count == 0)
-                return map;
-            
-            string pkey = path.Pop();
-
-            OSD rmap = ProcessPathExpression(map,path);
-            if (rmap == null)
-                return null;
-            
-            // ---------- Check for an array index ----------
-            MatchCollection amatches = m_SimpleArrayPattern.Matches(pkey,0);
-
-            if (amatches.Count > 0)
-            {
-                if (rmap.Type != OSDType.Array)
-                {
-                    m_log.WarnFormat("[JsonStore] wrong type for key {2}, expecting {0}, got {1}",OSDType.Array,rmap.Type,pkey);
-                    return null;
-                }
-
-                OSDArray amap = rmap as OSDArray;
-
-                Match match = amatches[0];
-                GroupCollection groups = match.Groups;
-                string akey = groups[1].Value;
-                int aval = Convert.ToInt32(akey);
-                
-                if (aval < amap.Count)
-                    return (OSD) amap[aval];
-
-                return null;
-            }
-
-            // ---------- Check for a hash index ----------
-            MatchCollection hmatches = m_HashPattern.Matches(pkey,0);
-
-            if (hmatches.Count > 0)
-            {
-                if (rmap.Type != OSDType.Map)
-                {
-                    m_log.WarnFormat("[JsonStore] wrong type for key {2}, expecting {0}, got {1}",OSDType.Map,rmap.Type,pkey);
-                    return null;
-                }
-                
-                OSDMap hmap = rmap as OSDMap;
-
-                Match match = hmatches[0];
-                GroupCollection groups = match.Groups;
-                string hkey = groups[1].Value;
-                
-                if (hmap.ContainsKey(hkey))
-                    return (OSD) hmap[hkey];
-
-                return null;
-            }
-
-            // Shouldn't get here if the path was checked correctly
-            m_log.WarnFormat("[JsonStore] Path type (unknown) does not match the structure");
-            return null;
-        }
-
-        // -----------------------------------------------------------------
-        /// <summary>
-        /// 
-        /// </summary>
-        // -----------------------------------------------------------------
-        protected static bool ConvertOutputValue(OSD result, out string value, bool useJson)
-        {
-            value = String.Empty;
-            
-            // If we couldn't process the path
-            if (result == null)
-                return false;
-
-            if (useJson)
-            {
-                // The path pointed to an intermediate hash structure
-                if (result.Type == OSDType.Map)
-                {
-                    value = OSDParser.SerializeJsonString(result as OSDMap,true);
-                    return true;
-                }
-
-                // The path pointed to an intermediate hash structure
-                if (result.Type == OSDType.Array)
-                {
-                    value = OSDParser.SerializeJsonString(result as OSDArray,true);
-                    return true;
-                }
-
-                value = "'" + result.AsString() + "'"; 
-                return true;
-            }
-
-            if (OSDBaseType(result.Type))
-            {
-                value = result.AsString(); 
-                return true;
-            }
-
-            return false;
-        }
-
-        // -----------------------------------------------------------------
-        /// <summary>
-        /// 
-        /// </summary>
-        // -----------------------------------------------------------------
-        protected static string PathExpressionToKey(Stack<string> path)
-        {
-            if (path.Count == 0)
-                return "";
-                
-            string pkey = "";
-            foreach (string k in path)
-                pkey = (pkey == "") ? k : (k + "." + pkey);
-            
-            return pkey;
-        }
-
-        // -----------------------------------------------------------------
-        /// <summary>
-        /// 
-        /// </summary>
-        // -----------------------------------------------------------------
-        protected static bool OSDBaseType(OSDType type)
-        {
-            // Should be the list of base types for which AsString() returns
-            // something useful
-            if (type == OSDType.Boolean)
-                return true;
-            if (type == OSDType.Integer)
-                return true;
-            if (type == OSDType.Real)
-                return true;
-            if (type == OSDType.String)
-                return true;
-            if (type == OSDType.UUID)
-                return true;
-            if (type == OSDType.Date)
-                return true;
-            if (type == OSDType.URI)
-                return true;
-
-            return false;
-        }
-
-        // -----------------------------------------------------------------
-        /// <summary>
-        /// 
-        /// </summary>
-        // -----------------------------------------------------------------
-        protected static int ComputeSizeOf(OSD value)
-        {
-            string sval;
-
-            if (ConvertOutputValue(value,out sval,true))
-                return sval.Length;
-
-            return 0;
+            public bool UseJson { get; set; }
         }
     }
-
-    // -----------------------------------------------------------------
-    /// <summary>
-    /// </summary>
-    // -----------------------------------------------------------------
-    public class JsonObjectStore : JsonStore
-    {
-        private static readonly ILog m_log =
-            LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        private Scene m_scene;
-        private UUID m_objectID;
-
-        protected override OSD ValueStore 
-        {
-            get
-            {
-                SceneObjectPart sop = m_scene.GetSceneObjectPart(m_objectID);
-                if (sop == null)
-                {
-                    // This is bad
-                    return null;
-                }
-                
-                return sop.DynAttrs.TopLevelMap;
-            }
-
-            // cannot set the top level
-            set
-            {
-                m_log.InfoFormat("[JsonStore] cannot set top level value in object store");
-            }
-        }
-
-        public JsonObjectStore(Scene scene, UUID oid) : base()
-        {
-            m_scene = scene;
-            m_objectID = oid;
-
-            // the size limit is imposed on whatever is already in the store
-            StringSpace = ComputeSizeOf(ValueStore);
-        }
-    }
-    
 }

@@ -25,42 +25,51 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Net;
 using OpenMetaverse;
-using OpenMetaverse.Packets;
 using OpenMetaverse.Messages.Linden;
+using OpenMetaverse.Packets;
 using OpenMetaverse.StructuredData;
+using System.Net;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
     public interface IEventQueue
     {
-        bool Enqueue(OSD o, UUID avatarID);
+        OSD BuildEvent(string eventName, OSD eventBody);
 
-        // These are required to decouple Scenes from EventQueueHelper
-        void DisableSimulator(ulong handle, UUID avatarID);
-        void EnableSimulator(ulong handle, IPEndPoint endPoint, UUID avatarID, int regionSizeX, int regionSizeY);
-        void EstablishAgentCommunication(UUID avatarID, IPEndPoint endPoint, 
-                                         string capsPath, ulong regionHandle, int regionSizeX, int regionSizeY);
-        void TeleportFinishEvent(ulong regionHandle, byte simAccess, 
-                                 IPEndPoint regionExternalEndPoint,
-                                 uint locationID, uint flags, string capsURL, 
-                                 UUID agentID, int regionSizeX, int regionSizeY);
-        void CrossRegion(ulong handle, Vector3 pos, Vector3 lookAt,
-                         IPEndPoint newRegionExternalEndPoint,
-                         string capsURL, UUID avatarID, UUID sessionID,
-                            int regionSizeX, int regionSizeY);
         void ChatterboxInvitation(UUID sessionID, string sessionName,
                                   UUID fromAgent, string message, UUID toAgent, string fromName, byte dialog,
                                   uint timeStamp, bool offline, int parentEstateID, Vector3 position,
                                   uint ttl, UUID transactionID, bool fromGroup, byte[] binaryBucket);
-        void ChatterBoxSessionAgentListUpdates(UUID sessionID, UUID fromAgent, UUID anotherAgent, bool canVoiceChat, 
+
+        void ChatterBoxSessionAgentListUpdates(UUID sessionID, UUID fromAgent, UUID anotherAgent, bool canVoiceChat,
                                                bool isModerator, bool textMute);
-        void ParcelProperties(ParcelPropertiesMessage parcelPropertiesMessage, UUID avatarID);
+
+        void CrossRegion(ulong handle, Vector3 pos, Vector3 lookAt,
+                         IPEndPoint newRegionExternalEndPoint,
+                         string capsURL, UUID avatarID, UUID sessionID,
+                            int regionSizeX, int regionSizeY);
+
+        // These are required to decouple Scenes from EventQueueHelper
+        void DisableSimulator(ulong handle, UUID avatarID);
+
+        void EnableSimulator(ulong handle, IPEndPoint endPoint, UUID avatarID, int regionSizeX, int regionSizeY);
+
+        bool Enqueue(OSD o, UUID avatarID);
+        void EstablishAgentCommunication(UUID avatarID, IPEndPoint endPoint,
+                                         string capsPath, ulong regionHandle, int regionSizeX, int regionSizeY);
+
         void GroupMembership(AgentGroupDataUpdatePacket groupUpdate, UUID avatarID);
-        OSD ScriptRunningEvent(UUID objectID, UUID itemID, bool running, bool mono);
-        OSD BuildEvent(string eventName, OSD eventBody);
+
+        void ParcelProperties(ParcelPropertiesMessage parcelPropertiesMessage, UUID avatarID);
+
         void partPhysicsProperties(uint localID, byte physhapetype, float density, float friction, float bounce, float gravmod, UUID avatarID);
 
+        OSD ScriptRunningEvent(UUID objectID, UUID itemID, bool running, bool mono);
+
+        void TeleportFinishEvent(ulong regionHandle, byte simAccess,
+                                 IPEndPoint regionExternalEndPoint,
+                                 uint locationID, uint flags, string capsURL,
+                                 UUID agentID, int regionSizeX, int regionSizeY);
     }
 }

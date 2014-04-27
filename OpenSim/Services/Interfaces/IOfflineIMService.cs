@@ -1,4 +1,7 @@
-﻿/*
+﻿using OpenMetaverse;
+using OpenSim.Framework;
+
+/*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
  *
@@ -24,25 +27,23 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 using System;
 using System.Collections.Generic;
-
-using OpenSim.Framework;
-using OpenMetaverse;
 
 namespace OpenSim.Services.Interfaces
 {
     public interface IOfflineIMService
     {
-        List<GridInstantMessage> GetMessages(UUID principalID);
-        
-        bool StoreMessage(GridInstantMessage im, out string reason);
-        
         /// <summary>
         /// Delete messages to or from this user (or group).
         /// </summary>
         /// <param name="userID">A user or group ID</param>
         void DeleteMessages(UUID userID);
+
+        List<GridInstantMessage> GetMessages(UUID principalID);
+
+        bool StoreMessage(GridInstantMessage im, out string reason);
     }
 
     public class OfflineIMDataUtils
@@ -117,6 +118,5 @@ namespace OpenSim.Services.Interfaces
 
             return dict;
         }
-
     }
 }

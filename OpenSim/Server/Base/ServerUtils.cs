@@ -25,26 +25,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Mono.Addins;
+using Nini.Config;
+using OpenSim.Framework;
+using OpenSim.Framework.Servers;
+using OpenSim.Framework.Servers.HttpServer;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Xml;
 using System.Xml.Serialization;
-using System.Text;
-using System.Collections.Generic;
-using log4net;
-using Nini.Config;
-using OpenSim.Framework;
-using OpenMetaverse;
-using Mono.Addins;
-using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Framework.Servers;
 
+[assembly: AddinRoot("Robust", "0.1")]
 
-[assembly:AddinRoot("Robust", "0.1")]
 namespace OpenSim.Server.Base
 {
-    [TypeExtensionPoint(Path="/Robust/Connector", Name="RobustConnector")]
+    [TypeExtensionPoint(Path = "/Robust/Connector", Name = "RobustConnector")]
     public interface IRobustConnector
     {
         string ConfigName
@@ -64,303 +62,15 @@ namespace OpenSim.Server.Base
         }
 
         uint Configure(IConfigSource config);
+
         void Initialize(IHttpServer server);
+
         void Unload();
-    }
-
-    public class PluginLoader
-    {
-        static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        public AddinRegistry Registry
-        {
-            get;
-            private set;
-        }
-
-        public IConfigSource Config
-        {
-            get;
-            private set;
-        }
-
-        public PluginLoader(IConfigSource config, string registryPath)
-        {
-            Config = config;
-
-            Registry = new AddinRegistry(registryPath, ".");
-            suppress_console_output_(true);
-            AddinManager.Initialize(registryPath);
-            suppress_console_output_(false);
-            AddinManager.Registry.Update();
-            CommandManager commandmanager = new CommandManager(Registry);
-            AddinManager.AddExtensionNodeHandler("/Robust/Connector", OnExtensionChanged);
-        }
-
-        private static TextWriter prev_console_;
-        // Temporarily masking the errors reported on start
-        // This is caused by a non-managed dll in the ./bin dir
-        // when the registry is initialized. The dll belongs to
-        // libomv, which has a hard-coded path to "." for pinvoke
-        // to load the openjpeg dll
-        //
-        // Will look for a way to fix, but for now this keeps the 
-        // confusion to a minimum. this was copied from our region
-        // plugin loader, we have been doing this in there for a long time.
-        //
-        public void suppress_console_output_(bool save)
-        {
-            if (save)
-            {
-                prev_console_ = System.Console.Out;
-                System.Console.SetOut(new StreamWriter(Stream.Null));
-            }
-            else
-            {
-                if (prev_console_ != null)
-                    System.Console.SetOut(prev_console_);
-            }
-        }
-
-        private void OnExtensionChanged(object s, ExtensionNodeEventArgs args)
-        {
-            IRobustConnector connector = (IRobustConnector)args.ExtensionObject;
-            Addin a = Registry.GetAddin(args.ExtensionNode.Addin.Id);
-
-            if(a == null)
-            {
-                Registry.Rebuild(null);
-                a = Registry.GetAddin(args.ExtensionNode.Addin.Id);
-            }
-
-            switch(args.Change)
-            {
-                case ExtensionChange.Add:
-                    if (a.AddinFile.Contains(Registry.DefaultAddinsFolder))
-                    {
-                        m_log.InfoFormat("[SERVER UTILS]: Adding {0} from registry", a.Name);
-                        connector.PluginPath = System.IO.Path.Combine(Registry.DefaultAddinsFolder,a.Name.Replace(',', '.'));                    }
-                    else
-                    {
-                        m_log.InfoFormat("[SERVER UTILS]: Adding {0} from ./bin", a.Name);
-                        connector.PluginPath = a.AddinFile;
-                    }
-                    LoadPlugin(connector);
-                    break;
-                case ExtensionChange.Remove:
-                    m_log.InfoFormat("[SERVER UTILS]: Removing {0}", a.Name);
-                    UnloadPlugin(connector);
-                    break;
-            }
-        }
-
-        private void LoadPlugin(IRobustConnector connector)
-        {
-            IHttpServer server = null;
-            uint port = connector.Configure(Config);
-
-            if(connector.Enabled)
-            {
-                server = GetServer(connector, port);
-                connector.Initialize(server);
-            }
-            else
-            {
-                m_log.InfoFormat("[SERVER UTILS]: {0} Disabled.", connector.ConfigName);
-            }
-        }
-
-        private void UnloadPlugin(IRobustConnector connector)
-        {
-            m_log.InfoFormat("[SERVER UTILS]: Unloading {0}", connector.ConfigName);
-
-            connector.Unload();
-        }
-
-        private IHttpServer GetServer(IRobustConnector connector, uint port)
-        {
-            IHttpServer server;
-
-            if(port != 0)
-                server = MainServer.GetHttpServer(port);
-            else    
-                server = MainServer.Instance;
-
-            return server;
-        }
     }
 
     public static class ServerUtils
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        public static  byte[] SerializeResult(XmlSerializer xs, object data)
-        {
-            MemoryStream ms = new MemoryStream();
-            XmlTextWriter xw = new XmlTextWriter(ms, Util.UTF8);
-            xw.Formatting = Formatting.Indented;
-            xs.Serialize(xw, data);
-            xw.Flush();
-
-            ms.Seek(0, SeekOrigin.Begin);
-            byte[] ret = ms.GetBuffer();
-            Array.Resize(ref ret, (int)ms.Length);
-
-            return ret;
-        }
-
-        /// <summary>
-        /// Load a plugin from a dll with the given class or interface
-        /// </summary>
-        /// <param name="dllName"></param>
-        /// <param name="args">The arguments which control which constructor is invoked on the plugin</param>
-        /// <returns></returns>
-        public static T LoadPlugin<T> (string dllName, Object[] args) where T:class
-        {
-            // This is good to debug configuration problems
-            //if (dllName == string.Empty)
-            //    Util.PrintCallStack();
-            
-            string className = String.Empty;
-
-            // The path for a dynamic plugin will contain ":" on Windows
-            string[] parts = dllName.Split (new char[] {':'});
-
-            if (parts [0].Length > 1) 
-            {
-                dllName = parts [0];
-                if (parts.Length > 1)
-                    className = parts[1];
-            } 
-            else 
-            {
-                // This is Windows - we must replace the ":" in the path
-                dllName = String.Format ("{0}:{1}", parts [0], parts [1]);
-                if (parts.Length > 2)
-                    className = parts[2];
-            }
-
-            return LoadPlugin<T>(dllName, className, args);
-        }
-
-        /// <summary>
-        /// Load a plugin from a dll with the given class or interface
-        /// </summary>
-        /// <param name="dllName"></param>
-        /// <param name="className"></param>
-        /// <param name="args">The arguments which control which constructor is invoked on the plugin</param>
-        /// <returns></returns>
-        public static T LoadPlugin<T>(string dllName, string className, Object[] args) where T:class
-        {
-            string interfaceName = typeof(T).ToString();
-
-            try
-            {
-                Assembly pluginAssembly = Assembly.LoadFrom(dllName);
-
-                foreach (Type pluginType in pluginAssembly.GetTypes())
-                {
-                    if (pluginType.IsPublic)
-                    {
-                        if (className != String.Empty 
-                            && pluginType.ToString() != pluginType.Namespace + "." + className)
-                            continue;
-                        
-                        Type typeInterface = pluginType.GetInterface(interfaceName, true);
-
-                        if (typeInterface != null)
-                        {
-                            T plug = null;
-                            try
-                            {
-                                plug = (T)Activator.CreateInstance(pluginType,
-                                        args);
-                            }
-                            catch (Exception e)
-                            {
-                                if (!(e is System.MissingMethodException))
-                                {
-                                    m_log.Error(string.Format("[SERVER UTILS]: Error loading plugin {0} from {1}. Exception: {2}",
-                                        interfaceName, 
-                                        dllName, 
-                                        e.InnerException == null ? e.Message : e.InnerException.Message),
-                                            e);
-                                }
-                                m_log.ErrorFormat("[SERVER UTILS]: Error loading plugin {0}: {1} args.Length {2}", dllName, e.Message, args.Length);
-                                return null;
-                            }
-
-                            return plug;
-                        }
-                    }
-                }
-
-                return null;
-            }
-            catch (ReflectionTypeLoadException rtle)
-            {
-                m_log.Error(string.Format("[SERVER UTILS]: Error loading plugin from {0}:\n{1}", dllName,
-                    String.Join("\n", Array.ConvertAll(rtle.LoaderExceptions, e => e.ToString()))),
-                    rtle);
-                return null;
-            }
-            catch (Exception e)
-            {
-                m_log.Error(string.Format("[SERVER UTILS]: Error loading plugin from {0}", dllName), e);
-                return null;
-            }
-        }
-
-        public static Dictionary<string, object> ParseQueryString(string query)
-        {
-            Dictionary<string, object> result = new Dictionary<string, object>();
-            string[] terms = query.Split(new char[] {'&'});
-
-            if (terms.Length == 0)
-                return result;
-
-            foreach (string t in terms)
-            {
-                string[] elems = t.Split(new char[] {'='});
-                if (elems.Length == 0)
-                    continue;
-
-                string name = System.Web.HttpUtility.UrlDecode(elems[0]);
-                string value = String.Empty;
-
-                if (elems.Length > 1)
-                    value = System.Web.HttpUtility.UrlDecode(elems[1]);
-
-                if (name.EndsWith("[]"))
-                {
-                    string cleanName = name.Substring(0, name.Length - 2);
-                    if (result.ContainsKey(cleanName))
-                    {
-                        if (!(result[cleanName] is List<string>))
-                            continue;
-
-                        List<string> l = (List<string>)result[cleanName];
-
-                        l.Add(value);
-                    }
-                    else
-                    {
-                        List<string> newList = new List<string>();
-
-                        newList.Add(value);
-
-                        result[cleanName] = newList;
-                    }
-                }
-                else
-                {
-                    if (!result.ContainsKey(name))
-                        result[name] = value;
-                }
-            }
-
-            return result;
-        }
 
         public static string BuildQueryString(Dictionary<string, object> data)
         {
@@ -426,80 +136,6 @@ namespace OpenSim.Server.Base
             return doc.InnerXml;
         }
 
-        private static void BuildXmlData(XmlElement parent, Dictionary<string, object> data)
-        {
-            foreach (KeyValuePair<string, object> kvp in data)
-            {
-                if (kvp.Value == null)
-                    continue;
-
-                XmlElement elem = parent.OwnerDocument.CreateElement("",
-                        XmlConvert.EncodeLocalName(kvp.Key), "");
-
-                if (kvp.Value is Dictionary<string, object>)
-                {
-                    XmlAttribute type = parent.OwnerDocument.CreateAttribute("",
-                        "type", "");
-                    type.Value = "List";
-
-                    elem.Attributes.Append(type);
-
-                    BuildXmlData(elem, (Dictionary<string, object>)kvp.Value);
-                }
-                else
-                {
-                    elem.AppendChild(parent.OwnerDocument.CreateTextNode(
-                            kvp.Value.ToString()));
-                }
-
-                parent.AppendChild(elem);
-            }
-        }
-
-        public static Dictionary<string, object> ParseXmlResponse(string data)
-        {
-            //m_log.DebugFormat("[XXX]: received xml string: {0}", data);
-
-            Dictionary<string, object> ret = new Dictionary<string, object>();
-
-            XmlDocument doc = new XmlDocument();
-
-            doc.LoadXml(data);
-            
-            XmlNodeList rootL = doc.GetElementsByTagName("ServerResponse");
-
-            if (rootL.Count != 1)
-                return ret;
-
-            XmlNode rootNode = rootL[0];
-
-            ret = ParseElement(rootNode);
-
-            return ret;
-        }
-
-        private static Dictionary<string, object> ParseElement(XmlNode element)
-        {
-            Dictionary<string, object> ret = new Dictionary<string, object>();
-
-            XmlNodeList partL = element.ChildNodes;
-
-            foreach (XmlNode part in partL)
-            {
-                XmlNode type = part.Attributes.GetNamedItem("type");
-                if (type == null || type.Value != "List")
-                {
-                    ret[XmlConvert.DecodeName(part.Name)] = part.InnerText;
-                }
-                else
-                {
-                    ret[XmlConvert.DecodeName(part.Name)] = ParseElement(part);
-                }
-            }
-
-            return ret;
-        }
-
         public static IConfig GetConfig(string configFile, string configName)
         {
             IConfig config;
@@ -535,6 +171,369 @@ namespace OpenSim.Server.Base
             }
 
             return source;
+        }
+
+        /// <summary>
+        /// Load a plugin from a dll with the given class or interface
+        /// </summary>
+        /// <param name="dllName"></param>
+        /// <param name="args">The arguments which control which constructor is invoked on the plugin</param>
+        /// <returns></returns>
+        public static T LoadPlugin<T>(string dllName, Object[] args) where T : class
+        {
+            // This is good to debug configuration problems
+            //if (dllName == string.Empty)
+            //    Util.PrintCallStack();
+
+            string className = String.Empty;
+
+            // The path for a dynamic plugin will contain ":" on Windows
+            string[] parts = dllName.Split(new char[] { ':' });
+
+            if (parts[0].Length > 1)
+            {
+                dllName = parts[0];
+                if (parts.Length > 1)
+                    className = parts[1];
+            }
+            else
+            {
+                // This is Windows - we must replace the ":" in the path
+                dllName = String.Format("{0}:{1}", parts[0], parts[1]);
+                if (parts.Length > 2)
+                    className = parts[2];
+            }
+
+            return LoadPlugin<T>(dllName, className, args);
+        }
+
+        /// <summary>
+        /// Load a plugin from a dll with the given class or interface
+        /// </summary>
+        /// <param name="dllName"></param>
+        /// <param name="className"></param>
+        /// <param name="args">The arguments which control which constructor is invoked on the plugin</param>
+        /// <returns></returns>
+        public static T LoadPlugin<T>(string dllName, string className, Object[] args) where T : class
+        {
+            string interfaceName = typeof(T).ToString();
+
+            try
+            {
+                Assembly pluginAssembly = Assembly.LoadFrom(dllName);
+
+                foreach (Type pluginType in pluginAssembly.GetTypes())
+                {
+                    if (pluginType.IsPublic)
+                    {
+                        if (className != String.Empty
+                            && pluginType.ToString() != pluginType.Namespace + "." + className)
+                            continue;
+
+                        Type typeInterface = pluginType.GetInterface(interfaceName, true);
+
+                        if (typeInterface != null)
+                        {
+                            T plug = null;
+                            try
+                            {
+                                plug = (T)Activator.CreateInstance(pluginType,
+                                        args);
+                            }
+                            catch (Exception e)
+                            {
+                                if (!(e is System.MissingMethodException))
+                                {
+                                    m_log.Error(string.Format("[SERVER UTILS]: Error loading plugin {0} from {1}. Exception: {2}",
+                                        interfaceName,
+                                        dllName,
+                                        e.InnerException == null ? e.Message : e.InnerException.Message),
+                                            e);
+                                }
+                                m_log.ErrorFormat("[SERVER UTILS]: Error loading plugin {0}: {1} args.Length {2}", dllName, e.Message, args.Length);
+                                return null;
+                            }
+
+                            return plug;
+                        }
+                    }
+                }
+
+                return null;
+            }
+            catch (ReflectionTypeLoadException rtle)
+            {
+                m_log.Error(string.Format("[SERVER UTILS]: Error loading plugin from {0}:\n{1}", dllName,
+                    String.Join("\n", Array.ConvertAll(rtle.LoaderExceptions, e => e.ToString()))),
+                    rtle);
+                return null;
+            }
+            catch (Exception e)
+            {
+                m_log.Error(string.Format("[SERVER UTILS]: Error loading plugin from {0}", dllName), e);
+                return null;
+            }
+        }
+
+        public static Dictionary<string, object> ParseQueryString(string query)
+        {
+            Dictionary<string, object> result = new Dictionary<string, object>();
+            string[] terms = query.Split(new char[] { '&' });
+
+            if (terms.Length == 0)
+                return result;
+
+            foreach (string t in terms)
+            {
+                string[] elems = t.Split(new char[] { '=' });
+                if (elems.Length == 0)
+                    continue;
+
+                string name = System.Web.HttpUtility.UrlDecode(elems[0]);
+                string value = String.Empty;
+
+                if (elems.Length > 1)
+                    value = System.Web.HttpUtility.UrlDecode(elems[1]);
+
+                if (name.EndsWith("[]"))
+                {
+                    string cleanName = name.Substring(0, name.Length - 2);
+                    if (result.ContainsKey(cleanName))
+                    {
+                        if (!(result[cleanName] is List<string>))
+                            continue;
+
+                        List<string> l = (List<string>)result[cleanName];
+
+                        l.Add(value);
+                    }
+                    else
+                    {
+                        List<string> newList = new List<string>();
+
+                        newList.Add(value);
+
+                        result[cleanName] = newList;
+                    }
+                }
+                else
+                {
+                    if (!result.ContainsKey(name))
+                        result[name] = value;
+                }
+            }
+
+            return result;
+        }
+
+        public static Dictionary<string, object> ParseXmlResponse(string data)
+        {
+            //m_log.DebugFormat("[XXX]: received xml string: {0}", data);
+
+            Dictionary<string, object> ret = new Dictionary<string, object>();
+
+            XmlDocument doc = new XmlDocument();
+
+            doc.LoadXml(data);
+
+            XmlNodeList rootL = doc.GetElementsByTagName("ServerResponse");
+
+            if (rootL.Count != 1)
+                return ret;
+
+            XmlNode rootNode = rootL[0];
+
+            ret = ParseElement(rootNode);
+
+            return ret;
+        }
+
+        public static byte[] SerializeResult(XmlSerializer xs, object data)
+        {
+            MemoryStream ms = new MemoryStream();
+            XmlTextWriter xw = new XmlTextWriter(ms, Util.UTF8);
+            xw.Formatting = Formatting.Indented;
+            xs.Serialize(xw, data);
+            xw.Flush();
+
+            ms.Seek(0, SeekOrigin.Begin);
+            byte[] ret = ms.GetBuffer();
+            Array.Resize(ref ret, (int)ms.Length);
+
+            return ret;
+        }
+        private static void BuildXmlData(XmlElement parent, Dictionary<string, object> data)
+        {
+            foreach (KeyValuePair<string, object> kvp in data)
+            {
+                if (kvp.Value == null)
+                    continue;
+
+                XmlElement elem = parent.OwnerDocument.CreateElement("",
+                        XmlConvert.EncodeLocalName(kvp.Key), "");
+
+                if (kvp.Value is Dictionary<string, object>)
+                {
+                    XmlAttribute type = parent.OwnerDocument.CreateAttribute("",
+                        "type", "");
+                    type.Value = "List";
+
+                    elem.Attributes.Append(type);
+
+                    BuildXmlData(elem, (Dictionary<string, object>)kvp.Value);
+                }
+                else
+                {
+                    elem.AppendChild(parent.OwnerDocument.CreateTextNode(
+                            kvp.Value.ToString()));
+                }
+
+                parent.AppendChild(elem);
+            }
+        }
+        private static Dictionary<string, object> ParseElement(XmlNode element)
+        {
+            Dictionary<string, object> ret = new Dictionary<string, object>();
+
+            XmlNodeList partL = element.ChildNodes;
+
+            foreach (XmlNode part in partL)
+            {
+                XmlNode type = part.Attributes.GetNamedItem("type");
+                if (type == null || type.Value != "List")
+                {
+                    ret[XmlConvert.DecodeName(part.Name)] = part.InnerText;
+                }
+                else
+                {
+                    ret[XmlConvert.DecodeName(part.Name)] = ParseElement(part);
+                }
+            }
+
+            return ret;
+        }
+    }
+
+    public class PluginLoader
+    {
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        private static TextWriter prev_console_;
+
+        public PluginLoader(IConfigSource config, string registryPath)
+        {
+            Config = config;
+
+            Registry = new AddinRegistry(registryPath, ".");
+            suppress_console_output_(true);
+            AddinManager.Initialize(registryPath);
+            suppress_console_output_(false);
+            AddinManager.Registry.Update();
+            CommandManager commandmanager = new CommandManager(Registry);
+            AddinManager.AddExtensionNodeHandler("/Robust/Connector", OnExtensionChanged);
+        }
+
+        public IConfigSource Config
+        {
+            get;
+            private set;
+        }
+
+        public AddinRegistry Registry
+        {
+            get;
+            private set;
+        }
+        // Temporarily masking the errors reported on start
+        // This is caused by a non-managed dll in the ./bin dir
+        // when the registry is initialized. The dll belongs to
+        // libomv, which has a hard-coded path to "." for pinvoke
+        // to load the openjpeg dll
+        //
+        // Will look for a way to fix, but for now this keeps the
+        // confusion to a minimum. this was copied from our region
+        // plugin loader, we have been doing this in there for a long time.
+        //
+        public void suppress_console_output_(bool save)
+        {
+            if (save)
+            {
+                prev_console_ = System.Console.Out;
+                System.Console.SetOut(new StreamWriter(Stream.Null));
+            }
+            else
+            {
+                if (prev_console_ != null)
+                    System.Console.SetOut(prev_console_);
+            }
+        }
+
+        private IHttpServer GetServer(IRobustConnector connector, uint port)
+        {
+            IHttpServer server;
+
+            if (port != 0)
+                server = MainServer.GetHttpServer(port);
+            else
+                server = MainServer.Instance;
+
+            return server;
+        }
+
+        private void LoadPlugin(IRobustConnector connector)
+        {
+            IHttpServer server = null;
+            uint port = connector.Configure(Config);
+
+            if (connector.Enabled)
+            {
+                server = GetServer(connector, port);
+                connector.Initialize(server);
+            }
+            else
+            {
+                m_log.InfoFormat("[SERVER UTILS]: {0} Disabled.", connector.ConfigName);
+            }
+        }
+
+        private void OnExtensionChanged(object s, ExtensionNodeEventArgs args)
+        {
+            IRobustConnector connector = (IRobustConnector)args.ExtensionObject;
+            Addin a = Registry.GetAddin(args.ExtensionNode.Addin.Id);
+
+            if (a == null)
+            {
+                Registry.Rebuild(null);
+                a = Registry.GetAddin(args.ExtensionNode.Addin.Id);
+            }
+
+            switch (args.Change)
+            {
+                case ExtensionChange.Add:
+                    if (a.AddinFile.Contains(Registry.DefaultAddinsFolder))
+                    {
+                        m_log.InfoFormat("[SERVER UTILS]: Adding {0} from registry", a.Name);
+                        connector.PluginPath = System.IO.Path.Combine(Registry.DefaultAddinsFolder, a.Name.Replace(',', '.'));
+                    }
+                    else
+                    {
+                        m_log.InfoFormat("[SERVER UTILS]: Adding {0} from ./bin", a.Name);
+                        connector.PluginPath = a.AddinFile;
+                    }
+                    LoadPlugin(connector);
+                    break;
+
+                case ExtensionChange.Remove:
+                    m_log.InfoFormat("[SERVER UTILS]: Removing {0}", a.Name);
+                    UnloadPlugin(connector);
+                    break;
+            }
+        }
+        private void UnloadPlugin(IRobustConnector connector)
+        {
+            m_log.InfoFormat("[SERVER UTILS]: Unloading {0}", connector.ConfigName);
+
+            connector.Unload();
         }
     }
 }

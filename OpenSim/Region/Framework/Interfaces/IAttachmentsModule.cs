@@ -25,16 +25,27 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Scenes;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
     public interface IAttachmentsModule
     {
+        /// <summary>
+        /// Attach an object to an avatar.
+        /// </summary>
+        /// <param name="sp"></param>
+        /// <param name="grp"></param>
+        /// <param name="AttachmentPt"></param>
+        /// <param name="silent"></param>
+        /// <param name="addToInventory">If true then add object to user inventory</param>
+        /// <param name="append">Append to attachment point rather than replace.</param>
+        /// <returns>true if the object was successfully attached, false otherwise</returns>
+        bool AttachObject(IScenePresence sp, SceneObjectGroup grp, uint AttachmentPt, bool silent, bool addToInventory, bool append);
+
         /// <summary>
         /// Copy attachment data from a ScenePresence into the AgentData structure for transmission to another simulator
         /// </summary>
@@ -50,15 +61,12 @@ namespace OpenSim.Region.Framework.Interfaces
         void CopyAttachments(AgentData ad, IScenePresence sp);
 
         /// <summary>
-        /// RezAttachments. This should only be called upon login on the first region.
-        /// Attachment rezzings on crossings and TPs are done in a different way.
+        /// Delete all the presence's attachments from the scene
+        /// This is done when a root agent leaves/is demoted to child (for instance, on logout, teleport or region cross).
         /// </summary>
-        /// <remarks>
-        /// This is only actually necessary for viewers which do not have a current outfit folder (these viewers make
-        /// their own attachment calls on login) and agents which have attachments but no viewer (e.g. NPCs).
-        /// </remarks>
         /// <param name="sp"></param>
-        void RezAttachments(IScenePresence sp);
+        /// <param name="silent"></param>
+        void DeleteAttachmentsFromScene(IScenePresence sp, bool silent);
 
         /// <summary>
         /// Derez the attachements for a scene presence that is closing.
@@ -71,42 +79,6 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="saveAllScripted">Save attachments with scripts even if they haven't changed.</para>
         void DeRezAttachments(IScenePresence sp);
 
-        /// <summary>
-        /// Delete all the presence's attachments from the scene
-        /// This is done when a root agent leaves/is demoted to child (for instance, on logout, teleport or region cross).
-        /// </summary>
-        /// <param name="sp"></param>
-        /// <param name="silent"></param>
-        void DeleteAttachmentsFromScene(IScenePresence sp, bool silent);
-
-        /// <summary>
-        /// Attach an object to an avatar.
-        /// </summary>
-        /// <param name="sp"></param>
-        /// <param name="grp"></param>
-        /// <param name="AttachmentPt"></param>
-        /// <param name="silent"></param>
-        /// <param name="addToInventory">If true then add object to user inventory</param>
-        /// <param name="append">Append to attachment point rather than replace.</param>
-        /// <returns>true if the object was successfully attached, false otherwise</returns>
-        bool AttachObject(IScenePresence sp, SceneObjectGroup grp, uint AttachmentPt, bool silent, bool addToInventory, bool append);
-
-        /// <summary>
-        /// Rez an attachment from user inventory and change inventory status to match.
-        /// </summary>
-        /// <param name="sp"></param>
-        /// <param name="itemID"></param>
-        /// <param name="AttachmentPt"></param>
-        /// <returns>The scene object that was attached.  Null if the scene object could not be found</returns>
-        SceneObjectGroup RezSingleAttachmentFromInventory(IScenePresence sp, UUID itemID, uint AttachmentPt);
-
-        /// <summary>
-        /// Rez multiple attachments from a user's inventory
-        /// </summary>
-        /// <param name="sp"></param>
-        /// <param name="rezlist"></param>
-        void RezMultipleAttachmentsFromInventory(IScenePresence sp,List<KeyValuePair<UUID, uint>> rezlist);
-            
         /// <summary>
         /// Detach the given item to the ground.
         /// </summary>
@@ -129,7 +101,32 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="sp">/param>
         /// <param name="grp">The attachment to detach.</param>
         void DetachSingleAttachmentToInv(IScenePresence sp, SceneObjectGroup grp);
-        
+
+        /// <summary>
+        /// RezAttachments. This should only be called upon login on the first region.
+        /// Attachment rezzings on crossings and TPs are done in a different way.
+        /// </summary>
+        /// <remarks>
+        /// This is only actually necessary for viewers which do not have a current outfit folder (these viewers make
+        /// their own attachment calls on login) and agents which have attachments but no viewer (e.g. NPCs).
+        /// </remarks>
+        /// <param name="sp"></param>
+        void RezAttachments(IScenePresence sp);
+        /// <summary>
+        /// Rez multiple attachments from a user's inventory
+        /// </summary>
+        /// <param name="sp"></param>
+        /// <param name="rezlist"></param>
+        void RezMultipleAttachmentsFromInventory(IScenePresence sp, List<KeyValuePair<UUID, uint>> rezlist);
+
+        /// <summary>
+        /// Rez an attachment from user inventory and change inventory status to match.
+        /// </summary>
+        /// <param name="sp"></param>
+        /// <param name="itemID"></param>
+        /// <param name="AttachmentPt"></param>
+        /// <returns>The scene object that was attached.  Null if the scene object could not be found</returns>
+        SceneObjectGroup RezSingleAttachmentFromInventory(IScenePresence sp, UUID itemID, uint AttachmentPt);
         /// <summary>
         /// Update the position of an attachment.
         /// </summary>

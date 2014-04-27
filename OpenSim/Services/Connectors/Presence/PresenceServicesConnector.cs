@@ -26,17 +26,14 @@
  */
 
 using log4net;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Server.Base;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
-using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Services.Interfaces;
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
-using OpenSim.Server.Base;
-using OpenMetaverse;
 
 namespace OpenSim.Services.Connectors
 {
@@ -82,188 +79,7 @@ namespace OpenSim.Services.Connectors
             m_ServerURI = serviceURI;
         }
 
-
         #region IPresenceService
-
-        public bool LoginAgent(string userID, UUID sessionID, UUID secureSessionID)
-        {
-            Dictionary<string, object> sendData = new Dictionary<string, object>();
-            //sendData["SCOPEID"] = scopeID.ToString();
-            sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
-            sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
-            sendData["METHOD"] = "login";
-
-            sendData["UserID"] = userID;
-            sendData["SessionID"] = sessionID.ToString();
-            sendData["SecureSessionID"] = secureSessionID.ToString();
-
-            string reqString = ServerUtils.BuildQueryString(sendData);
-            string uri = m_ServerURI + "/presence";
-            // m_log.DebugFormat("[PRESENCE CONNECTOR]: queryString = {0}", reqString);
-            try
-            {
-                string reply = SynchronousRestFormsRequester.MakeRequest("POST",
-                        uri,
-                        reqString);
-                if (reply != string.Empty)
-                {
-                    Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
-
-                    if (replyData.ContainsKey("result"))
-                    {
-                        if (replyData["result"].ToString().ToLower() == "success")
-                            return true;
-                        else
-                            return false;
-                    }
-                    else
-                        m_log.DebugFormat("[PRESENCE CONNECTOR]: LoginAgent reply data does not contain result field");
-
-                }
-                else
-                    m_log.DebugFormat("[PRESENCE CONNECTOR]: LoginAgent received empty reply");
-            }
-            catch (Exception e)
-            {
-                m_log.DebugFormat("[PRESENCE CONNECTOR]: Exception when contacting presence server at {0}: {1}", uri, e.Message);
-            }
-
-            return false;
-
-        }
-
-        public bool LogoutAgent(UUID sessionID)
-        {
-            Dictionary<string, object> sendData = new Dictionary<string, object>();
-            //sendData["SCOPEID"] = scopeID.ToString();
-            sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
-            sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
-            sendData["METHOD"] = "logout";
-
-            sendData["SessionID"] = sessionID.ToString();
-
-            string reqString = ServerUtils.BuildQueryString(sendData);
-            string uri = m_ServerURI + "/presence";
-            // m_log.DebugFormat("[PRESENCE CONNECTOR]: queryString = {0}", reqString);
-            try
-            {
-                string reply = SynchronousRestFormsRequester.MakeRequest("POST",
-                        uri,
-                        reqString);
-                if (reply != string.Empty)
-                {
-                    Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
-
-                    if (replyData.ContainsKey("result"))
-                    {
-                        if (replyData["result"].ToString().ToLower() == "success")
-                            return true;
-                        else
-                            return false;
-                    }
-                    else
-                        m_log.DebugFormat("[PRESENCE CONNECTOR]: LogoutAgent reply data does not contain result field");
-
-                }
-                else
-                    m_log.DebugFormat("[PRESENCE CONNECTOR]: LogoutAgent received empty reply");
-            }
-            catch (Exception e)
-            {
-                m_log.DebugFormat("[PRESENCE CONNECTOR]: Exception when contacting presence server at {0}: {1}", uri, e.Message);
-            }
-
-            return false;
-        }
-
-        public bool LogoutRegionAgents(UUID regionID)
-        {
-            Dictionary<string, object> sendData = new Dictionary<string, object>();
-            //sendData["SCOPEID"] = scopeID.ToString();
-            sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
-            sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
-            sendData["METHOD"] = "logoutregion";
-
-            sendData["RegionID"] = regionID.ToString();
-
-            string reqString = ServerUtils.BuildQueryString(sendData);
-            string uri = m_ServerURI + "/presence";
-            // m_log.DebugFormat("[PRESENCE CONNECTOR]: queryString = {0}", reqString);
-            try
-            {
-                string reply = SynchronousRestFormsRequester.MakeRequest("POST",
-                        uri,
-                        reqString);
-                if (reply != string.Empty)
-                {
-                    Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
-
-                    if (replyData.ContainsKey("result"))
-                    {
-                        if (replyData["result"].ToString().ToLower() == "success")
-                            return true;
-                        else
-                            return false;
-                    }
-                    else
-                        m_log.DebugFormat("[PRESENCE CONNECTOR]: LogoutRegionAgents reply data does not contain result field");
-
-                }
-                else
-                    m_log.DebugFormat("[PRESENCE CONNECTOR]: LogoutRegionAgents received empty reply");
-            }
-            catch (Exception e)
-            {
-                m_log.DebugFormat("[PRESENCE CONNECTOR]: Exception when contacting presence server at {0}: {1}", uri, e.Message);
-            }
-
-            return false;
-        }
-
-        public bool ReportAgent(UUID sessionID, UUID regionID)
-        {
-            Dictionary<string, object> sendData = new Dictionary<string, object>();
-            //sendData["SCOPEID"] = scopeID.ToString();
-            sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
-            sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
-            sendData["METHOD"] = "report";
-
-            sendData["SessionID"] = sessionID.ToString();
-            sendData["RegionID"] = regionID.ToString();
-
-            string reqString = ServerUtils.BuildQueryString(sendData);
-            string uri = m_ServerURI + "/presence";
-            // m_log.DebugFormat("[PRESENCE CONNECTOR]: queryString = {0}", reqString);
-            try
-            {
-                string reply = SynchronousRestFormsRequester.MakeRequest("POST",
-                        uri,
-                        reqString);
-                if (reply != string.Empty)
-                {
-                    Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
-
-                    if (replyData.ContainsKey("result"))
-                    {
-                        if (replyData["result"].ToString().ToLower() == "success")
-                            return true;
-                        else
-                            return false;
-                    }
-                    else
-                        m_log.DebugFormat("[PRESENCE CONNECTOR]: ReportAgent reply data does not contain result field");
-
-                }
-                else
-                    m_log.DebugFormat("[PRESENCE CONNECTOR]: ReportAgent received empty reply");
-            }
-            catch (Exception e)
-            {
-                m_log.DebugFormat("[PRESENCE CONNECTOR]: Exception when contacting presence server at {0}: {1}", uri, e.Message);
-            }
-
-            return false;
-        }
 
         public PresenceInfo GetAgent(UUID sessionID)
         {
@@ -345,7 +161,7 @@ namespace OpenSim.Services.Connectors
 
             if (replyData != null)
             {
-                if (replyData.ContainsKey("result") && 
+                if (replyData.ContainsKey("result") &&
                     (replyData["result"].ToString() == "null" || replyData["result"].ToString() == "Failure"))
                 {
                     return new PresenceInfo[0];
@@ -371,8 +187,180 @@ namespace OpenSim.Services.Connectors
             return rinfos.ToArray();
         }
 
+        public bool LoginAgent(string userID, UUID sessionID, UUID secureSessionID)
+        {
+            Dictionary<string, object> sendData = new Dictionary<string, object>();
+            //sendData["SCOPEID"] = scopeID.ToString();
+            sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
+            sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
+            sendData["METHOD"] = "login";
 
-        #endregion
+            sendData["UserID"] = userID;
+            sendData["SessionID"] = sessionID.ToString();
+            sendData["SecureSessionID"] = secureSessionID.ToString();
 
+            string reqString = ServerUtils.BuildQueryString(sendData);
+            string uri = m_ServerURI + "/presence";
+            // m_log.DebugFormat("[PRESENCE CONNECTOR]: queryString = {0}", reqString);
+            try
+            {
+                string reply = SynchronousRestFormsRequester.MakeRequest("POST",
+                        uri,
+                        reqString);
+                if (reply != string.Empty)
+                {
+                    Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
+
+                    if (replyData.ContainsKey("result"))
+                    {
+                        if (replyData["result"].ToString().ToLower() == "success")
+                            return true;
+                        else
+                            return false;
+                    }
+                    else
+                        m_log.DebugFormat("[PRESENCE CONNECTOR]: LoginAgent reply data does not contain result field");
+                }
+                else
+                    m_log.DebugFormat("[PRESENCE CONNECTOR]: LoginAgent received empty reply");
+            }
+            catch (Exception e)
+            {
+                m_log.DebugFormat("[PRESENCE CONNECTOR]: Exception when contacting presence server at {0}: {1}", uri, e.Message);
+            }
+
+            return false;
+        }
+
+        public bool LogoutAgent(UUID sessionID)
+        {
+            Dictionary<string, object> sendData = new Dictionary<string, object>();
+            //sendData["SCOPEID"] = scopeID.ToString();
+            sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
+            sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
+            sendData["METHOD"] = "logout";
+
+            sendData["SessionID"] = sessionID.ToString();
+
+            string reqString = ServerUtils.BuildQueryString(sendData);
+            string uri = m_ServerURI + "/presence";
+            // m_log.DebugFormat("[PRESENCE CONNECTOR]: queryString = {0}", reqString);
+            try
+            {
+                string reply = SynchronousRestFormsRequester.MakeRequest("POST",
+                        uri,
+                        reqString);
+                if (reply != string.Empty)
+                {
+                    Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
+
+                    if (replyData.ContainsKey("result"))
+                    {
+                        if (replyData["result"].ToString().ToLower() == "success")
+                            return true;
+                        else
+                            return false;
+                    }
+                    else
+                        m_log.DebugFormat("[PRESENCE CONNECTOR]: LogoutAgent reply data does not contain result field");
+                }
+                else
+                    m_log.DebugFormat("[PRESENCE CONNECTOR]: LogoutAgent received empty reply");
+            }
+            catch (Exception e)
+            {
+                m_log.DebugFormat("[PRESENCE CONNECTOR]: Exception when contacting presence server at {0}: {1}", uri, e.Message);
+            }
+
+            return false;
+        }
+
+        public bool LogoutRegionAgents(UUID regionID)
+        {
+            Dictionary<string, object> sendData = new Dictionary<string, object>();
+            //sendData["SCOPEID"] = scopeID.ToString();
+            sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
+            sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
+            sendData["METHOD"] = "logoutregion";
+
+            sendData["RegionID"] = regionID.ToString();
+
+            string reqString = ServerUtils.BuildQueryString(sendData);
+            string uri = m_ServerURI + "/presence";
+            // m_log.DebugFormat("[PRESENCE CONNECTOR]: queryString = {0}", reqString);
+            try
+            {
+                string reply = SynchronousRestFormsRequester.MakeRequest("POST",
+                        uri,
+                        reqString);
+                if (reply != string.Empty)
+                {
+                    Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
+
+                    if (replyData.ContainsKey("result"))
+                    {
+                        if (replyData["result"].ToString().ToLower() == "success")
+                            return true;
+                        else
+                            return false;
+                    }
+                    else
+                        m_log.DebugFormat("[PRESENCE CONNECTOR]: LogoutRegionAgents reply data does not contain result field");
+                }
+                else
+                    m_log.DebugFormat("[PRESENCE CONNECTOR]: LogoutRegionAgents received empty reply");
+            }
+            catch (Exception e)
+            {
+                m_log.DebugFormat("[PRESENCE CONNECTOR]: Exception when contacting presence server at {0}: {1}", uri, e.Message);
+            }
+
+            return false;
+        }
+
+        public bool ReportAgent(UUID sessionID, UUID regionID)
+        {
+            Dictionary<string, object> sendData = new Dictionary<string, object>();
+            //sendData["SCOPEID"] = scopeID.ToString();
+            sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
+            sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
+            sendData["METHOD"] = "report";
+
+            sendData["SessionID"] = sessionID.ToString();
+            sendData["RegionID"] = regionID.ToString();
+
+            string reqString = ServerUtils.BuildQueryString(sendData);
+            string uri = m_ServerURI + "/presence";
+            // m_log.DebugFormat("[PRESENCE CONNECTOR]: queryString = {0}", reqString);
+            try
+            {
+                string reply = SynchronousRestFormsRequester.MakeRequest("POST",
+                        uri,
+                        reqString);
+                if (reply != string.Empty)
+                {
+                    Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
+
+                    if (replyData.ContainsKey("result"))
+                    {
+                        if (replyData["result"].ToString().ToLower() == "success")
+                            return true;
+                        else
+                            return false;
+                    }
+                    else
+                        m_log.DebugFormat("[PRESENCE CONNECTOR]: ReportAgent reply data does not contain result field");
+                }
+                else
+                    m_log.DebugFormat("[PRESENCE CONNECTOR]: ReportAgent received empty reply");
+            }
+            catch (Exception e)
+            {
+                m_log.DebugFormat("[PRESENCE CONNECTOR]: Exception when contacting presence server at {0}: {1}", uri, e.Message);
+            }
+
+            return false;
+        }
+        #endregion IPresenceService
     }
 }

@@ -25,31 +25,27 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
-using System.Text;
-using Nini.Config;
 using log4net;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
-using OpenSim.Services.UserAccountService;
-using OpenSim.Data;
+using Nini.Config;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
 using OpenSim.Framework;
+using OpenSim.Server.Base;
+using OpenSim.Services.Interfaces;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Services.ProfilesService
 {
-    public class UserProfilesService: UserProfilesServiceBase, IUserProfilesService
+    public class UserProfilesService : UserProfilesServiceBase, IUserProfilesService
     {
-        static readonly ILog m_log =
+        private static readonly ILog m_log =
             LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
-        
-        IUserAccountService userAccounts;
-        IAuthenticationService authService;
 
-        public UserProfilesService(IConfigSource config, string configName):
+        private IAuthenticationService authService;
+        private IUserAccountService userAccounts;
+        public UserProfilesService(IConfigSource config, string configName) :
             base(config, configName)
         {
             IConfig Config = config.Configs[configName];
@@ -59,157 +55,131 @@ namespace OpenSim.Services.ProfilesService
                 return;
             }
             Object[] args = null;
-            
+
             args = new Object[] { config };
             string accountService = Config.GetString("UserAccountService", String.Empty);
             if (accountService != string.Empty)
                 userAccounts = ServerUtils.LoadPlugin<IUserAccountService>(accountService, args);
-            
+
             args = new Object[] { config };
             string authServiceConfig = Config.GetString("AuthenticationServiceModule", String.Empty);
             if (accountService != string.Empty)
                 authService = ServerUtils.LoadPlugin<IAuthenticationService>(authServiceConfig, args);
         }
-        
+
         #region Classifieds
+
         public OSD AvatarClassifiedsRequest(UUID creatorId)
         {
             OSDArray records = ProfilesData.GetClassifiedRecords(creatorId);
-            
+
             return records;
         }
-        
+
+        public bool ClassifiedDelete(UUID recordId)
+        {
+            if (ProfilesData.DeleteClassifiedRecord(recordId))
+                return true;
+
+            return false;
+        }
+
+        public bool ClassifiedInfoRequest(ref UserClassifiedAdd ad, ref string result)
+        {
+            if (ProfilesData.GetClassifiedInfo(ref ad, ref result))
+                return true;
+
+            return false;
+        }
+
         public bool ClassifiedUpdate(UserClassifiedAdd ad, ref string result)
         {
-            if(!ProfilesData.UpdateClassifiedRecord(ad, ref result))
+            if (!ProfilesData.UpdateClassifiedRecord(ad, ref result))
             {
                 return false;
             }
             result = "success";
             return true;
         }
-        
-        public bool ClassifiedDelete(UUID recordId)
-        {
-            if(ProfilesData.DeleteClassifiedRecord(recordId))
-                return true;
-            
-            return false;
-        }
-        
-        public bool ClassifiedInfoRequest(ref UserClassifiedAdd ad, ref string result)
-        {
-            if(ProfilesData.GetClassifiedInfo(ref ad, ref result))
-                return true;
-            
-            return false;
-        }
         #endregion Classifieds
-        
+
         #region Picks
+
         public OSD AvatarPicksRequest(UUID creatorId)
         {
             OSDArray records = ProfilesData.GetAvatarPicks(creatorId);
-            
+
             return records;
         }
-        
+
         public bool PickInfoRequest(ref UserProfilePick pick, ref string result)
         {
             pick = ProfilesData.GetPickInfo(pick.CreatorId, pick.PickId);
             result = "OK";
             return true;
         }
-        
-        public bool PicksUpdate(ref UserProfilePick pick, ref string result)
-        {
-            return ProfilesData.UpdatePicksRecord(pick);
-        }
-        
+
         public bool PicksDelete(UUID pickId)
         {
             return ProfilesData.DeletePicksRecord(pickId);
         }
+
+        public bool PicksUpdate(ref UserProfilePick pick, ref string result)
+        {
+            return ProfilesData.UpdatePicksRecord(pick);
+        }
         #endregion Picks
-        
+
         #region Notes
+
         public bool AvatarNotesRequest(ref UserProfileNotes note)
         {
             return ProfilesData.GetAvatarNotes(ref note);
         }
-        
+
         public bool NotesUpdate(ref UserProfileNotes note, ref string result)
         {
             return ProfilesData.UpdateAvatarNotes(ref note, ref result);
         }
+
         #endregion Notes
-        
+
         #region Profile Properties
+
         public bool AvatarPropertiesRequest(ref UserProfileProperties prop, ref string result)
         {
             return ProfilesData.GetAvatarProperties(ref prop, ref result);
         }
-        
+
         public bool AvatarPropertiesUpdate(ref UserProfileProperties prop, ref string result)
         {
             return ProfilesData.UpdateAvatarProperties(ref prop, ref result);
         }
+
         #endregion Profile Properties
-        
+
         #region Interests
+
         public bool AvatarInterestsUpdate(UserProfileProperties prop, ref string result)
         {
             return ProfilesData.UpdateAvatarInterests(prop, ref result);
         }
+
         #endregion Interests
 
         #region User Preferences
-        public bool UserPreferencesUpdate(ref UserPreferences pref, ref string result)
-        {
-            if(string.IsNullOrEmpty(pref.EMail))
-            {
-                UserAccount account = new UserAccount();
-                if(userAccounts is UserAccountService.UserAccountService)
-                {
-                    try
-                    {
-                        account = userAccounts.GetUserAccount(UUID.Zero, pref.UserId);
-                        if(string.IsNullOrEmpty(account.Email))
-                        {
-                            result = "No Email address on record!";
-                            return false;
-                        }
-                        else
-                            pref.EMail = account.Email;
-                    }
-                    catch
-                    {
-                        m_log.Info ("[PROFILES]: UserAccountService Exception: Could not get user account");
-                        result = "Missing Email address!";
-                        return false;
-                    }
-                }
-                else
-                {
-                    m_log.Info ("[PROFILES]: UserAccountService: Could not get user account");
-                    result = "Missing Email address!";
-                    return false;
-                }
-            }
-            return ProfilesData.UpdateUserPreferences(ref pref, ref result);
-        }
 
         public bool UserPreferencesRequest(ref UserPreferences pref, ref string result)
         {
-            if(string.IsNullOrEmpty(pref.EMail))
+            if (string.IsNullOrEmpty(pref.EMail))
             {
                 UserAccount account = new UserAccount();
-                if(userAccounts is UserAccountService.UserAccountService)
+                if (userAccounts is UserAccountService.UserAccountService)
                 {
                     try
                     {
                         account = userAccounts.GetUserAccount(UUID.Zero, pref.UserId);
-                        if(string.IsNullOrEmpty(account.Email))
+                        if (string.IsNullOrEmpty(account.Email))
                         {
                             result = "No Email address on record!";
                             return false;
@@ -219,41 +189,79 @@ namespace OpenSim.Services.ProfilesService
                     }
                     catch
                     {
-                        m_log.Info ("[PROFILES]: UserAccountService Exception: Could not get user account");
+                        m_log.Info("[PROFILES]: UserAccountService Exception: Could not get user account");
                         result = "Missing Email address!";
                         return false;
                     }
                 }
                 else
                 {
-                    m_log.Info ("[PROFILES]: UserAccountService: Could not get user account");
+                    m_log.Info("[PROFILES]: UserAccountService: Could not get user account");
                     result = "Missing Email address!";
                     return false;
                 }
             }
             return ProfilesData.GetUserPreferences(ref pref, ref result);
         }
+
+        public bool UserPreferencesUpdate(ref UserPreferences pref, ref string result)
+        {
+            if (string.IsNullOrEmpty(pref.EMail))
+            {
+                UserAccount account = new UserAccount();
+                if (userAccounts is UserAccountService.UserAccountService)
+                {
+                    try
+                    {
+                        account = userAccounts.GetUserAccount(UUID.Zero, pref.UserId);
+                        if (string.IsNullOrEmpty(account.Email))
+                        {
+                            result = "No Email address on record!";
+                            return false;
+                        }
+                        else
+                            pref.EMail = account.Email;
+                    }
+                    catch
+                    {
+                        m_log.Info("[PROFILES]: UserAccountService Exception: Could not get user account");
+                        result = "Missing Email address!";
+                        return false;
+                    }
+                }
+                else
+                {
+                    m_log.Info("[PROFILES]: UserAccountService: Could not get user account");
+                    result = "Missing Email address!";
+                    return false;
+                }
+            }
+            return ProfilesData.UpdateUserPreferences(ref pref, ref result);
+        }
         #endregion User Preferences
 
         #region Utility
+
         public OSD AvatarImageAssetsRequest(UUID avatarId)
         {
             OSDArray records = ProfilesData.GetUserImageAssets(avatarId);
             return records;
         }
+
         #endregion Utility
 
         #region UserData
+
         public bool RequestUserAppData(ref UserAppData prop, ref string result)
         {
             return ProfilesData.GetUserAppData(ref prop, ref result);
         }
-        
+
         public bool SetUserAppData(UserAppData prop, ref string result)
         {
             return true;
         }
+
         #endregion UserData
     }
 }
-

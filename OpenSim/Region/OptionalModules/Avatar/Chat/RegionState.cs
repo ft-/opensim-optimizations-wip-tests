@@ -25,15 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text.RegularExpressions;
 using log4net;
 using Nini.Config;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace OpenSim.Region.OptionalModules.Avatar.Chat
 {
@@ -41,42 +41,51 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
 
     internal class RegionState
     {
-        private static readonly ILog m_log =
-            LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        internal string alertMessage = String.Empty;
+
+        internal List<IClientAPI> clients = new List<IClientAPI>();
+
+        internal IConfig config = null;
+
+        internal ChannelState cs = null;
+
+        internal IDialogModule dialogModule = null;
+
+        // configuration file reference
+        internal bool enabled = true;
+
+        internal string Host = String.Empty;
+
+        internal string IDK = String.Empty;
+
+        internal string LocX = String.Empty;
+
+        internal string LocY = String.Empty;
+
+        internal string Region = String.Empty;
+
+        // associated IRC configuration
+        internal Scene scene = null;
+
+        // associated scene
+        //AgentAlert
+        internal bool showAlert = false;
+
+        private const int DEBUG_CHANNEL = 2147483647;
 
         // This computation is not the real region center if the region is larger than 256.
         //     This computation isn't fixed because there is not a handle back to the region.
         private static readonly OpenMetaverse.Vector3 CenterOfRegion = new OpenMetaverse.Vector3(((int)Constants.RegionSize * 0.5f), ((int)Constants.RegionSize * 0.5f), 20);
-        private const int DEBUG_CHANNEL = 2147483647;
 
+        private static readonly ILog m_log =
+            LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private static int _idk_ = 0;
 
         // Runtime variables; these values are assigned when the
         // IrcState is created and remain constant thereafter.
-
-        internal string Region = String.Empty;
-        internal string Host = String.Empty;
-        internal string LocX = String.Empty;
-        internal string LocY = String.Empty;
-        internal string IDK = String.Empty;
-
         // System values - used only be the IRC classes themselves
-
-        internal ChannelState cs = null; // associated IRC configuration
-        internal Scene scene = null; // associated scene
-        internal IConfig config = null; // configuration file reference
-        internal bool enabled = true;
-
-        //AgentAlert
-        internal bool showAlert = false;
-        internal string alertMessage = String.Empty;
-        internal IDialogModule dialogModule = null;
-
         // This list is used to keep track of who is here, and by
         // implication, who is not.
-
-        internal List<IClientAPI> clients = new List<IClientAPI>();
-
         // Setup runtime variable values
 
         public RegionState(Scene p_scene, IConfig p_config)
@@ -123,7 +132,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
             scene.EventManager.OnMakeChildAgent += OnMakeChildAgent;
 
             m_log.InfoFormat("[IRC-Region {0}] Initialization complete", Region);
-
         }
 
         // Auto cleanup when abandoned
@@ -136,124 +144,15 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
 
         // Called by PostInitialize after all regions have been created
 
-        public void Open()
-        {
-            cs.Open(this);
-            enabled = true;
-        }
-
-        // Called by IRCBridgeModule.Close immediately prior to unload
-        // of the module for this region. This happens when the region
-        // is being removed or the server is terminating. The IRC
-        // BridgeModule will remove the region from the region list
-        // when control returns.
-
         public void Close()
         {
             enabled = false;
             cs.Close(this);
         }
 
-        // The agent has disconnected, cleanup associated resources
-
-        private void OnClientLoggedOut(IClientAPI client)
-        {
-            try
-            {
-                if (clients.Contains(client))
-                {
-                    if (enabled && (cs.irc.Enabled) && (cs.irc.Connected) && (cs.ClientReporting))
-                    {
-                        m_log.InfoFormat("[IRC-Region {0}]: {1} has left", Region, client.Name);
-                        //Check if this person is excluded from IRC
-                        if (!cs.ExcludeList.Contains(client.Name.ToLower()))
-                        {
-                            cs.irc.PrivMsg(cs.NoticeMessageFormat, cs.irc.Nick, Region, String.Format("{0} has left", client.Name));
-                        }
-                    }
-                    client.OnLogout -= OnClientLoggedOut;
-                    client.OnConnectionClosed -= OnClientLoggedOut;
-                    clients.Remove(client);
-                }
-            }
-            catch (Exception ex)
-            {
-                m_log.ErrorFormat("[IRC-Region {0}]: ClientLoggedOut exception: {1}", Region, ex.Message);
-                m_log.Debug(ex);
-            }
-        }
-
-        // This event indicates that the agent has left the building. We should treat that the same
-        // as if the agent has logged out (we don't want cross-region noise - or do we?)
-
-        private void OnMakeChildAgent(ScenePresence presence)
-        {
-
-            IClientAPI client = presence.ControllingClient;
-
-            try
-            {
-                if (clients.Contains(client))
-                {
-                    if (enabled && (cs.irc.Enabled) && (cs.irc.Connected) && (cs.ClientReporting))
-                    {
-                        string clientName = String.Format("{0} {1}", presence.Firstname, presence.Lastname);
-                        m_log.DebugFormat("[IRC-Region {0}] {1} has left", Region, clientName);
-                        cs.irc.PrivMsg(cs.NoticeMessageFormat, cs.irc.Nick, Region, String.Format("{0} has left", clientName));
-                    }
-                    client.OnLogout -= OnClientLoggedOut;
-                    client.OnConnectionClosed -= OnClientLoggedOut;
-                    clients.Remove(client);
-                }
-            }
-            catch (Exception ex)
-            {
-                m_log.ErrorFormat("[IRC-Region {0}]: MakeChildAgent exception: {1}", Region, ex.Message);
-                m_log.Debug(ex);
-            }
-
-        }
-
-        // An agent has entered the region (from another region). Add the client to the locally
-        // known clients list
-
-        private void OnMakeRootAgent(ScenePresence presence)
-        {
-            IClientAPI client = presence.ControllingClient;
-
-            try
-            {
-                if (!clients.Contains(client))
-                {
-                    client.OnLogout += OnClientLoggedOut;
-                    client.OnConnectionClosed += OnClientLoggedOut;
-                    clients.Add(client);
-                    if (enabled && (cs.irc.Enabled) && (cs.irc.Connected) && (cs.ClientReporting))
-                    {
-                        string clientName = String.Format("{0} {1}", presence.Firstname, presence.Lastname);
-                        m_log.DebugFormat("[IRC-Region {0}] {1} has arrived", Region, clientName);
-                        //Check if this person is excluded from IRC
-                        if (!cs.ExcludeList.Contains(clientName.ToLower()))
-                        {
-                            cs.irc.PrivMsg(cs.NoticeMessageFormat, cs.irc.Nick, Region, String.Format("{0} has arrived", clientName));
-                        }
-                    }
-                }
-
-                if (dialogModule != null && showAlert)
-                    dialogModule.SendAlertToUser(client, alertMessage, true);
-            }
-            catch (Exception ex)
-            {
-                m_log.ErrorFormat("[IRC-Region {0}]: MakeRootAgent exception: {1}", Region, ex.Message);
-                m_log.Debug(ex);
-            }
-        }
-
         // This handler detects chat events int he virtual world.
         public void OnSimChat(Object sender, OSChatMessage msg)
         {
-
             // early return if this comes from the IRC forwarder
 
             if (cs.irc.Equals(sender)) return;
@@ -267,7 +166,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
 
             if (cs.CommandsEnabled && msg.Channel == cs.CommandChannel)
             {
-
                 m_log.DebugFormat("[IRC-Region {0}] command on channel {1}: {2}", Region, msg.Channel, msg.Message);
 
                 string[] messages = msg.Message.Split(' ');
@@ -277,7 +175,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
                 {
                     switch (command)
                     {
-
                         // These commands potentially require a change in the
                         // underlying ChannelState.
 
@@ -286,16 +183,19 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
                             cs = cs.UpdateServer(this, messages[1]);
                             cs.Open(this);
                             break;
+
                         case "port":
                             cs.Close(this);
                             cs = cs.UpdatePort(this, messages[1]);
                             cs.Open(this);
                             break;
+
                         case "channel":
                             cs.Close(this);
                             cs = cs.UpdateChannel(this, messages[1]);
                             cs.Open(this);
                             break;
+
                         case "nick":
                             cs.Close(this);
                             cs = cs.UpdateNickname(this, messages[1]);
@@ -308,9 +208,11 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
                         case "client-reporting":
                             cs = cs.UpdateClientReporting(this, messages[1]);
                             break;
+
                         case "in-channel":
                             cs = cs.UpdateRelayIn(this, messages[1]);
                             break;
+
                         case "out-channel":
                             cs = cs.UpdateRelayOut(this, messages[1]);
                             break;
@@ -355,7 +257,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
                 }
 
                 return;
-
             }
 
             // The command channel remains enabled, even if we have otherwise disabled the IRC
@@ -414,22 +315,18 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
             }
         }
 
-        // This method gives the region an opportunity to interfere with 
-        // message delivery. For now we just enforce the enable/disable
-        // flag.
-
-        internal void OSChat(Object irc, OSChatMessage msg)
+        public void Open()
         {
-            if (enabled)
-            {
-                // m_log.DebugFormat("[IRC-OSCHAT] Region {0} being sent message", region.Region);
-                msg.Scene = scene;
-                scene.EventManager.TriggerOnChatBroadcast(irc, msg);
-            }
+            cs.Open(this);
+            enabled = true;
         }
 
-        // This supports any local message traffic that might be needed in 
-        // support of command processing. At present there is none.
+        // Called by IRCBridgeModule.Close immediately prior to unload
+        // of the module for this region. This happens when the region
+        // is being removed or the server is terminating. The IRC
+        // BridgeModule will remove the region from the region list
+        // when control returns.
+        // The agent has disconnected, cleanup associated resources
 
         internal void LocalChat(string msg)
         {
@@ -447,6 +344,111 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
             }
         }
 
-    }
+        internal void OSChat(Object irc, OSChatMessage msg)
+        {
+            if (enabled)
+            {
+                // m_log.DebugFormat("[IRC-OSCHAT] Region {0} being sent message", region.Region);
+                msg.Scene = scene;
+                scene.EventManager.TriggerOnChatBroadcast(irc, msg);
+            }
+        }
 
+        private void OnClientLoggedOut(IClientAPI client)
+        {
+            try
+            {
+                if (clients.Contains(client))
+                {
+                    if (enabled && (cs.irc.Enabled) && (cs.irc.Connected) && (cs.ClientReporting))
+                    {
+                        m_log.InfoFormat("[IRC-Region {0}]: {1} has left", Region, client.Name);
+                        //Check if this person is excluded from IRC
+                        if (!cs.ExcludeList.Contains(client.Name.ToLower()))
+                        {
+                            cs.irc.PrivMsg(cs.NoticeMessageFormat, cs.irc.Nick, Region, String.Format("{0} has left", client.Name));
+                        }
+                    }
+                    client.OnLogout -= OnClientLoggedOut;
+                    client.OnConnectionClosed -= OnClientLoggedOut;
+                    clients.Remove(client);
+                }
+            }
+            catch (Exception ex)
+            {
+                m_log.ErrorFormat("[IRC-Region {0}]: ClientLoggedOut exception: {1}", Region, ex.Message);
+                m_log.Debug(ex);
+            }
+        }
+
+        // This event indicates that the agent has left the building. We should treat that the same
+        // as if the agent has logged out (we don't want cross-region noise - or do we?)
+
+        private void OnMakeChildAgent(ScenePresence presence)
+        {
+            IClientAPI client = presence.ControllingClient;
+
+            try
+            {
+                if (clients.Contains(client))
+                {
+                    if (enabled && (cs.irc.Enabled) && (cs.irc.Connected) && (cs.ClientReporting))
+                    {
+                        string clientName = String.Format("{0} {1}", presence.Firstname, presence.Lastname);
+                        m_log.DebugFormat("[IRC-Region {0}] {1} has left", Region, clientName);
+                        cs.irc.PrivMsg(cs.NoticeMessageFormat, cs.irc.Nick, Region, String.Format("{0} has left", clientName));
+                    }
+                    client.OnLogout -= OnClientLoggedOut;
+                    client.OnConnectionClosed -= OnClientLoggedOut;
+                    clients.Remove(client);
+                }
+            }
+            catch (Exception ex)
+            {
+                m_log.ErrorFormat("[IRC-Region {0}]: MakeChildAgent exception: {1}", Region, ex.Message);
+                m_log.Debug(ex);
+            }
+        }
+
+        // An agent has entered the region (from another region). Add the client to the locally
+        // known clients list
+
+        private void OnMakeRootAgent(ScenePresence presence)
+        {
+            IClientAPI client = presence.ControllingClient;
+
+            try
+            {
+                if (!clients.Contains(client))
+                {
+                    client.OnLogout += OnClientLoggedOut;
+                    client.OnConnectionClosed += OnClientLoggedOut;
+                    clients.Add(client);
+                    if (enabled && (cs.irc.Enabled) && (cs.irc.Connected) && (cs.ClientReporting))
+                    {
+                        string clientName = String.Format("{0} {1}", presence.Firstname, presence.Lastname);
+                        m_log.DebugFormat("[IRC-Region {0}] {1} has arrived", Region, clientName);
+                        //Check if this person is excluded from IRC
+                        if (!cs.ExcludeList.Contains(clientName.ToLower()))
+                        {
+                            cs.irc.PrivMsg(cs.NoticeMessageFormat, cs.irc.Nick, Region, String.Format("{0} has arrived", clientName));
+                        }
+                    }
+                }
+
+                if (dialogModule != null && showAlert)
+                    dialogModule.SendAlertToUser(client, alertMessage, true);
+            }
+            catch (Exception ex)
+            {
+                m_log.ErrorFormat("[IRC-Region {0}]: MakeRootAgent exception: {1}", Region, ex.Message);
+                m_log.Debug(ex);
+            }
+        }
+        // This method gives the region an opportunity to interfere with
+        // message delivery. For now we just enforce the enable/disable
+        // flag.
+        // This supports any local message traffic that might be needed in
+        // support of command processing. At present there is none.
+    }
 }

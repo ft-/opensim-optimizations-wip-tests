@@ -25,17 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using Nini.Config;
 using log4net;
 using Mono.Addins;
-using System.Reflection;
+using Nini.Config;
+using OpenMetaverse;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
 using OpenSim.Services.Connectors;
-
-using OpenMetaverse;
+using OpenSim.Services.Interfaces;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts
 {
@@ -47,17 +46,29 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
-        private bool m_Enabled = false;
         private UserAccountCache m_Cache;
-
-        public Type ReplaceableInterface 
-        {
-            get { return null; }
-        }
-
+        private bool m_Enabled = false;
         public string Name
         {
             get { return "RemoteUserAccountServicesConnector"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+        public void AddRegion(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+
+            scene.RegisterModuleInterface<IUserAccountService>(this);
+        }
+
+        public void Close()
+        {
+            if (!m_Enabled)
+                return;
         }
 
         public override void Initialise(IConfigSource source)
@@ -90,19 +101,10 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts
             if (!m_Enabled)
                 return;
         }
-
-        public void Close()
+        public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
                 return;
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-            scene.RegisterModuleInterface<IUserAccountService>(this);
         }
 
         public void RemoveRegion(Scene scene)
@@ -110,13 +112,6 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts
             if (!m_Enabled)
                 return;
         }
-
-        public void RegionLoaded(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-        }
-
         #region Overwritten methods from IUserAccountService
 
         public override UserAccount GetUserAccount(UUID scopeID, UUID userID)
@@ -152,6 +147,6 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts
             return false;
         }
 
-        #endregion
+        #endregion Overwritten methods from IUserAccountService
     }
 }

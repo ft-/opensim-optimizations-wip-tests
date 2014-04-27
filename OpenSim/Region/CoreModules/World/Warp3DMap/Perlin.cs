@@ -25,26 +25,27 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
+using System;
 
 namespace OpenSim.Region.CoreModules.World.Warp3DMap
 {
     public static class Perlin
     {
-        // We use a hardcoded seed to keep the noise generation consistent between runs
-        private const int SEED = 42;
-
-        private const int SAMPLE_SIZE = 1024;
         private const int B = SAMPLE_SIZE;
+
         private const int BM = SAMPLE_SIZE - 1;
+
         private const int N = 0x1000;
 
-        private static readonly int[] p = new int[SAMPLE_SIZE + SAMPLE_SIZE + 2];
-        private static readonly float[,] g3 = new float[SAMPLE_SIZE + SAMPLE_SIZE + 2, 3];
-        private static readonly float[,] g2 = new float[SAMPLE_SIZE + SAMPLE_SIZE + 2, 2];
-        private static readonly float[] g1 = new float[SAMPLE_SIZE + SAMPLE_SIZE + 2];
+        private const int SAMPLE_SIZE = 1024;
 
+        // We use a hardcoded seed to keep the noise generation consistent between runs
+        private const int SEED = 42;
+        private static readonly float[] g1 = new float[SAMPLE_SIZE + SAMPLE_SIZE + 2];
+        private static readonly float[,] g2 = new float[SAMPLE_SIZE + SAMPLE_SIZE + 2, 2];
+        private static readonly float[,] g3 = new float[SAMPLE_SIZE + SAMPLE_SIZE + 2, 3];
+        private static readonly int[] p = new int[SAMPLE_SIZE + SAMPLE_SIZE + 2];
         static Perlin()
         {
             Random rng = new Random(SEED);

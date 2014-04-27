@@ -25,54 +25,44 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using Nini.Config;
+using Nwc.XmlRpc;
+using OpenMetaverse;
+using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Server.Base;
+using OpenSim.Server.Handlers.Base;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net;
-using System.Reflection;
-
-using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
-using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Server.Handlers.Base;
 using GridRegion = OpenSim.Services.Interfaces.GridRegion;
-
-using log4net;
-using Nwc.XmlRpc;
-using OpenMetaverse;
 
 namespace OpenSim.Server.Handlers.Hypergrid
 {
     public class UserAgentServerConnector : ServiceConnector
     {
-//        private static readonly ILog m_log =
-//                LogManager.GetLogger(
-//                MethodBase.GetCurrentMethod().DeclaringType);
-
-        private IUserAgentService m_HomeUsersService;
-        public IUserAgentService HomeUsersService
-        {
-            get { return m_HomeUsersService; }
-        }
+        //        private static readonly ILog m_log =
+        //                LogManager.GetLogger(
+        //                MethodBase.GetCurrentMethod().DeclaringType);
 
         private string[] m_AuthorizedCallers;
+        private IUserAgentService m_HomeUsersService;
 
         private bool m_VerifyCallers = false;
 
         public UserAgentServerConnector(IConfigSource config, IHttpServer server) :
             this(config, server, (IFriendsSimConnector)null)
-        {            
+        {
         }
 
         public UserAgentServerConnector(IConfigSource config, IHttpServer server, string configName) :
             this(config, server)
         {
         }
-        
+
         public UserAgentServerConnector(IConfigSource config, IHttpServer server, IFriendsSimConnector friendsConnector) :
-                base(config, server, String.Empty)
+            base(config, server, String.Empty)
         {
             IConfig gridConfig = config.Configs["UserAgentService"];
             if (gridConfig != null)
@@ -111,6 +101,29 @@ namespace OpenSim.Server.Handlers.Hypergrid
             server.AddStreamHandler(new HomeAgentHandler(m_HomeUsersService, loginServerIP, proxy));
         }
 
+        public IUserAgentService HomeUsersService
+        {
+            get { return m_HomeUsersService; }
+        }
+        public XmlRpcResponse AgentIsComingHome(XmlRpcRequest request, IPEndPoint remoteClient)
+        {
+            Hashtable requestData = (Hashtable)request.Params[0];
+            //string host = (string)requestData["host"];
+            //string portstr = (string)requestData["port"];
+            string sessionID_str = (string)requestData["sessionID"];
+            UUID sessionID = UUID.Zero;
+            UUID.TryParse(sessionID_str, out sessionID);
+            string gridName = (string)requestData["externalName"];
+
+            bool success = m_HomeUsersService.IsAgentComingHome(sessionID, gridName);
+
+            Hashtable hash = new Hashtable();
+            hash["result"] = success.ToString();
+            XmlRpcResponse response = new XmlRpcResponse();
+            response.Value = hash;
+            return response;
+        }
+
         public XmlRpcResponse GetHomeRegion(XmlRpcRequest request, IPEndPoint remoteClient)
         {
             Hashtable requestData = (Hashtable)request.Params[0];
@@ -144,136 +157,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
             XmlRpcResponse response = new XmlRpcResponse();
             response.Value = hash;
             return response;
-
         }
-
-        public XmlRpcResponse AgentIsComingHome(XmlRpcRequest request, IPEndPoint remoteClient)
-        {
-            Hashtable requestData = (Hashtable)request.Params[0];
-            //string host = (string)requestData["host"];
-            //string portstr = (string)requestData["port"];
-            string sessionID_str = (string)requestData["sessionID"];
-            UUID sessionID = UUID.Zero;
-            UUID.TryParse(sessionID_str, out sessionID);
-            string gridName = (string)requestData["externalName"];
-
-            bool success = m_HomeUsersService.IsAgentComingHome(sessionID, gridName);
-
-            Hashtable hash = new Hashtable();
-            hash["result"] = success.ToString();
-            XmlRpcResponse response = new XmlRpcResponse();
-            response.Value = hash;
-            return response;
-
-        }
-
-        public XmlRpcResponse VerifyAgent(XmlRpcRequest request, IPEndPoint remoteClient)
-        {
-            Hashtable requestData = (Hashtable)request.Params[0];
-            //string host = (string)requestData["host"];
-            //string portstr = (string)requestData["port"];
-            string sessionID_str = (string)requestData["sessionID"];
-            UUID sessionID = UUID.Zero;
-            UUID.TryParse(sessionID_str, out sessionID);
-            string token = (string)requestData["token"];
-
-            bool success = m_HomeUsersService.VerifyAgent(sessionID, token);
-
-            Hashtable hash = new Hashtable();
-            hash["result"] = success.ToString();
-            XmlRpcResponse response = new XmlRpcResponse();
-            response.Value = hash;
-            return response;
-
-        }
-
-        public XmlRpcResponse VerifyClient(XmlRpcRequest request, IPEndPoint remoteClient)
-        {
-            Hashtable requestData = (Hashtable)request.Params[0];
-            //string host = (string)requestData["host"];
-            //string portstr = (string)requestData["port"];
-            string sessionID_str = (string)requestData["sessionID"];
-            UUID sessionID = UUID.Zero;
-            UUID.TryParse(sessionID_str, out sessionID);
-            string token = (string)requestData["token"];
-
-            bool success = m_HomeUsersService.VerifyClient(sessionID, token);
-
-            Hashtable hash = new Hashtable();
-            hash["result"] = success.ToString();
-            XmlRpcResponse response = new XmlRpcResponse();
-            response.Value = hash;
-            return response;
-
-        }
-
-        public XmlRpcResponse LogoutAgent(XmlRpcRequest request, IPEndPoint remoteClient)
-        {
-            Hashtable requestData = (Hashtable)request.Params[0];
-            //string host = (string)requestData["host"];
-            //string portstr = (string)requestData["port"];
-            string sessionID_str = (string)requestData["sessionID"];
-            UUID sessionID = UUID.Zero;
-            UUID.TryParse(sessionID_str, out sessionID);
-            string userID_str = (string)requestData["userID"];
-            UUID userID = UUID.Zero;
-            UUID.TryParse(userID_str, out userID);
-
-            m_HomeUsersService.LogoutAgent(userID, sessionID);
-
-            Hashtable hash = new Hashtable();
-            hash["result"] = "true";
-            XmlRpcResponse response = new XmlRpcResponse();
-            response.Value = hash;
-            return response;
-
-        }
-
-        [Obsolete]
-        public XmlRpcResponse StatusNotification(XmlRpcRequest request, IPEndPoint remoteClient)
-        {
-            Hashtable hash = new Hashtable();
-            hash["result"] = "false";
-
-            Hashtable requestData = (Hashtable)request.Params[0];
-            //string host = (string)requestData["host"];
-            //string portstr = (string)requestData["port"];
-            if (requestData.ContainsKey("userID") && requestData.ContainsKey("online"))
-            {
-                string userID_str = (string)requestData["userID"];
-                UUID userID = UUID.Zero;
-                UUID.TryParse(userID_str, out userID);
-                List<string> ids = new List<string>();
-                foreach (object key in requestData.Keys)
-                {
-                    if (key is string && ((string)key).StartsWith("friend_") && requestData[key] != null)
-                        ids.Add(requestData[key].ToString());
-                }
-                bool online = false;
-                bool.TryParse(requestData["online"].ToString(), out online);
-
-                // let's spawn a thread for this, because it may take a long time...
-                List<UUID> friendsOnline = m_HomeUsersService.StatusNotification(ids, userID, online);
-                if (friendsOnline.Count > 0)
-                {
-                    int i = 0;
-                    foreach (UUID id in friendsOnline)
-                    {
-                        hash["friend_" + i.ToString()] = id.ToString();
-                        i++;
-                    }
-                }
-                else
-                    hash["result"] = "No Friends Online";
-
-            }
-
-            XmlRpcResponse response = new XmlRpcResponse();
-            response.Value = hash;
-            return response;
-
-        }
-
         [Obsolete]
         public XmlRpcResponse GetOnlineFriends(XmlRpcRequest request, IPEndPoint remoteClient)
         {
@@ -311,39 +195,6 @@ namespace OpenSim.Server.Handlers.Hypergrid
             XmlRpcResponse response = new XmlRpcResponse();
             response.Value = hash;
             return response;
-
-        }
-
-        public XmlRpcResponse GetUserInfo(XmlRpcRequest request, IPEndPoint remoteClient)
-        {
-            Hashtable hash = new Hashtable();
-            Hashtable requestData = (Hashtable)request.Params[0];
-
-            // This needs checking!
-            if (requestData.ContainsKey("userID"))
-            {
-                string userID_str = (string)requestData["userID"];
-                UUID userID = UUID.Zero;
-                UUID.TryParse(userID_str, out userID);
-
-                //int userFlags = m_HomeUsersService.GetUserFlags(userID);
-                Dictionary<string,object> userInfo = m_HomeUsersService.GetUserInfo(userID);
-                if (userInfo.Count > 0)
-                {
-                    foreach (KeyValuePair<string, object> kvp in userInfo)
-                    {
-                        hash[kvp.Key] = kvp.Value;
-                    }
-                }
-                else
-                {
-                    hash["result"] = "failure";
-                }
-            }
-
-            XmlRpcResponse response = new XmlRpcResponse();
-            response.Value = hash;
-            return response;
         }
 
         public XmlRpcResponse GetServerURLs(XmlRpcRequest request, IPEndPoint remoteClient)
@@ -372,55 +223,38 @@ namespace OpenSim.Server.Handlers.Hypergrid
             XmlRpcResponse response = new XmlRpcResponse();
             response.Value = hash;
             return response;
-
         }
 
-        /// <summary>
-        /// Locates the user.
-        /// This is a sensitive operation, only authorized IP addresses can perform it.
-        /// </summary>
-        /// <param name="request"></param>
-        /// <param name="remoteClient"></param>
-        /// <returns></returns>
-        public XmlRpcResponse LocateUser(XmlRpcRequest request, IPEndPoint remoteClient)
+        public XmlRpcResponse GetUserInfo(XmlRpcRequest request, IPEndPoint remoteClient)
         {
             Hashtable hash = new Hashtable();
+            Hashtable requestData = (Hashtable)request.Params[0];
 
-            bool authorized = true;
-            if (m_VerifyCallers)
+            // This needs checking!
+            if (requestData.ContainsKey("userID"))
             {
-                authorized = false;
-                foreach (string s in m_AuthorizedCallers)
-                    if (s == remoteClient.Address.ToString())
-                    {
-                        authorized = true;
-                        break;
-                    }
-            }
+                string userID_str = (string)requestData["userID"];
+                UUID userID = UUID.Zero;
+                UUID.TryParse(userID_str, out userID);
 
-            if (authorized)
-            {
-                Hashtable requestData = (Hashtable)request.Params[0];
-                //string host = (string)requestData["host"];
-                //string portstr = (string)requestData["port"];
-                if (requestData.ContainsKey("userID"))
+                //int userFlags = m_HomeUsersService.GetUserFlags(userID);
+                Dictionary<string, object> userInfo = m_HomeUsersService.GetUserInfo(userID);
+                if (userInfo.Count > 0)
                 {
-                    string userID_str = (string)requestData["userID"];
-                    UUID userID = UUID.Zero;
-                    UUID.TryParse(userID_str, out userID);
-
-                    string url = m_HomeUsersService.LocateUser(userID);
-                    if (url != string.Empty)
-                        hash["URL"] = url;
-                    else
-                        hash["result"] = "Unable to locate user";
+                    foreach (KeyValuePair<string, object> kvp in userInfo)
+                    {
+                        hash[kvp.Key] = kvp.Value;
+                    }
+                }
+                else
+                {
+                    hash["result"] = "failure";
                 }
             }
 
             XmlRpcResponse response = new XmlRpcResponse();
             response.Value = hash;
             return response;
-
         }
 
         /// <summary>
@@ -478,6 +312,155 @@ namespace OpenSim.Server.Handlers.Hypergrid
                 hash["UUID"] = uuid.ToString();
             }
 
+            XmlRpcResponse response = new XmlRpcResponse();
+            response.Value = hash;
+            return response;
+        }
+
+        /// <summary>
+        /// Locates the user.
+        /// This is a sensitive operation, only authorized IP addresses can perform it.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="remoteClient"></param>
+        /// <returns></returns>
+        public XmlRpcResponse LocateUser(XmlRpcRequest request, IPEndPoint remoteClient)
+        {
+            Hashtable hash = new Hashtable();
+
+            bool authorized = true;
+            if (m_VerifyCallers)
+            {
+                authorized = false;
+                foreach (string s in m_AuthorizedCallers)
+                    if (s == remoteClient.Address.ToString())
+                    {
+                        authorized = true;
+                        break;
+                    }
+            }
+
+            if (authorized)
+            {
+                Hashtable requestData = (Hashtable)request.Params[0];
+                //string host = (string)requestData["host"];
+                //string portstr = (string)requestData["port"];
+                if (requestData.ContainsKey("userID"))
+                {
+                    string userID_str = (string)requestData["userID"];
+                    UUID userID = UUID.Zero;
+                    UUID.TryParse(userID_str, out userID);
+
+                    string url = m_HomeUsersService.LocateUser(userID);
+                    if (url != string.Empty)
+                        hash["URL"] = url;
+                    else
+                        hash["result"] = "Unable to locate user";
+                }
+            }
+
+            XmlRpcResponse response = new XmlRpcResponse();
+            response.Value = hash;
+            return response;
+        }
+
+        public XmlRpcResponse LogoutAgent(XmlRpcRequest request, IPEndPoint remoteClient)
+        {
+            Hashtable requestData = (Hashtable)request.Params[0];
+            //string host = (string)requestData["host"];
+            //string portstr = (string)requestData["port"];
+            string sessionID_str = (string)requestData["sessionID"];
+            UUID sessionID = UUID.Zero;
+            UUID.TryParse(sessionID_str, out sessionID);
+            string userID_str = (string)requestData["userID"];
+            UUID userID = UUID.Zero;
+            UUID.TryParse(userID_str, out userID);
+
+            m_HomeUsersService.LogoutAgent(userID, sessionID);
+
+            Hashtable hash = new Hashtable();
+            hash["result"] = "true";
+            XmlRpcResponse response = new XmlRpcResponse();
+            response.Value = hash;
+            return response;
+        }
+
+        [Obsolete]
+        public XmlRpcResponse StatusNotification(XmlRpcRequest request, IPEndPoint remoteClient)
+        {
+            Hashtable hash = new Hashtable();
+            hash["result"] = "false";
+
+            Hashtable requestData = (Hashtable)request.Params[0];
+            //string host = (string)requestData["host"];
+            //string portstr = (string)requestData["port"];
+            if (requestData.ContainsKey("userID") && requestData.ContainsKey("online"))
+            {
+                string userID_str = (string)requestData["userID"];
+                UUID userID = UUID.Zero;
+                UUID.TryParse(userID_str, out userID);
+                List<string> ids = new List<string>();
+                foreach (object key in requestData.Keys)
+                {
+                    if (key is string && ((string)key).StartsWith("friend_") && requestData[key] != null)
+                        ids.Add(requestData[key].ToString());
+                }
+                bool online = false;
+                bool.TryParse(requestData["online"].ToString(), out online);
+
+                // let's spawn a thread for this, because it may take a long time...
+                List<UUID> friendsOnline = m_HomeUsersService.StatusNotification(ids, userID, online);
+                if (friendsOnline.Count > 0)
+                {
+                    int i = 0;
+                    foreach (UUID id in friendsOnline)
+                    {
+                        hash["friend_" + i.ToString()] = id.ToString();
+                        i++;
+                    }
+                }
+                else
+                    hash["result"] = "No Friends Online";
+            }
+
+            XmlRpcResponse response = new XmlRpcResponse();
+            response.Value = hash;
+            return response;
+        }
+
+        public XmlRpcResponse VerifyAgent(XmlRpcRequest request, IPEndPoint remoteClient)
+        {
+            Hashtable requestData = (Hashtable)request.Params[0];
+            //string host = (string)requestData["host"];
+            //string portstr = (string)requestData["port"];
+            string sessionID_str = (string)requestData["sessionID"];
+            UUID sessionID = UUID.Zero;
+            UUID.TryParse(sessionID_str, out sessionID);
+            string token = (string)requestData["token"];
+
+            bool success = m_HomeUsersService.VerifyAgent(sessionID, token);
+
+            Hashtable hash = new Hashtable();
+            hash["result"] = success.ToString();
+            XmlRpcResponse response = new XmlRpcResponse();
+            response.Value = hash;
+            return response;
+        }
+
+        public XmlRpcResponse VerifyClient(XmlRpcRequest request, IPEndPoint remoteClient)
+        {
+            Hashtable requestData = (Hashtable)request.Params[0];
+            //string host = (string)requestData["host"];
+            //string portstr = (string)requestData["port"];
+            string sessionID_str = (string)requestData["sessionID"];
+            UUID sessionID = UUID.Zero;
+            UUID.TryParse(sessionID_str, out sessionID);
+            string token = (string)requestData["token"];
+
+            bool success = m_HomeUsersService.VerifyClient(sessionID, token);
+
+            Hashtable hash = new Hashtable();
+            hash["result"] = success.ToString();
             XmlRpcResponse response = new XmlRpcResponse();
             response.Value = hash;
             return response;

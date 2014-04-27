@@ -26,27 +26,22 @@
  */
 
 using log4net;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
 using Nini.Config;
 using OpenSim.Framework;
-using OpenSim.Framework.Communications;
 using OpenSim.Services.Interfaces;
-using OpenMetaverse;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Services.Connectors
 {
-    public class AuthorizationServicesConnector 
+    public class AuthorizationServicesConnector
     {
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
-        private string m_ServerURI = String.Empty;
         private bool m_ResponseOnFailure = true;
-       
+        private string m_ServerURI = String.Empty;
         public AuthorizationServicesConnector()
         {
         }
@@ -79,11 +74,11 @@ namespace OpenSim.Services.Connectors
                 throw new Exception("Authorization connector init error");
             }
             m_ServerURI = serviceURI;
-            
+
             // this dictates what happens if the remote service fails, if the service fails and the value is true
             // the user is authorized for the region.
-            bool responseOnFailure = authorizationConfig.GetBoolean("ResponseOnFailure",true);
-                    
+            bool responseOnFailure = authorizationConfig.GetBoolean("ResponseOnFailure", true);
+
             m_ResponseOnFailure = responseOnFailure;
             m_log.Info("[AUTHORIZATION CONNECTOR]: AuthorizationService initialized");
         }
@@ -92,11 +87,11 @@ namespace OpenSim.Services.Connectors
         {
             // do a remote call to the authorization server specified in the AuthorizationServerURI
             m_log.InfoFormat("[AUTHORIZATION CONNECTOR]: IsAuthorizedForRegion checking {0} at remote server {1}", userID, m_ServerURI);
-            
+
             string uri = m_ServerURI;
-            
+
             AuthorizationRequest req = new AuthorizationRequest(userID, firstname, surname, email, regionName, regionID);
-            
+
             AuthorizationResponse response;
             try
             {
@@ -115,9 +110,8 @@ namespace OpenSim.Services.Connectors
             }
             m_log.DebugFormat("[AUTHORIZATION CONNECTOR] response from remote service was {0}", response.Message);
             message = response.Message;
-            
+
             return response.IsAuthorized;
         }
-
     }
 }

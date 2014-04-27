@@ -25,21 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using log4net;
 using Mono.Addins;
 using Nini.Config;
 using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Framework.Console;
-using OpenSim.Framework.Monitoring;
-using OpenSim.Region.ClientStack.LindenUDP;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace OpenSim.Region.OptionalModules.Avatar.Appearance
 {
@@ -49,47 +43,38 @@ namespace OpenSim.Region.OptionalModules.Avatar.Appearance
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "AppearanceInfoModule")]
     public class AppearanceInfoModule : ISharedRegionModule
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private Dictionary<UUID, Scene> m_scenes = new Dictionary<UUID, Scene>();
-//        private IAvatarFactoryModule m_avatarFactory;
-        
-        public string Name { get { return "Appearance Information Module"; } }        
-        
+        //        private IAvatarFactoryModule m_avatarFactory;
+
+        public string Name { get { return "Appearance Information Module"; } }
+
         public Type ReplaceableInterface { get { return null; } }
-        
-        public void Initialise(IConfigSource source)
-        {
-//            m_log.DebugFormat("[APPEARANCE INFO MODULE]: INITIALIZED MODULE");
-        }
-        
-        public void PostInitialise()
-        {
-//            m_log.DebugFormat("[APPEARANCE INFO MODULE]: POST INITIALIZED MODULE");
-        }
-        
-        public void Close()
-        {
-//            m_log.DebugFormat("[APPEARANCE INFO MODULE]: CLOSED MODULE");
-        }
-        
+
         public void AddRegion(Scene scene)
         {
-//            m_log.DebugFormat("[APPEARANCE INFO MODULE]: REGION {0} ADDED", scene.RegionInfo.RegionName);                                     
+            //            m_log.DebugFormat("[APPEARANCE INFO MODULE]: REGION {0} ADDED", scene.RegionInfo.RegionName);
         }
-        
-        public void RemoveRegion(Scene scene)
+
+        public void Close()
         {
-//            m_log.DebugFormat("[APPEARANCE INFO MODULE]: REGION {0} REMOVED", scene.RegionInfo.RegionName);
-            
-            lock (m_scenes)
-                m_scenes.Remove(scene.RegionInfo.RegionID);
-        }        
-        
+            //            m_log.DebugFormat("[APPEARANCE INFO MODULE]: CLOSED MODULE");
+        }
+
+        public void Initialise(IConfigSource source)
+        {
+            //            m_log.DebugFormat("[APPEARANCE INFO MODULE]: INITIALIZED MODULE");
+        }
+
+        public void PostInitialise()
+        {
+            //            m_log.DebugFormat("[APPEARANCE INFO MODULE]: POST INITIALIZED MODULE");
+        }
         public void RegionLoaded(Scene scene)
         {
-//            m_log.DebugFormat("[APPEARANCE INFO MODULE]: REGION {0} LOADED", scene.RegionInfo.RegionName);
-            
+            //            m_log.DebugFormat("[APPEARANCE INFO MODULE]: REGION {0} LOADED", scene.RegionInfo.RegionName);
+
             lock (m_scenes)
                 m_scenes[scene.RegionInfo.RegionID] = scene;
 
@@ -98,7 +83,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Appearance
                 "show appearance [<first-name> <last-name>]",
                 "Synonym for 'appearance show'",
                 HandleShowAppearanceCommand);
-            
+
             scene.AddCommand(
                 "Users", this, "appearance show",
                 "appearance show [<first-name> <last-name>]",
@@ -134,55 +119,52 @@ namespace OpenSim.Region.OptionalModules.Avatar.Appearance
                 HandleFindAppearanceCommand);
         }
 
-        private void HandleSendAppearanceCommand(string module, string[] cmd)
+        public void RemoveRegion(Scene scene)
         {
-            if (cmd.Length != 2 && cmd.Length < 4)
+            //            m_log.DebugFormat("[APPEARANCE INFO MODULE]: REGION {0} REMOVED", scene.RegionInfo.RegionName);
+
+            lock (m_scenes)
+                m_scenes.Remove(scene.RegionInfo.RegionID);
+        }
+        protected void HandleFindAppearanceCommand(string module, string[] cmd)
+        {
+            if (cmd.Length != 3)
             {
-                MainConsole.Instance.OutputFormat("Usage: appearance send [<first-name> <last-name>]");
+                MainConsole.Instance.OutputFormat("Usage: appearance find <uuid-or-start-of-uuid>");
                 return;
             }
 
-            bool targetNameSupplied = false;
-            string optionalTargetFirstName = null;
-            string optionalTargetLastName = null;
+            string rawUuid = cmd[2];
 
-            if (cmd.Length >= 4)
-            {
-                targetNameSupplied = true;
-                optionalTargetFirstName = cmd[2];
-                optionalTargetLastName = cmd[3];
-            }
+            HashSet<ScenePresence> matchedAvatars = new HashSet<ScenePresence>();
 
             lock (m_scenes)
             {
                 foreach (Scene scene in m_scenes.Values)
                 {
-                    if (targetNameSupplied)
-                    {
-                        ScenePresence sp = scene.GetScenePresence(optionalTargetFirstName, optionalTargetLastName);
-                        if (sp != null && !sp.IsChildAgent)
+                    scene.ForEachRootScenePresence(
+                        sp =>
                         {
-                            MainConsole.Instance.OutputFormat(
-                                "Sending appearance information for {0} to all other avatars in {1}",
-                                sp.Name, scene.RegionInfo.RegionName);
-
-                            scene.AvatarFactory.SendAppearance(sp.UUID);
-                        }
-                    }
-                    else
-                    {
-                        scene.ForEachRootScenePresence(
-                            sp =>
+                            Dictionary<BakeType, Primitive.TextureEntryFace> bakedFaces = scene.AvatarFactory.GetBakedTextureFaces(sp.UUID);
+                            foreach (Primitive.TextureEntryFace face in bakedFaces.Values)
                             {
-                                MainConsole.Instance.OutputFormat(
-                                    "Sending appearance information for {0} to all other avatars in {1}",
-                                    sp.Name, scene.RegionInfo.RegionName);
-
-                                scene.AvatarFactory.SendAppearance(sp.UUID);
+                                if (face != null && face.TextureID.ToString().StartsWith(rawUuid))
+                                    matchedAvatars.Add(sp);
                             }
-                        );
-                    }
+                        });
                 }
+            }
+
+            if (matchedAvatars.Count == 0)
+            {
+                MainConsole.Instance.OutputFormat("{0} did not match any baked avatar textures in use", rawUuid);
+            }
+            else
+            {
+                MainConsole.Instance.OutputFormat(
+                    "{0} matched {1}",
+                    rawUuid,
+                    string.Join(", ", matchedAvatars.ToList().ConvertAll<string>(sp => sp.Name).ToArray()));
             }
         }
 
@@ -206,7 +188,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Appearance
             }
 
             lock (m_scenes)
-            {   
+            {
                 foreach (Scene scene in m_scenes.Values)
                 {
                     if (targetNameSupplied)
@@ -263,45 +245,55 @@ namespace OpenSim.Region.OptionalModules.Avatar.Appearance
             }
         }
 
-        protected void HandleFindAppearanceCommand(string module, string[] cmd)
+        private void HandleSendAppearanceCommand(string module, string[] cmd)
         {
-            if (cmd.Length != 3)
+            if (cmd.Length != 2 && cmd.Length < 4)
             {
-                MainConsole.Instance.OutputFormat("Usage: appearance find <uuid-or-start-of-uuid>");
+                MainConsole.Instance.OutputFormat("Usage: appearance send [<first-name> <last-name>]");
                 return;
             }
 
-            string rawUuid = cmd[2];
+            bool targetNameSupplied = false;
+            string optionalTargetFirstName = null;
+            string optionalTargetLastName = null;
 
-            HashSet<ScenePresence> matchedAvatars = new HashSet<ScenePresence>();
+            if (cmd.Length >= 4)
+            {
+                targetNameSupplied = true;
+                optionalTargetFirstName = cmd[2];
+                optionalTargetLastName = cmd[3];
+            }
 
             lock (m_scenes)
             {
                 foreach (Scene scene in m_scenes.Values)
                 {
-                    scene.ForEachRootScenePresence(
-                        sp =>
+                    if (targetNameSupplied)
+                    {
+                        ScenePresence sp = scene.GetScenePresence(optionalTargetFirstName, optionalTargetLastName);
+                        if (sp != null && !sp.IsChildAgent)
                         {
-                            Dictionary<BakeType, Primitive.TextureEntryFace> bakedFaces = scene.AvatarFactory.GetBakedTextureFaces(sp.UUID);
-                            foreach (Primitive.TextureEntryFace face in bakedFaces.Values)
-                            {
-                                if (face != null && face.TextureID.ToString().StartsWith(rawUuid))
-                                    matchedAvatars.Add(sp);
-                            }
-                        });
-                }
-            }
+                            MainConsole.Instance.OutputFormat(
+                                "Sending appearance information for {0} to all other avatars in {1}",
+                                sp.Name, scene.RegionInfo.RegionName);
 
-            if (matchedAvatars.Count == 0)
-            {
-                MainConsole.Instance.OutputFormat("{0} did not match any baked avatar textures in use", rawUuid);
-            }
-            else
-            {
-                MainConsole.Instance.OutputFormat(
-                    "{0} matched {1}",
-                    rawUuid,
-                    string.Join(", ", matchedAvatars.ToList().ConvertAll<string>(sp => sp.Name).ToArray()));
+                            scene.AvatarFactory.SendAppearance(sp.UUID);
+                        }
+                    }
+                    else
+                    {
+                        scene.ForEachRootScenePresence(
+                            sp =>
+                            {
+                                MainConsole.Instance.OutputFormat(
+                                    "Sending appearance information for {0} to all other avatars in {1}",
+                                    sp.Name, scene.RegionInfo.RegionName);
+
+                                scene.AvatarFactory.SendAppearance(sp.UUID);
+                            }
+                        );
+                    }
+                }
             }
         }
     }

@@ -1,21 +1,21 @@
 ﻿/* The MIT License
- * 
+ *
  * Copyright (c) 2010 Intel Corporation.
  * All rights reserved.
  *
- * Based on the convexdecomposition library from 
+ * Based on the convexdecomposition library from
  * <http://codesuppository.googlecode.com> by John W. Ratcliff and Stan Melax.
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -26,7 +26,6 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
@@ -83,6 +82,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
                             case 2: return x.z;
                         }
                         break;
+
                     case 1:
                         switch (j)
                         {
@@ -91,6 +91,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
                             case 2: return y.z;
                         }
                         break;
+
                     case 2:
                         switch (j)
                         {
@@ -114,6 +115,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
                             case 2: x.z = value; return;
                         }
                         break;
+
                     case 1:
                         switch (j)
                         {
@@ -122,6 +124,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
                             case 2: y.z = value; return;
                         }
                         break;
+
                     case 2:
                         switch (j)
                         {
@@ -133,37 +136,6 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
                 }
                 throw new ArgumentOutOfRangeException();
             }
-        }
-
-        public static float3x3 Transpose(float3x3 m)
-        {
-            return new float3x3(new float3(m.x.x, m.y.x, m.z.x), new float3(m.x.y, m.y.y, m.z.y), new float3(m.x.z, m.y.z, m.z.z));
-        }
-
-        public static float3x3 operator *(float3x3 a, float3x3 b)
-        {
-            return new float3x3(a.x * b, a.y * b, a.z * b);
-        }
-
-        public static float3x3 operator *(float3x3 a, float s)
-        {
-            return new float3x3(a.x * s, a.y * s, a.z * s);
-        }
-
-        public static float3x3 operator /(float3x3 a, float s)
-        {
-            float t = 1f / s;
-            return new float3x3(a.x * t, a.y * t, a.z * t);
-        }
-
-        public static float3x3 operator +(float3x3 a, float3x3 b)
-        {
-            return new float3x3(a.x + b.x, a.y + b.y, a.z + b.z);
-        }
-
-        public static float3x3 operator -(float3x3 a, float3x3 b)
-        {
-            return new float3x3(a.x - b.x, a.y - b.y, a.z - b.z);
         }
 
         public static float Determinant(float3x3 m)
@@ -190,6 +162,37 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
                 }
             }
             return b;
+        }
+
+        public static float3x3 operator -(float3x3 a, float3x3 b)
+        {
+            return new float3x3(a.x - b.x, a.y - b.y, a.z - b.z);
+        }
+
+        public static float3x3 operator *(float3x3 a, float3x3 b)
+        {
+            return new float3x3(a.x * b, a.y * b, a.z * b);
+        }
+
+        public static float3x3 operator *(float3x3 a, float s)
+        {
+            return new float3x3(a.x * s, a.y * s, a.z * s);
+        }
+
+        public static float3x3 operator /(float3x3 a, float s)
+        {
+            float t = 1f / s;
+            return new float3x3(a.x * t, a.y * t, a.z * t);
+        }
+
+        public static float3x3 operator +(float3x3 a, float3x3 b)
+        {
+            return new float3x3(a.x + b.x, a.y + b.y, a.z + b.z);
+        }
+
+        public static float3x3 Transpose(float3x3 m)
+        {
+            return new float3x3(new float3(m.x.x, m.y.x, m.z.x), new float3(m.x.y, m.y.y, m.z.y), new float3(m.x.z, m.y.z, m.z.z));
         }
     }
 }

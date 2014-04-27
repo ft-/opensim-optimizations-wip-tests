@@ -31,9 +31,11 @@ namespace OpenSim.Region.Framework.Interfaces
 {
     public interface IXmlRpcRouter
     {
-        void RegisterNewReceiver(IScriptModule scriptEngine, UUID channelID, UUID objectID, UUID itemID, string url);
-        void ScriptRemoved(UUID itemID);
         void ObjectRemoved(UUID objectID);
+
+        void RegisterNewReceiver(IScriptModule scriptEngine, UUID channelID, UUID objectID, UUID itemID, string url);
+
+        void ScriptRemoved(UUID itemID);
         void UnRegisterReceiver(string channelID, UUID itemID);
     }
 }

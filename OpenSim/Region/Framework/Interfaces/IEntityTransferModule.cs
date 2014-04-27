@@ -25,13 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using OpenSim.Services.Interfaces;
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
-
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Scenes;
+using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
@@ -39,6 +36,44 @@ namespace OpenSim.Region.Framework.Interfaces
 
     public interface IEntityTransferModule
     {
+        void AgentArrivedAtDestination(UUID agent);
+
+        bool Cross(ScenePresence agent, bool isFlying);
+
+        void Cross(SceneObjectGroup sog, Vector3 position, bool silent);
+
+        ScenePresence CrossAgentToNewRegionAsync(ScenePresence agent, Vector3 pos, GridRegion neighbourRegion, bool isFlying, string version);
+
+        /// <summary>
+        /// Teleport an agent directly to a given region without checking whether the region should be substituted.
+        /// </summary>
+        /// <remarks>
+        /// Please use Teleport() instead unless you know exactly what you're doing.
+        /// Do not use for same region teleports.
+        /// </remarks>
+        /// <param name='sp'></param>
+        /// <param name='reg'></param>
+        /// <param name='finalDestination'>/param>
+        /// <param name='position'></param>
+        /// <param name='lookAt'></param>
+        /// <param name='teleportFlags'></param>
+        void DoTeleport(ScenePresence sp, GridRegion reg, GridRegion finalDestination,
+            Vector3 position, Vector3 lookAt, uint teleportFlags);
+
+        void EnableChildAgent(ScenePresence agent, GridRegion region);
+
+        void EnableChildAgents(ScenePresence agent);
+
+        GridRegion GetDestination(Scene scene, UUID agentID, Vector3 pos, out string version,
+                                                out Vector3 newpos, out string reason);
+
+        /// <summary>
+        /// Show whether the given agent is being teleported.
+        /// </summary>
+        /// <param name='id'>The agent ID</para></param>
+        /// <returns>true if the agent is in the process of being teleported, false otherwise.</returns>
+        bool IsInTransit(UUID id);
+
         /// <summary>
         /// Teleport an agent within the same or to a different region.
         /// </summary>
@@ -60,44 +95,6 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name='id'></param>
         /// <param name='client'></param>
         bool TeleportHome(UUID id, IClientAPI client);
-
-        /// <summary>
-        /// Teleport an agent directly to a given region without checking whether the region should be substituted.
-        /// </summary>
-        /// <remarks>
-        /// Please use Teleport() instead unless you know exactly what you're doing.
-        /// Do not use for same region teleports.
-        /// </remarks>
-        /// <param name='sp'></param>
-        /// <param name='reg'></param>
-        /// <param name='finalDestination'>/param>
-        /// <param name='position'></param>
-        /// <param name='lookAt'></param>
-        /// <param name='teleportFlags'></param>
-        void DoTeleport(ScenePresence sp, GridRegion reg, GridRegion finalDestination,
-            Vector3 position, Vector3 lookAt, uint teleportFlags);
-
-        /// <summary>
-        /// Show whether the given agent is being teleported.
-        /// </summary>
-        /// <param name='id'>The agent ID</para></param>
-        /// <returns>true if the agent is in the process of being teleported, false otherwise.</returns>
-        bool IsInTransit(UUID id);        
-
-        bool Cross(ScenePresence agent, bool isFlying);
-
-        void AgentArrivedAtDestination(UUID agent);
-
-        void EnableChildAgents(ScenePresence agent);
-
-        void EnableChildAgent(ScenePresence agent, GridRegion region);
-
-        GridRegion GetDestination(Scene scene, UUID agentID, Vector3 pos, out string version,
-                                        out Vector3 newpos, out string reason);
-
-        void Cross(SceneObjectGroup sog, Vector3 position, bool silent);
-
-        ScenePresence CrossAgentToNewRegionAsync(ScenePresence agent, Vector3 pos, GridRegion neighbourRegion, bool isFlying, string version);
     }
 
     public interface IUserAgentVerificationModule

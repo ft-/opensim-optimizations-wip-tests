@@ -25,31 +25,23 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using Nini.Config;
-using log4net;
-using System;
-using System.Reflection;
-using System.IO;
-using System.Net;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Xml;
-using System.Xml.Serialization;
+using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Server.Base;
 using OpenSim.Services.Interfaces;
-using OpenSim.Framework;
-using OpenSim.Framework.Servers.HttpServer;
+using System;
+using System.IO;
+using System.Xml.Serialization;
 
 namespace OpenSim.Server.Handlers.Authorization
 {
     public class AuthorizationServerPostHandler : BaseStreamHandler
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private IAuthorizationService m_AuthorizationService;
 
         public AuthorizationServerPostHandler(IAuthorizationService service) :
-                base("POST", "/authorization")
+            base("POST", "/authorization")
         {
             m_AuthorizationService = service;
         }
@@ -57,8 +49,8 @@ namespace OpenSim.Server.Handlers.Authorization
         protected override byte[] ProcessRequest(string path, Stream request,
                 IOSHttpRequest httpRequest, IOSHttpResponse httpResponse)
         {
-            XmlSerializer xs = new XmlSerializer(typeof (AuthorizationRequest));
-            AuthorizationRequest Authorization = (AuthorizationRequest) xs.Deserialize(request);
+            XmlSerializer xs = new XmlSerializer(typeof(AuthorizationRequest));
+            AuthorizationRequest Authorization = (AuthorizationRequest)xs.Deserialize(request);
 
             string message = String.Empty;
             bool authorized = m_AuthorizationService.IsAuthorizedForRegion(Authorization.ID, Authorization.FirstName, Authorization.SurName, Authorization.RegionID, out message);
@@ -67,7 +59,6 @@ namespace OpenSim.Server.Handlers.Authorization
 
             xs = new XmlSerializer(typeof(AuthorizationResponse));
             return ServerUtils.SerializeResult(xs, result);
-            
         }
     }
 }

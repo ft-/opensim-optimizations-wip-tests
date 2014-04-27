@@ -25,9 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
 
 namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
 {
@@ -42,6 +42,12 @@ namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
         private const double waterSaturation = 0.30;
 
         #region Supporting Functions
+
+        private enum NeighbourSystem
+        {
+            Moore,
+            VonNeumann
+        } ;
 
         private static int[] Neighbours(NeighbourSystem neighbourType, int index)
         {
@@ -140,14 +146,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
 
             return coord;
         }
-
-        private enum NeighbourSystem
-        {
-            Moore,
-            VonNeumann
-        } ;
-
-        #endregion
+        #endregion Supporting Functions
 
         #region ITerrainPaintableEffect Members
 
@@ -174,7 +173,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
                 {
                     for (y = 0; y < water.Height; y++)
                     {
-                        if (mask[x,y])
+                        if (mask[x, y])
                         {
                             const double solConst = (1.0 / rounds);
                             double sedDelta = water[x, y] * solConst;
@@ -296,7 +295,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
                         double sedimentDeposit = sediment[x, y] - waterCapacity;
                         if (sedimentDeposit > 0)
                         {
-                            if (mask[x,y])
+                            if (mask[x, y])
                             {
                                 sediment[x, y] -= sedimentDeposit;
                                 map[x, y] += sedimentDeposit;
@@ -309,10 +308,10 @@ namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
             // Deposit any remainder (should be minimal)
             for (x = 0; x < water.Width; x++)
                 for (y = 0; y < water.Height; y++)
-                    if (mask[x,y] && sediment[x, y] > 0)
+                    if (mask[x, y] && sediment[x, y] > 0)
                         map[x, y] += sediment[x, y];
         }
 
-        #endregion
+        #endregion ITerrainPaintableEffect Members
     }
 }

@@ -25,20 +25,44 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-
+using log4net;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
-
-using log4net;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Server.Handlers.Simulation
 {
     public class Utils
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        public static OSDMap GetOSDMap(string data)
+        {
+            OSDMap args = null;
+            try
+            {
+                OSD buffer;
+                // We should pay attention to the content-type, but let's assume we know it's Json
+                buffer = OSDParser.DeserializeJson(data);
+                if (buffer.Type == OSDType.Map)
+                {
+                    args = (OSDMap)buffer;
+                    return args;
+                }
+                else
+                {
+                    // uh?
+                    m_log.Debug(("[REST COMMS]: Got OSD of unexpected type " + buffer.Type.ToString()));
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                m_log.Debug("[REST COMMS]: exception on parse of REST message " + ex.Message);
+                return null;
+            }
+        }
 
         /// <summary>
         /// Extract the param from an uri.
@@ -71,33 +95,5 @@ namespace OpenSim.Server.Handlers.Simulation
                 return true;
             }
         }
-
-        public static OSDMap GetOSDMap(string data)
-        {
-            OSDMap args = null;
-            try
-            {
-                OSD buffer;
-                // We should pay attention to the content-type, but let's assume we know it's Json
-                buffer = OSDParser.DeserializeJson(data);
-                if (buffer.Type == OSDType.Map)
-                {
-                    args = (OSDMap)buffer;
-                    return args;
-                }
-                else
-                {
-                    // uh?
-                    m_log.Debug(("[REST COMMS]: Got OSD of unexpected type " + buffer.Type.ToString()));
-                    return null;
-                }
-            }
-            catch (Exception ex)
-            {
-                m_log.Debug("[REST COMMS]: exception on parse of REST message " + ex.Message);
-                return null;
-            }
-        }
-
     }
 }

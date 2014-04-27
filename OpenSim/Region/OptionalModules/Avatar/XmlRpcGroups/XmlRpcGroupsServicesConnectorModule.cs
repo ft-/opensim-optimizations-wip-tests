@@ -25,46 +25,114 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Mono.Addins;
+using Nini.Config;
+using Nwc.XmlRpc;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 
-using Nwc.XmlRpc;
+namespace Nwc.XmlRpc
+{
+    using System;
+    using System.Collections;
+    using System.IO;
+    using System.Net;
+    using System.Text;
+    using System.Xml;
 
-using log4net;
-using Mono.Addins;
-using Nini.Config;
+    /// <summary>Class supporting the request side of an XML-RPC transaction.</summary>
+    public class ConfigurableKeepAliveXmlRpcRequest : XmlRpcRequest
+    {
+        public string RequestResponse = String.Empty;
+        private XmlRpcResponseDeserializer _deserializer = new XmlRpcResponseDeserializer();
+        private bool _disableKeepAlive = true;
+        private XmlRpcRequestSerializer _serializer = new XmlRpcRequestSerializer();
+        /// <summary>Instantiate an <c>XmlRpcRequest</c> for a specified method and parameters.</summary>
+        /// <param name="methodName"><c>String</c> designating the <i>object.method</i> on the server the request
+        /// should be directed to.</param>
+        /// <param name="parameters"><c>ArrayList</c> of XML-RPC type parameters to invoke the request with.</param>
+        public ConfigurableKeepAliveXmlRpcRequest(String methodName, IList parameters, bool disableKeepAlive)
+        {
+            MethodName = methodName;
+            _params = parameters;
+            _disableKeepAlive = disableKeepAlive;
+        }
 
-using OpenMetaverse;
-using OpenMetaverse.StructuredData;
+        /// <summary>Send the request to the server.</summary>
+        /// <param name="url"><c>String</c> The url of the XML-RPC server.</param>
+        /// <returns><c>XmlRpcResponse</c> The response generated.</returns>
+        public XmlRpcResponse Send(String url)
+        {
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+            if (request == null)
+                throw new XmlRpcException(XmlRpcErrorCodes.TRANSPORT_ERROR,
+                              XmlRpcErrorCodes.TRANSPORT_ERROR_MSG + ": Could not create request with " + url);
+            request.Method = "POST";
+            request.ContentType = "text/xml";
+            request.AllowWriteStreamBuffering = true;
+            request.KeepAlive = !_disableKeepAlive;
 
-using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Services.Interfaces;
+            using (Stream stream = request.GetRequestStream())
+            {
+                using (XmlTextWriter xml = new XmlTextWriter(stream, Encoding.ASCII))
+                {
+                    _serializer.Serialize(xml, this);
+                    xml.Flush();
+                }
+            }
+
+            XmlRpcResponse resp;
+
+            using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+            {
+                using (Stream s = response.GetResponseStream())
+                {
+                    using (StreamReader input = new StreamReader(s))
+                    {
+                        string inputXml = input.ReadToEnd();
+
+                        try
+                        {
+                            resp = (XmlRpcResponse)_deserializer.Deserialize(inputXml);
+                        }
+                        catch (Exception e)
+                        {
+                            RequestResponse = inputXml;
+                            throw e;
+                        }
+                    }
+                }
+            }
+
+            return resp;
+        }
+    }
+}
 
 namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "XmlRpcGroupsServicesConnectorModule")]
     public class XmlRpcGroupsServicesConnectorModule : ISharedRegionModule, IGroupsServicesConnector
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        private bool m_debugEnabled = false;
-
-        public const GroupPowers DefaultEveryonePowers 
-            = GroupPowers.AllowSetHome 
-                | GroupPowers.Accountable 
-                | GroupPowers.JoinChat 
-                | GroupPowers.AllowVoiceChat 
-                | GroupPowers.ReceiveNotices 
-                | GroupPowers.StartProposal 
+        public const GroupPowers DefaultEveryonePowers
+            = GroupPowers.AllowSetHome
+                | GroupPowers.Accountable
+                | GroupPowers.JoinChat
+                | GroupPowers.AllowVoiceChat
+                | GroupPowers.ReceiveNotices
+                | GroupPowers.StartProposal
                 | GroupPowers.VoteOnProposal;
 
         // Would this be cleaner as (GroupPowers)ulong.MaxValue?
-        public const GroupPowers DefaultOwnerPowers 
+        public const GroupPowers DefaultOwnerPowers
             = GroupPowers.Accountable
                 | GroupPowers.AllowEditLand
                 | GroupPowers.AllowFly
@@ -111,27 +179,24 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
                 | GroupPowers.StartProposal
                 | GroupPowers.VoteOnProposal;
 
-        private bool m_connectorEnabled = false;
-
-        private string m_groupsServerURI = string.Empty;
-
-        private bool m_disableKeepAlive = false;
-
-        private string m_groupReadKey  = string.Empty;
-        private string m_groupWriteKey = string.Empty;
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private IUserAccountService m_accountService = null;
-
-        private ExpiringCache<string, XmlRpcResponse> m_memoryCache;
         private int m_cacheTimeout = 30;
-
+        private bool m_connectorEnabled = false;
+        private bool m_debugEnabled = false;
+        private bool m_disableKeepAlive = false;
+        private string m_groupReadKey = string.Empty;
         // Used to track which agents are have dropped from a group chat session
         // Should be reset per agent, on logon
         // TODO: move this to Flotsam XmlRpc Service
         // SessionID, List<AgentID>
         private Dictionary<UUID, List<UUID>> m_groupsAgentsDroppedFromChatSession = new Dictionary<UUID, List<UUID>>();
-        private Dictionary<UUID, List<UUID>> m_groupsAgentsInvitedToChatSession = new Dictionary<UUID, List<UUID>>();
 
+        private Dictionary<UUID, List<UUID>> m_groupsAgentsInvitedToChatSession = new Dictionary<UUID, List<UUID>>();
+        private string m_groupsServerURI = string.Empty;
+        private string m_groupWriteKey = string.Empty;
+        private ExpiringCache<string, XmlRpcResponse> m_memoryCache;
         #region Region Module interfaceBase Members
 
         public string Name
@@ -143,6 +208,24 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
         public Type ReplaceableInterface
         {
             get { return null; }
+        }
+
+        public void AddRegion(OpenSim.Region.Framework.Scenes.Scene scene)
+        {
+            if (m_connectorEnabled)
+            {
+                if (m_accountService == null)
+                {
+                    m_accountService = scene.UserAccountService;
+                }
+
+                scene.RegisterModuleInterface<IGroupsServicesConnector>(this);
+            }
+        }
+
+        public void Close()
+        {
+            m_log.DebugFormat("[XMLRPC-GROUPS-CONNECTOR]: Closing {0}", this.Name);
         }
 
         public void Initialise(IConfigSource config)
@@ -180,7 +263,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
                 m_groupReadKey = groupsConfig.GetString("XmlRpcServiceReadKey", string.Empty);
                 m_groupWriteKey = groupsConfig.GetString("XmlRpcServiceWriteKey", string.Empty);
 
-
                 m_cacheTimeout = groupsConfig.GetInt("GroupsCacheTimeout", 30);
                 if (m_cacheTimeout == 0)
                 {
@@ -198,25 +280,10 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
                 m_connectorEnabled = true;
             }
         }
-
-        public void Close()
+        public void RegionLoaded(OpenSim.Region.Framework.Scenes.Scene scene)
         {
-            m_log.DebugFormat("[XMLRPC-GROUPS-CONNECTOR]: Closing {0}", this.Name);
-        }
-
-        public void AddRegion(OpenSim.Region.Framework.Scenes.Scene scene)
-        {
-            if (m_connectorEnabled)
-            {
-
-                if (m_accountService == null)
-                {
-                    m_accountService = scene.UserAccountService;
-                }
-
-
-                scene.RegisterModuleInterface<IGroupsServicesConnector>(this);
-            }
+            // TODO: May want to consider listenning for Agent Connections so we can pre-cache group info
+            // scene.EventManager.OnNewClient += OnNewClient;
         }
 
         public void RemoveRegion(OpenSim.Region.Framework.Scenes.Scene scene)
@@ -226,14 +293,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
                 scene.UnregisterModuleInterface<IGroupsServicesConnector>(this);
             }
         }
-
-        public void RegionLoaded(OpenSim.Region.Framework.Scenes.Scene scene)
-        {
-            // TODO: May want to consider listenning for Agent Connections so we can pre-cache group info
-            // scene.EventManager.OnNewClient += OnNewClient;
-        }
-
-        #endregion
+        #endregion Region Module interfaceBase Members
 
         #region ISharedRegionModule Members
 
@@ -242,9 +302,70 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
             // NoOp
         }
 
-        #endregion
+        #endregion ISharedRegionModule Members
 
         #region IGroupsServicesConnector Members
+
+        public void AddAgentToGroup(UUID requestingAgentID, UUID AgentID, UUID GroupID, UUID RoleID)
+        {
+            Hashtable param = new Hashtable();
+            param["AgentID"] = AgentID.ToString();
+            param["GroupID"] = GroupID.ToString();
+            param["RoleID"] = RoleID.ToString();
+
+            XmlRpcCall(requestingAgentID, "groups.addAgentToGroup", param);
+        }
+
+        public void AddAgentToGroupInvite(UUID requestingAgentID, UUID inviteID, UUID groupID, UUID roleID, UUID agentID)
+        {
+            Hashtable param = new Hashtable();
+            param["InviteID"] = inviteID.ToString();
+            param["AgentID"] = agentID.ToString();
+            param["RoleID"] = roleID.ToString();
+            param["GroupID"] = groupID.ToString();
+
+            XmlRpcCall(requestingAgentID, "groups.addAgentToGroupInvite", param);
+        }
+
+        public void AddAgentToGroupRole(UUID requestingAgentID, UUID AgentID, UUID GroupID, UUID RoleID)
+        {
+            Hashtable param = new Hashtable();
+            param["AgentID"] = AgentID.ToString();
+            param["GroupID"] = GroupID.ToString();
+            param["RoleID"] = RoleID.ToString();
+
+            XmlRpcCall(requestingAgentID, "groups.addAgentToGroupRole", param);
+        }
+
+        public void AddGroupNotice(UUID requestingAgentID, UUID groupID, UUID noticeID, string fromName, string subject, string message, byte[] binaryBucket)
+        {
+            string binBucket = OpenMetaverse.Utils.BytesToHexString(binaryBucket, "");
+
+            Hashtable param = new Hashtable();
+            param["GroupID"] = groupID.ToString();
+            param["NoticeID"] = noticeID.ToString();
+            param["FromName"] = fromName;
+            param["Subject"] = subject;
+            param["Message"] = message;
+            param["BinaryBucket"] = binBucket;
+            param["TimeStamp"] = ((uint)Util.UnixTimeSinceEpoch()).ToString();
+
+            XmlRpcCall(requestingAgentID, "groups.addGroupNotice", param);
+        }
+
+        public void AddGroupRole(UUID requestingAgentID, UUID groupID, UUID roleID, string name, string description,
+                                         string title, ulong powers)
+        {
+            Hashtable param = new Hashtable();
+            param["GroupID"] = groupID.ToString();
+            param["RoleID"] = roleID.ToString();
+            param["Name"] = name;
+            param["Description"] = description;
+            param["Title"] = title;
+            param["Powers"] = powers.ToString();
+
+            XmlRpcCall(requestingAgentID, "groups.addRoleToGroup", param);
+        }
 
         /// <summary>
         /// Create a Group, including Everyone and Owners Role, place FounderID in both groups, select Owner as selected role, and newly created group as agent's active role.
@@ -283,225 +404,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
             return UUID.Parse((string)respData["GroupID"]);
         }
 
-        public void UpdateGroup(UUID requestingAgentID, UUID groupID, string charter, bool showInList,
-                                UUID insigniaID, int membershipFee, bool openEnrollment,
-                                bool allowPublish, bool maturePublish)
-        {
-            Hashtable param = new Hashtable();
-            param["GroupID"] = groupID.ToString();
-            param["Charter"] = charter;
-            param["ShowInList"] = showInList == true ? 1 : 0;
-            param["InsigniaID"] = insigniaID.ToString();
-            param["MembershipFee"] = membershipFee;
-            param["OpenEnrollment"] = openEnrollment == true ? 1 : 0;
-            param["AllowPublish"] = allowPublish == true ? 1 : 0;
-            param["MaturePublish"] = maturePublish == true ? 1 : 0;
-
-            XmlRpcCall(requestingAgentID, "groups.updateGroup", param);
-        }
-
-        public void AddGroupRole(UUID requestingAgentID, UUID groupID, UUID roleID, string name, string description,
-                                 string title, ulong powers)
-        {
-            Hashtable param = new Hashtable();
-            param["GroupID"] = groupID.ToString();
-            param["RoleID"] = roleID.ToString();
-            param["Name"] = name;
-            param["Description"] = description;
-            param["Title"] = title;
-            param["Powers"] = powers.ToString();
-
-            XmlRpcCall(requestingAgentID, "groups.addRoleToGroup", param);
-        }
-
-        public void RemoveGroupRole(UUID requestingAgentID, UUID groupID, UUID roleID)
-        {
-            Hashtable param = new Hashtable();
-            param["GroupID"] = groupID.ToString();
-            param["RoleID"] = roleID.ToString();
-
-            XmlRpcCall(requestingAgentID, "groups.removeRoleFromGroup", param);
-        }
-
-        public void UpdateGroupRole(UUID requestingAgentID, UUID groupID, UUID roleID, string name, string description,
-                                    string title, ulong powers)
-        {
-            Hashtable param = new Hashtable();
-            param["GroupID"] = groupID.ToString();
-            param["RoleID"] = roleID.ToString();
-            if (name != null)
-            {
-                param["Name"] = name;
-            }
-            if (description != null)
-            {
-                param["Description"] = description;
-            }
-            if (title != null)
-            {
-                param["Title"] = title;
-            }
-            param["Powers"] = powers.ToString();
-
-            XmlRpcCall(requestingAgentID, "groups.updateGroupRole", param);
-        }
-
-        public GroupRecord GetGroupRecord(UUID requestingAgentID, UUID GroupID, string GroupName)
-        {
-            Hashtable param = new Hashtable();
-            if (GroupID != UUID.Zero)
-            {
-                param["GroupID"] = GroupID.ToString();
-            }
-            if (!string.IsNullOrEmpty(GroupName))
-            {
-                param["Name"] = GroupName.ToString();
-            }
-
-            Hashtable respData = XmlRpcCall(requestingAgentID, "groups.getGroup", param);
-
-            if (respData.Contains("error"))
-            {
-                return null;
-            }
-
-            return GroupProfileHashtableToGroupRecord(respData);
-
-        }
-
-        public GroupProfileData GetMemberGroupProfile(UUID requestingAgentID, UUID GroupID, UUID AgentID)
-        {
-            Hashtable param = new Hashtable();
-            param["GroupID"] = GroupID.ToString();
-
-            Hashtable respData = XmlRpcCall(requestingAgentID, "groups.getGroup", param);
-
-            if (respData.Contains("error"))
-            {
-                // GroupProfileData is not nullable
-                return new GroupProfileData();
-            }
-
-            GroupMembershipData MemberInfo = GetAgentGroupMembership(requestingAgentID, AgentID, GroupID);
-            GroupProfileData MemberGroupProfile = GroupProfileHashtableToGroupProfileData(respData);
-
-            MemberGroupProfile.MemberTitle = MemberInfo.GroupTitle;
-            MemberGroupProfile.PowersMask = MemberInfo.GroupPowers;
-
-            return MemberGroupProfile;
-        }
-
-        public void SetAgentActiveGroup(UUID requestingAgentID, UUID AgentID, UUID GroupID)
-        {
-            Hashtable param = new Hashtable();
-            param["AgentID"] = AgentID.ToString();
-            param["GroupID"] = GroupID.ToString();
-
-            XmlRpcCall(requestingAgentID, "groups.setAgentActiveGroup", param);
-        }
-
-        public void SetAgentActiveGroupRole(UUID requestingAgentID, UUID AgentID, UUID GroupID, UUID RoleID)
-        {
-            Hashtable param = new Hashtable();
-            param["AgentID"] = AgentID.ToString();
-            param["GroupID"] = GroupID.ToString();
-            param["SelectedRoleID"] = RoleID.ToString();
-
-            XmlRpcCall(requestingAgentID, "groups.setAgentGroupInfo", param);
-        }
-
-        public void SetAgentGroupInfo(UUID requestingAgentID, UUID AgentID, UUID GroupID, bool AcceptNotices, bool ListInProfile)
-        {
-            Hashtable param = new Hashtable();
-            param["AgentID"] = AgentID.ToString();
-            param["GroupID"] = GroupID.ToString();
-            param["AcceptNotices"] = AcceptNotices ? "1" : "0";
-            param["ListInProfile"] = ListInProfile ? "1" : "0";
-
-            XmlRpcCall(requestingAgentID, "groups.setAgentGroupInfo", param);
-
-        }
-
-        public void AddAgentToGroupInvite(UUID requestingAgentID, UUID inviteID, UUID groupID, UUID roleID, UUID agentID)
-        {
-            Hashtable param = new Hashtable();
-            param["InviteID"] = inviteID.ToString();
-            param["AgentID"] = agentID.ToString();
-            param["RoleID"] = roleID.ToString();
-            param["GroupID"] = groupID.ToString();
-
-            XmlRpcCall(requestingAgentID, "groups.addAgentToGroupInvite", param);
-
-        }
-
-        public GroupInviteInfo GetAgentToGroupInvite(UUID requestingAgentID, UUID inviteID)
-        {
-            Hashtable param = new Hashtable();
-            param["InviteID"] = inviteID.ToString();
-
-            Hashtable respData = XmlRpcCall(requestingAgentID, "groups.getAgentToGroupInvite", param);
-
-            if (respData.Contains("error"))
-            {
-                return null;
-            }
-
-            GroupInviteInfo inviteInfo = new GroupInviteInfo();
-            inviteInfo.InviteID = inviteID;
-            inviteInfo.GroupID = UUID.Parse((string)respData["GroupID"]);
-            inviteInfo.RoleID = UUID.Parse((string)respData["RoleID"]);
-            inviteInfo.AgentID = UUID.Parse((string)respData["AgentID"]);
-
-            return inviteInfo;
-        }
-
-        public void RemoveAgentToGroupInvite(UUID requestingAgentID, UUID inviteID)
-        {
-            Hashtable param = new Hashtable();
-            param["InviteID"] = inviteID.ToString();
-
-            XmlRpcCall(requestingAgentID, "groups.removeAgentToGroupInvite", param);
-        }
-
-        public void AddAgentToGroup(UUID requestingAgentID, UUID AgentID, UUID GroupID, UUID RoleID)
-        {
-            Hashtable param = new Hashtable();
-            param["AgentID"] = AgentID.ToString();
-            param["GroupID"] = GroupID.ToString();
-            param["RoleID"] = RoleID.ToString();
-
-            XmlRpcCall(requestingAgentID, "groups.addAgentToGroup", param);
-        }
-
-        public void RemoveAgentFromGroup(UUID requestingAgentID, UUID AgentID, UUID GroupID)
-        {
-            Hashtable param = new Hashtable();
-            param["AgentID"] = AgentID.ToString();
-            param["GroupID"] = GroupID.ToString();
-
-            XmlRpcCall(requestingAgentID, "groups.removeAgentFromGroup", param);
-        }
-
-        public void AddAgentToGroupRole(UUID requestingAgentID, UUID AgentID, UUID GroupID, UUID RoleID)
-        {
-            Hashtable param = new Hashtable();
-            param["AgentID"] = AgentID.ToString();
-            param["GroupID"] = GroupID.ToString();
-            param["RoleID"] = RoleID.ToString();
-
-            XmlRpcCall(requestingAgentID, "groups.addAgentToGroupRole", param);
-        }
-
-        public void RemoveAgentFromGroupRole(UUID requestingAgentID, UUID AgentID, UUID GroupID, UUID RoleID)
-        {
-            Hashtable param = new Hashtable();
-            param["AgentID"] = AgentID.ToString();
-            param["GroupID"] = GroupID.ToString();
-            param["RoleID"] = RoleID.ToString();
-
-            XmlRpcCall(requestingAgentID, "groups.removeAgentFromGroupRole", param);
-        }
-
         public List<DirGroupsReplyData> FindGroups(UUID requestingAgentID, string search)
         {
             Hashtable param = new Hashtable();
@@ -529,6 +431,21 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
             return findings;
         }
 
+        public GroupMembershipData GetAgentActiveMembership(UUID requestingAgentID, UUID AgentID)
+        {
+            Hashtable param = new Hashtable();
+            param["AgentID"] = AgentID.ToString();
+
+            Hashtable respData = XmlRpcCall(requestingAgentID, "groups.getAgentActiveMembership", param);
+
+            if (respData.Contains("error"))
+            {
+                return null;
+            }
+
+            return HashTableToGroupMembershipData(respData);
+        }
+
         public GroupMembershipData GetAgentGroupMembership(UUID requestingAgentID, UUID AgentID, UUID GroupID)
         {
             Hashtable param = new Hashtable();
@@ -545,21 +462,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
             GroupMembershipData data = HashTableToGroupMembershipData(respData);
 
             return data;
-        }
-
-        public GroupMembershipData GetAgentActiveMembership(UUID requestingAgentID, UUID AgentID)
-        {
-            Hashtable param = new Hashtable();
-            param["AgentID"] = AgentID.ToString();
-
-            Hashtable respData = XmlRpcCall(requestingAgentID, "groups.getAgentActiveMembership", param);
-
-            if (respData.Contains("error"))
-            {
-                return null;
-            }
-
-            return HashTableToGroupMembershipData(respData);
         }
 
         public List<GroupMembershipData> GetAgentGroupMemberships(UUID requestingAgentID, UUID AgentID)
@@ -612,34 +514,25 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
             return Roles;
         }
 
-        public List<GroupRolesData> GetGroupRoles(UUID requestingAgentID, UUID GroupID)
+        public GroupInviteInfo GetAgentToGroupInvite(UUID requestingAgentID, UUID inviteID)
         {
             Hashtable param = new Hashtable();
-            param["GroupID"] = GroupID.ToString();
+            param["InviteID"] = inviteID.ToString();
 
-            Hashtable respData = XmlRpcCall(requestingAgentID, "groups.getGroupRoles", param);
-
-            List<GroupRolesData> Roles = new List<GroupRolesData>();
+            Hashtable respData = XmlRpcCall(requestingAgentID, "groups.getAgentToGroupInvite", param);
 
             if (respData.Contains("error"))
             {
-                return Roles;
+                return null;
             }
 
-            foreach (Hashtable role in respData.Values)
-            {
-                GroupRolesData data = new GroupRolesData();
-                data.Description = (string)role["Description"];
-                data.Members = int.Parse((string)role["Members"]);
-                data.Name = (string)role["Name"];
-                data.Powers = ulong.Parse((string)role["Powers"]);
-                data.RoleID = new UUID((string)role["RoleID"]);
-                data.Title = (string)role["Title"];
+            GroupInviteInfo inviteInfo = new GroupInviteInfo();
+            inviteInfo.InviteID = inviteID;
+            inviteInfo.GroupID = UUID.Parse((string)respData["GroupID"]);
+            inviteInfo.RoleID = UUID.Parse((string)respData["RoleID"]);
+            inviteInfo.AgentID = UUID.Parse((string)respData["AgentID"]);
 
-                Roles.Add(data);
-            }
-
-            return Roles;
+            return inviteInfo;
         }
 
         public List<GroupMembersData> GetGroupMembers(UUID requestingAgentID, UUID GroupID)
@@ -674,58 +567,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
             return members;
         }
 
-        public List<GroupRoleMembersData> GetGroupRoleMembers(UUID requestingAgentID, UUID GroupID)
-        {
-            Hashtable param = new Hashtable();
-            param["GroupID"] = GroupID.ToString();
-
-            Hashtable respData = XmlRpcCall(requestingAgentID, "groups.getGroupRoleMembers", param);
-
-            List<GroupRoleMembersData> members = new List<GroupRoleMembersData>();
-
-            if (!respData.Contains("error"))
-            {
-                foreach (Hashtable membership in respData.Values)
-                {
-                    GroupRoleMembersData data = new GroupRoleMembersData();
-
-                    data.MemberID = new UUID((string)membership["AgentID"]);
-                    data.RoleID = new UUID((string)membership["RoleID"]);
-
-                    members.Add(data);
-                }
-            }
-            return members;
-        }
-
-        public List<GroupNoticeData> GetGroupNotices(UUID requestingAgentID, UUID GroupID)
-        {
-            Hashtable param = new Hashtable();
-            param["GroupID"] = GroupID.ToString();
-
-            Hashtable respData = XmlRpcCall(requestingAgentID, "groups.getGroupNotices", param);
-
-            List<GroupNoticeData> values = new List<GroupNoticeData>();
-
-            if (!respData.Contains("error"))
-            {
-                foreach (Hashtable value in respData.Values)
-                {
-                    GroupNoticeData data = new GroupNoticeData();
-                    data.NoticeID = UUID.Parse((string)value["NoticeID"]);
-                    data.Timestamp = uint.Parse((string)value["Timestamp"]);
-                    data.FromName = (string)value["FromName"];
-                    data.Subject = (string)value["Subject"];
-                    data.HasAttachment = false;
-                    data.AssetType = 0;
-
-                    values.Add(data);
-                }
-            }
-
-            return values;
-        }
-
         public GroupNoticeInfo GetGroupNotice(UUID requestingAgentID, UUID noticeID)
         {
             Hashtable param = new Hashtable();
@@ -757,48 +598,239 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
             return data;
         }
 
-        public void AddGroupNotice(UUID requestingAgentID, UUID groupID, UUID noticeID, string fromName, string subject, string message, byte[] binaryBucket)
+        public List<GroupNoticeData> GetGroupNotices(UUID requestingAgentID, UUID GroupID)
         {
-            string binBucket = OpenMetaverse.Utils.BytesToHexString(binaryBucket, "");
+            Hashtable param = new Hashtable();
+            param["GroupID"] = GroupID.ToString();
 
+            Hashtable respData = XmlRpcCall(requestingAgentID, "groups.getGroupNotices", param);
+
+            List<GroupNoticeData> values = new List<GroupNoticeData>();
+
+            if (!respData.Contains("error"))
+            {
+                foreach (Hashtable value in respData.Values)
+                {
+                    GroupNoticeData data = new GroupNoticeData();
+                    data.NoticeID = UUID.Parse((string)value["NoticeID"]);
+                    data.Timestamp = uint.Parse((string)value["Timestamp"]);
+                    data.FromName = (string)value["FromName"];
+                    data.Subject = (string)value["Subject"];
+                    data.HasAttachment = false;
+                    data.AssetType = 0;
+
+                    values.Add(data);
+                }
+            }
+
+            return values;
+        }
+
+        public GroupRecord GetGroupRecord(UUID requestingAgentID, UUID GroupID, string GroupName)
+        {
+            Hashtable param = new Hashtable();
+            if (GroupID != UUID.Zero)
+            {
+                param["GroupID"] = GroupID.ToString();
+            }
+            if (!string.IsNullOrEmpty(GroupName))
+            {
+                param["Name"] = GroupName.ToString();
+            }
+
+            Hashtable respData = XmlRpcCall(requestingAgentID, "groups.getGroup", param);
+
+            if (respData.Contains("error"))
+            {
+                return null;
+            }
+
+            return GroupProfileHashtableToGroupRecord(respData);
+        }
+
+        public List<GroupRoleMembersData> GetGroupRoleMembers(UUID requestingAgentID, UUID GroupID)
+        {
+            Hashtable param = new Hashtable();
+            param["GroupID"] = GroupID.ToString();
+
+            Hashtable respData = XmlRpcCall(requestingAgentID, "groups.getGroupRoleMembers", param);
+
+            List<GroupRoleMembersData> members = new List<GroupRoleMembersData>();
+
+            if (!respData.Contains("error"))
+            {
+                foreach (Hashtable membership in respData.Values)
+                {
+                    GroupRoleMembersData data = new GroupRoleMembersData();
+
+                    data.MemberID = new UUID((string)membership["AgentID"]);
+                    data.RoleID = new UUID((string)membership["RoleID"]);
+
+                    members.Add(data);
+                }
+            }
+            return members;
+        }
+
+        public List<GroupRolesData> GetGroupRoles(UUID requestingAgentID, UUID GroupID)
+        {
+            Hashtable param = new Hashtable();
+            param["GroupID"] = GroupID.ToString();
+
+            Hashtable respData = XmlRpcCall(requestingAgentID, "groups.getGroupRoles", param);
+
+            List<GroupRolesData> Roles = new List<GroupRolesData>();
+
+            if (respData.Contains("error"))
+            {
+                return Roles;
+            }
+
+            foreach (Hashtable role in respData.Values)
+            {
+                GroupRolesData data = new GroupRolesData();
+                data.Description = (string)role["Description"];
+                data.Members = int.Parse((string)role["Members"]);
+                data.Name = (string)role["Name"];
+                data.Powers = ulong.Parse((string)role["Powers"]);
+                data.RoleID = new UUID((string)role["RoleID"]);
+                data.Title = (string)role["Title"];
+
+                Roles.Add(data);
+            }
+
+            return Roles;
+        }
+
+        public GroupProfileData GetMemberGroupProfile(UUID requestingAgentID, UUID GroupID, UUID AgentID)
+        {
+            Hashtable param = new Hashtable();
+            param["GroupID"] = GroupID.ToString();
+
+            Hashtable respData = XmlRpcCall(requestingAgentID, "groups.getGroup", param);
+
+            if (respData.Contains("error"))
+            {
+                // GroupProfileData is not nullable
+                return new GroupProfileData();
+            }
+
+            GroupMembershipData MemberInfo = GetAgentGroupMembership(requestingAgentID, AgentID, GroupID);
+            GroupProfileData MemberGroupProfile = GroupProfileHashtableToGroupProfileData(respData);
+
+            MemberGroupProfile.MemberTitle = MemberInfo.GroupTitle;
+            MemberGroupProfile.PowersMask = MemberInfo.GroupPowers;
+
+            return MemberGroupProfile;
+        }
+
+        public void RemoveAgentFromGroup(UUID requestingAgentID, UUID AgentID, UUID GroupID)
+        {
+            Hashtable param = new Hashtable();
+            param["AgentID"] = AgentID.ToString();
+            param["GroupID"] = GroupID.ToString();
+
+            XmlRpcCall(requestingAgentID, "groups.removeAgentFromGroup", param);
+        }
+
+        public void RemoveAgentFromGroupRole(UUID requestingAgentID, UUID AgentID, UUID GroupID, UUID RoleID)
+        {
+            Hashtable param = new Hashtable();
+            param["AgentID"] = AgentID.ToString();
+            param["GroupID"] = GroupID.ToString();
+            param["RoleID"] = RoleID.ToString();
+
+            XmlRpcCall(requestingAgentID, "groups.removeAgentFromGroupRole", param);
+        }
+
+        public void RemoveAgentToGroupInvite(UUID requestingAgentID, UUID inviteID)
+        {
+            Hashtable param = new Hashtable();
+            param["InviteID"] = inviteID.ToString();
+
+            XmlRpcCall(requestingAgentID, "groups.removeAgentToGroupInvite", param);
+        }
+
+        public void RemoveGroupRole(UUID requestingAgentID, UUID groupID, UUID roleID)
+        {
             Hashtable param = new Hashtable();
             param["GroupID"] = groupID.ToString();
-            param["NoticeID"] = noticeID.ToString();
-            param["FromName"] = fromName;
-            param["Subject"] = subject;
-            param["Message"] = message;
-            param["BinaryBucket"] = binBucket;
-            param["TimeStamp"] = ((uint)Util.UnixTimeSinceEpoch()).ToString();
+            param["RoleID"] = roleID.ToString();
 
-            XmlRpcCall(requestingAgentID, "groups.addGroupNotice", param);
+            XmlRpcCall(requestingAgentID, "groups.removeRoleFromGroup", param);
         }
 
-        #endregion
+        public void SetAgentActiveGroup(UUID requestingAgentID, UUID AgentID, UUID GroupID)
+        {
+            Hashtable param = new Hashtable();
+            param["AgentID"] = AgentID.ToString();
+            param["GroupID"] = GroupID.ToString();
+
+            XmlRpcCall(requestingAgentID, "groups.setAgentActiveGroup", param);
+        }
+
+        public void SetAgentActiveGroupRole(UUID requestingAgentID, UUID AgentID, UUID GroupID, UUID RoleID)
+        {
+            Hashtable param = new Hashtable();
+            param["AgentID"] = AgentID.ToString();
+            param["GroupID"] = GroupID.ToString();
+            param["SelectedRoleID"] = RoleID.ToString();
+
+            XmlRpcCall(requestingAgentID, "groups.setAgentGroupInfo", param);
+        }
+
+        public void SetAgentGroupInfo(UUID requestingAgentID, UUID AgentID, UUID GroupID, bool AcceptNotices, bool ListInProfile)
+        {
+            Hashtable param = new Hashtable();
+            param["AgentID"] = AgentID.ToString();
+            param["GroupID"] = GroupID.ToString();
+            param["AcceptNotices"] = AcceptNotices ? "1" : "0";
+            param["ListInProfile"] = ListInProfile ? "1" : "0";
+
+            XmlRpcCall(requestingAgentID, "groups.setAgentGroupInfo", param);
+        }
+
+        public void UpdateGroup(UUID requestingAgentID, UUID groupID, string charter, bool showInList,
+                                UUID insigniaID, int membershipFee, bool openEnrollment,
+                                bool allowPublish, bool maturePublish)
+        {
+            Hashtable param = new Hashtable();
+            param["GroupID"] = groupID.ToString();
+            param["Charter"] = charter;
+            param["ShowInList"] = showInList == true ? 1 : 0;
+            param["InsigniaID"] = insigniaID.ToString();
+            param["MembershipFee"] = membershipFee;
+            param["OpenEnrollment"] = openEnrollment == true ? 1 : 0;
+            param["AllowPublish"] = allowPublish == true ? 1 : 0;
+            param["MaturePublish"] = maturePublish == true ? 1 : 0;
+
+            XmlRpcCall(requestingAgentID, "groups.updateGroup", param);
+        }
+        public void UpdateGroupRole(UUID requestingAgentID, UUID groupID, UUID roleID, string name, string description,
+                                    string title, ulong powers)
+        {
+            Hashtable param = new Hashtable();
+            param["GroupID"] = groupID.ToString();
+            param["RoleID"] = roleID.ToString();
+            if (name != null)
+            {
+                param["Name"] = name;
+            }
+            if (description != null)
+            {
+                param["Description"] = description;
+            }
+            if (title != null)
+            {
+                param["Title"] = title;
+            }
+            param["Powers"] = powers.ToString();
+
+            XmlRpcCall(requestingAgentID, "groups.updateGroupRole", param);
+        }
+        #endregion IGroupsServicesConnector Members
 
         #region GroupSessionTracking
-
-        public void ResetAgentGroupChatSessions(UUID agentID)
-        {
-            foreach (List<UUID> agentList in m_groupsAgentsDroppedFromChatSession.Values)
-            {
-                agentList.Remove(agentID);
-            }
-        }
-
-        public bool hasAgentBeenInvitedToGroupChatSession(UUID agentID, UUID groupID)
-        {
-            // If we're  tracking this group, and we can find them in the tracking, then they've been invited
-            return m_groupsAgentsInvitedToChatSession.ContainsKey(groupID)
-                && m_groupsAgentsInvitedToChatSession[groupID].Contains(agentID);
-        }
-
-        public bool hasAgentDroppedGroupChatSession(UUID agentID, UUID groupID)
-        {
-            // If we're tracking drops for this group,
-            // and we find them, well... then they've dropped
-            return m_groupsAgentsDroppedFromChatSession.ContainsKey(groupID)
-                && m_groupsAgentsDroppedFromChatSession[groupID].Contains(agentID);
-        }
 
         public void AgentDroppedFromGroupChatSession(UUID agentID, UUID groupID)
         {
@@ -824,6 +856,28 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
             }
         }
 
+        public bool hasAgentBeenInvitedToGroupChatSession(UUID agentID, UUID groupID)
+        {
+            // If we're  tracking this group, and we can find them in the tracking, then they've been invited
+            return m_groupsAgentsInvitedToChatSession.ContainsKey(groupID)
+                && m_groupsAgentsInvitedToChatSession[groupID].Contains(agentID);
+        }
+
+        public bool hasAgentDroppedGroupChatSession(UUID agentID, UUID groupID)
+        {
+            // If we're tracking drops for this group,
+            // and we find them, well... then they've dropped
+            return m_groupsAgentsDroppedFromChatSession.ContainsKey(groupID)
+                && m_groupsAgentsDroppedFromChatSession[groupID].Contains(agentID);
+        }
+
+        public void ResetAgentGroupChatSessions(UUID agentID)
+        {
+            foreach (List<UUID> agentList in m_groupsAgentsDroppedFromChatSession.Values)
+            {
+                agentList.Remove(agentID);
+            }
+        }
         private void CreateGroupChatSessionTracking(UUID groupID)
         {
             if (!m_groupsAgentsDroppedFromChatSession.ContainsKey(groupID))
@@ -831,11 +885,48 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
                 m_groupsAgentsDroppedFromChatSession.Add(groupID, new List<UUID>());
                 m_groupsAgentsInvitedToChatSession.Add(groupID, new List<UUID>());
             }
-
         }
-        #endregion
+
+        #endregion GroupSessionTracking
 
         #region XmlRpcHashtableMarshalling
+
+        private static GroupMembershipData HashTableToGroupMembershipData(Hashtable respData)
+        {
+            GroupMembershipData data = new GroupMembershipData();
+            data.AcceptNotices = ((string)respData["AcceptNotices"] == "1");
+            data.Contribution = int.Parse((string)respData["Contribution"]);
+            data.ListInProfile = ((string)respData["ListInProfile"] == "1");
+
+            data.ActiveRole = new UUID((string)respData["SelectedRoleID"]);
+            data.GroupTitle = (string)respData["Title"];
+
+            data.GroupPowers = ulong.Parse((string)respData["GroupPowers"]);
+
+            // Is this group the agent's active group
+
+            data.GroupID = new UUID((string)respData["GroupID"]);
+
+            UUID ActiveGroup = new UUID((string)respData["ActiveGroupID"]);
+            data.Active = data.GroupID.Equals(ActiveGroup);
+
+            data.AllowPublish = ((string)respData["AllowPublish"] == "1");
+            if (respData["Charter"] != null)
+            {
+                data.Charter = (string)respData["Charter"];
+            }
+            data.FounderID = new UUID((string)respData["FounderID"]);
+            data.GroupID = new UUID((string)respData["GroupID"]);
+            data.GroupName = (string)respData["GroupName"];
+            data.GroupPicture = new UUID((string)respData["InsigniaID"]);
+            data.MaturePublish = ((string)respData["MaturePublish"] == "1");
+            data.MembershipFee = int.Parse((string)respData["MembershipFee"]);
+            data.OpenEnrollment = ((string)respData["OpenEnrollment"] == "1");
+            data.ShowInList = ((string)respData["ShowInList"] == "1");
+
+            return data;
+        }
+
         private GroupProfileData GroupProfileHashtableToGroupProfileData(Hashtable groupProfile)
         {
             GroupProfileData group = new GroupProfileData();
@@ -882,44 +973,53 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
 
             return group;
         }
+        #endregion XmlRpcHashtableMarshalling
 
-        private static GroupMembershipData HashTableToGroupMembershipData(Hashtable respData)
+        /// <summary>
+        /// Group Request Tokens are an attempt to allow the groups service to authenticate
+        /// requests.
+        /// TODO: This broke after the big grid refactor, either find a better way, or discard this
+        /// </summary>
+        /// <param name="client"></param>
+        /// <returns></returns>
+        private void GetClientGroupRequestID(UUID AgentID, out string UserServiceURL, out UUID SessionID)
         {
-            GroupMembershipData data = new GroupMembershipData();
-            data.AcceptNotices = ((string)respData["AcceptNotices"] == "1");
-            data.Contribution = int.Parse((string)respData["Contribution"]);
-            data.ListInProfile = ((string)respData["ListInProfile"] == "1");
+            UserServiceURL = "";
+            SessionID = UUID.Zero;
 
-            data.ActiveRole = new UUID((string)respData["SelectedRoleID"]);
-            data.GroupTitle = (string)respData["Title"];
-
-            data.GroupPowers = ulong.Parse((string)respData["GroupPowers"]);
-
-            // Is this group the agent's active group
-
-            data.GroupID = new UUID((string)respData["GroupID"]);
-
-            UUID ActiveGroup = new UUID((string)respData["ActiveGroupID"]);
-            data.Active = data.GroupID.Equals(ActiveGroup);
-
-            data.AllowPublish = ((string)respData["AllowPublish"] == "1");
-            if (respData["Charter"] != null)
+            // Need to rework this based on changes to User Services
+            /*
+            UserAccount userAccount = m_accountService.GetUserAccount(UUID.Zero,AgentID);
+            if (userAccount == null)
             {
-                data.Charter = (string)respData["Charter"];
-            }
-            data.FounderID = new UUID((string)respData["FounderID"]);
-            data.GroupID = new UUID((string)respData["GroupID"]);
-            data.GroupName = (string)respData["GroupName"];
-            data.GroupPicture = new UUID((string)respData["InsigniaID"]);
-            data.MaturePublish = ((string)respData["MaturePublish"] == "1");
-            data.MembershipFee = int.Parse((string)respData["MembershipFee"]);
-            data.OpenEnrollment = ((string)respData["OpenEnrollment"] == "1");
-            data.ShowInList = ((string)respData["ShowInList"] == "1");
+                // This should be impossible.  If I've been passed a reference to a client
+                // that client should be registered with the UserService.  So something
+                // is horribly wrong somewhere.
 
-            return data;
+                m_log.WarnFormat("[GROUPS]: Could not find a UserServiceURL for {0}", AgentID);
+            }
+            else if (userProfile is ForeignUserProfileData)
+            {
+                // They aren't from around here
+                ForeignUserProfileData fupd = (ForeignUserProfileData)userProfile;
+                UserServiceURL = fupd.UserServerURI;
+                SessionID = fupd.CurrentAgent.SessionID;
+            }
+            else
+            {
+                // They're a local user, use this:
+                UserServiceURL = m_commManager.NetworkServersInfo.UserURL;
+                SessionID = userProfile.CurrentAgent.SessionID;
+            }
+            */
         }
 
-        #endregion
+        private void LogRespDataToConsoleError(UUID requestingAgentID, string function, Hashtable param, Hashtable respData)
+        {
+            m_log.ErrorFormat(
+                "[XMLRPC-GROUPS-CONNECTOR]: Error when calling {0} for {1} with params {2}.  Response params are {3}",
+                function, requestingAgentID, Util.PrettyFormatToSingleLine(param), Util.PrettyFormatToSingleLine(respData));
+        }
 
         /// <summary>
         /// Encapsulate the XmlRpc call to standardize security and error handling.
@@ -1038,137 +1138,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
             Hashtable error = new Hashtable();
             error.Add("error", "invalid return value");
             return error;
-        }
-
-        private void LogRespDataToConsoleError(UUID requestingAgentID, string function, Hashtable param, Hashtable respData)
-        {
-            m_log.ErrorFormat(
-                "[XMLRPC-GROUPS-CONNECTOR]: Error when calling {0} for {1} with params {2}.  Response params are {3}", 
-                function, requestingAgentID, Util.PrettyFormatToSingleLine(param), Util.PrettyFormatToSingleLine(respData));
-        }
-
-        /// <summary>
-        /// Group Request Tokens are an attempt to allow the groups service to authenticate
-        /// requests.
-        /// TODO: This broke after the big grid refactor, either find a better way, or discard this
-        /// </summary>
-        /// <param name="client"></param>
-        /// <returns></returns>
-        private void GetClientGroupRequestID(UUID AgentID, out string UserServiceURL, out UUID SessionID)
-        {
-            UserServiceURL = "";
-            SessionID = UUID.Zero;
-
-
-            // Need to rework this based on changes to User Services
-            /*
-            UserAccount userAccount = m_accountService.GetUserAccount(UUID.Zero,AgentID);
-            if (userAccount == null)
-            {
-                // This should be impossible.  If I've been passed a reference to a client
-                // that client should be registered with the UserService.  So something
-                // is horribly wrong somewhere.
-
-                m_log.WarnFormat("[GROUPS]: Could not find a UserServiceURL for {0}", AgentID);
-
-            }
-            else if (userProfile is ForeignUserProfileData)
-            {
-                // They aren't from around here
-                ForeignUserProfileData fupd = (ForeignUserProfileData)userProfile;
-                UserServiceURL = fupd.UserServerURI;
-                SessionID = fupd.CurrentAgent.SessionID;
-
-            }
-            else
-            {
-                // They're a local user, use this:
-                UserServiceURL = m_commManager.NetworkServersInfo.UserURL;
-                SessionID = userProfile.CurrentAgent.SessionID;
-            }
-            */
-        }
-
-    }
-}
-
-namespace Nwc.XmlRpc
-{
-    using System;
-    using System.Collections;
-    using System.IO;
-    using System.Xml;
-    using System.Net;
-    using System.Text;
-    using System.Reflection;
-
-    /// <summary>Class supporting the request side of an XML-RPC transaction.</summary>
-    public class ConfigurableKeepAliveXmlRpcRequest : XmlRpcRequest
-    {
-        private XmlRpcRequestSerializer _serializer = new XmlRpcRequestSerializer();
-        private XmlRpcResponseDeserializer _deserializer = new XmlRpcResponseDeserializer();
-        private bool _disableKeepAlive = true;
-
-        public string RequestResponse = String.Empty;
-
-        /// <summary>Instantiate an <c>XmlRpcRequest</c> for a specified method and parameters.</summary>
-        /// <param name="methodName"><c>String</c> designating the <i>object.method</i> on the server the request
-        /// should be directed to.</param>
-        /// <param name="parameters"><c>ArrayList</c> of XML-RPC type parameters to invoke the request with.</param>
-        public ConfigurableKeepAliveXmlRpcRequest(String methodName, IList parameters, bool disableKeepAlive)
-        {
-            MethodName = methodName;
-            _params = parameters;
-            _disableKeepAlive = disableKeepAlive;
-        }
-
-        /// <summary>Send the request to the server.</summary>
-        /// <param name="url"><c>String</c> The url of the XML-RPC server.</param>
-        /// <returns><c>XmlRpcResponse</c> The response generated.</returns>
-        public XmlRpcResponse Send(String url)
-        {
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-            if (request == null)
-                throw new XmlRpcException(XmlRpcErrorCodes.TRANSPORT_ERROR,
-                              XmlRpcErrorCodes.TRANSPORT_ERROR_MSG + ": Could not create request with " + url);
-            request.Method = "POST";
-            request.ContentType = "text/xml";
-            request.AllowWriteStreamBuffering = true;
-            request.KeepAlive = !_disableKeepAlive;
-
-            using (Stream stream = request.GetRequestStream())
-            {
-                using (XmlTextWriter xml = new XmlTextWriter(stream, Encoding.ASCII))
-                {
-                    _serializer.Serialize(xml, this);
-                    xml.Flush();
-                }            
-            }
-
-            XmlRpcResponse resp;
-
-            using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
-            {
-                using (Stream s = response.GetResponseStream())
-                {
-                    using (StreamReader input = new StreamReader(s))
-                    {
-                        string inputXml = input.ReadToEnd();
-
-                        try
-                        {
-                            resp = (XmlRpcResponse)_deserializer.Deserialize(inputXml);
-                        }
-                        catch (Exception e)
-                        {
-                            RequestResponse = inputXml;
-                            throw e;
-                        }
-                    }
-                }
-            }
-
-            return resp;
         }
     }
 }

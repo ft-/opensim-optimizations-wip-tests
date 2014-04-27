@@ -31,24 +31,26 @@ namespace OpenSim.Region.Framework.Interfaces
 {
     public interface ICommander
     {
-        /// <value>
-        /// The name of this commander
-        /// </value>
-        string Name { get; }
+        /// <summary>
+        /// The commands available for this commander
+        /// </summary>
+        Dictionary<string, ICommand> Commands { get; }
 
         /// <value>
         /// Provide general help information about this commander.
         /// </value>
         string Help { get; }
-        
-        /// <summary>
-        /// The commands available for this commander
-        /// </summary>
-        Dictionary<string, ICommand> Commands { get; }
-        
-        void ProcessConsoleCommand(string function, string[] args);
-        void RegisterCommand(string commandName, ICommand command);
-        void Run(string function, object[] args);
+
+        /// <value>
+        /// The name of this commander
+        /// </value>
+        string Name { get; }
         string GenerateRuntimeAPI();
+
+        void ProcessConsoleCommand(string function, string[] args);
+
+        void RegisterCommand(string commandName, ICommand command);
+
+        void Run(string function, object[] args);
     }
 }

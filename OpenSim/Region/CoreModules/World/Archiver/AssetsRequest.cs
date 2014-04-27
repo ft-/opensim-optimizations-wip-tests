@@ -25,63 +25,39 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Threading;
-using System.Timers;
 using log4net;
 using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Framework.Serialization;
 using OpenSim.Framework.Serialization.External;
 using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Timers;
 
 namespace OpenSim.Region.CoreModules.World.Archiver
 {
     /// <summary>
     /// Encapsulate the asynchronous requests for the assets required for an archive operation
     /// </summary>
-    class AssetsRequest
+    internal class AssetsRequest
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        /// <value>
+        /// If a timeout does occur, limit the amount of UUID information put to the console.
+        /// </value>
+        protected const int MAX_UUID_DISPLAY_ON_TIMEOUT = 3;
 
-        /// <summary>
-        /// Method called when all the necessary assets for an archive request have been received.
-        /// </summary>
-        public delegate void AssetsRequestCallback(
-            ICollection<UUID> assetsFoundUuids, ICollection<UUID> assetsNotFoundUuids, bool timedOut);
-
-        enum RequestState
-        {
-            Initial,
-            Running,
-            Completed,
-            Aborted
-        };
-        
         /// <value>
         /// Timeout threshold if we still need assets or missing asset notifications but have stopped receiving them
         /// from the asset service
         /// </value>
         protected const int TIMEOUT = 60 * 1000;
 
+        protected AssetsArchiver m_assetsArchiver;
         /// <value>
-        /// If a timeout does occur, limit the amount of UUID information put to the console.
+        /// Asset service used to request the assets
         /// </value>
-        protected const int MAX_UUID_DISPLAY_ON_TIMEOUT = 3;
-       
-        protected System.Timers.Timer m_requestCallbackTimer;
-
-        /// <value>
-        /// State of this request
-        /// </value>
-        private RequestState m_requestState = RequestState.Initial;
-        
-        /// <value>
-        /// uuids to request
-        /// </value>
-        protected IDictionary<UUID, sbyte> m_uuids;
+        protected IAssetService m_assetService;
 
         /// <value>
         /// Callback used when all the assets requested have been received.
@@ -92,11 +68,22 @@ namespace OpenSim.Region.CoreModules.World.Archiver
         /// List of assets that were found.  This will be passed back to the requester.
         /// </value>
         protected List<UUID> m_foundAssetUuids = new List<UUID>();
-        
+
         /// <value>
         /// Maintain a list of assets that could not be found.  This will be passed back to the requester.
         /// </value>
         protected List<UUID> m_notFoundAssetUuids = new List<UUID>();
+
+        protected Dictionary<string, object> m_options;
+        protected System.Timers.Timer m_requestCallbackTimer;
+        protected UUID m_scopeID;
+        protected IUserAccountService m_userAccountService;
+        /// <value>
+        /// uuids to request
+        /// </value>
+        protected IDictionary<UUID, sbyte> m_uuids;
+
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         /// <value>
         /// Record the number of asset replies required so we know when we've finished
@@ -104,20 +91,15 @@ namespace OpenSim.Region.CoreModules.World.Archiver
         private int m_repliesRequired;
 
         /// <value>
-        /// Asset service used to request the assets
+        /// State of this request
         /// </value>
-        protected IAssetService m_assetService;
-        protected IUserAccountService m_userAccountService;
-        protected UUID m_scopeID; // the grid ID 
+        private RequestState m_requestState = RequestState.Initial;
 
-        protected AssetsArchiver m_assetsArchiver;
-
-        protected Dictionary<string, object> m_options;
-
+        // the grid ID
         protected internal AssetsRequest(
-            AssetsArchiver assetsArchiver, IDictionary<UUID, sbyte> uuids, 
-            IAssetService assetService, IUserAccountService userService, 
-            UUID scope, Dictionary<string, object> options, 
+            AssetsArchiver assetsArchiver, IDictionary<UUID, sbyte> uuids,
+            IAssetService assetService, IUserAccountService userService,
+            UUID scope, Dictionary<string, object> options,
             AssetsRequestCallback assetsRequestCallback)
         {
             m_assetsArchiver = assetsArchiver;
@@ -138,10 +120,90 @@ namespace OpenSim.Region.CoreModules.World.Archiver
             m_requestCallbackTimer.Elapsed += new ElapsedEventHandler(OnRequestCallbackTimeout);
         }
 
+        /// <summary>
+        /// Method called when all the necessary assets for an archive request have been received.
+        /// </summary>
+        public delegate void AssetsRequestCallback(
+            ICollection<UUID> assetsFoundUuids, ICollection<UUID> assetsNotFoundUuids, bool timedOut);
+
+        private enum RequestState
+        {
+            Initial,
+            Running,
+            Completed,
+            Aborted
+        };
+        /// <summary>
+        /// Called back by the asset cache when it has the asset
+        /// </summary>
+        /// <param name="assetID"></param>
+        /// <param name="asset"></param>
+        public void AssetRequestCallback(string id, object sender, AssetBase asset)
+        {
+            Culture.SetCurrentCulture();
+
+            try
+            {
+                lock (this)
+                {
+                    //m_log.DebugFormat("[ARCHIVER]: Received callback for asset {0}", id);
+
+                    m_requestCallbackTimer.Stop();
+
+                    if ((m_requestState == RequestState.Aborted) || (m_requestState == RequestState.Completed))
+                    {
+                        m_log.WarnFormat(
+                            "[ARCHIVER]: Received information about asset {0} while in state {1}.  Ignoring.",
+                            id, m_requestState);
+
+                        return;
+                    }
+
+                    if (asset != null)
+                    {
+                        if (m_options.ContainsKey("verbose"))
+                            m_log.InfoFormat("[ARCHIVER]: Writing asset {0}", id);
+
+                        m_foundAssetUuids.Add(asset.FullID);
+
+                        m_assetsArchiver.WriteAsset(PostProcess(asset));
+                    }
+                    else
+                    {
+                        if (m_options.ContainsKey("verbose"))
+                            m_log.InfoFormat("[ARCHIVER]: Recording asset {0} as not found", id);
+
+                        m_notFoundAssetUuids.Add(new UUID(id));
+                    }
+
+                    if (m_foundAssetUuids.Count + m_notFoundAssetUuids.Count >= m_repliesRequired)
+                    {
+                        m_requestState = RequestState.Completed;
+
+                        m_log.DebugFormat(
+                            "[ARCHIVER]: Successfully added {0} assets ({1} assets not found but these may be expected invalid references)",
+                            m_foundAssetUuids.Count, m_notFoundAssetUuids.Count);
+
+                        // We want to stop using the asset cache thread asap
+                        // as we now need to do the work of producing the rest of the archive
+                        Util.RunThreadNoTimeout(PerformAssetsRequestCallback, "AssetsRequestCallback", false);
+                    }
+                    else
+                    {
+                        m_requestCallbackTimer.Start();
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                m_log.ErrorFormat("[ARCHIVER]: AssetRequestCallback failed with {0}", e);
+            }
+        }
+
         protected internal void Execute()
         {
             m_requestState = RequestState.Running;
-            
+
             m_log.DebugFormat("[ARCHIVER]: AssetsRequest executed looking for {0} possible assets", m_repliesRequired);
 
             // We can stop here if there are no assets to fetch
@@ -156,9 +218,9 @@ namespace OpenSim.Region.CoreModules.World.Archiver
 
             foreach (KeyValuePair<UUID, sbyte> kvp in m_uuids)
             {
-//                m_log.DebugFormat("[ARCHIVER]: Requesting asset {0}", kvp.Key);
+                //                m_log.DebugFormat("[ARCHIVER]: Requesting asset {0}", kvp.Key);
 
-//                m_assetService.Get(kvp.Key.ToString(), kvp.Value, PreAssetRequestCallback);
+                //                m_assetService.Get(kvp.Key.ToString(), kvp.Value, PreAssetRequestCallback);
                 AssetBase asset = m_assetService.Get(kvp.Key.ToString());
                 PreAssetRequestCallback(kvp.Key.ToString(), kvp.Value, asset);
             }
@@ -179,7 +241,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
                         timedOut = false;
                         return;
                     }
-                    
+
                     m_requestState = RequestState.Aborted;
                 }
 
@@ -195,24 +257,24 @@ namespace OpenSim.Region.CoreModules.World.Archiver
                 {
                     uuids.Remove(uuid);
                 }
-    
+
                 foreach (UUID uuid in m_notFoundAssetUuids)
                 {
                     uuids.Remove(uuid);
                 }
-    
+
                 m_log.ErrorFormat(
                     "[ARCHIVER]: Asset service failed to return information about {0} requested assets", uuids.Count);
-    
+
                 int i = 0;
                 foreach (UUID uuid in uuids)
                 {
                     m_log.ErrorFormat("[ARCHIVER]: No information about asset {0} received", uuid);
-    
+
                     if (++i >= MAX_UUID_DISPLAY_ON_TIMEOUT)
                         break;
                 }
-    
+
                 if (uuids.Count > MAX_UUID_DISPLAY_ON_TIMEOUT)
                     m_log.ErrorFormat(
                         "[ARCHIVER]: (... {0} more not shown)", uuids.Count - MAX_UUID_DISPLAY_ON_TIMEOUT);
@@ -227,85 +289,6 @@ namespace OpenSim.Region.CoreModules.World.Archiver
             {
                 if (timedOut)
                     Util.RunThreadNoTimeout(PerformAssetsRequestCallback, "AssetsRequestCallback", true);
-            }
-        }
-
-        protected void PreAssetRequestCallback(string fetchedAssetID, object assetType, AssetBase fetchedAsset)
-        {
-            // Check for broken asset types and fix them with the AssetType gleaned by UuidGatherer
-            if (fetchedAsset != null && fetchedAsset.Type == (sbyte)AssetType.Unknown)
-            {
-                m_log.InfoFormat("[ARCHIVER]: Rewriting broken asset type for {0} to {1}", fetchedAsset.ID,  SLUtil.AssetTypeFromCode((sbyte)assetType));
-                fetchedAsset.Type = (sbyte)assetType;
-            }
-
-            AssetRequestCallback(fetchedAssetID, this, fetchedAsset);
-        }
-
-        /// <summary>
-        /// Called back by the asset cache when it has the asset
-        /// </summary>
-        /// <param name="assetID"></param>
-        /// <param name="asset"></param>
-        public void AssetRequestCallback(string id, object sender, AssetBase asset)
-        {
-            Culture.SetCurrentCulture();
-            
-            try
-            {
-                lock (this)
-                {
-                    //m_log.DebugFormat("[ARCHIVER]: Received callback for asset {0}", id);
-                    
-                    m_requestCallbackTimer.Stop();
-                    
-                    if ((m_requestState == RequestState.Aborted) || (m_requestState == RequestState.Completed))
-                    {
-                        m_log.WarnFormat(
-                            "[ARCHIVER]: Received information about asset {0} while in state {1}.  Ignoring.", 
-                            id, m_requestState);
-
-                        return;
-                    }
-                                                           
-                    if (asset != null)
-                    {
-                        if (m_options.ContainsKey("verbose"))
-                            m_log.InfoFormat("[ARCHIVER]: Writing asset {0}", id);
-
-                        m_foundAssetUuids.Add(asset.FullID);
-
-                        m_assetsArchiver.WriteAsset(PostProcess(asset));
-                    }
-                    else
-                    {
-                        if (m_options.ContainsKey("verbose"))
-                            m_log.InfoFormat("[ARCHIVER]: Recording asset {0} as not found", id);
-
-                        m_notFoundAssetUuids.Add(new UUID(id));
-                    }
-        
-                    if (m_foundAssetUuids.Count + m_notFoundAssetUuids.Count >= m_repliesRequired)
-                    {
-                        m_requestState = RequestState.Completed;
-                        
-                        m_log.DebugFormat(
-                            "[ARCHIVER]: Successfully added {0} assets ({1} assets not found but these may be expected invalid references)",
-                            m_foundAssetUuids.Count, m_notFoundAssetUuids.Count);
-                        
-                        // We want to stop using the asset cache thread asap 
-                        // as we now need to do the work of producing the rest of the archive
-                        Util.RunThreadNoTimeout(PerformAssetsRequestCallback, "AssetsRequestCallback", false);
-                    }
-                    else
-                    {
-                        m_requestCallbackTimer.Start();
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                m_log.ErrorFormat("[ARCHIVER]: AssetRequestCallback failed with {0}", e);
             }
         }
 
@@ -338,6 +321,18 @@ namespace OpenSim.Region.CoreModules.World.Archiver
                 asset.Data = Utils.StringToBytes(xml);
             }
             return asset;
+        }
+
+        protected void PreAssetRequestCallback(string fetchedAssetID, object assetType, AssetBase fetchedAsset)
+        {
+            // Check for broken asset types and fix them with the AssetType gleaned by UuidGatherer
+            if (fetchedAsset != null && fetchedAsset.Type == (sbyte)AssetType.Unknown)
+            {
+                m_log.InfoFormat("[ARCHIVER]: Rewriting broken asset type for {0} to {1}", fetchedAsset.ID, SLUtil.AssetTypeFromCode((sbyte)assetType));
+                fetchedAsset.Type = (sbyte)assetType;
+            }
+
+            AssetRequestCallback(fetchedAssetID, this, fetchedAsset);
         }
     }
 }

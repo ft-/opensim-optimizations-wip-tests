@@ -25,14 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using OpenMetaverse;
+using OpenSim.Framework;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
-using log4net;
-using OpenMetaverse;
-using OpenSim.Framework;
-using pCampBot.Interfaces;
 
 namespace pCampBot
 {
@@ -41,25 +40,22 @@ namespace pCampBot
     /// </summary>
     public class CrossBehaviour : AbstractBehaviour
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        public AutoResetEvent m_regionCrossedMutex = new AutoResetEvent(false);
-
         public const int m_regionCrossingTimeout = 1000 * 60;
-
-        public CrossBehaviour() 
-        { 
+        public AutoResetEvent m_regionCrossedMutex = new AutoResetEvent(false);
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        public CrossBehaviour()
+        {
             AbbreviatedName = "c";
-            Name = "Cross"; 
+            Name = "Cross";
         }
 
         public override void Action()
         {
             GridClient client = Bot.Client;
 
-//            // Fly to make the border cross easier.
-//            client.Self.Movement.Fly = true;
-//            client.Self.Movement.Fly = false;
+            //            // Fly to make the border cross easier.
+            //            client.Self.Movement.Fly = true;
+            //            client.Self.Movement.Fly = false;
 
             // Seek out neighbouring region
             Simulator currentSim = client.Network.CurrentSim;
@@ -137,6 +133,11 @@ namespace pCampBot
             }
         }
 
+        internal void Self_RegionCrossed(object o, RegionCrossedEventArgs args)
+        {
+            m_regionCrossedMutex.Set();
+        }
+
         private bool TryAddRegion(ulong handle, List<GridRegion> regions)
         {
             Dictionary<ulong, GridRegion> knownRegions = Bot.Manager.RegionsKnown;
@@ -163,11 +164,6 @@ namespace pCampBot
                     return false;
                 }
             }
-        }
-
-        internal void Self_RegionCrossed(object o, RegionCrossedEventArgs args)
-        {
-            m_regionCrossedMutex.Set();
         }
     }
 }

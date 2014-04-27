@@ -25,18 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Data;
+using OpenSim.Framework;
+using OpenSim.Framework.Console;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Nini.Config;
-using OpenSim.Data;
-using OpenSim.Services.Interfaces;
-using OpenSim.Framework;
-using OpenSim.Framework.Console;
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
-
-using OpenMetaverse;
-using log4net;
 
 namespace OpenSim.Services.UserAccountService
 {
@@ -44,7 +42,8 @@ namespace OpenSim.Services.UserAccountService
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        public GridUserService(IConfigSource config) : base(config) 
+        public GridUserService(IConfigSource config)
+            : base(config)
         {
             m_log.Debug("[GRID USER SERVICE]: Starting user grid service");
 
@@ -60,89 +59,10 @@ namespace OpenSim.Services.UserAccountService
                 "Users", false,
                 "show grid users online",
                 "show grid users online",
-                "Show number of grid users registered as online.", 
+                "Show number of grid users registered as online.",
                 "This number may not be accurate as a region may crash or not be cleanly shutdown and leave grid users shown as online\n."
                 + "For this reason, users online for more than 5 days are not currently counted",
                 HandleShowGridUsersOnline);
-        }
-
-        protected void HandleShowGridUser(string module, string[] cmdparams)
-        {
-            if (cmdparams.Length != 4)
-            {
-                MainConsole.Instance.Output("Usage: show grid user <UUID>");
-                return;
-            }
-
-            GridUserData[] data = m_Database.GetAll(cmdparams[3]);
-
-            foreach (GridUserData gu in data)
-            {
-                ConsoleDisplayList cdl = new ConsoleDisplayList();
-
-                cdl.AddRow("User ID", gu.UserID);
-
-                foreach (KeyValuePair<string,string> kvp in gu.Data)
-                    cdl.AddRow(kvp.Key, kvp.Value);
-
-                MainConsole.Instance.Output(cdl.ToString());
-            }
-
-            MainConsole.Instance.OutputFormat("Entries: {0}", data.Length);
-        }
-
-        protected void HandleShowGridUsersOnline(string module, string[] cmdparams)
-        {
-//            if (cmdparams.Length != 4)
-//            {
-//                MainConsole.Instance.Output("Usage: show grid users online");
-//                return;
-//            }
-
-//            int onlineCount;
-            int onlineRecentlyCount = 0;
-
-            DateTime now = DateTime.UtcNow;
-
-            foreach (GridUserData gu in m_Database.GetAll(""))
-            {
-                if (bool.Parse(gu.Data["Online"]))
-                {
-//                    onlineCount++;
-
-                    int unixLoginTime = int.Parse(gu.Data["Login"]);
-
-                    if ((now - Util.ToDateTime(unixLoginTime)).Days < 5)
-                        onlineRecentlyCount++;
-                }
-            }
-
-            MainConsole.Instance.OutputFormat("Users online: {0}", onlineRecentlyCount);
-        }
-
-        private GridUserData GetGridUserData(string userID)
-        {
-            GridUserData d = null;
-            if (userID.Length > 36) // it's a UUI
-            {
-                d = m_Database.Get(userID);
-            }
-            else // it's a UUID
-            {
-                GridUserData[] ds = m_Database.GetAll(userID);
-                if (ds == null)
-                    return null;
-
-                if (ds.Length > 0)
-                {
-                    d = ds[0];
-                    foreach (GridUserData dd in ds)
-                        if (dd.UserID.Length > d.UserID.Length) // find the longest
-                            d = dd;
-                }
-            }
-
-            return d;
         }
 
         public virtual GridUserInfo GetGridUserInfo(string userID)
@@ -239,7 +159,7 @@ namespace OpenSim.Services.UserAccountService
 
         public bool SetLastPosition(string userID, UUID sessionID, UUID regionID, Vector3 lastPosition, Vector3 lastLookAt)
         {
-//            m_log.DebugFormat("[GRID USER SERVICE]: SetLastPosition for {0}", userID);
+            //            m_log.DebugFormat("[GRID USER SERVICE]: SetLastPosition for {0}", userID);
 
             GridUserData d = GetGridUserData(userID);
 
@@ -254,6 +174,85 @@ namespace OpenSim.Services.UserAccountService
             d.Data["LastLookAt"] = lastLookAt.ToString();
 
             return m_Database.Store(d);
+        }
+
+        protected void HandleShowGridUser(string module, string[] cmdparams)
+        {
+            if (cmdparams.Length != 4)
+            {
+                MainConsole.Instance.Output("Usage: show grid user <UUID>");
+                return;
+            }
+
+            GridUserData[] data = m_Database.GetAll(cmdparams[3]);
+
+            foreach (GridUserData gu in data)
+            {
+                ConsoleDisplayList cdl = new ConsoleDisplayList();
+
+                cdl.AddRow("User ID", gu.UserID);
+
+                foreach (KeyValuePair<string, string> kvp in gu.Data)
+                    cdl.AddRow(kvp.Key, kvp.Value);
+
+                MainConsole.Instance.Output(cdl.ToString());
+            }
+
+            MainConsole.Instance.OutputFormat("Entries: {0}", data.Length);
+        }
+
+        protected void HandleShowGridUsersOnline(string module, string[] cmdparams)
+        {
+            //            if (cmdparams.Length != 4)
+            //            {
+            //                MainConsole.Instance.Output("Usage: show grid users online");
+            //                return;
+            //            }
+
+            //            int onlineCount;
+            int onlineRecentlyCount = 0;
+
+            DateTime now = DateTime.UtcNow;
+
+            foreach (GridUserData gu in m_Database.GetAll(""))
+            {
+                if (bool.Parse(gu.Data["Online"]))
+                {
+                    //                    onlineCount++;
+
+                    int unixLoginTime = int.Parse(gu.Data["Login"]);
+
+                    if ((now - Util.ToDateTime(unixLoginTime)).Days < 5)
+                        onlineRecentlyCount++;
+                }
+            }
+
+            MainConsole.Instance.OutputFormat("Users online: {0}", onlineRecentlyCount);
+        }
+
+        private GridUserData GetGridUserData(string userID)
+        {
+            GridUserData d = null;
+            if (userID.Length > 36) // it's a UUI
+            {
+                d = m_Database.Get(userID);
+            }
+            else // it's a UUID
+            {
+                GridUserData[] ds = m_Database.GetAll(userID);
+                if (ds == null)
+                    return null;
+
+                if (ds.Length > 0)
+                {
+                    d = ds[0];
+                    foreach (GridUserData dd in ds)
+                        if (dd.UserID.Length > d.UserID.Length) // find the longest
+                            d = dd;
+                }
+            }
+
+            return d;
         }
     }
 }

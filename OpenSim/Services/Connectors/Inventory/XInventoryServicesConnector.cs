@@ -26,17 +26,14 @@
  */
 
 using log4net;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Server.Base;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
-using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Framework.Console;
-using OpenSim.Framework.Communications;
-using OpenSim.Services.Interfaces;
-using OpenSim.Server.Base;
-using OpenMetaverse;
 
 namespace OpenSim.Services.Connectors
 {
@@ -46,8 +43,8 @@ namespace OpenSim.Services.Connectors
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
+        private object m_Lock = new object();
         private string m_ServerURI = String.Empty;
-
         public XInventoryServicesConnector()
         {
         }
@@ -62,206 +59,58 @@ namespace OpenSim.Services.Connectors
             Initialise(source);
         }
 
-        public virtual void Initialise(IConfigSource source)
+        public bool AddFolder(InventoryFolderBase folder)
         {
-            IConfig assetConfig = source.Configs["InventoryService"];
-            if (assetConfig == null)
-            {
-                m_log.Error("[INVENTORY CONNECTOR]: InventoryService missing from OpenSim.ini");
-                throw new Exception("Inventory connector init error");
-            }
+            Dictionary<string, object> ret = MakeRequest("ADDFOLDER",
+                    new Dictionary<string, object> {
+                        { "ParentID", folder.ParentID.ToString() },
+                        { "Type", folder.Type.ToString() },
+                        { "Version", folder.Version.ToString() },
+                        { "Name", folder.Name.ToString() },
+                        { "Owner", folder.Owner.ToString() },
+                        { "ID", folder.ID.ToString() }
+                    });
 
-            string serviceURI = assetConfig.GetString("InventoryServerURI",
-                    String.Empty);
-
-            if (serviceURI == String.Empty)
-            {
-                m_log.Error("[INVENTORY CONNECTOR]: No Server URI named in section InventoryService");
-                throw new Exception("Inventory connector init error");
-            }
-            m_ServerURI = serviceURI;
+            return CheckReturn(ret);
         }
 
-        private bool CheckReturn(Dictionary<string, object> ret)
+        public bool AddItem(InventoryItemBase item)
         {
-            if (ret == null)
-                return false;
+            if (item.CreatorData == null)
+                item.CreatorData = String.Empty;
+            Dictionary<string, object> ret = MakeRequest("ADDITEM",
+                    new Dictionary<string, object> {
+                        { "AssetID", item.AssetID.ToString() },
+                        { "AssetType", item.AssetType.ToString() },
+                        { "Name", item.Name.ToString() },
+                        { "Owner", item.Owner.ToString() },
+                        { "ID", item.ID.ToString() },
+                        { "InvType", item.InvType.ToString() },
+                        { "Folder", item.Folder.ToString() },
+                        { "CreatorId", item.CreatorId.ToString() },
+                        { "CreatorData", item.CreatorData.ToString() },
+                        { "Description", item.Description.ToString() },
+                        { "NextPermissions", item.NextPermissions.ToString() },
+                        { "CurrentPermissions", item.CurrentPermissions.ToString() },
+                        { "BasePermissions", item.BasePermissions.ToString() },
+                        { "EveryOnePermissions", item.EveryOnePermissions.ToString() },
+                        { "GroupPermissions", item.GroupPermissions.ToString() },
+                        { "GroupID", item.GroupID.ToString() },
+                        { "GroupOwned", item.GroupOwned.ToString() },
+                        { "SalePrice", item.SalePrice.ToString() },
+                        { "SaleType", item.SaleType.ToString() },
+                        { "Flags", item.Flags.ToString() },
+                        { "CreationDate", item.CreationDate.ToString() }
+                    });
 
-            if (ret.Count == 0)
-                return false;
-
-            if (ret.ContainsKey("RESULT"))
-            {
-                if (ret["RESULT"] is string)
-                {
-                    bool result;
-
-                    if (bool.TryParse((string)ret["RESULT"], out result))
-                        return result;
-
-                    return false;
-                }
-            }
-
-            return true;
+            return CheckReturn(ret);
         }
 
         public bool CreateUserInventory(UUID principalID)
         {
-            Dictionary<string,object> ret = MakeRequest("CREATEUSERINVENTORY",
-                    new Dictionary<string,object> {
+            Dictionary<string, object> ret = MakeRequest("CREATEUSERINVENTORY",
+                    new Dictionary<string, object> {
                         { "PRINCIPAL", principalID.ToString() }
-                    });
-
-            return CheckReturn(ret);
-        }
-
-        public List<InventoryFolderBase> GetInventorySkeleton(UUID principalID)
-        {
-            Dictionary<string,object> ret = MakeRequest("GETINVENTORYSKELETON",
-                    new Dictionary<string,object> {
-                        { "PRINCIPAL", principalID.ToString() }
-                    });
-
-            if (!CheckReturn(ret))
-                return null;
-
-            Dictionary<string, object> folders = (Dictionary<string, object>)ret["FOLDERS"];
-
-            List<InventoryFolderBase> fldrs = new List<InventoryFolderBase>();
-
-            try
-            {
-                foreach (Object o in folders.Values)
-                    fldrs.Add(BuildFolder((Dictionary<string, object>)o));
-            }
-            catch (Exception e)
-            {
-                m_log.Error("[XINVENTORY SERVICES CONNECTOR]: Exception unwrapping folder list: ", e);
-            }
-
-            return fldrs;
-        }
-
-        public InventoryFolderBase GetRootFolder(UUID principalID)
-        {
-            Dictionary<string,object> ret = MakeRequest("GETROOTFOLDER",
-                    new Dictionary<string,object> {
-                        { "PRINCIPAL", principalID.ToString() }
-                    });
-
-            if (!CheckReturn(ret))
-                return null;
-
-            return BuildFolder((Dictionary<string, object>)ret["folder"]);
-        }
-
-        public InventoryFolderBase GetFolderForType(UUID principalID, AssetType type)
-        {
-            Dictionary<string,object> ret = MakeRequest("GETFOLDERFORTYPE",
-                    new Dictionary<string,object> {
-                        { "PRINCIPAL", principalID.ToString() },
-                        { "TYPE", ((int)type).ToString() }
-                    });
-
-            if (!CheckReturn(ret))
-                return null;
-
-            return BuildFolder((Dictionary<string, object>)ret["folder"]);
-        }
-
-        public InventoryCollection GetFolderContent(UUID principalID, UUID folderID)
-        {
-            InventoryCollection inventory = new InventoryCollection();
-            inventory.Folders = new List<InventoryFolderBase>();
-            inventory.Items = new List<InventoryItemBase>();
-            inventory.UserID = principalID;
-
-            try
-            {
-                Dictionary<string,object> ret = MakeRequest("GETFOLDERCONTENT",
-                        new Dictionary<string,object> {
-                            { "PRINCIPAL", principalID.ToString() },
-                            { "FOLDER", folderID.ToString() }
-                        });
-
-                if (!CheckReturn(ret))
-                    return null;
-
-                Dictionary<string,object> folders =
-                        (Dictionary<string,object>)ret["FOLDERS"];
-                Dictionary<string,object> items =
-                        (Dictionary<string,object>)ret["ITEMS"];
-
-                foreach (Object o in folders.Values) // getting the values directly, we don't care about the keys folder_i
-                    inventory.Folders.Add(BuildFolder((Dictionary<string, object>)o));
-                foreach (Object o in items.Values) // getting the values directly, we don't care about the keys item_i
-                    inventory.Items.Add(BuildItem((Dictionary<string, object>)o));
-            }
-            catch (Exception e)
-            {
-                m_log.WarnFormat("[XINVENTORY SERVICES CONNECTOR]: Exception in GetFolderContent: {0}", e.Message);
-            }
-
-            return inventory;
-        }
-
-        public List<InventoryItemBase> GetFolderItems(UUID principalID, UUID folderID)
-        {
-            Dictionary<string,object> ret = MakeRequest("GETFOLDERITEMS",
-                    new Dictionary<string,object> {
-                        { "PRINCIPAL", principalID.ToString() },
-                        { "FOLDER", folderID.ToString() }
-                    });
-
-            if (!CheckReturn(ret))
-                return null;
-
-            Dictionary<string, object> items = (Dictionary<string, object>)ret["ITEMS"];
-            List<InventoryItemBase> fitems = new List<InventoryItemBase>();
-            foreach (Object o in items.Values) // getting the values directly, we don't care about the keys item_i
-                fitems.Add(BuildItem((Dictionary<string, object>)o));
-
-            return fitems;
-        }
-
-        public bool AddFolder(InventoryFolderBase folder)
-        {
-            Dictionary<string,object> ret = MakeRequest("ADDFOLDER",
-                    new Dictionary<string,object> {
-                        { "ParentID", folder.ParentID.ToString() },
-                        { "Type", folder.Type.ToString() },
-                        { "Version", folder.Version.ToString() },
-                        { "Name", folder.Name.ToString() },
-                        { "Owner", folder.Owner.ToString() },
-                        { "ID", folder.ID.ToString() }
-                    });
-
-            return CheckReturn(ret);
-        }
-
-        public bool UpdateFolder(InventoryFolderBase folder)
-        {
-            Dictionary<string,object> ret = MakeRequest("UPDATEFOLDER",
-                    new Dictionary<string,object> {
-                        { "ParentID", folder.ParentID.ToString() },
-                        { "Type", folder.Type.ToString() },
-                        { "Version", folder.Version.ToString() },
-                        { "Name", folder.Name.ToString() },
-                        { "Owner", folder.Owner.ToString() },
-                        { "ID", folder.ID.ToString() }
-                    });
-
-            return CheckReturn(ret);
-        }
-
-        public bool MoveFolder(InventoryFolderBase folder)
-        {
-            Dictionary<string,object> ret = MakeRequest("MOVEFOLDER",
-                    new Dictionary<string,object> {
-                        { "ParentID", folder.ParentID.ToString() },
-                        { "ID", folder.ID.ToString() },
-                        { "PRINCIPAL", folder.Owner.ToString() }
                     });
 
             return CheckReturn(ret);
@@ -274,105 +123,10 @@ namespace OpenSim.Services.Connectors
             foreach (UUID f in folderIDs)
                 slist.Add(f.ToString());
 
-            Dictionary<string,object> ret = MakeRequest("DELETEFOLDERS",
-                    new Dictionary<string,object> {
+            Dictionary<string, object> ret = MakeRequest("DELETEFOLDERS",
+                    new Dictionary<string, object> {
                         { "PRINCIPAL", principalID.ToString() },
                         { "FOLDERS", slist }
-                    });
-
-            return CheckReturn(ret);
-        }
-
-        public bool PurgeFolder(InventoryFolderBase folder)
-        {
-            Dictionary<string,object> ret = MakeRequest("PURGEFOLDER",
-                    new Dictionary<string,object> {
-                        { "ID", folder.ID.ToString() }
-                    });
-
-            return CheckReturn(ret);
-        }
-
-        public bool AddItem(InventoryItemBase item)
-        {
-            if (item.CreatorData == null)
-                item.CreatorData = String.Empty;
-            Dictionary<string,object> ret = MakeRequest("ADDITEM",
-                    new Dictionary<string,object> {
-                        { "AssetID", item.AssetID.ToString() },
-                        { "AssetType", item.AssetType.ToString() },
-                        { "Name", item.Name.ToString() },
-                        { "Owner", item.Owner.ToString() },
-                        { "ID", item.ID.ToString() },
-                        { "InvType", item.InvType.ToString() },
-                        { "Folder", item.Folder.ToString() },
-                        { "CreatorId", item.CreatorId.ToString() },
-                        { "CreatorData", item.CreatorData.ToString() },
-                        { "Description", item.Description.ToString() },
-                        { "NextPermissions", item.NextPermissions.ToString() },
-                        { "CurrentPermissions", item.CurrentPermissions.ToString() },
-                        { "BasePermissions", item.BasePermissions.ToString() },
-                        { "EveryOnePermissions", item.EveryOnePermissions.ToString() },
-                        { "GroupPermissions", item.GroupPermissions.ToString() },
-                        { "GroupID", item.GroupID.ToString() },
-                        { "GroupOwned", item.GroupOwned.ToString() },
-                        { "SalePrice", item.SalePrice.ToString() },
-                        { "SaleType", item.SaleType.ToString() },
-                        { "Flags", item.Flags.ToString() },
-                        { "CreationDate", item.CreationDate.ToString() }
-                    });
-
-            return CheckReturn(ret);
-        }
-
-        public bool UpdateItem(InventoryItemBase item)
-        {
-            if (item.CreatorData == null)
-                item.CreatorData = String.Empty;
-            Dictionary<string,object> ret = MakeRequest("UPDATEITEM",
-                    new Dictionary<string,object> {
-                        { "AssetID", item.AssetID.ToString() },
-                        { "AssetType", item.AssetType.ToString() },
-                        { "Name", item.Name.ToString() },
-                        { "Owner", item.Owner.ToString() },
-                        { "ID", item.ID.ToString() },
-                        { "InvType", item.InvType.ToString() },
-                        { "Folder", item.Folder.ToString() },
-                        { "CreatorId", item.CreatorId.ToString() },
-                        { "CreatorData", item.CreatorData.ToString() },
-                        { "Description", item.Description.ToString() },
-                        { "NextPermissions", item.NextPermissions.ToString() },
-                        { "CurrentPermissions", item.CurrentPermissions.ToString() },
-                        { "BasePermissions", item.BasePermissions.ToString() },
-                        { "EveryOnePermissions", item.EveryOnePermissions.ToString() },
-                        { "GroupPermissions", item.GroupPermissions.ToString() },
-                        { "GroupID", item.GroupID.ToString() },
-                        { "GroupOwned", item.GroupOwned.ToString() },
-                        { "SalePrice", item.SalePrice.ToString() },
-                        { "SaleType", item.SaleType.ToString() },
-                        { "Flags", item.Flags.ToString() },
-                        { "CreationDate", item.CreationDate.ToString() }
-                    });
-
-            return CheckReturn(ret);
-        }
-
-        public bool MoveItems(UUID principalID, List<InventoryItemBase> items)
-        {
-            List<string> idlist = new List<string>();
-            List<string> destlist = new List<string>();
-
-            foreach (InventoryItemBase item in items)
-            {
-                idlist.Add(item.ID.ToString());
-                destlist.Add(item.Folder.ToString());
-            }
-
-            Dictionary<string,object> ret = MakeRequest("MOVEITEMS",
-                    new Dictionary<string,object> {
-                        { "PRINCIPAL", principalID.ToString() },
-                        { "IDLIST", idlist },
-                        { "DESTLIST", destlist }
                     });
 
             return CheckReturn(ret);
@@ -385,8 +139,8 @@ namespace OpenSim.Services.Connectors
             foreach (UUID f in itemIDs)
                 slist.Add(f.ToString());
 
-            Dictionary<string,object> ret = MakeRequest("DELETEITEMS",
-                    new Dictionary<string,object> {
+            Dictionary<string, object> ret = MakeRequest("DELETEITEMS",
+                    new Dictionary<string, object> {
                         { "PRINCIPAL", principalID.ToString() },
                         { "ITEMS", slist }
                     });
@@ -394,26 +148,48 @@ namespace OpenSim.Services.Connectors
             return CheckReturn(ret);
         }
 
-        public InventoryItemBase GetItem(InventoryItemBase item)
+        public List<InventoryItemBase> GetActiveGestures(UUID principalID)
         {
-            try
-            {
-                Dictionary<string, object> ret = MakeRequest("GETITEM",
-                        new Dictionary<string, object> {
-                        { "ID", item.ID.ToString() }
+            Dictionary<string, object> ret = MakeRequest("GETACTIVEGESTURES",
+                    new Dictionary<string, object> {
+                        { "PRINCIPAL", principalID.ToString() }
                     });
 
-                if (!CheckReturn(ret))
-                    return null;
+            if (!CheckReturn(ret))
+                return null;
 
-                return BuildItem((Dictionary<string, object>)ret["item"]);
-            }
-            catch (Exception e)
+            List<InventoryItemBase> items = new List<InventoryItemBase>();
+
+            foreach (Object o in ((Dictionary<string, object>)ret["ITEMS"]).Values)
+                items.Add(BuildItem((Dictionary<string, object>)o));
+
+            return items;
+        }
+
+        public int GetAssetPermissions(UUID principalID, UUID assetID)
+        {
+            Dictionary<string, object> ret = MakeRequest("GETASSETPERMISSIONS",
+                    new Dictionary<string, object> {
+                        { "PRINCIPAL", principalID.ToString() },
+                        { "ASSET", assetID.ToString() }
+                    });
+
+            // We cannot use CheckReturn() here because valid values for RESULT are "false" (in the case of request failure) or an int
+            if (ret == null)
+                return 0;
+
+            if (ret.ContainsKey("RESULT"))
             {
-                m_log.Error("[XINVENTORY SERVICES CONNECTOR]: Exception in GetItem: ", e);
+                if (ret["RESULT"] is string)
+                {
+                    int intResult;
+
+                    if (int.TryParse((string)ret["RESULT"], out intResult))
+                        return intResult;
+                }
             }
 
-            return null;
+            return 0;
         }
 
         public InventoryFolderBase GetFolder(InventoryFolderBase folder)
@@ -438,48 +214,135 @@ namespace OpenSim.Services.Connectors
             return null;
         }
 
-        public List<InventoryItemBase> GetActiveGestures(UUID principalID)
+        public InventoryCollection GetFolderContent(UUID principalID, UUID folderID)
         {
-            Dictionary<string,object> ret = MakeRequest("GETACTIVEGESTURES",
-                    new Dictionary<string,object> {
+            InventoryCollection inventory = new InventoryCollection();
+            inventory.Folders = new List<InventoryFolderBase>();
+            inventory.Items = new List<InventoryItemBase>();
+            inventory.UserID = principalID;
+
+            try
+            {
+                Dictionary<string, object> ret = MakeRequest("GETFOLDERCONTENT",
+                        new Dictionary<string, object> {
+                            { "PRINCIPAL", principalID.ToString() },
+                            { "FOLDER", folderID.ToString() }
+                        });
+
+                if (!CheckReturn(ret))
+                    return null;
+
+                Dictionary<string, object> folders =
+                        (Dictionary<string, object>)ret["FOLDERS"];
+                Dictionary<string, object> items =
+                        (Dictionary<string, object>)ret["ITEMS"];
+
+                foreach (Object o in folders.Values) // getting the values directly, we don't care about the keys folder_i
+                    inventory.Folders.Add(BuildFolder((Dictionary<string, object>)o));
+                foreach (Object o in items.Values) // getting the values directly, we don't care about the keys item_i
+                    inventory.Items.Add(BuildItem((Dictionary<string, object>)o));
+            }
+            catch (Exception e)
+            {
+                m_log.WarnFormat("[XINVENTORY SERVICES CONNECTOR]: Exception in GetFolderContent: {0}", e.Message);
+            }
+
+            return inventory;
+        }
+
+        public InventoryFolderBase GetFolderForType(UUID principalID, AssetType type)
+        {
+            Dictionary<string, object> ret = MakeRequest("GETFOLDERFORTYPE",
+                    new Dictionary<string, object> {
+                        { "PRINCIPAL", principalID.ToString() },
+                        { "TYPE", ((int)type).ToString() }
+                    });
+
+            if (!CheckReturn(ret))
+                return null;
+
+            return BuildFolder((Dictionary<string, object>)ret["folder"]);
+        }
+
+        public List<InventoryItemBase> GetFolderItems(UUID principalID, UUID folderID)
+        {
+            Dictionary<string, object> ret = MakeRequest("GETFOLDERITEMS",
+                    new Dictionary<string, object> {
+                        { "PRINCIPAL", principalID.ToString() },
+                        { "FOLDER", folderID.ToString() }
+                    });
+
+            if (!CheckReturn(ret))
+                return null;
+
+            Dictionary<string, object> items = (Dictionary<string, object>)ret["ITEMS"];
+            List<InventoryItemBase> fitems = new List<InventoryItemBase>();
+            foreach (Object o in items.Values) // getting the values directly, we don't care about the keys item_i
+                fitems.Add(BuildItem((Dictionary<string, object>)o));
+
+            return fitems;
+        }
+
+        public List<InventoryFolderBase> GetInventorySkeleton(UUID principalID)
+        {
+            Dictionary<string, object> ret = MakeRequest("GETINVENTORYSKELETON",
+                    new Dictionary<string, object> {
                         { "PRINCIPAL", principalID.ToString() }
                     });
 
             if (!CheckReturn(ret))
                 return null;
 
-            List<InventoryItemBase> items = new List<InventoryItemBase>();
+            Dictionary<string, object> folders = (Dictionary<string, object>)ret["FOLDERS"];
 
-            foreach (Object o in ((Dictionary<string,object>)ret["ITEMS"]).Values)
-                items.Add(BuildItem((Dictionary<string, object>)o));
+            List<InventoryFolderBase> fldrs = new List<InventoryFolderBase>();
 
-            return items;
-        }
-
-        public int GetAssetPermissions(UUID principalID, UUID assetID)
-        {
-            Dictionary<string,object> ret = MakeRequest("GETASSETPERMISSIONS",
-                    new Dictionary<string,object> {
-                        { "PRINCIPAL", principalID.ToString() },
-                        { "ASSET", assetID.ToString() }
-                    });
-
-            // We cannot use CheckReturn() here because valid values for RESULT are "false" (in the case of request failure) or an int           
-            if (ret == null)
-                return 0;
-
-            if (ret.ContainsKey("RESULT"))
+            try
             {
-                if (ret["RESULT"] is string)
-                {
-                    int intResult;
-
-                    if (int.TryParse ((string)ret["RESULT"], out intResult))
-                        return intResult;
-                }
+                foreach (Object o in folders.Values)
+                    fldrs.Add(BuildFolder((Dictionary<string, object>)o));
+            }
+            catch (Exception e)
+            {
+                m_log.Error("[XINVENTORY SERVICES CONNECTOR]: Exception unwrapping folder list: ", e);
             }
 
-            return 0;
+            return fldrs;
+        }
+
+        public InventoryItemBase GetItem(InventoryItemBase item)
+        {
+            try
+            {
+                Dictionary<string, object> ret = MakeRequest("GETITEM",
+                        new Dictionary<string, object> {
+                        { "ID", item.ID.ToString() }
+                    });
+
+                if (!CheckReturn(ret))
+                    return null;
+
+                return BuildItem((Dictionary<string, object>)ret["item"]);
+            }
+            catch (Exception e)
+            {
+                m_log.Error("[XINVENTORY SERVICES CONNECTOR]: Exception in GetItem: ", e);
+            }
+
+            return null;
+        }
+
+        public InventoryFolderBase GetRootFolder(UUID principalID)
+        {
+            Dictionary<string, object> ret = MakeRequest("GETROOTFOLDER",
+                    new Dictionary<string, object> {
+                        { "PRINCIPAL", principalID.ToString() }
+                    });
+
+            if (!CheckReturn(ret))
+                return null;
+
+            return BuildFolder((Dictionary<string, object>)ret["folder"]);
         }
 
         public bool HasInventoryForUser(UUID principalID)
@@ -487,25 +350,117 @@ namespace OpenSim.Services.Connectors
             return false;
         }
 
-        // Helpers
-        //
-        private Dictionary<string,object> MakeRequest(string method,
-                Dictionary<string,object> sendData)
+        public virtual void Initialise(IConfigSource source)
         {
-            sendData["METHOD"] = method;
+            IConfig assetConfig = source.Configs["InventoryService"];
+            if (assetConfig == null)
+            {
+                m_log.Error("[INVENTORY CONNECTOR]: InventoryService missing from OpenSim.ini");
+                throw new Exception("Inventory connector init error");
+            }
 
-            string reply = string.Empty;
-            reply = SynchronousRestFormsRequester.MakeRequest("POST",
-                        m_ServerURI + "/xinventory",
-                        ServerUtils.BuildQueryString(sendData));
+            string serviceURI = assetConfig.GetString("InventoryServerURI",
+                    String.Empty);
 
-            Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(
-                    reply);
-
-            return replyData;
+            if (serviceURI == String.Empty)
+            {
+                m_log.Error("[INVENTORY CONNECTOR]: No Server URI named in section InventoryService");
+                throw new Exception("Inventory connector init error");
+            }
+            m_ServerURI = serviceURI;
         }
 
-        private InventoryFolderBase BuildFolder(Dictionary<string,object> data)
+        public bool MoveFolder(InventoryFolderBase folder)
+        {
+            Dictionary<string, object> ret = MakeRequest("MOVEFOLDER",
+                    new Dictionary<string, object> {
+                        { "ParentID", folder.ParentID.ToString() },
+                        { "ID", folder.ID.ToString() },
+                        { "PRINCIPAL", folder.Owner.ToString() }
+                    });
+
+            return CheckReturn(ret);
+        }
+
+        public bool MoveItems(UUID principalID, List<InventoryItemBase> items)
+        {
+            List<string> idlist = new List<string>();
+            List<string> destlist = new List<string>();
+
+            foreach (InventoryItemBase item in items)
+            {
+                idlist.Add(item.ID.ToString());
+                destlist.Add(item.Folder.ToString());
+            }
+
+            Dictionary<string, object> ret = MakeRequest("MOVEITEMS",
+                    new Dictionary<string, object> {
+                        { "PRINCIPAL", principalID.ToString() },
+                        { "IDLIST", idlist },
+                        { "DESTLIST", destlist }
+                    });
+
+            return CheckReturn(ret);
+        }
+
+        public bool PurgeFolder(InventoryFolderBase folder)
+        {
+            Dictionary<string, object> ret = MakeRequest("PURGEFOLDER",
+                    new Dictionary<string, object> {
+                        { "ID", folder.ID.ToString() }
+                    });
+
+            return CheckReturn(ret);
+        }
+
+        public bool UpdateFolder(InventoryFolderBase folder)
+        {
+            Dictionary<string, object> ret = MakeRequest("UPDATEFOLDER",
+                    new Dictionary<string, object> {
+                        { "ParentID", folder.ParentID.ToString() },
+                        { "Type", folder.Type.ToString() },
+                        { "Version", folder.Version.ToString() },
+                        { "Name", folder.Name.ToString() },
+                        { "Owner", folder.Owner.ToString() },
+                        { "ID", folder.ID.ToString() }
+                    });
+
+            return CheckReturn(ret);
+        }
+
+        public bool UpdateItem(InventoryItemBase item)
+        {
+            if (item.CreatorData == null)
+                item.CreatorData = String.Empty;
+            Dictionary<string, object> ret = MakeRequest("UPDATEITEM",
+                    new Dictionary<string, object> {
+                        { "AssetID", item.AssetID.ToString() },
+                        { "AssetType", item.AssetType.ToString() },
+                        { "Name", item.Name.ToString() },
+                        { "Owner", item.Owner.ToString() },
+                        { "ID", item.ID.ToString() },
+                        { "InvType", item.InvType.ToString() },
+                        { "Folder", item.Folder.ToString() },
+                        { "CreatorId", item.CreatorId.ToString() },
+                        { "CreatorData", item.CreatorData.ToString() },
+                        { "Description", item.Description.ToString() },
+                        { "NextPermissions", item.NextPermissions.ToString() },
+                        { "CurrentPermissions", item.CurrentPermissions.ToString() },
+                        { "BasePermissions", item.BasePermissions.ToString() },
+                        { "EveryOnePermissions", item.EveryOnePermissions.ToString() },
+                        { "GroupPermissions", item.GroupPermissions.ToString() },
+                        { "GroupID", item.GroupID.ToString() },
+                        { "GroupOwned", item.GroupOwned.ToString() },
+                        { "SalePrice", item.SalePrice.ToString() },
+                        { "SaleType", item.SaleType.ToString() },
+                        { "Flags", item.Flags.ToString() },
+                        { "CreationDate", item.CreationDate.ToString() }
+                    });
+
+            return CheckReturn(ret);
+        }
+
+        private InventoryFolderBase BuildFolder(Dictionary<string, object> data)
         {
             InventoryFolderBase folder = new InventoryFolderBase();
 
@@ -526,7 +481,7 @@ namespace OpenSim.Services.Connectors
             return folder;
         }
 
-        private InventoryItemBase BuildItem(Dictionary<string,object> data)
+        private InventoryItemBase BuildItem(Dictionary<string, object> data)
         {
             InventoryItemBase item = new InventoryItemBase();
 
@@ -563,6 +518,48 @@ namespace OpenSim.Services.Connectors
             }
 
             return item;
+        }
+
+        private bool CheckReturn(Dictionary<string, object> ret)
+        {
+            if (ret == null)
+                return false;
+
+            if (ret.Count == 0)
+                return false;
+
+            if (ret.ContainsKey("RESULT"))
+            {
+                if (ret["RESULT"] is string)
+                {
+                    bool result;
+
+                    if (bool.TryParse((string)ret["RESULT"], out result))
+                        return result;
+
+                    return false;
+                }
+            }
+
+            return true;
+        }
+        // Helpers
+        //
+        private Dictionary<string, object> MakeRequest(string method,
+                Dictionary<string, object> sendData)
+        {
+            sendData["METHOD"] = method;
+
+            string reply = string.Empty;
+            lock (m_Lock)
+                reply = SynchronousRestFormsRequester.MakeRequest("POST",
+                         m_ServerURI + "/xinventory",
+                         ServerUtils.BuildQueryString(sendData));
+
+            Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(
+                    reply);
+
+            return replyData;
         }
     }
 }

@@ -25,10 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
 using OpenMetaverse;
 using OpenSim.Framework;
-using Caps=OpenSim.Framework.Capabilities.Caps;
+using System.Collections.Generic;
+using Caps = OpenSim.Framework.Capabilities.Caps;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
@@ -41,29 +41,27 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="agentId"></param>
         /// <param name="capsObjectPath"></param>
         void CreateCaps(UUID agentId);
-        
-        /// <summary>
-        /// Remove the caps handler for a given agent.
-        /// </summary>
-        /// <param name="agentId"></param>
-        void RemoveCaps(UUID agentId);
-        
+
+        void DropChildSeed(UUID agentID, ulong handle);
+
         /// <summary>
         /// Will return null if the agent doesn't have a caps handler registered
         /// </summary>
         /// <param name="agentId"></param>
         Caps GetCapsForUser(UUID agentId);
 
-        void SetAgentCapsSeeds(AgentCircuitData agent);
-        
-        Dictionary<ulong, string> GetChildrenSeeds(UUID agentID);
-        
-        string GetChildSeed(UUID agentID, ulong handle);
-        
-        void SetChildrenSeed(UUID agentID, Dictionary<ulong, string> seeds);
-        
-        void DropChildSeed(UUID agentID, ulong handle);
-
         string GetCapsPath(UUID agentId);
+
+        Dictionary<ulong, string> GetChildrenSeeds(UUID agentID);
+
+        string GetChildSeed(UUID agentID, ulong handle);
+
+        /// <summary>
+        /// Remove the caps handler for a given agent.
+        /// </summary>
+        /// <param name="agentId"></param>
+        void RemoveCaps(UUID agentId);
+        void SetAgentCapsSeeds(AgentCircuitData agent);
+        void SetChildrenSeed(UUID agentID, Dictionary<ulong, string> seeds);
     }
 }

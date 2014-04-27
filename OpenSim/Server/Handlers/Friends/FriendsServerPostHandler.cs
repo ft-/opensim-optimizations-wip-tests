@@ -25,23 +25,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using Nini.Config;
 using log4net;
-using System;
-using System.Reflection;
-using System.IO;
-using System.Net;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Xml;
-using System.Xml.Serialization;
-using System.Collections.Generic;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
-using FriendInfo = OpenSim.Services.Interfaces.FriendInfo;
+using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Framework.Servers.HttpServer;
-using OpenMetaverse;
+using OpenSim.Server.Base;
+using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Xml;
+using FriendInfo = OpenSim.Services.Interfaces.FriendInfo;
 
 namespace OpenSim.Server.Handlers.Friends
 {
@@ -52,7 +47,7 @@ namespace OpenSim.Server.Handlers.Friends
         private IFriendsService m_FriendsService;
 
         public FriendsServerPostHandler(IFriendsService service) :
-                base("POST", "/friends")
+            base("POST", "/friends")
         {
             m_FriendsService = service;
         }
@@ -93,7 +88,6 @@ namespace OpenSim.Server.Handlers.Friends
 
                     case "deletefriend_string":
                         return DeleteFriendString(request);
-
                 }
 
                 m_log.DebugFormat("[FRIENDS HANDLER]: unknown method request {0}", method);
@@ -108,7 +102,43 @@ namespace OpenSim.Server.Handlers.Friends
 
         #region Method-specific handlers
 
-        byte[] GetFriends(Dictionary<string, object> request)
+        private byte[] DeleteFriend(Dictionary<string, object> request)
+        {
+            UUID principalID = UUID.Zero;
+            if (request.ContainsKey("PRINCIPALID"))
+                UUID.TryParse(request["PRINCIPALID"].ToString(), out principalID);
+            else
+                m_log.WarnFormat("[FRIENDS HANDLER]: no principalID in request to delete friend");
+            string friend = string.Empty;
+            if (request.ContainsKey("FRIEND"))
+                friend = request["FRIEND"].ToString();
+
+            bool success = m_FriendsService.Delete(principalID, friend);
+            if (success)
+                return SuccessResult();
+            else
+                return FailureResult();
+        }
+
+        private byte[] DeleteFriendString(Dictionary<string, object> request)
+        {
+            string principalID = string.Empty;
+            if (request.ContainsKey("PRINCIPALID"))
+                principalID = request["PRINCIPALID"].ToString();
+            else
+                m_log.WarnFormat("[FRIENDS HANDLER]: no principalID in request to delete friend");
+            string friend = string.Empty;
+            if (request.ContainsKey("FRIEND"))
+                friend = request["FRIEND"].ToString();
+
+            bool success = m_FriendsService.Delete(principalID, friend);
+            if (success)
+                return SuccessResult();
+            else
+                return FailureResult();
+        }
+
+        private byte[] GetFriends(Dictionary<string, object> request)
         {
             UUID principalID = UUID.Zero;
             if (request.ContainsKey("PRINCIPALID"))
@@ -121,7 +151,7 @@ namespace OpenSim.Server.Handlers.Friends
             return PackageFriends(finfos);
         }
 
-        byte[] GetFriendsString(Dictionary<string, object> request)
+        private byte[] GetFriendsString(Dictionary<string, object> request)
         {
             string principalID = string.Empty;
             if (request.ContainsKey("PRINCIPALID"))
@@ -136,7 +166,6 @@ namespace OpenSim.Server.Handlers.Friends
 
         private byte[] PackageFriends(FriendInfo[] finfos)
         {
-
             Dictionary<string, object> result = new Dictionary<string, object>();
             if ((finfos == null) || ((finfos != null) && (finfos.Length == 0)))
                 result["result"] = "null";
@@ -157,7 +186,7 @@ namespace OpenSim.Server.Handlers.Friends
             return Util.UTF8NoBomEncoding.GetBytes(xmlString);
         }
 
-        byte[] StoreFriend(Dictionary<string, object> request)
+        private byte[] StoreFriend(Dictionary<string, object> request)
         {
             string principalID = string.Empty, friend = string.Empty; int flags = 0;
             FromKeyValuePairs(request, out principalID, out friend, out flags);
@@ -168,67 +197,19 @@ namespace OpenSim.Server.Handlers.Friends
             else
                 return FailureResult();
         }
-
-        byte[] DeleteFriend(Dictionary<string, object> request)
-        {
-            UUID principalID = UUID.Zero;
-            if (request.ContainsKey("PRINCIPALID"))
-                UUID.TryParse(request["PRINCIPALID"].ToString(), out principalID);
-            else
-                m_log.WarnFormat("[FRIENDS HANDLER]: no principalID in request to delete friend");
-            string friend = string.Empty;
-            if (request.ContainsKey("FRIEND"))
-                friend = request["FRIEND"].ToString();
-
-            bool success = m_FriendsService.Delete(principalID, friend);
-            if (success)
-                return SuccessResult();
-            else
-                return FailureResult();
-        }
-
-        byte[] DeleteFriendString(Dictionary<string, object> request)
-        {
-            string principalID = string.Empty;
-            if (request.ContainsKey("PRINCIPALID"))
-                principalID = request["PRINCIPALID"].ToString();
-            else
-                m_log.WarnFormat("[FRIENDS HANDLER]: no principalID in request to delete friend");
-            string friend = string.Empty;
-            if (request.ContainsKey("FRIEND"))
-                friend = request["FRIEND"].ToString();
-
-            bool success = m_FriendsService.Delete(principalID, friend);
-            if (success)
-                return SuccessResult();
-            else
-                return FailureResult();
-        }
-
-        #endregion
+        #endregion Method-specific handlers
 
         #region Misc
 
-        private byte[] SuccessResult()
+        private byte[] DocToBytes(XmlDocument doc)
         {
-            XmlDocument doc = new XmlDocument();
+            MemoryStream ms = new MemoryStream();
+            XmlTextWriter xw = new XmlTextWriter(ms, null);
+            xw.Formatting = Formatting.Indented;
+            doc.WriteTo(xw);
+            xw.Flush();
 
-            XmlNode xmlnode = doc.CreateNode(XmlNodeType.XmlDeclaration,
-                    "", "");
-
-            doc.AppendChild(xmlnode);
-
-            XmlElement rootElement = doc.CreateElement("", "ServerResponse",
-                    "");
-
-            doc.AppendChild(rootElement);
-
-            XmlElement result = doc.CreateElement("", "Result", "");
-            result.AppendChild(doc.CreateTextNode("Success"));
-
-            rootElement.AppendChild(result);
-
-            return DocToBytes(doc);
+            return ms.ToArray();
         }
 
         private byte[] FailureResult()
@@ -263,18 +244,7 @@ namespace OpenSim.Server.Handlers.Friends
             return DocToBytes(doc);
         }
 
-        private byte[] DocToBytes(XmlDocument doc)
-        {
-            MemoryStream ms = new MemoryStream();
-            XmlTextWriter xw = new XmlTextWriter(ms, null);
-            xw.Formatting = Formatting.Indented;
-            doc.WriteTo(xw);
-            xw.Flush();
-
-            return ms.ToArray();
-        }
-
-        void FromKeyValuePairs(Dictionary<string, object> kvp, out string principalID, out string friend, out int flags)
+        private void FromKeyValuePairs(Dictionary<string, object> kvp, out string principalID, out string friend, out int flags)
         {
             principalID = string.Empty;
             if (kvp.ContainsKey("PrincipalID") && kvp["PrincipalID"] != null)
@@ -287,6 +257,27 @@ namespace OpenSim.Server.Handlers.Friends
                 Int32.TryParse(kvp["MyFlags"].ToString(), out flags);
         }
 
-        #endregion
+        private byte[] SuccessResult()
+        {
+            XmlDocument doc = new XmlDocument();
+
+            XmlNode xmlnode = doc.CreateNode(XmlNodeType.XmlDeclaration,
+                    "", "");
+
+            doc.AppendChild(xmlnode);
+
+            XmlElement rootElement = doc.CreateElement("", "ServerResponse",
+                    "");
+
+            doc.AppendChild(rootElement);
+
+            XmlElement result = doc.CreateElement("", "Result", "");
+            result.AppendChild(doc.CreateTextNode("Success"));
+
+            rootElement.AppendChild(result);
+
+            return DocToBytes(doc);
+        }
+        #endregion Misc
     }
 }

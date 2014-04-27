@@ -25,57 +25,89 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using OpenSim.Framework;
 using OpenMetaverse;
+using OpenSim.Framework;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
+    public interface IMapImageGenerator
+    {
+        System.Drawing.Bitmap CreateMapTile();
+
+        System.Drawing.Bitmap CreateViewImage(Vector3 camPos, Vector3 camDir, float fov, int width, int height, bool useTextures);
+
+        byte[] WriteJpeg2000Image();
+    }
+
     public interface ITerrain
     {
-        bool Tainted();
-        bool Tainted(int x, int y);
-        void ResetTaint();
+        void CheckHeightValues();
+
+        void ExportImage(string filename, string gradientmap);
+
+        byte[] ExportJpegImage(string gradientmap);
+
+        void FlattenTerrain(double rx, double ry, double size, double amount);
+
+        double GetHeight(int x, int y);
+
+        float[] GetHeights1D();
+
+        void GetHeights1D(float[] heights);
+
+        float[,] GetHeights2D();
+
+        double[,] GetHeights2DD();
+
+        void HillsGenerator();
+
+        void LoadFromFileF32(string filename);
+
+        void LoadFromFileF32(string filename, int dimensionX, int dimensionY, int lowerboundX, int lowerboundY);
+
+        void LoadFromFileF64(string filename);
+
+        void LoadFromFileIMG(string filename, int dimensionX, int dimensionY, int lowerboundX, int lowerboundY);
+
+        void LoadFromFileSLRAW(string filename);
+
+        void LowerTerrain(double rx, double ry, double size, double amount);
 
         void ModifyTerrain(float height, float seconds, byte brushsize, byte action, float north, float west,
                            IClientAPI remoteUser);
 
-        void CheckHeightValues();
-        float[] GetHeights1D();
-        float[,] GetHeights2D();
-        double[,] GetHeights2DD();
-        void GetHeights1D(float[] heights);
-        void SetHeights2D(float[,] heights);
-        void SetHeights2D(double[,] heights);
-        void SwapRevertMaps();
-        void SaveRevertMap();
-        bool RunTerrainCmd(string[] args, ref string resultText, string simName);
-        void SetRange(float min, float max);
-        void LoadFromFileF64(string filename);
-        void LoadFromFileF32(string filename);
-        void LoadFromFileF32(string filename, int dimensionX, int dimensionY, int lowerboundX, int lowerboundY);
-        void LoadFromFileIMG(string filename, int dimensionX, int dimensionY, int lowerboundX, int lowerboundY);
-        void LoadFromFileSLRAW(string filename);
-        void WriteToFileF64(string filename);
-        void WriteToFileF32(string filename);
-        void WriteToFileRAW(string filename);
-        void WriteToFileHiRAW(string filename);
-        void SetSeed(int val);
-        void RaiseTerrain(double rx, double ry, double size, double amount);
-        void LowerTerrain(double rx, double ry, double size, double amount);
-        void FlattenTerrain(double rx, double ry, double size, double amount);
         void NoiseTerrain(double rx, double ry, double size, double amount);
-        void RevertTerrain(double rx, double ry, double size, double amount);
-        void SmoothTerrain(double rx, double ry, double size, double amount);
-        void HillsGenerator();
-        double GetHeight(int x, int y);
-        void ExportImage(string filename, string gradientmap);
-        byte[] ExportJpegImage(string gradientmap);
-    }
 
-    public interface IMapImageGenerator
-    {
-        System.Drawing.Bitmap CreateMapTile();
-        System.Drawing.Bitmap CreateViewImage(Vector3 camPos, Vector3 camDir, float fov, int width, int height, bool useTextures);
-        byte[] WriteJpeg2000Image();
+        void RaiseTerrain(double rx, double ry, double size, double amount);
+
+        void ResetTaint();
+
+        void RevertTerrain(double rx, double ry, double size, double amount);
+
+        bool RunTerrainCmd(string[] args, ref string resultText, string simName);
+
+        void SaveRevertMap();
+
+        void SetHeights2D(float[,] heights);
+
+        void SetHeights2D(double[,] heights);
+
+        void SetRange(float min, float max);
+
+        void SetSeed(int val);
+
+        void SmoothTerrain(double rx, double ry, double size, double amount);
+
+        void SwapRevertMaps();
+
+        bool Tainted();
+
+        bool Tainted(int x, int y);
+        void WriteToFileF32(string filename);
+
+        void WriteToFileF64(string filename);
+        void WriteToFileHiRAW(string filename);
+
+        void WriteToFileRAW(string filename);
     }
 }

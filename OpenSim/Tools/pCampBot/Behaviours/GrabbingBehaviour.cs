@@ -26,11 +26,9 @@
  */
 
 using OpenMetaverse;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using pCampBot.Interfaces;
 
 namespace pCampBot
 {
@@ -42,10 +40,10 @@ namespace pCampBot
     /// </remarks>
     public class GrabbingBehaviour : AbstractBehaviour
     {
-        public GrabbingBehaviour() 
-        { 
+        public GrabbingBehaviour()
+        {
             AbbreviatedName = "g";
-            Name = "Grabbing"; 
+            Name = "Grabbing";
         }
 
         public override void Action()

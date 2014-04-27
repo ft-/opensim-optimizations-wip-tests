@@ -25,33 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenSim.Region.OptionalModules.Scripting.Minimodule;
 using System.Collections;
 using System.Collections.Generic;
-using OpenSim.Region.OptionalModules.Scripting.Minimodule;
 
 namespace OpenSim
 {
-    class MiniModule : MRMBase
+    internal class MiniModule : MRMBase
     {
-        // private microthreaded Function(params...)
-        private IEnumerable TestMicrothread(string param)
-        {
-            Host.Console.Info("Microthreaded " + param);
-            // relax;
-            yield return null;
-            Host.Console.Info("Microthreaded 2" + param);
-            yield return null;
-            int c = 100;
-            while (c-- < 0)
-            {
-                Host.Console.Info("Microthreaded Looped " + c + " " + param);
-                yield return null;
-            }
-        }
-
         public void Microthread(IEnumerable thread)
         {
-            
         }
 
         public void RunMicrothread()
@@ -67,10 +50,10 @@ namespace OpenSim
             while (threads.Count > 0)
             {
                 i++;
-                bool running = threads[i%threads.Count].MoveNext();
+                bool running = threads[i % threads.Count].MoveNext();
 
                 if (!running)
-                    threads.Remove(threads[i%threads.Count]);
+                    threads.Remove(threads[i % threads.Count]);
             }
         }
 
@@ -84,15 +67,30 @@ namespace OpenSim
             Host.Object.OnTouch += OnTouched;
         }
 
+        public override void Stop()
+        {
+        }
+
         // This is our touch event handler
-        void OnTouched(IObject sender, TouchEventArgs e)
+        private void OnTouched(IObject sender, TouchEventArgs e)
         {
             Host.Object.Say("Touched.");
         }
 
-        public override void Stop()
+        // private microthreaded Function(params...)
+        private IEnumerable TestMicrothread(string param)
         {
-            
+            Host.Console.Info("Microthreaded " + param);
+            // relax;
+            yield return null;
+            Host.Console.Info("Microthreaded 2" + param);
+            yield return null;
+            int c = 100;
+            while (c-- < 0)
+            {
+                Host.Console.Info("Microthreaded Looped " + c + " " + param);
+                yield return null;
+            }
         }
     }
 }

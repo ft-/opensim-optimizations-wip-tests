@@ -25,19 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using OpenMetaverse;
 using OpenSim.Framework;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.RegionCombinerModule
 {
-
-    struct RegionCoarseLocationStruct
+    internal struct RegionCoarseLocationStruct
     {
         public List<Vector3> Locations;
-        public List<UUID> Uuids;
-        public IClientAPI UserAPI;
         public Vector2 Offset;
+        public IClientAPI UserAPI;
+        public List<UUID> Uuids;
     }
 }

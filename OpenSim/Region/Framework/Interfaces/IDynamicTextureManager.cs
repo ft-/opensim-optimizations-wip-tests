@@ -25,31 +25,53 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
 using System;
 using System.Drawing;
-using System.IO;
-using OpenMetaverse;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
-    public interface IDynamicTextureManager
+    public interface IDynamicTexture
     {
-        void RegisterRender(string handleType, IDynamicTextureRender render);
+        /// <summary>
+        /// Texture data.
+        /// </summary>
+        byte[] Data { get; }
 
         /// <summary>
-        /// Used by IDynamicTextureRender implementations to return renders
+        /// Input commands used to generate this data.
         /// </summary>
-        /// <param name='id'></param>
-        /// <param name='data'></param>
-        /// <param name='isReuseable'></param>
-        void ReturnData(UUID id, IDynamicTexture texture);
+        /// <remarks>
+        /// Null if input commands were not used.
+        /// </remarks>
+        string InputCommands { get; }
 
-        UUID AddDynamicTextureURL(UUID simID, UUID primID, string contentType, string url, string extraParams,
-                                    int updateTimer);
-        UUID AddDynamicTextureURL(UUID simID, UUID primID, string contentType, string url, string extraParams,
-                                   int updateTimer, bool SetBlending, byte AlphaValue);
-        UUID AddDynamicTextureURL(UUID simID, UUID primID, string contentType, string url, string extraParams,
-                                   int updateTimer, bool SetBlending, int disp, byte AlphaValue, int face);
+        /// <summary>
+        /// Extra input params used to generate this data.
+        /// </summary>
+        string InputParams { get; }
+
+        /// <summary>
+        /// Uri used to generate this data.
+        /// </summary>
+        /// <remarks>
+        /// Null if a uri was not used.
+        /// </remarks>
+        Uri InputUri { get; }
+        /// <summary>
+        /// Signal whether the texture is reuseable (i.e. whether the same input data will always generate the same
+        /// texture).
+        /// </summary>
+        bool IsReuseable { get; }
+
+        /// <summary>
+        /// Size of texture.
+        /// </summary>
+        Size Size { get; }
+    }
+
+    public interface IDynamicTextureManager
+    {
         UUID AddDynamicTextureData(UUID simID, UUID primID, string contentType, string data, string extraParams,
                                      int updateTimer);
 
@@ -112,75 +134,56 @@ namespace OpenSim.Region.Framework.Interfaces
         UUID AddDynamicTextureData(
             UUID simID, UUID primID, string contentType, string data, string extraParams,
             int updateTimer, bool SetBlending, int disp, byte AlphaValue, int face);
-        
+
+        UUID AddDynamicTextureURL(UUID simID, UUID primID, string contentType, string url, string extraParams,
+                                    int updateTimer);
+
+        UUID AddDynamicTextureURL(UUID simID, UUID primID, string contentType, string url, string extraParams,
+                                   int updateTimer, bool SetBlending, byte AlphaValue);
+
+        UUID AddDynamicTextureURL(UUID simID, UUID primID, string contentType, string url, string extraParams,
+                                   int updateTimer, bool SetBlending, int disp, byte AlphaValue, int face);
+
         void GetDrawStringSize(string contentType, string text, string fontName, int fontSize,
                                out double xSize, out double ySize);
+
+        void RegisterRender(string handleType, IDynamicTextureRender render);
+
+        /// <summary>
+        /// Used by IDynamicTextureRender implementations to return renders
+        /// </summary>
+        /// <param name='id'></param>
+        /// <param name='data'></param>
+        /// <param name='isReuseable'></param>
+        void ReturnData(UUID id, IDynamicTexture texture);
     }
 
     public interface IDynamicTextureRender
     {
-        string GetName();
-        string GetContentType();
-        bool SupportsAsynchronous();
-
-//        /// <summary>
-//        /// Return true if converting the input body and extra params data will always result in the same byte[] array
-//        /// </summary>
-//        /// <remarks>
-//        /// This method allows the caller to use a previously generated asset if it has one.
-//        /// </remarks>
-//        /// <returns></returns>
-//        /// <param name='bodyData'></param>
-//        /// <param name='extraParams'></param>
-//        bool AlwaysIdenticalConversion(string bodyData, string extraParams);
-
-        IDynamicTexture ConvertUrl(string url, string extraParams);
-        IDynamicTexture ConvertData(string bodyData, string extraParams);
-
-        bool AsyncConvertUrl(UUID id, string url, string extraParams);
         bool AsyncConvertData(UUID id, string bodyData, string extraParams);
 
-        void GetDrawStringSize(string text, string fontName, int fontSize, 
+        bool AsyncConvertUrl(UUID id, string url, string extraParams);
+
+        IDynamicTexture ConvertData(string bodyData, string extraParams);
+
+        IDynamicTexture ConvertUrl(string url, string extraParams);
+
+        string GetContentType();
+
+        //        /// <summary>
+        //        /// Return true if converting the input body and extra params data will always result in the same byte[] array
+        //        /// </summary>
+        //        /// <remarks>
+        //        /// This method allows the caller to use a previously generated asset if it has one.
+        //        /// </remarks>
+        //        /// <returns></returns>
+        //        /// <param name='bodyData'></param>
+        //        /// <param name='extraParams'></param>
+        //        bool AlwaysIdenticalConversion(string bodyData, string extraParams);
+        void GetDrawStringSize(string text, string fontName, int fontSize,
                                out double xSize, out double ySize);
-    }
 
-    public interface IDynamicTexture
-    {
-        /// <summary>
-        /// Input commands used to generate this data.
-        /// </summary>
-        /// <remarks>
-        /// Null if input commands were not used.
-        /// </remarks>
-        string InputCommands { get; }
-
-        /// <summary>
-        /// Uri used to generate this data.
-        /// </summary>
-        /// <remarks>
-        /// Null if a uri was not used.
-        /// </remarks>
-        Uri InputUri { get; }
-
-        /// <summary>
-        /// Extra input params used to generate this data.
-        /// </summary>
-        string InputParams { get; }
-
-        /// <summary>
-        /// Texture data.
-        /// </summary>
-        byte[] Data { get; }
-
-        /// <summary>
-        /// Size of texture.
-        /// </summary>
-        Size Size { get; }
-
-        /// <summary>
-        /// Signal whether the texture is reuseable (i.e. whether the same input data will always generate the same
-        /// texture).
-        /// </summary>
-        bool IsReuseable { get; }
+        string GetName();
+        bool SupportsAsynchronous();
     }
 }

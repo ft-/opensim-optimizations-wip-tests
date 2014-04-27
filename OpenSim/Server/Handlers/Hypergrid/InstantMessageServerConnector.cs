@@ -25,23 +25,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Net;
-using System.Reflection;
-
-using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
-using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Server.Handlers.Base;
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
-
 using log4net;
+using Nini.Config;
 using Nwc.XmlRpc;
 using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Server.Base;
+using OpenSim.Server.Handlers.Base;
+using OpenSim.Services.Interfaces;
+using System;
+using System.Collections;
+using System.Net;
+using System.Reflection;
 
 namespace OpenSim.Server.Handlers.Hypergrid
 {
@@ -55,7 +51,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
 
         public InstantMessageServerConnector(IConfigSource config, IHttpServer server) :
             this(config, server, (IInstantMessageSimConnector)null)
-        {            
+        {
         }
 
         public InstantMessageServerConnector(IConfigSource config, IHttpServer server, string configName) :
@@ -64,7 +60,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
         }
 
         public InstantMessageServerConnector(IConfigSource config, IHttpServer server, IInstantMessageSimConnector simConnector) :
-                base(config, server, String.Empty)
+            base(config, server, String.Empty)
         {
             IConfig gridConfig = config.Configs["HGInstantMessageService"];
             if (gridConfig != null)
@@ -78,7 +74,6 @@ namespace OpenSim.Server.Handlers.Hypergrid
                 throw new Exception("InstantMessage server connector cannot proceed because of missing service");
 
             server.AddXmlRPCHandler("grid_instant_message", ProcessInstantMessage, false);
-
         }
 
         public IInstantMessage GetService()
@@ -111,7 +106,6 @@ namespace OpenSim.Server.Handlers.Hypergrid
                 float pos_y = 0;
                 float pos_z = 0;
                 //m_log.Info("Processing IM");
-
 
                 Hashtable requestData = (Hashtable)request.Params[0];
                 // Check if it's got all the data
@@ -222,7 +216,6 @@ namespace OpenSim.Server.Handlers.Hypergrid
                     gim.binaryBucket = binaryBucket;
 
                     successful = m_IMService.IncomingInstantMessage(gim);
-
                 }
             }
             catch (Exception e)
@@ -243,6 +236,5 @@ namespace OpenSim.Server.Handlers.Hypergrid
 
             return resp;
         }
-
     }
 }

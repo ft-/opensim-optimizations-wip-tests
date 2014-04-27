@@ -25,24 +25,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
 using OpenMetaverse;
 
 namespace OpenSim.Region.Framework.Scenes
 {
     public class Border
-    {       
+    {
         /// <summary>
-        /// Line perpendicular to the Direction Cardinal.  Z value is the 
+        /// Line perpendicular to the Direction Cardinal.  Z value is the
         /// </summary>
         public Vector3 BorderLine = Vector3.Zero;
-        
+
         /// <summary>
         /// Direction cardinal of the border, think, 'which side of the region this is'.  EX South border: Cardinal.S
         /// </summary>
         public Cardinals CrossDirection = Cardinals.N;
+
         public uint TriggerRegionX = 0;
         public uint TriggerRegionY = 0;
 
@@ -51,7 +49,7 @@ namespace OpenSim.Region.Framework.Scenes
         }
 
         /// <summary>
-        /// Creates a Border.  The line is perpendicular to the direction cardinal. 
+        /// Creates a Border.  The line is perpendicular to the direction cardinal.
         /// IE: if the direction cardinal is South, the line is West->East
         /// </summary>
         /// <param name="lineStart">The starting point for the line of the border.
@@ -60,24 +58,46 @@ namespace OpenSim.Region.Framework.Scenes
         /// <param name="lineEnd">The ending point for the line of the border.
         /// The position of an object must be less then this for this border to trigger.
         /// Perpendicular to the direction cardinal</param>
-        /// <param name="triggerCoordinate">The position that triggers border the border 
-        /// cross parallel to the direction cardinal.  On the North cardinal, this 
-        /// normally 256.  On the South cardinal, it's normally 0.  Any position past this 
-        /// point on the cartesian coordinate will trigger the border cross as long as it 
+        /// <param name="triggerCoordinate">The position that triggers border the border
+        /// cross parallel to the direction cardinal.  On the North cardinal, this
+        /// normally 256.  On the South cardinal, it's normally 0.  Any position past this
+        /// point on the cartesian coordinate will trigger the border cross as long as it
         /// falls within the line start and the line end.</param>
-        /// <param name="triggerRegionX">When this border triggers, teleport to this regionX 
+        /// <param name="triggerRegionX">When this border triggers, teleport to this regionX
         /// in the grid</param>
-        /// <param name="triggerRegionY">When this border triggers, teleport to this regionY 
+        /// <param name="triggerRegionY">When this border triggers, teleport to this regionY
         /// in the grid</param>
-        /// <param name="direction">Cardinal for border direction.  Think, 'which side of the 
+        /// <param name="direction">Cardinal for border direction.  Think, 'which side of the
         /// region is this'</param>
-        public Border(float lineStart, float lineEnd, float triggerCoordinate, uint triggerRegionX, 
+        public Border(float lineStart, float lineEnd, float triggerCoordinate, uint triggerRegionX,
             uint triggerRegionY, Cardinals direction)
         {
-            BorderLine = new Vector3(lineStart,lineEnd,triggerCoordinate);
+            BorderLine = new Vector3(lineStart, lineEnd, triggerCoordinate);
             CrossDirection = direction;
             TriggerRegionX = triggerRegionX;
             TriggerRegionY = triggerRegionY;
+        }
+
+        public float Extent
+        {
+            get
+            {
+                switch (CrossDirection)
+                {
+                    case Cardinals.N:
+                        break;
+
+                    case Cardinals.S:
+                        break;
+
+                    case Cardinals.W:
+                        break;
+
+                    case Cardinals.E:
+                        break;
+                }
+                return 0;
+            }
         }
 
         /// <summary>
@@ -95,54 +115,42 @@ namespace OpenSim.Region.Framework.Scenes
                         return true;
                     }
                     break;
+
                 case Cardinals.NE: // x+1, y+1
                     break;
+
                 case Cardinals.E:  // x+1, y+0
                     if (position.Y >= BorderLine.X && position.Y <= BorderLine.Y && position.X > BorderLine.Z)
                     {
                         return true;
                     }
                     break;
+
                 case Cardinals.SE: // x+1, y-1
                     break;
+
                 case Cardinals.S:  // x+0, y-1
                     if (position.X >= BorderLine.X && position.X <= BorderLine.Y && position.Y < BorderLine.Z)
                     {
                         return true;
                     }
                     break;
+
                 case Cardinals.SW: // x-1, y-1
                     break;
+
                 case Cardinals.W:  // x-1, y+0
                     if (position.Y >= BorderLine.X && position.Y <= BorderLine.Y && position.X < BorderLine.Z)
                     {
                         return true;
                     }
-                    break; 
+                    break;
+
                 case Cardinals.NW: // x-1, y+1
                     break;
             }
 
             return result;
-        }
-
-        public float Extent
-        {
-            get
-            {
-                switch (CrossDirection)
-                {
-                    case Cardinals.N:
-                        break;
-                    case Cardinals.S:
-                        break;
-                    case Cardinals.W:
-                        break;
-                    case Cardinals.E:
-                        break;
-                }
-                return 0;
-            }
         }
     }
 }

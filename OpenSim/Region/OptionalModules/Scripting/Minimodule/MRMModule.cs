@@ -25,138 +25,39 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Microsoft.CSharp;
+using Mono.Addins;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
 using System;
 using System.CodeDom.Compiler;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Security;
 using System.Security.Permissions;
 using System.Security.Policy;
 using System.Text;
-using log4net;
-using Microsoft.CSharp;
-using Nini.Config;
-using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
-using Mono.Addins;
 
 namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "MRMModule")]
     public class MRMModule : INonSharedRegionModule, IMRMModule
     {
+        private static readonly CSharpCodeProvider CScodeProvider = new CSharpCodeProvider();
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        private Scene m_scene;
+        private readonly Dictionary<Type, object> m_extensions = new Dictionary<Type, object>();
+        private readonly MicroScheduler m_microthreads = new MicroScheduler();
+        private readonly Dictionary<UUID, MRMBase> m_scripts = new Dictionary<UUID, MRMBase>();
+        private IConfig m_config;
         private bool m_Enabled;
         private bool m_Hidden;
-
-        private readonly Dictionary<UUID,MRMBase> m_scripts = new Dictionary<UUID, MRMBase>();
-
-        private readonly Dictionary<Type,object> m_extensions = new Dictionary<Type, object>();
-
-        private static readonly CSharpCodeProvider CScodeProvider = new CSharpCodeProvider();
-
-        private readonly MicroScheduler m_microthreads = new MicroScheduler();
-
-
-        private IConfig m_config;
-
-        public void RegisterExtension<T>(T instance)
-        {
-            m_extensions[typeof (T)] = instance;
-        }
-
-        #region INonSharedRegionModule
-
-        public void Initialise(IConfigSource source)
-        {
-            if (source.Configs["MRM"] != null)
-            {
-                m_config = source.Configs["MRM"];
-
-                if (source.Configs["MRM"].GetBoolean("Enabled", false))
-                {
-                    m_log.Info("[MRM]: Enabling MRM Module");
-                    m_Enabled = true;
-                    m_Hidden = source.Configs["MRM"].GetBoolean("Hidden", false);
-                }
-            }
-        }
-
-        public void AddRegion(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-            m_scene = scene;
-
-            // when hidden, we don't listen for client initiated script events
-            // only making the MRM engine available for region modules
-            if (!m_Hidden)
-            {
-                scene.EventManager.OnRezScript += EventManager_OnRezScript;
-                scene.EventManager.OnStopScript += EventManager_OnStopScript;
-            }
-
-            scene.EventManager.OnFrame += EventManager_OnFrame;
-
-            scene.RegisterModuleInterface<IMRMModule>(this);
-        }
-
-        public void RegionLoaded(Scene scene)
-        {
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-        }
-
-        public void Close()
-        {
-            foreach (KeyValuePair<UUID, MRMBase> pair in m_scripts)
-            {
-                pair.Value.Stop();
-            }
-        }
-
-        public string Name
-        {
-            get { return "MiniRegionModule"; }
-        }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
-        #endregion
-
-        void EventManager_OnStopScript(uint localID, UUID itemID)
-        {
-            if (m_scripts.ContainsKey(itemID))
-            {
-                m_scripts[itemID].Stop();
-            }
-        }
-
-        void EventManager_OnFrame()
-        {
-            m_microthreads.Tick(1000);
-        }
-
-        static string ConvertMRMKeywords(string script)
-        {
-            script = script.Replace("microthreaded void", "IEnumerable");
-            script = script.Replace("relax;", "yield return null;");
-
-            return script;
-        }
-
+        private Scene m_scene;
         /// <summary>
         /// Create an AppDomain that contains policy restricting code to execute
         /// with only the permissions granted by a named permission set
@@ -241,77 +142,6 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             return restrictedDomain;
         }
 
-
-        void EventManager_OnRezScript(uint localID, UUID itemID, string script, int startParam, bool postOnRez, string engine, int stateSource)
-        {
-            if (script.StartsWith("//MRM:C#"))
-            {
-                if (m_config.GetBoolean("OwnerOnly", true))
-                    if (m_scene.GetSceneObjectPart(localID).OwnerID != m_scene.RegionInfo.EstateSettings.EstateOwner
-                        || m_scene.GetSceneObjectPart(localID).CreatorID != m_scene.RegionInfo.EstateSettings.EstateOwner)
-                        return;
-
-                script = ConvertMRMKeywords(script);
-
-                try
-                {
-                    AppDomain target;
-                    if (m_config.GetBoolean("Sandboxed", true))
-                    {
-                        m_log.Info("[MRM] Found C# MRM - Starting in AppDomain with " +
-                                   m_config.GetString("SandboxLevel", "Internet") + "-level security.");
-
-                        string domainName = UUID.Random().ToString();
-                        target = CreateRestrictedDomain(m_config.GetString("SandboxLevel", "Internet"),
-                                                                  domainName);
-                    }
-                    else
-                    {
-                        m_log.Info("[MRM] Found C# MRM - Starting in current AppDomain");
-                        m_log.Warn(
-                            "[MRM] Security Risk: AppDomain is run in current context. Use only in trusted environments.");
-                        target = AppDomain.CurrentDomain;
-                    }
-
-                    m_log.Info("[MRM] Unwrapping into target AppDomain");
-                    MRMBase mmb = (MRMBase) target.CreateInstanceFromAndUnwrap(
-                                                CompileFromDotNetText(script, itemID.ToString()),
-                                                "OpenSim.MiniModule");
-
-                    m_log.Info("[MRM] Initialising MRM Globals");
-                    InitializeMRM(mmb, localID, itemID);
-
-                    m_scripts[itemID] = mmb;
-
-                    m_log.Info("[MRM] Starting MRM");
-                    mmb.Start();
-                }
-                catch (UnauthorizedAccessException e)
-                {
-                    m_log.Error("[MRM] UAE " + e.Message);
-                    m_log.Error("[MRM] " + e.StackTrace);
-
-                    if (e.InnerException != null)
-                        m_log.Error("[MRM] " + e.InnerException);
-
-                    m_scene.ForEachClient(delegate(IClientAPI user)
-                    {
-                        user.SendAlertMessage(
-                            "MRM UnAuthorizedAccess: " + e);
-                    });
-                }
-                catch (Exception e)
-                {
-                    m_log.Info("[MRM] Error: " + e);
-                    m_scene.ForEachClient(delegate(IClientAPI user)
-                                          {
-                                              user.SendAlertMessage(
-                                                  "Compile error while building MRM script, check OpenSim console for more information.");
-                                          });
-                }
-            }
-        }
-
         public void GetGlobalEnvironment(uint localID, out IWorld world, out IHost host)
         {
             // UUID should be changed to object owner.
@@ -335,6 +165,74 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 
             mmb.InitMiniModule(world, host, itemID);
         }
+
+        public void RegisterExtension<T>(T instance)
+        {
+            m_extensions[typeof(T)] = instance;
+        }
+
+        #region INonSharedRegionModule
+
+        public string Name
+        {
+            get { return "MiniRegionModule"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
+        public void AddRegion(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+
+            m_scene = scene;
+
+            // when hidden, we don't listen for client initiated script events
+            // only making the MRM engine available for region modules
+            if (!m_Hidden)
+            {
+                scene.EventManager.OnRezScript += EventManager_OnRezScript;
+                scene.EventManager.OnStopScript += EventManager_OnStopScript;
+            }
+
+            scene.EventManager.OnFrame += EventManager_OnFrame;
+
+            scene.RegisterModuleInterface<IMRMModule>(this);
+        }
+
+        public void Close()
+        {
+            foreach (KeyValuePair<UUID, MRMBase> pair in m_scripts)
+            {
+                pair.Value.Stop();
+            }
+        }
+
+        public void Initialise(IConfigSource source)
+        {
+            if (source.Configs["MRM"] != null)
+            {
+                m_config = source.Configs["MRM"];
+
+                if (source.Configs["MRM"].GetBoolean("Enabled", false))
+                {
+                    m_log.Info("[MRM]: Enabling MRM Module");
+                    m_Enabled = true;
+                    m_Hidden = source.Configs["MRM"].GetBoolean("Hidden", false);
+                }
+            }
+        }
+        public void RegionLoaded(Scene scene)
+        {
+        }
+
+        public void RemoveRegion(Scene scene)
+        {
+        }
+        #endregion INonSharedRegionModule
 
         /// <summary>
         /// Stolen from ScriptEngine Common
@@ -409,7 +307,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             string rootPath = Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory);
 
             List<string> libraries = new List<string>();
-            string[] lines = Script.Split(new string[] {"\n"}, StringSplitOptions.RemoveEmptyEntries);
+            string[] lines = Script.Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
             foreach (string s in lines)
             {
                 if (s.StartsWith("//@DEPENDS:"))
@@ -514,6 +412,97 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             m_log.Info("MRM 10");
 
             return OutFile;
+        }
+
+        private static string ConvertMRMKeywords(string script)
+        {
+            script = script.Replace("microthreaded void", "IEnumerable");
+            script = script.Replace("relax;", "yield return null;");
+
+            return script;
+        }
+
+        private void EventManager_OnFrame()
+        {
+            m_microthreads.Tick(1000);
+        }
+
+        private void EventManager_OnRezScript(uint localID, UUID itemID, string script, int startParam, bool postOnRez, string engine, int stateSource)
+        {
+            if (script.StartsWith("//MRM:C#"))
+            {
+                if (m_config.GetBoolean("OwnerOnly", true))
+                    if (m_scene.GetSceneObjectPart(localID).OwnerID != m_scene.RegionInfo.EstateSettings.EstateOwner
+                        || m_scene.GetSceneObjectPart(localID).CreatorID != m_scene.RegionInfo.EstateSettings.EstateOwner)
+                        return;
+
+                script = ConvertMRMKeywords(script);
+
+                try
+                {
+                    AppDomain target;
+                    if (m_config.GetBoolean("Sandboxed", true))
+                    {
+                        m_log.Info("[MRM] Found C# MRM - Starting in AppDomain with " +
+                                   m_config.GetString("SandboxLevel", "Internet") + "-level security.");
+
+                        string domainName = UUID.Random().ToString();
+                        target = CreateRestrictedDomain(m_config.GetString("SandboxLevel", "Internet"),
+                                                                  domainName);
+                    }
+                    else
+                    {
+                        m_log.Info("[MRM] Found C# MRM - Starting in current AppDomain");
+                        m_log.Warn(
+                            "[MRM] Security Risk: AppDomain is run in current context. Use only in trusted environments.");
+                        target = AppDomain.CurrentDomain;
+                    }
+
+                    m_log.Info("[MRM] Unwrapping into target AppDomain");
+                    MRMBase mmb = (MRMBase)target.CreateInstanceFromAndUnwrap(
+                                                CompileFromDotNetText(script, itemID.ToString()),
+                                                "OpenSim.MiniModule");
+
+                    m_log.Info("[MRM] Initialising MRM Globals");
+                    InitializeMRM(mmb, localID, itemID);
+
+                    m_scripts[itemID] = mmb;
+
+                    m_log.Info("[MRM] Starting MRM");
+                    mmb.Start();
+                }
+                catch (UnauthorizedAccessException e)
+                {
+                    m_log.Error("[MRM] UAE " + e.Message);
+                    m_log.Error("[MRM] " + e.StackTrace);
+
+                    if (e.InnerException != null)
+                        m_log.Error("[MRM] " + e.InnerException);
+
+                    m_scene.ForEachClient(delegate(IClientAPI user)
+                    {
+                        user.SendAlertMessage(
+                            "MRM UnAuthorizedAccess: " + e);
+                    });
+                }
+                catch (Exception e)
+                {
+                    m_log.Info("[MRM] Error: " + e);
+                    m_scene.ForEachClient(delegate(IClientAPI user)
+                                          {
+                                              user.SendAlertMessage(
+                                                  "Compile error while building MRM script, check OpenSim console for more information.");
+                                          });
+                }
+            }
+        }
+
+        private void EventManager_OnStopScript(uint localID, UUID itemID)
+        {
+            if (m_scripts.ContainsKey(itemID))
+            {
+                m_scripts[itemID].Stop();
+            }
         }
     }
 }

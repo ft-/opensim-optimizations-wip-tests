@@ -30,22 +30,20 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 #if SYSTEM_DRAWING
+
 using System.Drawing;
-using System.Drawing.Imaging;
 
 namespace PrimMesher
 {
     public class SculptMap
     {
-        public int width;
+        public byte[] blueBytes;
+        public byte[] greenBytes;
         public int height;
         public byte[] redBytes;
-        public byte[] greenBytes;
-        public byte[] blueBytes;
-
+        public int width;
         public SculptMap()
         {
         }
@@ -73,15 +71,12 @@ namespace PrimMesher
                 needsScaling = true;
             }
 
-
-
             try
             {
                 if (needsScaling)
                     bm = ScaleImage(bm, width, height,
                         System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor);
             }
-
             catch (Exception e)
             {
                 throw new Exception("Exception in ScaleImage(): e: " + e.ToString());
@@ -180,4 +175,5 @@ namespace PrimMesher
         }
     }
 }
+
 #endif

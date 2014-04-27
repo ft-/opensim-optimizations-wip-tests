@@ -25,9 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
 using log4net;
 using OpenSim.Region.OptionalModules.Scripting.Minimodule.Interfaces;
 
@@ -35,10 +32,14 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
     public interface IHost
     {
-        IObject Object { get; }
         ILog Console { get; }
-        IGraphics Graphics { get; }
+
         IExtension Extensions { get; }
+
+        IGraphics Graphics { get; }
+
         IMicrothreader Microthreads { get; }
+
+        IObject Object { get; }
     }
 }

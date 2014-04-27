@@ -25,24 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
-using System.IO;
 using OpenMetaverse;
+using System.IO;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
     public interface ITerrainModule
     {
-        void LoadFromFile(string filename);
-        void SaveToFile(string filename);
-        void ModifyTerrain(UUID user, Vector3 pos, byte size, byte action, UUID agentId);
+        void InstallPlugin(string name, ITerrainEffect plug);
 
-        /// <summary>
-        /// Taint the terrain. This will lead to sending the terrain data to the clients again.
-        /// Use this if you change terrain data outside of the terrain module (e.g. in osTerrainSetHeight)
-        /// </summary>
-        void TaintTerrain();
-        
+        void LoadFromFile(string filename);
+
         /// <summary>
         /// Load a terrain from a stream.
         /// </summary>
@@ -51,8 +44,14 @@ namespace OpenSim.Region.Framework.Interfaces
         /// </param>
         /// <param name="stream"></param>
         void LoadFromStream(string filename, Stream stream);
+
         void LoadFromStream(string filename, Vector3 displacement, float radianRotation, Vector2 rotationDisplacement, Stream stream);
+
         void LoadFromStream(string filename, System.Uri pathToTerrainHeightmap);
+
+        void ModifyTerrain(UUID user, Vector3 pos, byte size, byte action, UUID agentId);
+
+        void SaveToFile(string filename);
         /// <summary>
         /// Save a terrain to a stream.
         /// </summary>
@@ -62,8 +61,11 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="stream"></param>
         void SaveToStream(string filename, Stream stream);
 
-        void InstallPlugin(string name, ITerrainEffect plug);
-
+        /// <summary>
+        /// Taint the terrain. This will lead to sending the terrain data to the clients again.
+        /// Use this if you change terrain data outside of the terrain module (e.g. in osTerrainSetHeight)
+        /// </summary>
+        void TaintTerrain();
         void UndoTerrain(ITerrainChannel channel);
     }
 }

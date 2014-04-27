@@ -1,4 +1,13 @@
-﻿/*
+﻿using log4net;
+using Mono.Addins;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
+using OpenSim.Services.Connectors;
+using OpenSim.Services.Interfaces;
+
+/*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
  *
@@ -24,46 +33,49 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 using System;
-using System.Collections.Generic;
 using System.Reflection;
-
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
-using OpenSim.Services.Connectors;
-
-using OpenMetaverse;
-using log4net;
-using Mono.Addins;
-using Nini.Config;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "RemoteGridUserServicesConnector")]
     public class RemoteGridUserServicesConnector : ISharedRegionModule, IGridUserService
     {
+        private const int KEEPTIME = 30;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private const int KEEPTIME = 30; // 30 secs
+         // 30 secs
         private ExpiringCache<string, GridUserInfo> m_Infos = new ExpiringCache<string, GridUserInfo>();
 
         #region ISharedRegionModule
 
-        private bool m_Enabled = false;
-
         private ActivityDetector m_ActivityDetector;
+        private bool m_Enabled = false;
         private IGridUserService m_RemoteConnector;
+
+        public string Name
+        {
+            get { return "RemoteGridUserServicesConnector"; }
+        }
 
         public Type ReplaceableInterface
         {
             get { return null; }
         }
-
-        public string Name
+        public void AddRegion(Scene scene)
         {
-            get { return "RemoteGridUserServicesConnector"; }
+            if (!m_Enabled)
+                return;
+
+            scene.RegisterModuleInterface<IGridUserService>(this);
+            m_ActivityDetector.AddRegion(scene);
+
+            m_log.InfoFormat("[REMOTE GRID USER CONNECTOR]: Enabled remote grid user for region {0}", scene.RegionInfo.RegionName);
+        }
+
+        public void Close()
+        {
         }
 
         public void Initialise(IConfigSource source)
@@ -83,27 +95,15 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
                     m_log.Info("[REMOTE GRID USER CONNECTOR]: Remote grid user enabled");
                 }
             }
-
         }
 
         public void PostInitialise()
         {
         }
-
-        public void Close()
-        {
-        }
-
-        public void AddRegion(Scene scene)
+        public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
                 return;
-
-            scene.RegisterModuleInterface<IGridUserService>(this);
-            m_ActivityDetector.AddRegion(scene);
-
-            m_log.InfoFormat("[REMOTE GRID USER CONNECTOR]: Enabled remote grid user for region {0}", scene.RegionInfo.RegionName);
-
         }
 
         public void RemoveRegion(Scene scene)
@@ -113,17 +113,27 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
 
             m_ActivityDetector.RemoveRegion(scene);
         }
-
-        public void RegionLoaded(Scene scene)
-        {
-            if (!m_Enabled)
-                return;
-
-        }
-
-        #endregion
+        #endregion ISharedRegionModule
 
         #region IGridUserService
+
+        public GridUserInfo GetGridUserInfo(string userID)
+        {
+            GridUserInfo info = null;
+            if (m_Infos.TryGetValue(userID, out info))
+                return info;
+
+            info = m_RemoteConnector.GetGridUserInfo(userID);
+
+            m_Infos.AddOrUpdate(userID, info, KEEPTIME);
+
+            return info;
+        }
+
+        public GridUserInfo[] GetGridUserInfo(string[] userID)
+        {
+            return m_RemoteConnector.GetGridUserInfo(userID);
+        }
 
         public GridUserInfo LoggedIn(string userID)
         {
@@ -138,7 +148,6 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
 
             return m_RemoteConnector.LoggedOut(userID, sessionID, region, position, lookat);
         }
-
 
         public bool SetHome(string userID, UUID regionID, Vector3 position, Vector3 lookAt)
         {
@@ -175,26 +184,6 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
 
             return false;
         }
-
-        public GridUserInfo GetGridUserInfo(string userID)
-        {
-            GridUserInfo info = null;
-            if (m_Infos.TryGetValue(userID, out info))
-                return info;
-
-            info = m_RemoteConnector.GetGridUserInfo(userID);
-
-            m_Infos.AddOrUpdate(userID, info, KEEPTIME);
-
-            return info;
-        }
-
-        public GridUserInfo[] GetGridUserInfo(string[] userID)
-        {
-            return m_RemoteConnector.GetGridUserInfo(userID);
-        }
-
-        #endregion
-
+        #endregion IGridUserService
     }
 }

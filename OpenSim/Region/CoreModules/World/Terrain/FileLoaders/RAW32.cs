@@ -25,12 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.IO;
-
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.IO;
 
 namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
 {
@@ -154,6 +153,14 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
             s.Close();
         }
 
+        public virtual void SaveFile(ITerrainChannel m_channel, string filename,
+                                     int offsetX, int offsetY,
+                                     int fileWidth, int fileHeight,
+                                     int regionSizeX, int regionSizeY)
+        {
+            throw new System.Exception("Not Implemented");
+        }
+
         public void SaveStream(Stream s, ITerrainChannel map)
         {
             BinaryWriter bs = new BinaryWriter(s);
@@ -164,31 +171,23 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
                 int x;
                 for (x = 0; x < map.Width; x++)
                 {
-                    bs.Write((float) map[x, y]);
+                    bs.Write((float)map[x, y]);
                 }
             }
 
             bs.Close();
         }
-
-        public virtual void SaveFile(ITerrainChannel m_channel, string filename,
-                                     int offsetX, int offsetY,
-                                     int fileWidth, int fileHeight,
-                                     int regionSizeX, int regionSizeY)
-        {
-            throw new System.Exception("Not Implemented");
-        }
-        #endregion
-
-        public override string ToString()
-        {
-            return "RAW32";
-        }
+        #endregion ITerrainLoader Members
 
         //Returns true if this extension is supported for terrain save-tile
         public bool SupportsTileSave()
         {
             return false;
+        }
+
+        public override string ToString()
+        {
+            return "RAW32";
         }
     }
 }

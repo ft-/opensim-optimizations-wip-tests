@@ -25,35 +25,37 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using OpenMetaverse;
 using log4net;
 using Nini.Config;
-using System.Reflection;
-using OpenSim.Services.Base;
-using OpenSim.Services.Interfaces;
+using OpenMetaverse;
 using OpenSim.Data;
 using OpenSim.Framework;
+using OpenSim.Services.Base;
+using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.Services.InventoryService
 {
     public class XInventoryService : ServiceBase, IInventoryService
     {
+        protected bool m_AllowDelete = true;
+
+        protected string m_ConfigName = "InventoryService";
+
+        protected IXInventoryData m_Database;
+
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
-
-        protected IXInventoryData m_Database;
-        protected bool m_AllowDelete = true;
-        protected string m_ConfigName = "InventoryService";
-
         public XInventoryService(IConfigSource config)
             : this(config, "InventoryService")
         {
         }
 
-        public XInventoryService(IConfigSource config, string configName) : base(config)
+        public XInventoryService(IConfigSource config, string configName)
+            : base(config)
         {
             if (configName != string.Empty)
                 m_ConfigName = configName;
@@ -93,244 +95,15 @@ namespace OpenSim.Services.InventoryService
                 throw new Exception("No StorageProvider configured");
 
             m_Database = LoadPlugin<IXInventoryData>(dllName,
-                    new Object[] {connString, String.Empty});
+                    new Object[] { connString, String.Empty });
 
             if (m_Database == null)
                 throw new Exception("Could not find a storage interface in the given module");
         }
 
-        public virtual bool CreateUserInventory(UUID principalID)
-        {
-            // This is braindeaad. We can't ever communicate that we fixed
-            // an existing inventory. Well, just return root folder status,
-            // but check sanity anyway.
-            //
-            bool result = false;
-
-            InventoryFolderBase rootFolder = GetRootFolder(principalID);
-
-            if (rootFolder == null)
-            {
-                rootFolder = ConvertToOpenSim(CreateFolder(principalID, UUID.Zero, (int)AssetType.RootFolder, "My Inventory"));
-                result = true;
-            }
-
-            XInventoryFolder[] sysFolders = GetSystemFolders(principalID, rootFolder.ID);
-
-            if (!Array.Exists(sysFolders, delegate (XInventoryFolder f) { if (f.type == (int)AssetType.Animation) return true; return false; }))
-                CreateFolder(principalID, rootFolder.ID, (int)AssetType.Animation, "Animations");
-            if (!Array.Exists(sysFolders, delegate (XInventoryFolder f) { if (f.type == (int)AssetType.Bodypart) return true; return false; }))
-                CreateFolder(principalID, rootFolder.ID, (int)AssetType.Bodypart, "Body Parts");
-            if (!Array.Exists(sysFolders, delegate (XInventoryFolder f) { if (f.type == (int)AssetType.CallingCard) return true; return false; }))
-                CreateFolder(principalID, rootFolder.ID, (int)AssetType.CallingCard, "Calling Cards");
-            if (!Array.Exists(sysFolders, delegate (XInventoryFolder f) { if (f.type == (int)AssetType.Clothing) return true; return false; }))
-                CreateFolder(principalID, rootFolder.ID, (int)AssetType.Clothing, "Clothing");
-            if (!Array.Exists(sysFolders, delegate (XInventoryFolder f) { if (f.type == (int)AssetType.Gesture) return true; return false; }))
-                CreateFolder(principalID, rootFolder.ID, (int)AssetType.Gesture, "Gestures");
-            if (!Array.Exists(sysFolders, delegate (XInventoryFolder f) { if (f.type == (int)AssetType.Landmark) return true; return false; }))
-                CreateFolder(principalID, rootFolder.ID, (int)AssetType.Landmark, "Landmarks");
-            if (!Array.Exists(sysFolders, delegate (XInventoryFolder f) { if (f.type == (int)AssetType.LostAndFoundFolder) return true; return false; }))
-                CreateFolder(principalID, rootFolder.ID, (int)AssetType.LostAndFoundFolder, "Lost And Found");
-            if (!Array.Exists(sysFolders, delegate (XInventoryFolder f) { if (f.type == (int)AssetType.Notecard) return true; return false; }))
-                CreateFolder(principalID, rootFolder.ID, (int)AssetType.Notecard, "Notecards");
-            if (!Array.Exists(sysFolders, delegate (XInventoryFolder f) { if (f.type == (int)AssetType.Object) return true; return false; }))
-                CreateFolder(principalID, rootFolder.ID, (int)AssetType.Object, "Objects");
-            if (!Array.Exists(sysFolders, delegate (XInventoryFolder f) { if (f.type == (int)AssetType.SnapshotFolder) return true; return false; }))
-                CreateFolder(principalID, rootFolder.ID, (int)AssetType.SnapshotFolder, "Photo Album");
-            if (!Array.Exists(sysFolders, delegate (XInventoryFolder f) { if (f.type == (int)AssetType.LSLText) return true; return false; }))
-                CreateFolder(principalID, rootFolder.ID, (int)AssetType.LSLText, "Scripts");
-            if (!Array.Exists(sysFolders, delegate (XInventoryFolder f) { if (f.type == (int)AssetType.Sound) return true; return false; }))
-                CreateFolder(principalID, rootFolder.ID, (int)AssetType.Sound, "Sounds");
-            if (!Array.Exists(sysFolders, delegate (XInventoryFolder f) { if (f.type == (int)AssetType.Texture) return true; return false; }))
-                CreateFolder(principalID, rootFolder.ID, (int)AssetType.Texture, "Textures");
-            if (!Array.Exists(sysFolders, delegate (XInventoryFolder f) { if (f.type == (int)AssetType.TrashFolder) return true; return false; }))
-                CreateFolder(principalID, rootFolder.ID, (int)AssetType.TrashFolder, "Trash");
-
-            return result;
-        }
-
-        protected XInventoryFolder CreateFolder(UUID principalID, UUID parentID, int type, string name)
-        {
-            XInventoryFolder newFolder = new XInventoryFolder();
-
-            newFolder.folderName = name;
-            newFolder.type = type;
-            newFolder.version = 1;
-            newFolder.folderID = UUID.Random();
-            newFolder.agentID = principalID;
-            newFolder.parentFolderID = parentID;
-
-            m_Database.StoreFolder(newFolder);
-
-            return newFolder;
-        }
-
-        protected virtual XInventoryFolder[] GetSystemFolders(UUID principalID, UUID rootID)
-        {
-//            m_log.DebugFormat("[XINVENTORY SERVICE]: Getting system folders for {0}", principalID);
-            
-            XInventoryFolder[] allFolders = m_Database.GetFolders(
-                    new string[] { "agentID", "parentFolderID" },
-                    new string[] { principalID.ToString(), rootID.ToString() });
-
-            XInventoryFolder[] sysFolders = Array.FindAll(
-                    allFolders,
-                    delegate (XInventoryFolder f)
-                    {
-                        if (f.type > 0)
-                            return true;
-                        return false;
-                    });
-
-//            m_log.DebugFormat(
-//                "[XINVENTORY SERVICE]: Found {0} system folders for {1}", sysFolders.Length, principalID);
-            
-            return sysFolders;
-        }
-
-        public virtual List<InventoryFolderBase> GetInventorySkeleton(UUID principalID)
-        {
-            XInventoryFolder[] allFolders = m_Database.GetFolders(
-                    new string[] { "agentID" },
-                    new string[] { principalID.ToString() });
-
-            if (allFolders.Length == 0)
-                return null;
-
-            List<InventoryFolderBase> folders = new List<InventoryFolderBase>();
-
-            foreach (XInventoryFolder x in allFolders)
-            {
-                //m_log.DebugFormat("[XINVENTORY SERVICE]: Adding folder {0} to skeleton", x.folderName);
-                folders.Add(ConvertToOpenSim(x));
-            }
-
-            return folders;
-        }
-
-        public virtual InventoryFolderBase GetRootFolder(UUID principalID)
-        {
-            XInventoryFolder[] folders = m_Database.GetFolders(
-                    new string[] { "agentID", "parentFolderID"},
-                    new string[] { principalID.ToString(), UUID.Zero.ToString() });
-
-            if (folders.Length == 0)
-                return null;
-
-            XInventoryFolder root = null;
-            foreach (XInventoryFolder folder in folders)
-            {
-                if (folder.folderName == "My Inventory")
-                {
-                    root = folder;
-                    break;
-                }
-            }
-            
-            if (root == null) // oops
-                root = folders[0];
-
-            return ConvertToOpenSim(root);
-        }
-
-        public virtual InventoryFolderBase GetFolderForType(UUID principalID, AssetType type)
-        {
-//            m_log.DebugFormat("[XINVENTORY SERVICE]: Getting folder type {0} for user {1}", type, principalID);
-
-            InventoryFolderBase rootFolder = GetRootFolder(principalID);
-
-            if (rootFolder == null)
-            {
-                m_log.WarnFormat(
-                    "[XINVENTORY]: Found no root folder for {0} in GetFolderForType() when looking for {1}",
-                    principalID, type);
-
-                return null;
-            }
-            
-            return GetSystemFolderForType(rootFolder, type);
-        }
-
-        private InventoryFolderBase GetSystemFolderForType(InventoryFolderBase rootFolder, AssetType type)
-        {
-//            m_log.DebugFormat("[XINVENTORY SERVICE]: Getting folder type {0} for user {1}", type, principalID);
-            
-            if (type == AssetType.RootFolder)
-                return rootFolder;
-
-            XInventoryFolder[] folders = m_Database.GetFolders(
-                    new string[] { "agentID", "parentFolderID", "type"},
-                    new string[] { rootFolder.Owner.ToString(), rootFolder.ID.ToString(), ((int)type).ToString() });
-
-            if (folders.Length == 0)
-            {
-//                m_log.WarnFormat("[XINVENTORY SERVICE]: Found no folder for type {0} for user {1}", type, principalID);
-                return null;
-            }
-            
-//            m_log.DebugFormat(
-//                "[XINVENTORY SERVICE]: Found folder {0} {1} for type {2} for user {3}", 
-//                folders[0].folderName, folders[0].folderID, type, principalID);
-
-            return ConvertToOpenSim(folders[0]);
-        }
-
-        public virtual InventoryCollection GetFolderContent(UUID principalID, UUID folderID)
-        {
-            // This method doesn't receive a valud principal id from the
-            // connector. So we disregard the principal and look
-            // by ID.
-            //
-            //m_log.DebugFormat("[XINVENTORY SERVICE]: Fetch contents for folder {0}", folderID.ToString());
-            InventoryCollection inventory = new InventoryCollection();
-            inventory.UserID = principalID;
-            inventory.Folders = new List<InventoryFolderBase>();
-            inventory.Items = new List<InventoryItemBase>();
-
-            XInventoryFolder[] folders = m_Database.GetFolders(
-                    new string[] { "parentFolderID"},
-                    new string[] { folderID.ToString() });
-
-            foreach (XInventoryFolder x in folders)
-            {
-                //m_log.DebugFormat("[XINVENTORY]: Adding folder {0} to response", x.folderName);
-                inventory.Folders.Add(ConvertToOpenSim(x));
-            }
-
-            XInventoryItem[] items = m_Database.GetItems(
-                    new string[] { "parentFolderID"},
-                    new string[] { folderID.ToString() });
-
-            foreach (XInventoryItem i in items)
-            {
-                //m_log.DebugFormat("[XINVENTORY]: Adding item {0} to response", i.inventoryName);
-                inventory.Items.Add(ConvertToOpenSim(i));
-            }
-
-            return inventory;
-        }
-        
-        public virtual List<InventoryItemBase> GetFolderItems(UUID principalID, UUID folderID)
-        {
-//            m_log.DebugFormat("[XINVENTORY]: Fetch items for folder {0}", folderID);
-            
-            // Since we probably don't get a valid principal here, either ...
-            //
-            List<InventoryItemBase> invItems = new List<InventoryItemBase>();
-
-            XInventoryItem[] items = m_Database.GetItems(
-                    new string[] { "parentFolderID" },
-                    new string[] { folderID.ToString() });
-
-            foreach (XInventoryItem i in items)
-                invItems.Add(ConvertToOpenSim(i));
-
-            return invItems;
-        }
-
         public virtual bool AddFolder(InventoryFolderBase folder)
         {
-//            m_log.DebugFormat("[XINVENTORY]: Add folder {0} type {1} in parent {2}", folder.Name, folder.Type, folder.ParentID);
+            //            m_log.DebugFormat("[XINVENTORY]: Add folder {0} type {1} in parent {2}", folder.Name, folder.Type, folder.ParentID);
 
             InventoryFolderBase check = GetFolder(folder);
             if (check != null)
@@ -360,7 +133,7 @@ namespace OpenSim.Services.InventoryService
                         m_log.WarnFormat(
                             "[XINVENTORY]: System folder of type {0} already exists when tried to add {1} to {2} for {3}",
                             folder.Type, folder.Name, folder.ParentID, folder.Owner);
-    
+
                         return false;
                     }
                 }
@@ -370,46 +143,62 @@ namespace OpenSim.Services.InventoryService
             return m_Database.StoreFolder(xFolder);
         }
 
-        public virtual bool UpdateFolder(InventoryFolderBase folder)
+        public virtual bool AddItem(InventoryItemBase item)
         {
-//            m_log.DebugFormat("[XINVENTORY]: Update folder {0} {1} ({2})", folder.Name, folder.Type, folder.ID);
+            //            m_log.DebugFormat(
+            //                "[XINVENTORY SERVICE]: Adding item {0} {1} to folder {2} for {3}", item.Name, item.ID, item.Folder, item.Owner);
 
-            XInventoryFolder xFolder = ConvertFromOpenSim(folder);
-            InventoryFolderBase check = GetFolder(folder);
-
-            if (check == null)
-                return AddFolder(folder);
-
-            if ((check.Type != (short)AssetType.Unknown || xFolder.type != (short)AssetType.Unknown)
-                && (check.Type != (short)AssetType.OutfitFolder || xFolder.type != (short)AssetType.OutfitFolder))
-            {
-                if (xFolder.version < check.Version)
-                {
-//                    m_log.DebugFormat("[XINVENTORY]: {0} < {1} can't do", xFolder.version, check.Version);
-                    return false;
-                }
-
-                check.Version = (ushort)xFolder.version;
-                xFolder = ConvertFromOpenSim(check);
-
-//                m_log.DebugFormat(
-//                    "[XINVENTORY]: Storing version only update to system folder {0} {1} {2}",
-//                    xFolder.folderName, xFolder.version, xFolder.type);
-
-                return m_Database.StoreFolder(xFolder);
-            }
-
-            if (xFolder.version < check.Version)
-                xFolder.version = check.Version;
-
-            xFolder.folderID = check.ID;
-
-            return m_Database.StoreFolder(xFolder);
+            return m_Database.StoreItem(ConvertFromOpenSim(item));
         }
 
-        public virtual bool MoveFolder(InventoryFolderBase folder)
+        public virtual bool CreateUserInventory(UUID principalID)
         {
-            return m_Database.MoveFolder(folder.ID.ToString(), folder.ParentID.ToString());
+            // This is braindeaad. We can't ever communicate that we fixed
+            // an existing inventory. Well, just return root folder status,
+            // but check sanity anyway.
+            //
+            bool result = false;
+
+            InventoryFolderBase rootFolder = GetRootFolder(principalID);
+
+            if (rootFolder == null)
+            {
+                rootFolder = ConvertToOpenSim(CreateFolder(principalID, UUID.Zero, (int)AssetType.RootFolder, "My Inventory"));
+                result = true;
+            }
+
+            XInventoryFolder[] sysFolders = GetSystemFolders(principalID, rootFolder.ID);
+
+            if (!Array.Exists(sysFolders, delegate(XInventoryFolder f) { if (f.type == (int)AssetType.Animation) return true; return false; }))
+                CreateFolder(principalID, rootFolder.ID, (int)AssetType.Animation, "Animations");
+            if (!Array.Exists(sysFolders, delegate(XInventoryFolder f) { if (f.type == (int)AssetType.Bodypart) return true; return false; }))
+                CreateFolder(principalID, rootFolder.ID, (int)AssetType.Bodypart, "Body Parts");
+            if (!Array.Exists(sysFolders, delegate(XInventoryFolder f) { if (f.type == (int)AssetType.CallingCard) return true; return false; }))
+                CreateFolder(principalID, rootFolder.ID, (int)AssetType.CallingCard, "Calling Cards");
+            if (!Array.Exists(sysFolders, delegate(XInventoryFolder f) { if (f.type == (int)AssetType.Clothing) return true; return false; }))
+                CreateFolder(principalID, rootFolder.ID, (int)AssetType.Clothing, "Clothing");
+            if (!Array.Exists(sysFolders, delegate(XInventoryFolder f) { if (f.type == (int)AssetType.Gesture) return true; return false; }))
+                CreateFolder(principalID, rootFolder.ID, (int)AssetType.Gesture, "Gestures");
+            if (!Array.Exists(sysFolders, delegate(XInventoryFolder f) { if (f.type == (int)AssetType.Landmark) return true; return false; }))
+                CreateFolder(principalID, rootFolder.ID, (int)AssetType.Landmark, "Landmarks");
+            if (!Array.Exists(sysFolders, delegate(XInventoryFolder f) { if (f.type == (int)AssetType.LostAndFoundFolder) return true; return false; }))
+                CreateFolder(principalID, rootFolder.ID, (int)AssetType.LostAndFoundFolder, "Lost And Found");
+            if (!Array.Exists(sysFolders, delegate(XInventoryFolder f) { if (f.type == (int)AssetType.Notecard) return true; return false; }))
+                CreateFolder(principalID, rootFolder.ID, (int)AssetType.Notecard, "Notecards");
+            if (!Array.Exists(sysFolders, delegate(XInventoryFolder f) { if (f.type == (int)AssetType.Object) return true; return false; }))
+                CreateFolder(principalID, rootFolder.ID, (int)AssetType.Object, "Objects");
+            if (!Array.Exists(sysFolders, delegate(XInventoryFolder f) { if (f.type == (int)AssetType.SnapshotFolder) return true; return false; }))
+                CreateFolder(principalID, rootFolder.ID, (int)AssetType.SnapshotFolder, "Photo Album");
+            if (!Array.Exists(sysFolders, delegate(XInventoryFolder f) { if (f.type == (int)AssetType.LSLText) return true; return false; }))
+                CreateFolder(principalID, rootFolder.ID, (int)AssetType.LSLText, "Scripts");
+            if (!Array.Exists(sysFolders, delegate(XInventoryFolder f) { if (f.type == (int)AssetType.Sound) return true; return false; }))
+                CreateFolder(principalID, rootFolder.ID, (int)AssetType.Sound, "Sounds");
+            if (!Array.Exists(sysFolders, delegate(XInventoryFolder f) { if (f.type == (int)AssetType.Texture) return true; return false; }))
+                CreateFolder(principalID, rootFolder.ID, (int)AssetType.Texture, "Textures");
+            if (!Array.Exists(sysFolders, delegate(XInventoryFolder f) { if (f.type == (int)AssetType.TrashFolder) return true; return false; }))
+                CreateFolder(principalID, rootFolder.ID, (int)AssetType.TrashFolder, "Trash");
+
+            return result;
         }
 
         // We don't check the principal's ID here
@@ -435,106 +224,6 @@ namespace OpenSim.Services.InventoryService
                 f.ID = id;
                 PurgeFolder(f, onlyIfTrash);
                 m_Database.DeleteFolders("folderID", id.ToString());
-            }
-
-            return true;
-        }
-
-        public virtual bool PurgeFolder(InventoryFolderBase folder)
-        {
-            return PurgeFolder(folder, true);
-        }
-
-        public virtual bool PurgeFolder(InventoryFolderBase folder, bool onlyIfTrash)
-        {
-            if (!m_AllowDelete)
-                return false;
-
-            if (onlyIfTrash && !ParentIsTrash(folder.ID))
-                return false;
-
-            XInventoryFolder[] subFolders = m_Database.GetFolders(
-                    new string[] { "parentFolderID" },
-                    new string[] { folder.ID.ToString() });
-
-            foreach (XInventoryFolder x in subFolders)
-            {
-                PurgeFolder(ConvertToOpenSim(x), onlyIfTrash);
-                m_Database.DeleteFolders("folderID", x.folderID.ToString());
-            }
-
-            m_Database.DeleteItems("parentFolderID", folder.ID.ToString());
-
-            return true;
-        }
-
-        public virtual bool AddItem(InventoryItemBase item)
-        {
-//            m_log.DebugFormat(
-//                "[XINVENTORY SERVICE]: Adding item {0} {1} to folder {2} for {3}", item.Name, item.ID, item.Folder, item.Owner);
-            
-            return m_Database.StoreItem(ConvertFromOpenSim(item));
-        }
-
-        public virtual bool UpdateItem(InventoryItemBase item)
-        {
-            if (!m_AllowDelete)
-                if (item.AssetType == (sbyte)AssetType.Link || item.AssetType == (sbyte)AssetType.LinkFolder)
-                    return false;
-
-//            m_log.InfoFormat(
-//                "[XINVENTORY SERVICE]: Updating item {0} {1} in folder {2}", item.Name, item.ID, item.Folder);
-
-            InventoryItemBase retrievedItem = GetItem(item);
-
-            if (retrievedItem == null)
-            {
-                m_log.WarnFormat(
-                    "[XINVENTORY SERVICE]: Tried to update item {0} {1}, owner {2} but no existing item found.", 
-                    item.Name, item.ID, item.Owner);
-
-                return false;
-            }
-
-            // Do not allow invariants to change.  Changes to folder ID occur in MoveItems()
-            if (retrievedItem.InvType != item.InvType 
-                || retrievedItem.AssetType != item.AssetType
-                || retrievedItem.Folder != item.Folder 
-                || retrievedItem.CreatorIdentification != item.CreatorIdentification 
-                || retrievedItem.Owner != item.Owner)
-            {
-                m_log.WarnFormat(
-                    "[XINVENTORY SERVICE]: Caller to UpdateItem() for {0} {1} tried to alter property(s) that should be invariant, (InvType, AssetType, Folder, CreatorIdentification, Owner), existing ({2}, {3}, {4}, {5}, {6}), update ({7}, {8}, {9}, {10}, {11})",
-                    retrievedItem.Name, 
-                    retrievedItem.ID, 
-                    retrievedItem.InvType, 
-                    retrievedItem.AssetType, 
-                    retrievedItem.Folder, 
-                    retrievedItem.CreatorIdentification, 
-                    retrievedItem.Owner,
-                    item.InvType,
-                    item.AssetType,
-                    item.Folder,
-                    item.CreatorIdentification,
-                    item.Owner);
-
-                item.InvType = retrievedItem.InvType;
-                item.AssetType = retrievedItem.AssetType;
-                item.Folder = retrievedItem.Folder;
-                item.CreatorIdentification = retrievedItem.CreatorIdentification;
-                item.Owner = retrievedItem.Owner;
-            }
-
-            return m_Database.StoreItem(ConvertFromOpenSim(item));
-        }
-
-        public virtual bool MoveItems(UUID principalID, List<InventoryItemBase> items)
-        {
-            // Principal is b0rked. *sigh*
-            //
-            foreach (InventoryItemBase i in items)
-            {
-                m_Database.MoveItem(i.ID.ToString(), i.Folder.ToString());
             }
 
             return true;
@@ -571,6 +260,129 @@ namespace OpenSim.Services.InventoryService
             return true;
         }
 
+        public virtual List<InventoryItemBase> GetActiveGestures(UUID principalID)
+        {
+            XInventoryItem[] items = m_Database.GetActiveGestures(principalID);
+
+            if (items.Length == 0)
+                return new List<InventoryItemBase>();
+
+            List<InventoryItemBase> ret = new List<InventoryItemBase>();
+
+            foreach (XInventoryItem x in items)
+                ret.Add(ConvertToOpenSim(x));
+
+            return ret;
+        }
+
+        public virtual int GetAssetPermissions(UUID principalID, UUID assetID)
+        {
+            return m_Database.GetAssetPermissions(principalID, assetID);
+        }
+
+        public virtual InventoryFolderBase GetFolder(InventoryFolderBase folder)
+        {
+            XInventoryFolder[] folders = m_Database.GetFolders(
+                    new string[] { "folderID" },
+                    new string[] { folder.ID.ToString() });
+
+            if (folders.Length == 0)
+                return null;
+
+            return ConvertToOpenSim(folders[0]);
+        }
+
+        public virtual InventoryCollection GetFolderContent(UUID principalID, UUID folderID)
+        {
+            // This method doesn't receive a valud principal id from the
+            // connector. So we disregard the principal and look
+            // by ID.
+            //
+            //m_log.DebugFormat("[XINVENTORY SERVICE]: Fetch contents for folder {0}", folderID.ToString());
+            InventoryCollection inventory = new InventoryCollection();
+            inventory.UserID = principalID;
+            inventory.Folders = new List<InventoryFolderBase>();
+            inventory.Items = new List<InventoryItemBase>();
+
+            XInventoryFolder[] folders = m_Database.GetFolders(
+                    new string[] { "parentFolderID" },
+                    new string[] { folderID.ToString() });
+
+            foreach (XInventoryFolder x in folders)
+            {
+                //m_log.DebugFormat("[XINVENTORY]: Adding folder {0} to response", x.folderName);
+                inventory.Folders.Add(ConvertToOpenSim(x));
+            }
+
+            XInventoryItem[] items = m_Database.GetItems(
+                    new string[] { "parentFolderID" },
+                    new string[] { folderID.ToString() });
+
+            foreach (XInventoryItem i in items)
+            {
+                //m_log.DebugFormat("[XINVENTORY]: Adding item {0} to response", i.inventoryName);
+                inventory.Items.Add(ConvertToOpenSim(i));
+            }
+
+            return inventory;
+        }
+
+        public virtual InventoryFolderBase GetFolderForType(UUID principalID, AssetType type)
+        {
+            //            m_log.DebugFormat("[XINVENTORY SERVICE]: Getting folder type {0} for user {1}", type, principalID);
+
+            InventoryFolderBase rootFolder = GetRootFolder(principalID);
+
+            if (rootFolder == null)
+            {
+                m_log.WarnFormat(
+                    "[XINVENTORY]: Found no root folder for {0} in GetFolderForType() when looking for {1}",
+                    principalID, type);
+
+                return null;
+            }
+
+            return GetSystemFolderForType(rootFolder, type);
+        }
+
+        public virtual List<InventoryItemBase> GetFolderItems(UUID principalID, UUID folderID)
+        {
+            //            m_log.DebugFormat("[XINVENTORY]: Fetch items for folder {0}", folderID);
+
+            // Since we probably don't get a valid principal here, either ...
+            //
+            List<InventoryItemBase> invItems = new List<InventoryItemBase>();
+
+            XInventoryItem[] items = m_Database.GetItems(
+                    new string[] { "parentFolderID" },
+                    new string[] { folderID.ToString() });
+
+            foreach (XInventoryItem i in items)
+                invItems.Add(ConvertToOpenSim(i));
+
+            return invItems;
+        }
+
+        public virtual List<InventoryFolderBase> GetInventorySkeleton(UUID principalID)
+        {
+            XInventoryFolder[] allFolders = m_Database.GetFolders(
+                    new string[] { "agentID" },
+                    new string[] { principalID.ToString() });
+
+            if (allFolders.Length == 0)
+                return null;
+
+            List<InventoryFolderBase> folders = new List<InventoryFolderBase>();
+
+            foreach (XInventoryFolder x in allFolders)
+            {
+                //m_log.DebugFormat("[XINVENTORY SERVICE]: Adding folder {0} to skeleton", x.folderName);
+                folders.Add(ConvertToOpenSim(x));
+            }
+
+            return folders;
+        }
+
         public virtual InventoryItemBase GetItem(InventoryItemBase item)
         {
             XInventoryItem[] items = m_Database.GetItems(
@@ -583,36 +395,29 @@ namespace OpenSim.Services.InventoryService
             return ConvertToOpenSim(items[0]);
         }
 
-        public virtual InventoryFolderBase GetFolder(InventoryFolderBase folder)
+        public virtual InventoryFolderBase GetRootFolder(UUID principalID)
         {
             XInventoryFolder[] folders = m_Database.GetFolders(
-                    new string[] { "folderID"},
-                    new string[] { folder.ID.ToString() });
+                    new string[] { "agentID", "parentFolderID" },
+                    new string[] { principalID.ToString(), UUID.Zero.ToString() });
 
             if (folders.Length == 0)
                 return null;
 
-            return ConvertToOpenSim(folders[0]);
-        }
+            XInventoryFolder root = null;
+            foreach (XInventoryFolder folder in folders)
+            {
+                if (folder.folderName == "My Inventory")
+                {
+                    root = folder;
+                    break;
+                }
+            }
 
-        public virtual List<InventoryItemBase> GetActiveGestures(UUID principalID)
-        {
-            XInventoryItem[] items = m_Database.GetActiveGestures(principalID);
+            if (root == null) // oops
+                root = folders[0];
 
-            if (items.Length == 0)
-                return new List<InventoryItemBase>();
-
-            List<InventoryItemBase> ret = new List<InventoryItemBase>();
-            
-            foreach (XInventoryItem x in items)
-                ret.Add(ConvertToOpenSim(x));
-
-            return ret;
-        }
-
-        public virtual int GetAssetPermissions(UUID principalID, UUID assetID)
-        {
-            return m_Database.GetAssetPermissions(principalID, assetID);
+            return ConvertToOpenSim(root);
         }
 
         // Unused.
@@ -620,6 +425,185 @@ namespace OpenSim.Services.InventoryService
         public bool HasInventoryForUser(UUID userID)
         {
             return false;
+        }
+
+        public virtual bool MoveFolder(InventoryFolderBase folder)
+        {
+            return m_Database.MoveFolder(folder.ID.ToString(), folder.ParentID.ToString());
+        }
+
+        public virtual bool MoveItems(UUID principalID, List<InventoryItemBase> items)
+        {
+            // Principal is b0rked. *sigh*
+            //
+            foreach (InventoryItemBase i in items)
+            {
+                m_Database.MoveItem(i.ID.ToString(), i.Folder.ToString());
+            }
+
+            return true;
+        }
+
+        public virtual bool PurgeFolder(InventoryFolderBase folder)
+        {
+            return PurgeFolder(folder, true);
+        }
+
+        public virtual bool PurgeFolder(InventoryFolderBase folder, bool onlyIfTrash)
+        {
+            if (!m_AllowDelete)
+                return false;
+
+            if (onlyIfTrash && !ParentIsTrash(folder.ID))
+                return false;
+
+            XInventoryFolder[] subFolders = m_Database.GetFolders(
+                    new string[] { "parentFolderID" },
+                    new string[] { folder.ID.ToString() });
+
+            foreach (XInventoryFolder x in subFolders)
+            {
+                PurgeFolder(ConvertToOpenSim(x), onlyIfTrash);
+                m_Database.DeleteFolders("folderID", x.folderID.ToString());
+            }
+
+            m_Database.DeleteItems("parentFolderID", folder.ID.ToString());
+
+            return true;
+        }
+
+        public virtual bool UpdateFolder(InventoryFolderBase folder)
+        {
+            //            m_log.DebugFormat("[XINVENTORY]: Update folder {0} {1} ({2})", folder.Name, folder.Type, folder.ID);
+
+            XInventoryFolder xFolder = ConvertFromOpenSim(folder);
+            InventoryFolderBase check = GetFolder(folder);
+
+            if (check == null)
+                return AddFolder(folder);
+
+            if ((check.Type != (short)AssetType.Unknown || xFolder.type != (short)AssetType.Unknown)
+                && (check.Type != (short)AssetType.OutfitFolder || xFolder.type != (short)AssetType.OutfitFolder))
+            {
+                if (xFolder.version < check.Version)
+                {
+                    //                    m_log.DebugFormat("[XINVENTORY]: {0} < {1} can't do", xFolder.version, check.Version);
+                    return false;
+                }
+
+                check.Version = (ushort)xFolder.version;
+                xFolder = ConvertFromOpenSim(check);
+
+                //                m_log.DebugFormat(
+                //                    "[XINVENTORY]: Storing version only update to system folder {0} {1} {2}",
+                //                    xFolder.folderName, xFolder.version, xFolder.type);
+
+                return m_Database.StoreFolder(xFolder);
+            }
+
+            if (xFolder.version < check.Version)
+                xFolder.version = check.Version;
+
+            xFolder.folderID = check.ID;
+
+            return m_Database.StoreFolder(xFolder);
+        }
+
+        public virtual bool UpdateItem(InventoryItemBase item)
+        {
+            if (!m_AllowDelete)
+                if (item.AssetType == (sbyte)AssetType.Link || item.AssetType == (sbyte)AssetType.LinkFolder)
+                    return false;
+
+            //            m_log.InfoFormat(
+            //                "[XINVENTORY SERVICE]: Updating item {0} {1} in folder {2}", item.Name, item.ID, item.Folder);
+
+            InventoryItemBase retrievedItem = GetItem(item);
+
+            if (retrievedItem == null)
+            {
+                m_log.WarnFormat(
+                    "[XINVENTORY SERVICE]: Tried to update item {0} {1}, owner {2} but no existing item found.",
+                    item.Name, item.ID, item.Owner);
+
+                return false;
+            }
+
+            // Do not allow invariants to change.  Changes to folder ID occur in MoveItems()
+            if (retrievedItem.InvType != item.InvType
+                || retrievedItem.AssetType != item.AssetType
+                || retrievedItem.Folder != item.Folder
+                || retrievedItem.CreatorIdentification != item.CreatorIdentification
+                || retrievedItem.Owner != item.Owner)
+            {
+                m_log.WarnFormat(
+                    "[XINVENTORY SERVICE]: Caller to UpdateItem() for {0} {1} tried to alter property(s) that should be invariant, (InvType, AssetType, Folder, CreatorIdentification, Owner), existing ({2}, {3}, {4}, {5}, {6}), update ({7}, {8}, {9}, {10}, {11})",
+                    retrievedItem.Name,
+                    retrievedItem.ID,
+                    retrievedItem.InvType,
+                    retrievedItem.AssetType,
+                    retrievedItem.Folder,
+                    retrievedItem.CreatorIdentification,
+                    retrievedItem.Owner,
+                    item.InvType,
+                    item.AssetType,
+                    item.Folder,
+                    item.CreatorIdentification,
+                    item.Owner);
+
+                item.InvType = retrievedItem.InvType;
+                item.AssetType = retrievedItem.AssetType;
+                item.Folder = retrievedItem.Folder;
+                item.CreatorIdentification = retrievedItem.CreatorIdentification;
+                item.Owner = retrievedItem.Owner;
+            }
+
+            return m_Database.StoreItem(ConvertFromOpenSim(item));
+        }
+
+        protected XInventoryFolder ConvertFromOpenSim(InventoryFolderBase folder)
+        {
+            XInventoryFolder newFolder = new XInventoryFolder();
+
+            newFolder.parentFolderID = folder.ParentID;
+            newFolder.type = (int)folder.Type;
+            newFolder.version = (int)folder.Version;
+            newFolder.folderName = folder.Name;
+            newFolder.agentID = folder.Owner;
+            newFolder.folderID = folder.ID;
+
+            return newFolder;
+        }
+
+        protected XInventoryItem ConvertFromOpenSim(InventoryItemBase item)
+        {
+            XInventoryItem newItem = new XInventoryItem();
+
+            newItem.assetID = item.AssetID;
+            newItem.assetType = item.AssetType;
+            newItem.inventoryName = item.Name;
+            newItem.avatarID = item.Owner;
+            newItem.inventoryID = item.ID;
+            newItem.invType = item.InvType;
+            newItem.parentFolderID = item.Folder;
+            newItem.creatorID = item.CreatorIdentification;
+            newItem.inventoryDescription = item.Description;
+            newItem.inventoryNextPermissions = (int)item.NextPermissions;
+            newItem.inventoryCurrentPermissions = (int)item.CurrentPermissions;
+            newItem.inventoryBasePermissions = (int)item.BasePermissions;
+            newItem.inventoryEveryOnePermissions = (int)item.EveryOnePermissions;
+            newItem.inventoryGroupPermissions = (int)item.GroupPermissions;
+            newItem.groupID = item.GroupID;
+            if (item.GroupOwned)
+                newItem.groupOwned = 1;
+            else
+                newItem.groupOwned = 0;
+            newItem.salePrice = item.SalePrice;
+            newItem.saleType = (int)item.SaleType;
+            newItem.flags = (int)item.Flags;
+            newItem.creationDate = item.CreationDate;
+
+            return newItem;
         }
 
         // CM Helpers
@@ -637,20 +621,6 @@ namespace OpenSim.Services.InventoryService
             newFolder.Name = folder.folderName;
             newFolder.Owner = folder.agentID;
             newFolder.ID = folder.folderID;
-
-            return newFolder;
-        }
-
-        protected XInventoryFolder ConvertFromOpenSim(InventoryFolderBase folder)
-        {
-            XInventoryFolder newFolder = new XInventoryFolder();
-
-            newFolder.parentFolderID = folder.ParentID;
-            newFolder.type = (int)folder.Type;
-            newFolder.version = (int)folder.Version;
-            newFolder.folderName = folder.Name;
-            newFolder.agentID = folder.Owner;
-            newFolder.folderID = folder.ID;
 
             return newFolder;
         }
@@ -686,40 +656,70 @@ namespace OpenSim.Services.InventoryService
             return newItem;
         }
 
-        protected XInventoryItem ConvertFromOpenSim(InventoryItemBase item)
+        protected XInventoryFolder CreateFolder(UUID principalID, UUID parentID, int type, string name)
         {
-            XInventoryItem newItem = new XInventoryItem();
+            XInventoryFolder newFolder = new XInventoryFolder();
 
-            newItem.assetID = item.AssetID;
-            newItem.assetType = item.AssetType;
-            newItem.inventoryName = item.Name;
-            newItem.avatarID = item.Owner;
-            newItem.inventoryID = item.ID;
-            newItem.invType = item.InvType;
-            newItem.parentFolderID = item.Folder;
-            newItem.creatorID = item.CreatorIdentification;
-            newItem.inventoryDescription = item.Description;
-            newItem.inventoryNextPermissions = (int)item.NextPermissions;
-            newItem.inventoryCurrentPermissions = (int)item.CurrentPermissions;
-            newItem.inventoryBasePermissions = (int)item.BasePermissions;
-            newItem.inventoryEveryOnePermissions = (int)item.EveryOnePermissions;
-            newItem.inventoryGroupPermissions = (int)item.GroupPermissions;
-            newItem.groupID = item.GroupID;
-            if (item.GroupOwned)
-                newItem.groupOwned = 1;
-            else
-                newItem.groupOwned = 0;
-            newItem.salePrice = item.SalePrice;
-            newItem.saleType = (int)item.SaleType;
-            newItem.flags = (int)item.Flags;
-            newItem.creationDate = item.CreationDate;
+            newFolder.folderName = name;
+            newFolder.type = type;
+            newFolder.version = 1;
+            newFolder.folderID = UUID.Random();
+            newFolder.agentID = principalID;
+            newFolder.parentFolderID = parentID;
 
-            return newItem;
+            m_Database.StoreFolder(newFolder);
+
+            return newFolder;
         }
 
+        protected virtual XInventoryFolder[] GetSystemFolders(UUID principalID, UUID rootID)
+        {
+            //            m_log.DebugFormat("[XINVENTORY SERVICE]: Getting system folders for {0}", principalID);
+
+            XInventoryFolder[] allFolders = m_Database.GetFolders(
+                    new string[] { "agentID", "parentFolderID" },
+                    new string[] { principalID.ToString(), rootID.ToString() });
+
+            XInventoryFolder[] sysFolders = Array.FindAll(
+                    allFolders,
+                    delegate(XInventoryFolder f)
+                    {
+                        if (f.type > 0)
+                            return true;
+                        return false;
+                    });
+
+            //            m_log.DebugFormat(
+            //                "[XINVENTORY SERVICE]: Found {0} system folders for {1}", sysFolders.Length, principalID);
+
+            return sysFolders;
+        }
+        private InventoryFolderBase GetSystemFolderForType(InventoryFolderBase rootFolder, AssetType type)
+        {
+            //            m_log.DebugFormat("[XINVENTORY SERVICE]: Getting folder type {0} for user {1}", type, principalID);
+
+            if (type == AssetType.RootFolder)
+                return rootFolder;
+
+            XInventoryFolder[] folders = m_Database.GetFolders(
+                    new string[] { "agentID", "parentFolderID", "type" },
+                    new string[] { rootFolder.Owner.ToString(), rootFolder.ID.ToString(), ((int)type).ToString() });
+
+            if (folders.Length == 0)
+            {
+                //                m_log.WarnFormat("[XINVENTORY SERVICE]: Found no folder for type {0} for user {1}", type, principalID);
+                return null;
+            }
+
+            //            m_log.DebugFormat(
+            //                "[XINVENTORY SERVICE]: Found folder {0} {1} for type {2} for user {3}",
+            //                folders[0].folderName, folders[0].folderID, type, principalID);
+
+            return ConvertToOpenSim(folders[0]);
+        }
         private bool ParentIsTrash(UUID folderID)
         {
-            XInventoryFolder[] folder = m_Database.GetFolders(new string[] {"folderID"}, new string[] {folderID.ToString()});
+            XInventoryFolder[] folder = m_Database.GetFolders(new string[] { "folderID" }, new string[] { folderID.ToString() });
             if (folder.Length < 1)
                 return false;
 
@@ -730,7 +730,7 @@ namespace OpenSim.Services.InventoryService
 
             while (parentFolder != UUID.Zero)
             {
-                XInventoryFolder[] parent = m_Database.GetFolders(new string[] {"folderID"}, new string[] {parentFolder.ToString()});
+                XInventoryFolder[] parent = m_Database.GetFolders(new string[] { "folderID" }, new string[] { parentFolder.ToString() });
                 if (parent.Length < 1)
                     return false;
 

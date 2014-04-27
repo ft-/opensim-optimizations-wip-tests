@@ -49,6 +49,17 @@ namespace OpenSim.Region.Framework.Interfaces
     public interface INPCModule
     {
         /// <summary>
+        /// Check if the caller has permission to manipulate the given NPC.
+        /// </summary>
+        /// <param name="npcID"></param>
+        /// <param name="callerID"></param>
+        /// <returns>
+        /// true if they do, false if they don't or if there's no NPC with the
+        /// given ID.
+        /// </returns>
+        bool CheckPermissions(UUID npcID, UUID callerID);
+
+        /// <summary>
         /// Create an NPC
         /// </summary>
         /// <param name="firstname"></param>
@@ -98,14 +109,15 @@ namespace OpenSim.Region.Framework.Interfaces
                 AvatarAppearance appearance);
 
         /// <summary>
-        /// Check if the agent is an NPC.
+        /// Delete an NPC.
         /// </summary>
-        /// <param name="agentID"></param>
+        /// <param name="agentID">The UUID of the NPC</param>
         /// <param name="scene"></param>
         /// <returns>
-        /// True if the agent is an NPC in the given scene. False otherwise.
+        /// True if the operation succeeded, false if there was no such agent
+        /// or the agent was not an NPC.
         /// </returns>
-        bool IsNPC(UUID agentID, Scene scene);
+        bool DeleteNPC(UUID agentID, Scene scene);
 
         /// <summary>
         /// Get the NPC.
@@ -120,29 +132,24 @@ namespace OpenSim.Region.Framework.Interfaces
         INPC GetNPC(UUID agentID, Scene scene);
 
         /// <summary>
-        /// Check if the caller has permission to manipulate the given NPC.
+        /// Get the owner of a NPC
         /// </summary>
-        /// <param name="npcID"></param>
-        /// <param name="callerID"></param>
+        /// <param name="agentID">The UUID of the NPC</param>
         /// <returns>
-        /// true if they do, false if they don't or if there's no NPC with the
-        /// given ID.
+        /// UUID of owner if the NPC exists, UUID.Zero  if there was no such
+        /// agent, the agent is unowned  or the agent was not an NPC.
         /// </returns>
-        bool CheckPermissions(UUID npcID, UUID callerID);
+        UUID GetOwner(UUID agentID);
 
         /// <summary>
-        /// Set the appearance for an NPC.
+        /// Check if the agent is an NPC.
         /// </summary>
         /// <param name="agentID"></param>
-        /// <param name="appearance"></param>
         /// <param name="scene"></param>
         /// <returns>
-        /// True if the operation succeeded, false if there was no such agent
-        /// or the agent was not an NPC.
+        /// True if the agent is an NPC in the given scene. False otherwise.
         /// </returns>
-        bool SetNPCAppearance(UUID agentID, AvatarAppearance appearance,
-                Scene scene);
-
+        bool IsNPC(UUID agentID, Scene scene);
         /// <summary>
         /// Move an NPC to a target over time.
         /// </summary>
@@ -163,17 +170,6 @@ namespace OpenSim.Region.Framework.Interfaces
         /// </returns>
         bool MoveToTarget(UUID agentID, Scene scene, Vector3 pos, bool noFly,
                 bool landAtTarget, bool running);
-
-        /// <summary>
-        /// Stop the NPC's current movement.
-        /// </summary>
-        /// <param name="agentID">The UUID of the NPC</param>
-        /// <param name="scene"></param>
-        /// <returns>
-        /// True if the operation succeeded, false if there was no such agent
-        /// or the agent was not an NPC.
-        /// </returns>
-        bool StopMoveToTarget(UUID agentID, Scene scene);
 
         /// <summary>
         /// Get the NPC to say something.
@@ -201,6 +197,18 @@ namespace OpenSim.Region.Framework.Interfaces
         bool Say(UUID agentID, Scene scene, string text, int channel);
 
         /// <summary>
+        /// Set the appearance for an NPC.
+        /// </summary>
+        /// <param name="agentID"></param>
+        /// <param name="appearance"></param>
+        /// <param name="scene"></param>
+        /// <returns>
+        /// True if the operation succeeded, false if there was no such agent
+        /// or the agent was not an NPC.
+        /// </returns>
+        bool SetNPCAppearance(UUID agentID, AvatarAppearance appearance,
+                Scene scene);
+        /// <summary>
         /// Get the NPC to shout something.
         /// </summary>
         /// <param name="agentID">The UUID of the NPC</param>
@@ -212,19 +220,6 @@ namespace OpenSim.Region.Framework.Interfaces
         /// or the agent was not an NPC.
         /// </returns>
         bool Shout(UUID agentID, Scene scene, string text, int channel);
-
-        /// <summary>
-        /// Get the NPC to whisper something.
-        /// </summary>
-        /// <param name="agentID">The UUID of the NPC</param>
-        /// <param name="scene"></param>
-        /// <param name="text"></param>
-        /// <param name="channel"></param>
-        /// <returns>
-        /// True if the operation succeeded, false if there was no such agent
-        /// or the agent was not an NPC.
-        /// </returns>
-        bool Whisper(UUID agentID, Scene scene, string text, int channel);
 
         /// <summary>
         /// Sit the NPC.
@@ -244,6 +239,16 @@ namespace OpenSim.Region.Framework.Interfaces
         bool Stand(UUID agentID, Scene scene);
 
         /// <summary>
+        /// Stop the NPC's current movement.
+        /// </summary>
+        /// <param name="agentID">The UUID of the NPC</param>
+        /// <param name="scene"></param>
+        /// <returns>
+        /// True if the operation succeeded, false if there was no such agent
+        /// or the agent was not an NPC.
+        /// </returns>
+        bool StopMoveToTarget(UUID agentID, Scene scene);
+        /// <summary>
         /// Get the NPC to touch an object.
         /// </summary>
         /// <param name="agentID"></param>
@@ -254,24 +259,16 @@ namespace OpenSim.Region.Framework.Interfaces
         bool Touch(UUID agentID, UUID partID);
 
         /// <summary>
-        /// Delete an NPC.
+        /// Get the NPC to whisper something.
         /// </summary>
         /// <param name="agentID">The UUID of the NPC</param>
         /// <param name="scene"></param>
+        /// <param name="text"></param>
+        /// <param name="channel"></param>
         /// <returns>
         /// True if the operation succeeded, false if there was no such agent
         /// or the agent was not an NPC.
         /// </returns>
-        bool DeleteNPC(UUID agentID, Scene scene);
-
-        /// <summary>
-        /// Get the owner of a NPC
-        /// </summary>
-        /// <param name="agentID">The UUID of the NPC</param>
-        /// <returns>
-        /// UUID of owner if the NPC exists, UUID.Zero  if there was no such
-        /// agent, the agent is unowned  or the agent was not an NPC.
-        /// </returns>
-        UUID GetOwner(UUID agentID);
+        bool Whisper(UUID agentID, Scene scene, string text, int channel);
     }
 }

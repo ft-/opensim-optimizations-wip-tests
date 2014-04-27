@@ -25,22 +25,20 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using OpenMetaverse;
-using OpenSim.Services.Interfaces;
 using log4net;
 using Nini.Config;
-using System.Reflection;
+using OpenMetaverse;
 using OpenSim.Data;
-using OpenSim.Framework;
-using OpenSim.Framework.Console;
+using OpenSim.Services.Interfaces;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Services.AuthenticationService
 {
     // Generic Authentication service used for identifying
     // and authenticating principals.
     // Principals may be clients acting on users' behalf,
-    // or any other components that need 
+    // or any other components that need
     // verifiable identification.
     //
     public class WebkeyAuthenticationService :
@@ -68,7 +66,7 @@ namespace OpenSim.Services.AuthenticationService
                 {
                     if (data.Data.ContainsKey("webLoginKey"))
                     {
-						string key = data.Data["webLoginKey"].ToString();
+                        string key = data.Data["webLoginKey"].ToString();
                         if (key == password)
                         {
                             data.Data["webLoginKey"] = UUID.Zero.ToString();
@@ -79,7 +77,9 @@ namespace OpenSim.Services.AuthenticationService
                         {
                             m_log.DebugFormat("[AUTH SERVICE]: web login auth failed, got PrincipalID {0} gave {1} instead of {2}", principalID, password, key);
                         }
-                    }else{
+                    }
+                    else
+                    {
                         m_log.DebugFormat("[AUTH SERVICE]: no col webLoginKey in passwd.db");
                     }
                 }

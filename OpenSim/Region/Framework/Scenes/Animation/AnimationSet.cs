@@ -25,40 +25,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
-using log4net;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
+using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Threading;
-using OpenSim.Framework;
-
-using Animation = OpenSim.Framework.Animation;
 
 namespace OpenSim.Region.Framework.Scenes.Animation
 {
     [Serializable]
     public class AnimationSet
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private OpenSim.Framework.Animation m_implicitDefaultAnimation = new OpenSim.Framework.Animation();
-        private OpenSim.Framework.Animation m_defaultAnimation = new OpenSim.Framework.Animation();
         private List<OpenSim.Framework.Animation> m_animations = new List<OpenSim.Framework.Animation>();
+        private OpenSim.Framework.Animation m_defaultAnimation = new OpenSim.Framework.Animation();
+        private OpenSim.Framework.Animation m_implicitDefaultAnimation = new OpenSim.Framework.Animation();
         private ReaderWriterLock m_AnimationsLock = new ReaderWriterLock();
-
-        public OpenSim.Framework.Animation DefaultAnimation 
-        {
-            get { return m_defaultAnimation; } 
-        }
-        
-        public OpenSim.Framework.Animation ImplicitDefaultAnimation 
-        {
-            get { return m_implicitDefaultAnimation; } 
-        }
-        
         public AnimationSet()
         {
             ResetDefaultAnimation();
@@ -70,20 +54,15 @@ namespace OpenSim.Region.Framework.Scenes.Animation
             FromOSDArray(pArray);
         }
 
-        public bool HasAnimation(UUID animID)
+        public OpenSim.Framework.Animation DefaultAnimation
         {
-            if (m_defaultAnimation.AnimID == animID)
-                return true;
-
-            for (int i = 0; i < m_animations.Count; ++i)
-            {
-                if (m_animations[i].AnimID == animID)
-                    return true;
-            }
-
-            return false;
+            get { return m_defaultAnimation; }
         }
 
+        public OpenSim.Framework.Animation ImplicitDefaultAnimation
+        {
+            get { return m_implicitDefaultAnimation; }
+        }
         public bool Add(UUID animID, int sequenceNum, UUID objectID)
         {
             m_AnimationsLock.AcquireWriterLock(-1);
@@ -102,179 +81,10 @@ namespace OpenSim.Region.Framework.Scenes.Animation
             return false;
         }
 
-        /// <summary>
-        /// Remove the specified animation
-        /// </summary>
-        /// <param name='animID'></param>
-        /// <param name='allowNoDefault'>
-        /// If true, then the default animation can be entirely removed. 
-        /// If false, then removing the default animation will reset it to the simulator default (currently STAND).
-        /// </param>
-        public bool Remove(UUID animID, bool allowNoDefault)
-        {
-            m_AnimationsLock.AcquireWriterLock(-1);
-            try
-            {
-                if (m_defaultAnimation.AnimID == animID)
-                {
-                    if (allowNoDefault)
-                        m_defaultAnimation = new OpenSim.Framework.Animation(UUID.Zero, 1, UUID.Zero);
-                    else
-                        ResetDefaultAnimation();
-                }
-                else if (HasAnimation(animID))
-                {
-                    for (int i = 0; i < m_animations.Count; i++)
-                    {
-                        if (m_animations[i].AnimID == animID)
-                        {
-                            m_animations.RemoveAt(i);
-                            return true;
-                        }
-                    }
-                }
-            }
-            finally
-            {
-                m_AnimationsLock.ReleaseWriterLock();
-            }
-            return false;
-        }
-
         public void Clear()
         {
             ResetDefaultAnimation();
             m_animations.Clear();
-        }
-
-        /// <summary>
-        /// The default animation is reserved for "main" animations
-        /// that are mutually exclusive, e.g. flying and sitting.
-        /// </summary>
-        public bool SetDefaultAnimation(UUID animID, int sequenceNum, UUID objectID)
-        {
-            if (m_defaultAnimation.AnimID != animID)
-            {
-                m_defaultAnimation = new OpenSim.Framework.Animation(animID, sequenceNum, objectID);
-                m_implicitDefaultAnimation = m_defaultAnimation;
-                return true;
-            }
-            return false;
-        }
-
-        // Called from serialization only
-        public void SetImplicitDefaultAnimation(UUID animID, int sequenceNum, UUID objectID)
-        {
-            m_implicitDefaultAnimation = new OpenSim.Framework.Animation(animID, sequenceNum, objectID);
-        }
-
-        protected bool ResetDefaultAnimation()
-        {
-            return TrySetDefaultAnimation("STAND", 1, UUID.Zero);
-        }
-
-        /// <summary>
-        /// Set the animation as the default animation if it's known
-        /// </summary>
-        public bool TrySetDefaultAnimation(string anim, int sequenceNum, UUID objectID)
-        {
-//            m_log.DebugFormat(
-//                "[ANIMATION SET]: Setting default animation {0}, sequence number {1}, object id {2}",
-//                anim, sequenceNum, objectID);
-
-            if (DefaultAvatarAnimations.AnimsUUID.ContainsKey(anim))
-            {
-                return SetDefaultAnimation(DefaultAvatarAnimations.AnimsUUID[anim], sequenceNum, objectID);
-            }
-            return false;
-        }
-
-        public void GetArrays(out UUID[] animIDs, out int[] sequenceNums, out UUID[] objectIDs)
-        {
-            m_AnimationsLock.AcquireReaderLock(-1);
-            try
-            {
-                int defaultSize = 0;
-                if (m_defaultAnimation.AnimID != UUID.Zero)
-                    defaultSize++;
-
-                animIDs = new UUID[m_animations.Count + defaultSize];
-                sequenceNums = new int[m_animations.Count + defaultSize];
-                objectIDs = new UUID[m_animations.Count + defaultSize];
-
-                if (m_defaultAnimation.AnimID != UUID.Zero)
-                {
-                    animIDs[0] = m_defaultAnimation.AnimID;
-                    sequenceNums[0] = m_defaultAnimation.SequenceNum;
-                    objectIDs[0] = m_defaultAnimation.ObjectID;
-                }
-
-                for (int i = 0; i < m_animations.Count; ++i)
-                {
-                    animIDs[i + defaultSize] = m_animations[i].AnimID;
-                    sequenceNums[i + defaultSize] = m_animations[i].SequenceNum;
-                    objectIDs[i + defaultSize] = m_animations[i].ObjectID;
-                }
-            }
-            finally
-            {
-                m_AnimationsLock.ReleaseReaderLock();
-            }
-        }
-
-        public OpenSim.Framework.Animation[] ToArray()
-        {
-            OpenSim.Framework.Animation[] theArray = new OpenSim.Framework.Animation[m_animations.Count];
-            uint i = 0;
-            try
-            {
-                foreach (OpenSim.Framework.Animation anim in m_animations)
-                    theArray[i++] = anim;
-            }
-            catch 
-            {
-                /* S%^t happens. Ignore. */ 
-            }
-            return theArray;
-        }
-
-        public void FromArray(OpenSim.Framework.Animation[] theArray)
-        {
-            foreach (OpenSim.Framework.Animation anim in theArray)
-                m_animations.Add(anim);
-        }
-
-        // Create representation of this AnimationSet as an OSDArray.
-        // First two entries in the array are the default and implicitDefault animations
-        //    followed by the other animations.
-        public OSDArray ToOSDArray()
-        {
-            OSDArray ret = new OSDArray();
-            ret.Add(DefaultAnimation.PackUpdateMessage());
-            ret.Add(ImplicitDefaultAnimation.PackUpdateMessage());
-
-            foreach (OpenSim.Framework.Animation anim in m_animations)
-                ret.Add(anim.PackUpdateMessage());
-
-            return ret;
-        }
-
-        public void FromOSDArray(OSDArray pArray)
-        {
-            this.Clear();
-
-            if (pArray.Count >= 1)
-            {
-                m_defaultAnimation = new OpenSim.Framework.Animation((OSDMap)pArray[0]);
-            }
-            if (pArray.Count >= 2)
-            {
-                m_implicitDefaultAnimation = new OpenSim.Framework.Animation((OSDMap)pArray[1]);
-            }
-            for (int ii = 2; ii < pArray.Count; ii++)
-            {
-                m_animations.Add(new OpenSim.Framework.Animation((OSDMap)pArray[ii]));
-            }
         }
 
         // Compare two AnimationSets and return 'true' if the default animations are the same
@@ -322,9 +132,176 @@ namespace OpenSim.Region.Framework.Scenes.Animation
             return base.Equals(obj);
         }
 
+        public void FromArray(OpenSim.Framework.Animation[] theArray)
+        {
+            foreach (OpenSim.Framework.Animation anim in theArray)
+                m_animations.Add(anim);
+        }
+
+        public void FromOSDArray(OSDArray pArray)
+        {
+            this.Clear();
+
+            if (pArray.Count >= 1)
+            {
+                m_defaultAnimation = new OpenSim.Framework.Animation((OSDMap)pArray[0]);
+            }
+            if (pArray.Count >= 2)
+            {
+                m_implicitDefaultAnimation = new OpenSim.Framework.Animation((OSDMap)pArray[1]);
+            }
+            for (int ii = 2; ii < pArray.Count; ii++)
+            {
+                m_animations.Add(new OpenSim.Framework.Animation((OSDMap)pArray[ii]));
+            }
+        }
+
+        public void GetArrays(out UUID[] animIDs, out int[] sequenceNums, out UUID[] objectIDs)
+        {
+            m_AnimationsLock.AcquireReaderLock(-1);
+            try
+            {
+                int defaultSize = 0;
+                if (m_defaultAnimation.AnimID != UUID.Zero)
+                    defaultSize++;
+
+                animIDs = new UUID[m_animations.Count + defaultSize];
+                sequenceNums = new int[m_animations.Count + defaultSize];
+                objectIDs = new UUID[m_animations.Count + defaultSize];
+
+                if (m_defaultAnimation.AnimID != UUID.Zero)
+                {
+                    animIDs[0] = m_defaultAnimation.AnimID;
+                    sequenceNums[0] = m_defaultAnimation.SequenceNum;
+                    objectIDs[0] = m_defaultAnimation.ObjectID;
+                }
+
+                for (int i = 0; i < m_animations.Count; ++i)
+                {
+                    animIDs[i + defaultSize] = m_animations[i].AnimID;
+                    sequenceNums[i + defaultSize] = m_animations[i].SequenceNum;
+                    objectIDs[i + defaultSize] = m_animations[i].ObjectID;
+                }
+            }
+            finally
+            {
+                m_AnimationsLock.ReleaseReaderLock();
+            }
+        }
+
         public override int GetHashCode()
         {
             return base.GetHashCode();
+        }
+
+        public bool HasAnimation(UUID animID)
+        {
+            if (m_defaultAnimation.AnimID == animID)
+                return true;
+
+            m_AnimationsLock.AcquireReaderLock(-1);
+            try
+            {
+                for (int i = 0; i < m_animations.Count; ++i)
+                {
+                    if (m_animations[i].AnimID == animID)
+                        return true;
+                }
+            }
+            finally
+            {
+                m_AnimationsLock.ReleaseReaderLock();
+            }
+            return false;
+        }
+        /// <summary>
+        /// Remove the specified animation
+        /// </summary>
+        /// <param name='animID'></param>
+        /// <param name='allowNoDefault'>
+        /// If true, then the default animation can be entirely removed.
+        /// If false, then removing the default animation will reset it to the simulator default (currently STAND).
+        /// </param>
+        public bool Remove(UUID animID, bool allowNoDefault)
+        {
+            m_AnimationsLock.AcquireWriterLock(-1);
+            try
+            {
+                if (m_defaultAnimation.AnimID == animID)
+                {
+                    if (allowNoDefault)
+                        m_defaultAnimation = new OpenSim.Framework.Animation(UUID.Zero, 1, UUID.Zero);
+                    else
+                        ResetDefaultAnimation();
+                }
+                else if (HasAnimation(animID))
+                {
+                    for (int i = 0; i < m_animations.Count; i++)
+                    {
+                        if (m_animations[i].AnimID == animID)
+                        {
+                            m_animations.RemoveAt(i);
+                            return true;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                m_AnimationsLock.ReleaseWriterLock();
+            }
+            return false;
+        }
+        /// <summary>
+        /// The default animation is reserved for "main" animations
+        /// that are mutually exclusive, e.g. flying and sitting.
+        /// </summary>
+        public bool SetDefaultAnimation(UUID animID, int sequenceNum, UUID objectID)
+        {
+            if (m_defaultAnimation.AnimID != animID)
+            {
+                m_defaultAnimation = new OpenSim.Framework.Animation(animID, sequenceNum, objectID);
+                m_implicitDefaultAnimation = m_defaultAnimation;
+                return true;
+            }
+            return false;
+        }
+
+        // Called from serialization only
+        public void SetImplicitDefaultAnimation(UUID animID, int sequenceNum, UUID objectID)
+        {
+            m_implicitDefaultAnimation = new OpenSim.Framework.Animation(animID, sequenceNum, objectID);
+        }
+
+        public OpenSim.Framework.Animation[] ToArray()
+        {
+            OpenSim.Framework.Animation[] theArray = new OpenSim.Framework.Animation[m_animations.Count];
+            uint i = 0;
+            try
+            {
+                foreach (OpenSim.Framework.Animation anim in m_animations)
+                    theArray[i++] = anim;
+            }
+            catch
+            {
+                /* S%^t happens. Ignore. */
+            }
+            return theArray;
+        }
+
+        // Create representation of this AnimationSet as an OSDArray.
+        // First two entries in the array are the default and implicitDefault animations
+        //    followed by the other animations.
+        public OSDArray ToOSDArray()
+        {
+            OSDArray ret = new OSDArray();
+            ret.Add(DefaultAnimation.PackUpdateMessage());
+            ret.Add(ImplicitDefaultAnimation.PackUpdateMessage());
+
+            foreach (OpenSim.Framework.Animation anim in m_animations)
+                ret.Add(anim.PackUpdateMessage());
+
+            return ret;
         }
 
         public override string ToString()
@@ -352,6 +329,27 @@ namespace OpenSim.Region.Framework.Scenes.Animation
                 }
             }
             return buff.ToString();
+        }
+
+        /// <summary>
+        /// Set the animation as the default animation if it's known
+        /// </summary>
+        public bool TrySetDefaultAnimation(string anim, int sequenceNum, UUID objectID)
+        {
+            //            m_log.DebugFormat(
+            //                "[ANIMATION SET]: Setting default animation {0}, sequence number {1}, object id {2}",
+            //                anim, sequenceNum, objectID);
+
+            if (DefaultAvatarAnimations.AnimsUUID.ContainsKey(anim))
+            {
+                return SetDefaultAnimation(DefaultAvatarAnimations.AnimsUUID[anim], sequenceNum, objectID);
+            }
+            return false;
+        }
+
+        protected bool ResetDefaultAnimation()
+        {
+            return TrySetDefaultAnimation("STAND", 1, UUID.Zero);
         }
     }
 }

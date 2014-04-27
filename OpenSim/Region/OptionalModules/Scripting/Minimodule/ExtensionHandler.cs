@@ -25,14 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenSim.Region.OptionalModules.Scripting.Minimodule.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Text;
-using OpenSim.Region.OptionalModules.Scripting.Minimodule.Interfaces;
 
 namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 {
-    class ExtensionHandler : IExtension
+    internal class ExtensionHandler : IExtension
     {
         private readonly Dictionary<Type, object> m_instances;
 
@@ -43,7 +42,12 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 
         public T Get<T>()
         {
-            return (T) m_instances[typeof (T)];
+            return (T)m_instances[typeof(T)];
+        }
+
+        public bool Has<T>()
+        {
+            return m_instances.ContainsKey(typeof(T));
         }
 
         public bool TryGet<T>(out T extension)
@@ -56,11 +60,6 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 
             extension = Get<T>();
             return true;
-        }
-
-        public bool Has<T>()
-        {
-            return m_instances.ContainsKey(typeof (T));
         }
     }
 }

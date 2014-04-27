@@ -1,4 +1,13 @@
-﻿/*
+﻿using log4net;
+using Mono.Addins;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
+using OpenSim.Services.Interfaces;
+
+/*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
  *
@@ -24,19 +33,10 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using log4net;
-using Mono.Addins;
-using Nini.Config;
-using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Framework.Servers;
-using OpenSim.Framework.Client;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
 
 namespace OpenSim.OfflineIM
 {
@@ -46,11 +46,34 @@ namespace OpenSim.OfflineIM
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private bool m_Enabled = false;
-        private List<Scene> m_SceneList = new List<Scene>();
-        IMessageTransferModule m_TransferModule = null;
         private bool m_ForwardOfflineGroupMessages = true;
-
         private IOfflineIMService m_OfflineIMService;
+        private List<Scene> m_SceneList = new List<Scene>();
+        private IMessageTransferModule m_TransferModule = null;
+        public string Name
+        {
+            get { return "Offline Message Module V2"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
+        public void AddRegion(Scene scene)
+        {
+            if (!m_Enabled)
+                return;
+
+            scene.RegisterModuleInterface<IOfflineIMService>(this);
+            m_SceneList.Add(scene);
+            scene.EventManager.OnNewClient += OnNewClient;
+        }
+
+        public void Close()
+        {
+            m_SceneList.Clear();
+        }
 
         public void Initialise(IConfigSource config)
         {
@@ -71,15 +94,8 @@ namespace OpenSim.OfflineIM
             m_ForwardOfflineGroupMessages = cnf.GetBoolean("ForwardOfflineGroupMessages", m_ForwardOfflineGroupMessages);
             m_log.DebugFormat("[OfflineIM.V2]: Offline messages enabled by {0}", Name);
         }
-
-        public void AddRegion(Scene scene)
+        public void PostInitialise()
         {
-            if (!m_Enabled)
-                return;
-
-            scene.RegisterModuleInterface<IOfflineIMService>(this);
-            m_SceneList.Add(scene);
-            scene.EventManager.OnNewClient += OnNewClient;
         }
 
         public void RegionLoaded(Scene scene)
@@ -117,24 +133,15 @@ namespace OpenSim.OfflineIM
                 client.OnMuteListRequest -= OnMuteListRequest;
             });
         }
-
-        public void PostInitialise()
+        private IClientAPI FindClient(UUID agentID)
         {
-        }
-
-        public string Name
-        {
-            get { return "Offline Message Module V2"; }
-        }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
-        public void Close()
-        {
-            m_SceneList.Clear();
+            foreach (Scene s in m_SceneList)
+            {
+                ScenePresence presence = s.GetScenePresence(agentID);
+                if (presence != null && !presence.IsChildAgent)
+                    return presence.ControllingClient;
+            }
+            return null;
         }
 
         private Scene FindScene(UUID agentID)
@@ -147,16 +154,18 @@ namespace OpenSim.OfflineIM
             }
             return null;
         }
-
-        private IClientAPI FindClient(UUID agentID)
+        // Apparently this is needed in order for the viewer to request the IMs.
+        private void OnMuteListRequest(IClientAPI client, uint crc)
         {
-            foreach (Scene s in m_SceneList)
+            m_log.DebugFormat("[OfflineIM.V2] Got mute list request for crc {0}", crc);
+            string filename = "mutes" + client.AgentId.ToString();
+
+            IXfer xfer = client.Scene.RequestModuleInterface<IXfer>();
+            if (xfer != null)
             {
-                ScenePresence presence = s.GetScenePresence(agentID);
-                if (presence != null && !presence.IsChildAgent)
-                    return presence.ControllingClient;
+                xfer.AddNewFile(filename, new Byte[0]);
+                client.SendMuteListUpdate(filename);
             }
-            return null;
         }
 
         private void OnNewClient(IClientAPI client)
@@ -193,21 +202,6 @@ namespace OpenSim.OfflineIM
                 }
             }
         }
-
-        // Apparently this is needed in order for the viewer to request the IMs.
-        private void OnMuteListRequest(IClientAPI client, uint crc)
-        {
-            m_log.DebugFormat("[OfflineIM.V2] Got mute list request for crc {0}", crc);
-            string filename = "mutes" + client.AgentId.ToString();
-
-            IXfer xfer = client.Scene.RequestModuleInterface<IXfer>();
-            if (xfer != null)
-            {
-                xfer.AddNewFile(filename, new Byte[0]);
-                client.SendMuteListUpdate(filename);
-            }
-        }
-
         private void UndeliveredMessage(GridInstantMessage im)
         {
             if (im.dialog != (byte)InstantMessageDialog.MessageFromObject &&
@@ -251,6 +245,11 @@ namespace OpenSim.OfflineIM
 
         #region IOfflineIM
 
+        public void DeleteMessages(UUID userID)
+        {
+            m_OfflineIMService.DeleteMessages(userID);
+        }
+
         public List<GridInstantMessage> GetMessages(UUID principalID)
         {
             return m_OfflineIMService.GetMessages(principalID);
@@ -260,13 +259,6 @@ namespace OpenSim.OfflineIM
         {
             return m_OfflineIMService.StoreMessage(im, out reason);
         }
-
-        public void DeleteMessages(UUID userID)
-        {
-            m_OfflineIMService.DeleteMessages(userID);
-        }
-
-        #endregion
+        #endregion IOfflineIM
     }
 }
-

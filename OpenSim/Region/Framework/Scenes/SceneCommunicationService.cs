@@ -25,21 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Reflection;
-using System.Threading;
-using OpenMetaverse;
-using OpenMetaverse.StructuredData;
-using log4net;
-using OpenSim.Framework;
-using OpenSim.Framework.Client;
-using OpenSim.Framework.Communications;
-using OpenSim.Framework.Capabilities;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Services.Interfaces;
-using OSD = OpenMetaverse.StructuredData.OSD;
 using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 
 namespace OpenSim.Region.Framework.Scenes
@@ -51,58 +43,12 @@ namespace OpenSim.Region.Framework.Scenes
     /// </summary>
     public class SceneCommunicationService //one instance per region
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
         protected RegionInfo m_regionInfo;
         protected Scene m_scene;
-
-        public void SetScene(Scene s)
-        {
-            m_scene = s;
-            m_regionInfo = s.RegionInfo;
-        }
-
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         public delegate void InformNeighbourThatRegionUpDelegate(INeighbourService nService, RegionInfo region, ulong regionhandle);
 
-        private void InformNeighborsThatRegionisUpCompleted(IAsyncResult iar)
-        {
-            InformNeighbourThatRegionUpDelegate icon = (InformNeighbourThatRegionUpDelegate) iar.AsyncState;
-            icon.EndInvoke(iar);
-        }
-
-        /// <summary>
-        /// Asynchronous call to information neighbouring regions that this region is up
-        /// </summary>
-        /// <param name="region"></param>
-        /// <param name="regionhandle"></param>
-        private void InformNeighboursThatRegionIsUpAsync(INeighbourService neighbourService, RegionInfo region, ulong regionhandle)
-        {
-            uint x = 0, y = 0;
-            Utils.LongToUInts(regionhandle, out x, out y);
-
-            GridRegion neighbour = null;
-            if (neighbourService != null)
-                neighbour = neighbourService.HelloNeighbour(regionhandle, region);
-            else
-                m_log.DebugFormat(
-                    "[SCENE COMMUNICATION SERVICE]: No neighbour service provided for region {0} to inform neigbhours of status",
-                    m_scene.Name);
-
-            if (neighbour != null)
-            {
-                m_log.DebugFormat(
-                    "[SCENE COMMUNICATION SERVICE]: Region {0} successfully informed neighbour {1} at {2}-{3} that it is up",
-                    m_scene.Name, neighbour.RegionName, Util.WorldToRegionLoc(x), Util.WorldToRegionLoc(y));
-
-                m_scene.EventManager.TriggerOnRegionUp(neighbour);
-            }
-            else
-            {
-                m_log.WarnFormat(
-                    "[SCENE COMMUNICATION SERVICE]: Region {0} failed to inform neighbour at {1}-{2} that it is up.",
-                    m_scene.Name, Util.WorldToRegionLoc(x), Util.WorldToRegionLoc(y));
-            }
-        }
+        public delegate void SendChildAgentDataUpdateDelegate(AgentPosition cAgentData, UUID scopeID, GridRegion dest);
 
         public void InformNeighborsThatRegionisUp(INeighbourService neighbourService, RegionInfo region)
         {
@@ -124,32 +70,9 @@ namespace OpenSim.Region.Framework.Scenes
             }
         }
 
-        public delegate void SendChildAgentDataUpdateDelegate(AgentPosition cAgentData, UUID scopeID, GridRegion dest);
-
-        /// <summary>
-        /// This informs all neighboring regions about the settings of it's child agent.
-        /// Calls an asynchronous method to do so..  so it doesn't lag the sim.
-        ///
-        /// This contains information, such as, Draw Distance, Camera location, Current Position, Current throttle settings, etc.
-        ///
-        /// </summary>
-        private void SendChildAgentDataUpdateAsync(AgentPosition cAgentData, UUID scopeID, GridRegion dest)
+        public List<GridRegion> RequestNamedRegions(string name, int maxNumber)
         {
-            //m_log.Info("[INTERGRID]: Informing neighbors about my agent in " + m_regionInfo.RegionName);
-            try
-            {
-                m_scene.SimulationService.UpdateAgent(dest, cAgentData);
-            }
-            catch
-            {
-                // Ignore; we did our best
-            }
-        }
-
-        private void SendChildAgentDataUpdateCompleted(IAsyncResult iar)
-        {
-            SendChildAgentDataUpdateDelegate icon = (SendChildAgentDataUpdateDelegate) iar.AsyncState;
-            icon.EndInvoke(iar);
+            return m_scene.GridService.GetRegionsByName(UUID.Zero, name, maxNumber);
         }
 
         public void SendChildAgentDataUpdate(AgentPosition cAgentData, ScenePresence presence)
@@ -195,6 +118,28 @@ namespace OpenSim.Region.Framework.Scenes
         }
 
         /// <summary>
+        /// Closes a child agents in a collection of regions. Does so asynchronously
+        /// so that the caller doesn't wait.
+        /// </summary>
+        /// <param name="agentID"></param>
+        /// <param name="regionslst"></param>
+        public void SendCloseChildAgentConnections(UUID agentID, string auth_code, List<ulong> regionslst)
+        {
+            foreach (ulong handle in regionslst)
+            {
+                // We must take a copy here since handle is acts like a reference when used in an iterator.
+                // This leads to race conditions if directly passed to SendCloseChildAgent with more than one neighbour region.
+                ulong handleCopy = handle;
+                Util.FireAndForget((o) => { SendCloseChildAgent(agentID, handleCopy, auth_code); });
+            }
+        }
+
+        public void SetScene(Scene s)
+        {
+            m_scene = s;
+            m_regionInfo = s.RegionInfo;
+        }
+        /// <summary>
         /// Closes a child agent on a given region
         /// </summary>
         protected void SendCloseChildAgent(UUID agentID, ulong regionHandle, string auth_token)
@@ -213,26 +158,69 @@ namespace OpenSim.Region.Framework.Scenes
             m_scene.SimulationService.CloseAgent(destination, agentID, auth_token);
         }
 
-        /// <summary>
-        /// Closes a child agents in a collection of regions. Does so asynchronously 
-        /// so that the caller doesn't wait.
-        /// </summary>
-        /// <param name="agentID"></param>
-        /// <param name="regionslst"></param>
-        public void SendCloseChildAgentConnections(UUID agentID, string auth_code, List<ulong> regionslst)
+        private void InformNeighborsThatRegionisUpCompleted(IAsyncResult iar)
         {
-            foreach (ulong handle in regionslst)
+            InformNeighbourThatRegionUpDelegate icon = (InformNeighbourThatRegionUpDelegate)iar.AsyncState;
+            icon.EndInvoke(iar);
+        }
+
+        /// <summary>
+        /// Asynchronous call to information neighbouring regions that this region is up
+        /// </summary>
+        /// <param name="region"></param>
+        /// <param name="regionhandle"></param>
+        private void InformNeighboursThatRegionIsUpAsync(INeighbourService neighbourService, RegionInfo region, ulong regionhandle)
+        {
+            uint x = 0, y = 0;
+            Utils.LongToUInts(regionhandle, out x, out y);
+
+            GridRegion neighbour = null;
+            if (neighbourService != null)
+                neighbour = neighbourService.HelloNeighbour(regionhandle, region);
+            else
+                m_log.DebugFormat(
+                    "[SCENE COMMUNICATION SERVICE]: No neighbour service provided for region {0} to inform neigbhours of status",
+                    m_scene.Name);
+
+            if (neighbour != null)
             {
-                // We must take a copy here since handle is acts like a reference when used in an iterator.
-                // This leads to race conditions if directly passed to SendCloseChildAgent with more than one neighbour region.
-                ulong handleCopy = handle;
-                Util.FireAndForget((o) => { SendCloseChildAgent(agentID, handleCopy, auth_code); });
+                m_log.DebugFormat(
+                    "[SCENE COMMUNICATION SERVICE]: Region {0} successfully informed neighbour {1} at {2}-{3} that it is up",
+                    m_scene.Name, neighbour.RegionName, Util.WorldToRegionLoc(x), Util.WorldToRegionLoc(y));
+
+                m_scene.EventManager.TriggerOnRegionUp(neighbour);
+            }
+            else
+            {
+                m_log.WarnFormat(
+                    "[SCENE COMMUNICATION SERVICE]: Region {0} failed to inform neighbour at {1}-{2} that it is up.",
+                    m_scene.Name, Util.WorldToRegionLoc(x), Util.WorldToRegionLoc(y));
             }
         }
-       
-        public List<GridRegion> RequestNamedRegions(string name, int maxNumber)
+        /// <summary>
+        /// This informs all neighboring regions about the settings of it's child agent.
+        /// Calls an asynchronous method to do so..  so it doesn't lag the sim.
+        ///
+        /// This contains information, such as, Draw Distance, Camera location, Current Position, Current throttle settings, etc.
+        ///
+        /// </summary>
+        private void SendChildAgentDataUpdateAsync(AgentPosition cAgentData, UUID scopeID, GridRegion dest)
         {
-            return m_scene.GridService.GetRegionsByName(UUID.Zero, name, maxNumber);
+            //m_log.Info("[INTERGRID]: Informing neighbors about my agent in " + m_regionInfo.RegionName);
+            try
+            {
+                m_scene.SimulationService.UpdateAgent(dest, cAgentData);
+            }
+            catch
+            {
+                // Ignore; we did our best
+            }
+        }
+
+        private void SendChildAgentDataUpdateCompleted(IAsyncResult iar)
+        {
+            SendChildAgentDataUpdateDelegate icon = (SendChildAgentDataUpdateDelegate)iar.AsyncState;
+            icon.EndInvoke(iar);
         }
     }
 }

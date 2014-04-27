@@ -25,34 +25,49 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.IO;
-using System.Reflection;
-using System.Net;
-using System.Text;
-
-using OpenSim.Server.Base;
-using OpenSim.Server.Handlers.Base;
-using OpenSim.Services.Interfaces;
-using OpenSim.Framework;
-using OpenSim.Framework.Servers.HttpServer;
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
-
+using log4net;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
-using Nini.Config;
-using log4net;
-
+using OpenSim.Framework;
+using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Server.Handlers.Base;
+using OpenSim.Services.Interfaces;
+using System;
+using System.IO;
+using System.Net;
+using System.Reflection;
+using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 
 namespace OpenSim.Server.Handlers.Neighbour
 {
+    public class NeighbourDeleteHandler : BaseStreamHandler
+    {
+        // TODO: unused: private ISimulationService m_SimulationService;
+        // TODO: unused: private IAuthenticationService m_AuthenticationService;
+
+        public NeighbourDeleteHandler(INeighbourService service, IAuthenticationService authentication) :
+            base("DELETE", "/region")
+        {
+            // TODO: unused: m_SimulationService = service;
+            // TODO: unused: m_AuthenticationService = authentication;
+        }
+
+        protected override byte[] ProcessRequest(string path, Stream request,
+                IOSHttpRequest httpRequest, IOSHttpResponse httpResponse)
+        {
+            // Not implemented yet
+            httpResponse.StatusCode = (int)HttpStatusCode.NotImplemented;
+            return new byte[] { };
+        }
+    }
+
     public class NeighbourGetHandler : BaseStreamHandler
     {
         // TODO: unused: private ISimulationService m_SimulationService;
         // TODO: unused: private IAuthenticationService m_AuthenticationService;
 
         public NeighbourGetHandler(INeighbourService service, IAuthenticationService authentication) :
-                base("GET", "/region")
+            base("GET", "/region")
         {
             // TODO: unused: m_SimulationService = service;
             // TODO: unused: m_AuthenticationService = authentication;
@@ -71,8 +86,8 @@ namespace OpenSim.Server.Handlers.Neighbour
     public class NeighbourPostHandler : BaseStreamHandler
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        private INeighbourService m_NeighbourService;
         private IAuthenticationService m_AuthenticationService;
+        private INeighbourService m_NeighbourService;
         // TODO: unused: private bool m_AllowForeignGuests;
 
         public NeighbourPostHandler(INeighbourService service, IAuthenticationService authentication) :
@@ -150,7 +165,7 @@ namespace OpenSim.Server.Handlers.Neighbour
 
             // Finally!
             GridRegion thisRegion = m_NeighbourService.HelloNeighbour(regionhandle, aRegion);
-            
+
             OSDMap resp = new OSDMap(1);
 
             if (thisRegion != null)
@@ -171,27 +186,6 @@ namespace OpenSim.Server.Handlers.Neighbour
 
         public NeighbourPutHandler(INeighbourService service, IAuthenticationService authentication) :
             base("PUT", "/region")
-        {
-            // TODO: unused: m_SimulationService = service;
-            // TODO: unused: m_AuthenticationService = authentication;
-        }
-
-        protected override byte[] ProcessRequest(string path, Stream request,
-                IOSHttpRequest httpRequest, IOSHttpResponse httpResponse)
-        {
-            // Not implemented yet
-            httpResponse.StatusCode = (int)HttpStatusCode.NotImplemented;
-            return new byte[] { };
-        }
-    }
-
-    public class NeighbourDeleteHandler : BaseStreamHandler
-    {
-        // TODO: unused: private ISimulationService m_SimulationService;
-        // TODO: unused: private IAuthenticationService m_AuthenticationService;
-
-        public NeighbourDeleteHandler(INeighbourService service, IAuthenticationService authentication) :
-            base("DELETE", "/region")
         {
             // TODO: unused: m_SimulationService = service;
             // TODO: unused: m_AuthenticationService = authentication;

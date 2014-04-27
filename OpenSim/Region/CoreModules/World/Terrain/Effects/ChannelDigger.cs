@@ -25,10 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using OpenSim.Region.CoreModules.World.Terrain;
 using OpenSim.Region.CoreModules.World.Terrain.FloodBrushes;
 using OpenSim.Region.Framework.Interfaces;
+using System;
 
 namespace OpenSim.Region.CoreModules.World.Terrain.Effects
 {
@@ -49,36 +48,12 @@ namespace OpenSim.Region.CoreModules.World.Terrain.Effects
             SmoothMap(map, 3);
         }
 
-        #endregion
-
-        private void SmoothMap(ITerrainChannel map, int rounds)
-        {
-            Boolean[,] bitmap = new bool[map.Width,map.Height];
-            for (int x = 0; x < map.Width; x++)
-            {
-                for (int y = 0; y < map.Height; y++)
-                {
-                    bitmap[x, y] = true;
-                }
-            }
-
-            for (int i = 0; i < rounds; i++)
-            {
-                smoothFunction.FloodEffect(map, bitmap, 1.0);
-            }
-        }
-
-        private void FillMap(ITerrainChannel map, double val)
-        {
-            for (int x = 0; x < map.Width; x++)
-                for (int y = 0; y < map.Height; y++)
-                    map[x, y] = val;
-        }
+        #endregion ITerrainEffect Members
 
         private void BuildTiles(ITerrainChannel map, double height)
         {
-            int channelWidth = (int) Math.Floor((map.Width / num_w) * 0.8);
-            int channelHeight = (int) Math.Floor((map.Height / num_h) * 0.8);
+            int channelWidth = (int)Math.Floor((map.Width / num_w) * 0.8);
+            int channelHeight = (int)Math.Floor((map.Height / num_h) * 0.8);
             int channelXOffset = (map.Width / num_w) - channelWidth;
             int channelYOffset = (map.Height / num_h) - channelHeight;
 
@@ -89,7 +64,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.Effects
                     int xoff = ((channelXOffset + channelWidth) * x) + (channelXOffset / 2);
                     int yoff = ((channelYOffset + channelHeight) * y) + (channelYOffset / 2);
 
-                    Boolean[,] bitmap = new bool[map.Width,map.Height];
+                    Boolean[,] bitmap = new bool[map.Width, map.Height];
 
                     for (int dx = 0; dx < channelWidth; dx++)
                     {
@@ -101,6 +76,30 @@ namespace OpenSim.Region.CoreModules.World.Terrain.Effects
 
                     raiseFunction.FloodEffect(map, bitmap, height);
                 }
+            }
+        }
+
+        private void FillMap(ITerrainChannel map, double val)
+        {
+            for (int x = 0; x < map.Width; x++)
+                for (int y = 0; y < map.Height; y++)
+                    map[x, y] = val;
+        }
+
+        private void SmoothMap(ITerrainChannel map, int rounds)
+        {
+            Boolean[,] bitmap = new bool[map.Width, map.Height];
+            for (int x = 0; x < map.Width; x++)
+            {
+                for (int y = 0; y < map.Height; y++)
+                {
+                    bitmap[x, y] = true;
+                }
+            }
+
+            for (int i = 0; i < rounds; i++)
+            {
+                smoothFunction.FloodEffect(map, bitmap, 1.0);
             }
         }
     }

@@ -1,4 +1,12 @@
-﻿/*
+﻿using log4net;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Framework.Serialization.External;
+using OpenSim.Server.Base;
+using OpenSim.Services.Interfaces;
+
+/*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
  *
@@ -24,21 +32,9 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
-using System.Xml;
-
-using Nini.Config;
-using log4net;
-using OpenMetaverse;
-
-using OpenSim.Framework;
-using OpenSim.Framework.Serialization.External;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
-using OpenSim.Services.AssetService;
 
 namespace OpenSim.Services.HypergridService
 {
@@ -53,14 +49,12 @@ namespace OpenSim.Services.HypergridService
             LogManager.GetLogger(
             MethodBase.GetCurrentMethod().DeclaringType);
 
+        private AssetPermissions m_AssetPerms;
+        private UserAccountCache m_Cache;
         private string m_HomeURL;
         private IUserAccountService m_UserAccountService;
-
-        private UserAccountCache m_Cache;
-
-        private AssetPermissions m_AssetPerms;
-
-        public HGAssetService(IConfigSource config, string configName) : base(config, configName)
+        public HGAssetService(IConfigSource config, string configName)
+            : base(config, configName)
         {
             m_log.Debug("[HGAsset Service]: Starting");
             IConfig assetConfig = config.Configs[configName];
@@ -85,10 +79,16 @@ namespace OpenSim.Services.HypergridService
 
             // Permissions
             m_AssetPerms = new AssetPermissions(assetConfig);
-
         }
 
         #region IAssetService overrides
+
+        public override bool Delete(string id)
+        {
+            // NOGO
+            return false;
+        }
+
         public override AssetBase Get(string id)
         {
             AssetBase asset = base.Get(id);
@@ -107,18 +107,6 @@ namespace OpenSim.Services.HypergridService
             return asset;
         }
 
-        public override AssetMetadata GetMetadata(string id)
-        {
-            AssetMetadata meta = base.GetMetadata(id);
-
-            if (meta == null)
-                return null;
-
-            AdjustIdentifiers(meta);
-
-            return meta;
-        }
-
         public override byte[] GetData(string id)
         {
             AssetBase asset = Get(id);
@@ -132,6 +120,17 @@ namespace OpenSim.Services.HypergridService
             return asset.Data;
         }
 
+        public override AssetMetadata GetMetadata(string id)
+        {
+            AssetMetadata meta = base.GetMetadata(id);
+
+            if (meta == null)
+                return null;
+
+            AdjustIdentifiers(meta);
+
+            return meta;
+        }
         //public virtual bool Get(string id, Object sender, AssetRetrieved handler)
 
         public override string Store(AssetBase asset)
@@ -141,14 +140,7 @@ namespace OpenSim.Services.HypergridService
 
             return base.Store(asset);
         }
-
-        public override bool Delete(string id)
-        {
-            // NOGO
-            return false;
-        }
-
-        #endregion 
+        #endregion IAssetService overrides
 
         protected void AdjustIdentifiers(AssetMetadata meta)
         {
@@ -165,7 +157,5 @@ namespace OpenSim.Services.HypergridService
             string xml = Utils.BytesToString(data);
             return Utils.StringToBytes(ExternalRepresentationUtils.RewriteSOP(xml, m_HomeURL, m_Cache, UUID.Zero));
         }
-
     }
-
 }

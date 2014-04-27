@@ -25,13 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
+using OpenSim.Region.Framework.Scenes;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using OpenSim.Region.Framework.Scenes;
-using OpenMetaverse;
 using System.Drawing;
+using System.Linq;
 
 namespace OpenSim.Region.CoreModules.World.Archiver
 {
@@ -46,21 +45,9 @@ namespace OpenSim.Region.CoreModules.World.Archiver
     public class ArchiveScenesGroup
     {
         /// <summary>
-        /// All the regions. The outer dictionary contains rows (key: Y coordinate).
-        /// The inner dictionaries contain each row's regions (key: X coordinate).
-        /// </summary>
-        public SortedDictionary<uint, SortedDictionary<uint, Scene>> Regions { get; set; }
-        
-        /// <summary>
         /// The subdirectory where each region is stored in the archive.
         /// </summary>
         protected Dictionary<UUID, string> m_regionDirs;
-
-        /// <summary>
-        /// The grid coordinates of the regions' bounding box.
-        /// </summary>
-        public Rectangle Rect { get; set; }
-
 
         public ArchiveScenesGroup()
         {
@@ -69,6 +56,16 @@ namespace OpenSim.Region.CoreModules.World.Archiver
             Rect = new Rectangle(0, 0, 0, 0);
         }
 
+        /// <summary>
+        /// The grid coordinates of the regions' bounding box.
+        /// </summary>
+        public Rectangle Rect { get; set; }
+
+        /// <summary>
+        /// All the regions. The outer dictionary contains rows (key: Y coordinate).
+        /// The inner dictionaries contain each row's regions (key: X coordinate).
+        /// </summary>
+        public SortedDictionary<uint, SortedDictionary<uint, Scene>> Regions { get; set; }
         public void AddScene(Scene scene)
         {
             uint x = scene.RegionInfo.RegionLocX;
@@ -112,7 +109,6 @@ namespace OpenSim.Region.CoreModules.World.Archiver
 
             Rect = new Rectangle((int)firstX, (int)firstY, (int)(lastX - firstX + 1), (int)(lastY - firstY + 1));
 
-
             // Calculate the subdirectory in which each region will be stored in the archive
 
             m_regionDirs.Clear();
@@ -125,16 +121,6 @@ namespace OpenSim.Region.CoreModules.World.Archiver
                     scene.RegionInfo.RegionName.Replace(' ', '_'));
                 m_regionDirs[scene.RegionInfo.RegionID] = path;
             });
-        }
-
-        /// <summary>
-        /// Returns the subdirectory where the region is stored.
-        /// </summary>
-        /// <param name="regionID"></param>
-        /// <returns></returns>
-        public string GetRegionDir(UUID regionID)
-        {
-            return m_regionDirs[regionID];
         }
 
         /// <summary>
@@ -152,7 +138,16 @@ namespace OpenSim.Region.CoreModules.World.Archiver
                 }
             }
         }
-        
+
+        /// <summary>
+        /// Returns the subdirectory where the region is stored.
+        /// </summary>
+        /// <param name="regionID"></param>
+        /// <returns></returns>
+        public string GetRegionDir(UUID regionID)
+        {
+            return m_regionDirs[regionID];
+        }
         /// <summary>
         /// Returns the scene at position 'location'.
         /// </summary>
@@ -171,6 +166,5 @@ namespace OpenSim.Region.CoreModules.World.Archiver
             scene = null;
             return false;
         }
-
     }
 }

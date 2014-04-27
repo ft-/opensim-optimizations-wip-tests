@@ -25,17 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
-using System.Text;
-using log4net;
 using Mono.Addins;
 using Nini.Config;
 using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Framework.Console;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Text;
 
 namespace OpenSim.Region.OptionalModules.Framework.Monitoring
 {
@@ -47,12 +44,29 @@ namespace OpenSim.Region.OptionalModules.Framework.Monitoring
     {
         protected Scene m_scene;
 
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public string Name { get { return "Services Health Monitoring Module"; } }
-        
+
         public Type ReplaceableInterface { get { return null; } }
-        
+
+        public void AddRegion(Scene scene)
+        {
+            if (m_scene == null)
+            {
+                m_scene = scene;
+
+                //                m_scene.AddCommand(this, "monitor services",
+                //                   "monitor services",
+                //                   "Returns the status of services used by the simulator.  Experimental.",
+                //                   HandleMonitorServices);
+            }
+        }
+
+        public void Close()
+        {
+        }
+
         public void Initialise(IConfigSource source)
         {
         }
@@ -60,35 +74,17 @@ namespace OpenSim.Region.OptionalModules.Framework.Monitoring
         public void PostInitialise()
         {
         }
-
-        public void Close()
+        public void RegionLoaded(Scene scene)
         {
-        }
-        
-        public void AddRegion(Scene scene)
-        {
-            if (m_scene == null)
-            {
-                m_scene = scene;
-
-//                m_scene.AddCommand(this, "monitor services",
-//                   "monitor services",
-//                   "Returns the status of services used by the simulator.  Experimental.",
-//                   HandleMonitorServices);
-            }
         }
 
         public void RemoveRegion(Scene scene)
         {
         }
-
-        public void RegionLoaded(Scene scene)
+        protected void CheckAssetService()
         {
-        }
-
-        protected void HandleMonitorServices(string module, string[] args)
-        {
-            MainConsole.Instance.Output(GenerateServicesReport());
+            // Try to fetch an asset that will not exist (and hence avoid hitting cache)
+            m_scene.AssetService.Get(UUID.Random().ToString());
         }
 
         protected string GenerateServicesReport()
@@ -110,10 +106,9 @@ namespace OpenSim.Region.OptionalModules.Framework.Monitoring
             return sb.ToString();
         }
 
-        protected void CheckAssetService()
+        protected void HandleMonitorServices(string module, string[] args)
         {
-            // Try to fetch an asset that will not exist (and hence avoid hitting cache)
-             m_scene.AssetService.Get(UUID.Random().ToString());
+            MainConsole.Instance.Output(GenerateServicesReport());
         }
     }
 }

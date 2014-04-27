@@ -36,7 +36,6 @@ namespace OpenSim.Region.Physics.Manager
 
         public CollisionLocker()
         {
-
         }
 
         public void dlock(IntPtr world)
@@ -45,7 +44,15 @@ namespace OpenSim.Region.Physics.Manager
             {
                 worldlock.Add(world);
             }
+        }
 
+        public void drelease(IntPtr world)
+        {
+            lock (worldlock)
+            {
+                if (worldlock.Contains(world))
+                    worldlock.Remove(world);
+            }
         }
 
         public void dunlock(IntPtr world)
@@ -59,15 +66,6 @@ namespace OpenSim.Region.Physics.Manager
         public bool lockquery()
         {
             return (worldlock.Count > 0);
-        }
-
-        public void drelease(IntPtr world)
-        {
-            lock (worldlock)
-            {
-                if (worldlock.Contains(world))
-                    worldlock.Remove(world);
-            }
         }
     }
 }

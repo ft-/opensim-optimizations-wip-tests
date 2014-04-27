@@ -25,20 +25,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using OpenMetaverse;
 using OpenSim.Region.Framework.Scenes;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.RegionCombinerModule
 {
-public class RegionCombinerClientEventForwarder
+    public class RegionCombinerClientEventForwarder
     {
-        private Scene m_rootScene;
-        private Dictionary<UUID, Scene> m_virtScene = new Dictionary<UUID, Scene>();
-        private Dictionary<UUID,RegionCombinerIndividualEventForwarder> m_forwarders = new Dictionary<UUID,
+        private Dictionary<UUID, RegionCombinerIndividualEventForwarder> m_forwarders = new Dictionary<UUID,
             RegionCombinerIndividualEventForwarder>();
 
+        private Scene m_rootScene;
+        private Dictionary<UUID, Scene> m_virtScene = new Dictionary<UUID, Scene>();
         public RegionCombinerClientEventForwarder(RegionConnections rootScene)
         {
             m_rootScene = rootScene.RegionScene;
@@ -57,7 +56,7 @@ public class RegionCombinerClientEventForwarder
                     m_virtScene.Add(virtualScene.RegionInfo.originRegionID, virtualScene);
                 }
             }
-            
+
             lock (m_forwarders)
             {
                 // TODO: Fix this to unregister if this happens
@@ -73,7 +72,7 @@ public class RegionCombinerClientEventForwarder
             }
         }
 
-        public void RemoveSceneFromEventForwarding (Scene virtualScene)
+        public void RemoveSceneFromEventForwarding(Scene virtualScene)
         {
             lock (m_forwarders)
             {

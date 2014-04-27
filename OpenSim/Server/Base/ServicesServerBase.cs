@@ -25,49 +25,37 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using System.Threading;
-using System.Text;
-using System.Xml;
+using log4net;
+using log4net.Config;
+using Nini.Config;
 using OpenSim.Framework;
 using OpenSim.Framework.Console;
 using OpenSim.Framework.Monitoring;
 using OpenSim.Framework.Servers;
-using log4net;
-using log4net.Config;
-using log4net.Appender;
-using log4net.Core;
-using log4net.Repository;
-using Nini.Config;
+using System;
+using System.IO;
+using System.Reflection;
+using System.Xml;
 
 namespace OpenSim.Server.Base
 {
     public class ServicesServerBase : ServerBase
     {
-        // Logger
-        //
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
         // Command line args
         //
         protected string[] m_Arguments;
 
-        public string ConfigDirectory
-        {
-            get;
-            private set;
-        }
-
+        // Logger
+        //
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         // Run flag
         //
         private bool m_Running = true;
 
         // Handle all the automagical stuff
         //
-        public ServicesServerBase(string prompt, string[] args) : base()
+        public ServicesServerBase(string prompt, string[] args)
+            : base()
         {
             // Save raw arguments
             m_Arguments = args;
@@ -78,7 +66,7 @@ namespace OpenSim.Server.Base
             argvConfig.AddSwitch("Startup", "console", "c");
             argvConfig.AddSwitch("Startup", "logfile", "l");
             argvConfig.AddSwitch("Startup", "inifile", "i");
-            argvConfig.AddSwitch("Startup", "prompt",  "p");
+            argvConfig.AddSwitch("Startup", "prompt", "p");
             argvConfig.AddSwitch("Startup", "logconfig", "g");
 
             // Automagically create the ini file name
@@ -94,9 +82,9 @@ namespace OpenSim.Server.Base
 
                 // Check if a prompt was given on the command line
                 prompt = startupConfig.GetString("prompt", prompt);
-                
+
                 // Check for a Log4Net config file on the command line
-                logConfig =startupConfig.GetString("logconfig", logConfig);
+                logConfig = startupConfig.GetString("logconfig", logConfig);
             }
 
             // Find out of the file name is a URI and remote load it if possible.
@@ -125,7 +113,7 @@ namespace OpenSim.Server.Base
             // Merge OpSys env vars
             m_log.Info("[CONFIG]: Loading environment variables for Config");
             Util.MergeEnvironmentToConfig(Config);
-            
+
             // Merge the configuration from the command line into the loaded file
             Config.Merge(argvConfig);
 
@@ -189,6 +177,11 @@ namespace OpenSim.Server.Base
             Initialise();
         }
 
+        public string ConfigDirectory
+        {
+            get;
+            private set;
+        }
         public bool Running
         {
             get { return m_Running; }
@@ -216,20 +209,20 @@ namespace OpenSim.Server.Base
             return 0;
         }
 
-        protected override void ShutdownSpecific()
+        protected virtual void Initialise()
         {
-            m_Running = false;
-            m_log.Info("[CONSOLE] Quitting");
-
-            base.ShutdownSpecific();
         }
 
         protected virtual void ReadConfig()
         {
         }
 
-        protected virtual void Initialise()
+        protected override void ShutdownSpecific()
         {
+            m_Running = false;
+            m_log.Info("[CONSOLE] Quitting");
+
+            base.ShutdownSpecific();
         }
     }
 }

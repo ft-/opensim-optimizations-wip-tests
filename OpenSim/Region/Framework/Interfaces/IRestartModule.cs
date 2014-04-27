@@ -25,15 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
+using System;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
     public interface IRestartModule
     {
         TimeSpan TimeUntilRestart { get; }
-        void ScheduleRestart(UUID initiator, string message, int[] alerts, bool notice);
+
         void AbortRestart(string message);
+
+        void ScheduleRestart(UUID initiator, string message, int[] alerts, bool notice);
     }
 }

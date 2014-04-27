@@ -1,5 +1,7 @@
+using log4net;
+
 /*
- * Copyright (c) Contributors 
+ * Copyright (c) Contributors
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,29 +26,19 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-using Mono.Addins;
 
-using System;
-using System.Reflection;
-using System.Threading;
-using System.Text;
-using System.Net;
-using System.Net.Sockets;
-using log4net;
+using Mono.Addins;
 using Nini.Config;
-using OpenMetaverse;
-using OpenMetaverse.StructuredData;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "JsonStoreCommandsModule")]
-
-    public class JsonStoreCommandsModule  : INonSharedRegionModule
+    public class JsonStoreCommandsModule : INonSharedRegionModule
     {
         private static readonly ILog m_log =
             LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
@@ -55,10 +47,11 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
         private bool m_enabled = false;
 
         private Scene m_scene = null;
+
         //private IJsonStoreModule m_store;
         private JsonStoreModule m_store;
 
-#region Region Module interface
+        #region Region Module interface
 
         // -----------------------------------------------------------------
         /// <summary>
@@ -70,6 +63,36 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
             get { return this.GetType().Name; }
         }
 
+        /// -----------------------------------------------------------------
+        /// <summary>
+        /// </summary>
+        // -----------------------------------------------------------------
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
+        // -----------------------------------------------------------------
+        /// <summary>
+        /// </summary>
+        // -----------------------------------------------------------------
+        public void AddRegion(Scene scene)
+        {
+            if (m_enabled)
+            {
+                m_scene = scene;
+            }
+        }
+
+        // -----------------------------------------------------------------
+        /// <summary>
+        /// Nothing to do on close
+        /// </summary>
+        // -----------------------------------------------------------------
+        public void Close()
+        {
+        }
+
         // -----------------------------------------------------------------
         /// <summary>
         /// Initialise this shared module
@@ -79,7 +102,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
         // -----------------------------------------------------------------
         public void Initialise(IConfigSource config)
         {
-            try 
+            try
             {
                 if ((m_config = config.Configs["JsonStore"]) == null)
                 {
@@ -108,42 +131,9 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
         public void PostInitialise()
         {
         }
-
         // -----------------------------------------------------------------
         /// <summary>
-        /// Nothing to do on close
-        /// </summary>
-        // -----------------------------------------------------------------
-        public void Close()
-        {
-        }
-
-        // -----------------------------------------------------------------
-        /// <summary>
-        /// </summary>
-        // -----------------------------------------------------------------
-        public void AddRegion(Scene scene)
-        {
-            if (m_enabled)
-            {
-                m_scene = scene;
-                
-            }
-        }
-
-        // -----------------------------------------------------------------
-        /// <summary>
-        /// </summary>
-        // -----------------------------------------------------------------
-        public void RemoveRegion(Scene scene)
-        {
-            // need to remove all references to the scene in the subscription
-            // list to enable full garbage collection of the scene object
-        }
-
-        // -----------------------------------------------------------------
-        /// <summary>
-        /// Called when all modules have been added for a region. This is 
+        /// Called when all modules have been added for a region. This is
         /// where we hook up events
         /// </summary>
         // -----------------------------------------------------------------
@@ -153,7 +143,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
             {
                 m_scene = scene;
 
-                m_store = (JsonStoreModule) m_scene.RequestModuleInterface<IJsonStoreModule>();
+                m_store = (JsonStoreModule)m_scene.RequestModuleInterface<IJsonStoreModule>();
                 if (m_store == null)
                 {
                     m_log.ErrorFormat("[JsonStoreCommands]: JsonModule interface not defined");
@@ -167,18 +157,18 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
             }
         }
 
-        /// -----------------------------------------------------------------
+        // -----------------------------------------------------------------
         /// <summary>
         /// </summary>
         // -----------------------------------------------------------------
-        public Type ReplaceableInterface
+        public void RemoveRegion(Scene scene)
         {
-            get { return null; }
+            // need to remove all references to the scene in the subscription
+            // list to enable full garbage collection of the scene object
         }
+        #endregion Region Module interface
 
-#endregion
-
-#region Commands
+        #region Commands
 
         private void CmdStats(string module, string[] cmd)
         {
@@ -186,10 +176,9 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
                 return;
 
             JsonStoreStats stats = m_store.GetStoreStats();
-            MainConsole.Instance.OutputFormat("{0}\t{1}",m_scene.RegionInfo.RegionName,stats.StoreCount);
+            MainConsole.Instance.OutputFormat("{0}\t{1}", m_scene.RegionInfo.RegionName, stats.StoreCount);
         }
 
-#endregion
-
+        #endregion Commands
     }
 }

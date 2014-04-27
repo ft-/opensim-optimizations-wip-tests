@@ -26,17 +26,15 @@
  */
 
 using log4net;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Server.Base;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
-using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Services.Interfaces;
 using FriendInfo = OpenSim.Services.Interfaces.FriendInfo;
-using OpenSim.Server.Base;
-using OpenMetaverse;
 
 namespace OpenSim.Services.Connectors.Friends
 {
@@ -82,120 +80,7 @@ namespace OpenSim.Services.Connectors.Friends
             m_ServerURI = serviceURI;
         }
 
-
         #region IFriendsService
-        
-        public FriendInfo[] GetFriends(UUID PrincipalID)
-        {
-            Dictionary<string, object> sendData = new Dictionary<string, object>();
-
-            sendData["PRINCIPALID"] = PrincipalID.ToString();
-            sendData["METHOD"] = "getfriends";
-
-            return GetFriends(sendData, PrincipalID.ToString());
-        }
-
-        public FriendInfo[] GetFriends(string PrincipalID)
-        {
-            Dictionary<string, object> sendData = new Dictionary<string, object>();
-
-            sendData["PRINCIPALID"] = PrincipalID;
-            sendData["METHOD"] = "getfriends_string";
-
-            return GetFriends(sendData, PrincipalID);
-        }
-
-        protected FriendInfo[] GetFriends(Dictionary<string, object> sendData, string PrincipalID)
-        {
-            string reqString = ServerUtils.BuildQueryString(sendData);
-            string uri = m_ServerURI + "/friends";
-
-            try
-            {
-                string reply = SynchronousRestFormsRequester.MakeRequest("POST", uri, reqString);
-                if (reply != string.Empty)
-                {
-                    Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
-
-                    if (replyData != null)
-                    {
-                        if (replyData.ContainsKey("result") && (replyData["result"].ToString().ToLower() == "null"))
-                        {
-                        return new FriendInfo[0];
-                        }
-
-                        List<FriendInfo> finfos = new List<FriendInfo>();
-                        Dictionary<string, object>.ValueCollection finfosList = replyData.Values;
-                        //m_log.DebugFormat("[FRIENDS SERVICE CONNECTOR]: get neighbours returned {0} elements", rinfosList.Count);
-                        foreach (object f in finfosList)
-                        {
-                            if (f is Dictionary<string, object>)
-                            {
-                                FriendInfo finfo = new FriendInfo((Dictionary<string, object>)f);
-                                finfos.Add(finfo);
-                            }
-                            else
-                                m_log.DebugFormat("[FRIENDS SERVICE CONNECTOR]: GetFriends {0} received invalid response type {1}",
-                                    PrincipalID, f.GetType());
-                        }
-
-                        // Success
-                        return finfos.ToArray();
-                    }
-                    else
-                        m_log.DebugFormat("[FRIENDS SERVICE CONNECTOR]: GetFriends {0} received null response",
-                            PrincipalID);
-
-                }
-            }
-            catch (Exception e)
-            {
-                m_log.DebugFormat("[FRIENDS SERVICE CONNECTOR]: Exception when contacting friends server at {0}: {1}", uri, e.Message);
-            }
-
-            return new FriendInfo[0];
-
-        }
-
-        public bool StoreFriend(string PrincipalID, string Friend, int flags)
-        {
-
-            Dictionary<string, object> sendData = ToKeyValuePairs(PrincipalID, Friend, flags);
-
-            sendData["METHOD"] = "storefriend";
-
-            string reply = string.Empty;
-            string uri = m_ServerURI + "/friends";
-            try
-            {
-                reply = SynchronousRestFormsRequester.MakeRequest("POST", uri, ServerUtils.BuildQueryString(sendData));
-            }
-            catch (Exception e)
-            {
-                m_log.DebugFormat("[FRIENDS SERVICE CONNECTOR]: Exception when contacting friends server at {0}: {1}", uri, e.Message);
-                return false;
-            }
-
-            if (reply != string.Empty)
-            {
-                Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
-
-                if ((replyData != null) && replyData.ContainsKey("Result") && (replyData["Result"] != null))
-                {
-                    bool success = false;
-                    Boolean.TryParse(replyData["Result"].ToString(), out success);
-                    return success;
-                }
-                else
-                    m_log.DebugFormat("[FRIENDS SERVICE CONNECTOR]: StoreFriend {0} {1} received null response",
-                        PrincipalID, Friend);
-            }
-            else
-                m_log.DebugFormat("[FRIENDS SERVICE CONNECTOR]: StoreFriend received null reply");
-
-            return false;
-
-        }
 
         public bool Delete(string PrincipalID, string Friend)
         {
@@ -251,7 +136,114 @@ namespace OpenSim.Services.Connectors.Friends
             return false;
         }
 
-        #endregion
+        public FriendInfo[] GetFriends(UUID PrincipalID)
+        {
+            Dictionary<string, object> sendData = new Dictionary<string, object>();
+
+            sendData["PRINCIPALID"] = PrincipalID.ToString();
+            sendData["METHOD"] = "getfriends";
+
+            return GetFriends(sendData, PrincipalID.ToString());
+        }
+
+        public FriendInfo[] GetFriends(string PrincipalID)
+        {
+            Dictionary<string, object> sendData = new Dictionary<string, object>();
+
+            sendData["PRINCIPALID"] = PrincipalID;
+            sendData["METHOD"] = "getfriends_string";
+
+            return GetFriends(sendData, PrincipalID);
+        }
+
+        public bool StoreFriend(string PrincipalID, string Friend, int flags)
+        {
+            Dictionary<string, object> sendData = ToKeyValuePairs(PrincipalID, Friend, flags);
+
+            sendData["METHOD"] = "storefriend";
+
+            string reply = string.Empty;
+            string uri = m_ServerURI + "/friends";
+            try
+            {
+                reply = SynchronousRestFormsRequester.MakeRequest("POST", uri, ServerUtils.BuildQueryString(sendData));
+            }
+            catch (Exception e)
+            {
+                m_log.DebugFormat("[FRIENDS SERVICE CONNECTOR]: Exception when contacting friends server at {0}: {1}", uri, e.Message);
+                return false;
+            }
+
+            if (reply != string.Empty)
+            {
+                Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
+
+                if ((replyData != null) && replyData.ContainsKey("Result") && (replyData["Result"] != null))
+                {
+                    bool success = false;
+                    Boolean.TryParse(replyData["Result"].ToString(), out success);
+                    return success;
+                }
+                else
+                    m_log.DebugFormat("[FRIENDS SERVICE CONNECTOR]: StoreFriend {0} {1} received null response",
+                        PrincipalID, Friend);
+            }
+            else
+                m_log.DebugFormat("[FRIENDS SERVICE CONNECTOR]: StoreFriend received null reply");
+
+            return false;
+        }
+
+        protected FriendInfo[] GetFriends(Dictionary<string, object> sendData, string PrincipalID)
+        {
+            string reqString = ServerUtils.BuildQueryString(sendData);
+            string uri = m_ServerURI + "/friends";
+
+            try
+            {
+                string reply = SynchronousRestFormsRequester.MakeRequest("POST", uri, reqString);
+                if (reply != string.Empty)
+                {
+                    Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
+
+                    if (replyData != null)
+                    {
+                        if (replyData.ContainsKey("result") && (replyData["result"].ToString().ToLower() == "null"))
+                        {
+                            return new FriendInfo[0];
+                        }
+
+                        List<FriendInfo> finfos = new List<FriendInfo>();
+                        Dictionary<string, object>.ValueCollection finfosList = replyData.Values;
+                        //m_log.DebugFormat("[FRIENDS SERVICE CONNECTOR]: get neighbours returned {0} elements", rinfosList.Count);
+                        foreach (object f in finfosList)
+                        {
+                            if (f is Dictionary<string, object>)
+                            {
+                                FriendInfo finfo = new FriendInfo((Dictionary<string, object>)f);
+                                finfos.Add(finfo);
+                            }
+                            else
+                                m_log.DebugFormat("[FRIENDS SERVICE CONNECTOR]: GetFriends {0} received invalid response type {1}",
+                                    PrincipalID, f.GetType());
+                        }
+
+                        // Success
+                        return finfos.ToArray();
+                    }
+                    else
+                        m_log.DebugFormat("[FRIENDS SERVICE CONNECTOR]: GetFriends {0} received null response",
+                            PrincipalID);
+                }
+            }
+            catch (Exception e)
+            {
+                m_log.DebugFormat("[FRIENDS SERVICE CONNECTOR]: Exception when contacting friends server at {0}: {1}", uri, e.Message);
+            }
+
+            return new FriendInfo[0];
+        }
+        #endregion IFriendsService
 
         public Dictionary<string, object> ToKeyValuePairs(string principalID, string friend, int flags)
         {
@@ -262,6 +254,5 @@ namespace OpenSim.Services.Connectors.Friends
 
             return result;
         }
-
     }
 }

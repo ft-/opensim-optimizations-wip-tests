@@ -25,21 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using log4net;
 using Mono.Addins;
 using Nini.Config;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Framework.Console;
-using OpenSim.Framework.Monitoring;
-using OpenSim.Region.ClientStack.LindenUDP;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace OpenSim.Region.OptionalModules.Avatar.Attachments
 {
@@ -49,47 +44,38 @@ namespace OpenSim.Region.OptionalModules.Avatar.Attachments
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "AttachmentsCommandModule")]
     public class AttachmentsCommandModule : ISharedRegionModule
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private List<Scene> m_scenes = new List<Scene>();
-//        private IAvatarFactoryModule m_avatarFactory;
+        //        private IAvatarFactoryModule m_avatarFactory;
 
         public string Name { get { return "Attachments Command Module"; } }
-        
+
         public Type ReplaceableInterface { get { return null; } }
-        
-        public void Initialise(IConfigSource source)
-        {
-//            m_log.DebugFormat("[ATTACHMENTS COMMAND MODULE]: INITIALIZED MODULE");
-        }
-        
-        public void PostInitialise()
-        {
-//            m_log.DebugFormat("[ATTACHMENTS COMMAND MODULE]: POST INITIALIZED MODULE");
-        }
-        
-        public void Close()
-        {
-//            m_log.DebugFormat("[ATTACHMENTS COMMAND MODULE]: CLOSED MODULE");
-        }
-        
+
         public void AddRegion(Scene scene)
         {
-//            m_log.DebugFormat("[ATTACHMENTS COMMAND MODULE]: REGION {0} ADDED", scene.RegionInfo.RegionName);
+            //            m_log.DebugFormat("[ATTACHMENTS COMMAND MODULE]: REGION {0} ADDED", scene.RegionInfo.RegionName);
         }
-        
-        public void RemoveRegion(Scene scene)
+
+        public void Close()
         {
-//            m_log.DebugFormat("[ATTACHMENTS COMMAND MODULE]: REGION {0} REMOVED", scene.RegionInfo.RegionName);
-            
-            lock (m_scenes)
-                m_scenes.Remove(scene);
-        }        
-        
+            //            m_log.DebugFormat("[ATTACHMENTS COMMAND MODULE]: CLOSED MODULE");
+        }
+
+        public void Initialise(IConfigSource source)
+        {
+            //            m_log.DebugFormat("[ATTACHMENTS COMMAND MODULE]: INITIALIZED MODULE");
+        }
+
+        public void PostInitialise()
+        {
+            //            m_log.DebugFormat("[ATTACHMENTS COMMAND MODULE]: POST INITIALIZED MODULE");
+        }
         public void RegionLoaded(Scene scene)
         {
-//            m_log.DebugFormat("[ATTACHMENTS COMMAND MODULE]: REGION {0} LOADED", scene.RegionInfo.RegionName);
-            
+            //            m_log.DebugFormat("[ATTACHMENTS COMMAND MODULE]: REGION {0} LOADED", scene.RegionInfo.RegionName);
+
             lock (m_scenes)
                 m_scenes.Add(scene);
 
@@ -101,6 +87,13 @@ namespace OpenSim.Region.OptionalModules.Avatar.Attachments
                 HandleShowAttachmentsCommand);
         }
 
+        public void RemoveRegion(Scene scene)
+        {
+            //            m_log.DebugFormat("[ATTACHMENTS COMMAND MODULE]: REGION {0} REMOVED", scene.RegionInfo.RegionName);
+
+            lock (m_scenes)
+                m_scenes.Remove(scene);
+        }
         protected void HandleShowAttachmentsCommand(string module, string[] cmd)
         {
             if (cmd.Length != 2 && cmd.Length < 4)
@@ -153,37 +146,37 @@ namespace OpenSim.Region.OptionalModules.Avatar.Attachments
             ct.Columns.Add(new ConsoleDisplayTableColumn("Attach Point", 14));
             ct.Columns.Add(new ConsoleDisplayTableColumn("Position", 15));
 
-//            sb.AppendFormat(
-//                "  {0,-36}  {1,-10}  {2,-36}  {3,-14}  {4,-15}\n",
-//                "Attachment Name", "Local ID", "Item ID", "Attach Point", "Position");
+            //            sb.AppendFormat(
+            //                "  {0,-36}  {1,-10}  {2,-36}  {3,-14}  {4,-15}\n",
+            //                "Attachment Name", "Local ID", "Item ID", "Attach Point", "Position");
 
             List<SceneObjectGroup> attachmentObjects = sp.GetAttachments();
             foreach (SceneObjectGroup attachmentObject in attachmentObjects)
             {
-//                InventoryItemBase attachmentItem
-//                    = m_scenes[0].InventoryService.GetItem(new InventoryItemBase(attachmentObject.FromItemID));
+                //                InventoryItemBase attachmentItem
+                //                    = m_scenes[0].InventoryService.GetItem(new InventoryItemBase(attachmentObject.FromItemID));
 
-//                if (attachmentItem == null)
-//                {
-//                    sb.AppendFormat(
-//                        "WARNING: Couldn't find attachment for item {0} at point {1}\n",
-//                        attachmentData.ItemID, (AttachmentPoint)attachmentData.AttachPoint);
-//                        continue;
-//                }
-//                else
-//                {
-//                    sb.AppendFormat(
-//                        "  {0,-36}  {1,-10}  {2,-36}  {3,-14}  {4,-15}\n",
-//                        attachmentObject.Name, attachmentObject.LocalId, attachmentObject.FromItemID,
-//                        (AttachmentPoint)attachmentObject.AttachmentPoint, attachmentObject.RootPart.AttachedPos);
+                //                if (attachmentItem == null)
+                //                {
+                //                    sb.AppendFormat(
+                //                        "WARNING: Couldn't find attachment for item {0} at point {1}\n",
+                //                        attachmentData.ItemID, (AttachmentPoint)attachmentData.AttachPoint);
+                //                        continue;
+                //                }
+                //                else
+                //                {
+                //                    sb.AppendFormat(
+                //                        "  {0,-36}  {1,-10}  {2,-36}  {3,-14}  {4,-15}\n",
+                //                        attachmentObject.Name, attachmentObject.LocalId, attachmentObject.FromItemID,
+                //                        (AttachmentPoint)attachmentObject.AttachmentPoint, attachmentObject.RootPart.AttachedPos);
 
-                    ct.AddRow(
-                        attachmentObject.Name,
-                        attachmentObject.LocalId,
-                        attachmentObject.FromItemID,
-                        ((AttachmentPoint)attachmentObject.AttachmentPoint),
-                        attachmentObject.RootPart.AttachedPos);
-//                }
+                ct.AddRow(
+                    attachmentObject.Name,
+                    attachmentObject.LocalId,
+                    attachmentObject.FromItemID,
+                    ((AttachmentPoint)attachmentObject.AttachmentPoint),
+                    attachmentObject.RootPart.AttachedPos);
+                //                }
             }
 
             ct.AddToStringBuilder(sb);

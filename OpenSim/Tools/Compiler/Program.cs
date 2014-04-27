@@ -25,81 +25,67 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using Microsoft.CSharp;
+using OpenSim.Region.ScriptEngine.Shared.CodeTools;
 using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using Microsoft.CSharp;
-using OpenSim.Region.ScriptEngine.Shared.CodeTools;
-using System.CodeDom.Compiler;
 
 namespace OpenSim.Tools.LSL.Compiler
 {
-    class Program
+    internal class Program
     {
-//        Commented out because generated warning since m_positionMap could never be anything other than null
-//        private static Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>> m_positionMap; 
+        //        Commented out because generated warning since m_positionMap could never be anything other than null
+        //        private static Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>> m_positionMap;
         private static CSharpCodeProvider CScodeProvider = new CSharpCodeProvider();
 
-        static void Main(string[] args)
+        public static KeyValuePair<int, int> FindErrorPosition(int line,
+                int col, Dictionary<KeyValuePair<int, int>,
+                KeyValuePair<int, int>> positionMap)
         {
-             string source = null;
+            if (positionMap == null || positionMap.Count == 0)
+                return new KeyValuePair<int, int>(line, col);
 
-             if (args.Length == 0)
-             {
-                 Console.WriteLine("No input file specified");
-                 Environment.Exit(1);
-             }
+            KeyValuePair<int, int> ret = new KeyValuePair<int, int>();
 
-             if (!File.Exists(args[0]))
-             {
-                 Console.WriteLine("Input file does not exist");
-                 Environment.Exit(1);
-             }
+            if (positionMap.TryGetValue(new KeyValuePair<int, int>(line, col),
+                    out ret))
+                return ret;
 
-             try
-             {
-                 ICodeConverter cvt = (ICodeConverter) new CSCodeGenerator();
-                 source = cvt.Convert(File.ReadAllText(args[0]));
-             }
-             catch(Exception e)
-             {
-                 Console.WriteLine("Conversion failed:\n"+e.Message);
-                 Environment.Exit(1);
-             }
+            List<KeyValuePair<int, int>> sorted =
+                    new List<KeyValuePair<int, int>>(positionMap.Keys);
 
-             source = CreateCSCompilerScript(source);
+            sorted.Sort(new kvpSorter());
 
-             try
-             {
-                 Console.WriteLine(CompileFromDotNetText(source,"a.out"));
-             }
-             catch(Exception e)
-             {
-                 Console.WriteLine("Conversion failed: "+e.Message);
-                 Environment.Exit(1);
-             }
+            int l = 1;
+            int c = 1;
 
-             Environment.Exit(0);
-        }
-
-        private static string CreateCSCompilerScript(string compileScript)
-        {
-            compileScript = String.Empty +
-                "using OpenSim.Region.ScriptEngine.Shared; using System.Collections.Generic;\r\n" +
-                String.Empty + "namespace SecondLife { " +
-                String.Empty + "public class Script : OpenSim.Region.ScriptEngine.Shared.ScriptBase.ScriptBaseClass { \r\n" +
-                @"public Script() { } " +
-                compileScript +
-                "} }\r\n";
-            return compileScript;
+            foreach (KeyValuePair<int, int> cspos in sorted)
+            {
+                if (cspos.Key >= line)
+                {
+                    if (cspos.Key > line)
+                        return new KeyValuePair<int, int>(l, c);
+                    if (cspos.Value > col)
+                        return new KeyValuePair<int, int>(l, c);
+                    c = cspos.Value;
+                    if (c == 0)
+                        c++;
+                }
+                else
+                {
+                    l = cspos.Key;
+                }
+            }
+            return new KeyValuePair<int, int>(l, c);
         }
 
         private static string CompileFromDotNetText(string Script, string asset)
         {
-
             string OutFile = asset;
-            string disp    ="OK";
+            string disp = "OK";
 
             try
             {
@@ -107,7 +93,7 @@ namespace OpenSim.Tools.LSL.Compiler
             }
             catch (Exception e) // NOTLEGIT - Should be just FileIOException
             {
-                throw new Exception("Unable to delete old existing "+
+                throw new Exception("Unable to delete old existing " +
                         "script-file before writing new. Compile aborted: " +
                         e.ToString());
             }
@@ -154,7 +140,7 @@ namespace OpenSim.Tools.LSL.Compiler
                                              lslPos.Key - 1, lslPos.Value - 1,
                                              CompErr.ErrorNumber, text, severity);
                 }
-                
+
                 disp = "Completed with errors";
 
                 if (!File.Exists(OutFile))
@@ -208,16 +194,16 @@ namespace OpenSim.Tools.LSL.Compiler
             sfs.Close();
 
             string posmap = String.Empty;
-//            if (m_positionMap != null)
-//            {
-//                foreach (KeyValuePair<KeyValuePair<int, int>, KeyValuePair<int, int>> kvp in m_positionMap)
-//                {
-//                    KeyValuePair<int, int> k = kvp.Key;
-//                    KeyValuePair<int, int> v = kvp.Value;
-//                    posmap += String.Format("{0},{1},{2},{3}\n",
-//                            k.Key, k.Value, v.Key, v.Value);
-//                }
-//            }
+            //            if (m_positionMap != null)
+            //            {
+            //                foreach (KeyValuePair<KeyValuePair<int, int>, KeyValuePair<int, int>> kvp in m_positionMap)
+            //                {
+            //                    KeyValuePair<int, int> k = kvp.Key;
+            //                    KeyValuePair<int, int> v = kvp.Value;
+            //                    posmap += String.Format("{0},{1},{2},{3}\n",
+            //                            k.Key, k.Value, v.Key, v.Value);
+            //                }
+            //            }
 
             buf = Encoding.ASCII.GetBytes(posmap);
 
@@ -228,6 +214,65 @@ namespace OpenSim.Tools.LSL.Compiler
             return disp;
         }
 
+        private static string CreateCSCompilerScript(string compileScript)
+        {
+            compileScript = String.Empty +
+                "using OpenSim.Region.ScriptEngine.Shared; using System.Collections.Generic;\r\n" +
+                String.Empty + "namespace SecondLife { " +
+                String.Empty + "public class Script : OpenSim.Region.ScriptEngine.Shared.ScriptBase.ScriptBaseClass { \r\n" +
+                @"public Script() { } " +
+                compileScript +
+                "} }\r\n";
+            return compileScript;
+        }
+
+        private static KeyValuePair<int, int> FindErrorPosition(int line, int col)
+        {
+            //return FindErrorPosition(line, col, m_positionMap);
+            return FindErrorPosition(line, col, null);
+        }
+
+        private static void Main(string[] args)
+        {
+            string source = null;
+
+            if (args.Length == 0)
+            {
+                Console.WriteLine("No input file specified");
+                Environment.Exit(1);
+            }
+
+            if (!File.Exists(args[0]))
+            {
+                Console.WriteLine("Input file does not exist");
+                Environment.Exit(1);
+            }
+
+            try
+            {
+                ICodeConverter cvt = (ICodeConverter)new CSCodeGenerator();
+                source = cvt.Convert(File.ReadAllText(args[0]));
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Conversion failed:\n" + e.Message);
+                Environment.Exit(1);
+            }
+
+            source = CreateCSCompilerScript(source);
+
+            try
+            {
+                Console.WriteLine(CompileFromDotNetText(source, "a.out"));
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Conversion failed: " + e.Message);
+                Environment.Exit(1);
+            }
+
+            Environment.Exit(0);
+        }
         private static string ReplaceTypes(string message)
         {
             message = message.Replace(
@@ -248,61 +293,13 @@ namespace OpenSim.Tools.LSL.Compiler
 
             return message;
         }
-
-        private static KeyValuePair<int, int> FindErrorPosition(int line, int col)
+        private class kvpSorter : IComparer<KeyValuePair<int, int>>
         {
-            //return FindErrorPosition(line, col, m_positionMap);
-            return FindErrorPosition(line, col, null);
-        }
-
-        private class kvpSorter : IComparer<KeyValuePair<int,int>>
-        {
-            public int Compare(KeyValuePair<int,int> a,
-                               KeyValuePair<int,int> b)
+            public int Compare(KeyValuePair<int, int> a,
+                               KeyValuePair<int, int> b)
             {
                 return a.Key.CompareTo(b.Key);
             }
-        }
-
-        public static KeyValuePair<int, int> FindErrorPosition(int line,
-                int col, Dictionary<KeyValuePair<int, int>,
-                KeyValuePair<int, int>> positionMap)
-        {
-            if (positionMap == null || positionMap.Count == 0)
-                return new KeyValuePair<int, int>(line, col);
-
-            KeyValuePair<int, int> ret = new KeyValuePair<int, int>();
-
-            if (positionMap.TryGetValue(new KeyValuePair<int, int>(line, col),
-                    out ret))
-                return ret;
-
-            List<KeyValuePair<int,int>> sorted =
-                    new List<KeyValuePair<int,int>>(positionMap.Keys);
-
-            sorted.Sort(new kvpSorter());
-
-            int l = 1;
-            int c = 1;
-
-            foreach (KeyValuePair<int, int> cspos in sorted)
-            {
-                if (cspos.Key >= line)
-                {
-                    if (cspos.Key > line)
-                        return new KeyValuePair<int, int>(l, c);
-                    if (cspos.Value > col)
-                        return new KeyValuePair<int, int>(l, c);
-                    c = cspos.Value;
-                    if (c == 0)
-                        c++;
-                }
-                else
-                {
-                    l = cspos.Key;
-                }
-            }
-            return new KeyValuePair<int, int>(l, c);
         }
     }
 }

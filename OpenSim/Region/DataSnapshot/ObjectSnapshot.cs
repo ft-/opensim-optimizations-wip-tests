@@ -25,29 +25,53 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Xml;
 using log4net;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.DataSnapshot.Interfaces;
-using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Xml;
 
 namespace OpenSim.Region.DataSnapshot.Providers
 {
     public class ObjectSnapshot : IDataSnapshotProvider
     {
-        private Scene m_scene = null;
         // private DataSnapshotManager m_parent = null;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        private bool m_stale = true;
 
-        private static UUID m_DefaultImage = new UUID("89556747-24cb-43ed-920b-47caed15465f");
         private static UUID m_BlankImage = new UUID("5748decc-f629-461c-9a36-a35a221fe21f");
+        private static UUID m_DefaultImage = new UUID("89556747-24cb-43ed-920b-47caed15465f");
+        private Scene m_scene = null;
+        private bool m_stale = true;
+        public event ProviderStale OnStale;
 
+        public Scene GetParentScene
+        {
+            get { return m_scene; }
+        }
+
+        public String Name
+        {
+            get { return "ObjectSnapshot"; }
+        }
+
+        public bool Stale
+        {
+            get
+            {
+                return m_stale;
+            }
+            set
+            {
+                m_stale = value;
+
+                if (m_stale)
+                    OnStale(this);
+            }
+        }
 
         public void Initialize(Scene scene, DataSnapshotManager parent)
         {
@@ -64,10 +88,10 @@ namespace OpenSim.Region.DataSnapshot.Providers
             //Detect object data changes by hooking into the IClientAPI.
             //Very dirty, and breaks whenever someone changes the client API.
 
-            client.OnAddPrim += delegate (UUID ownerID, UUID groupID, Vector3 RayEnd, Quaternion rot,
+            client.OnAddPrim += delegate(UUID ownerID, UUID groupID, Vector3 RayEnd, Quaternion rot,
                 PrimitiveBaseShape shape, byte bypassRaycast, Vector3 RayStart, UUID RayTargetID,
                 byte RayEndIsIntersection) { this.Stale = true; };
-            client.OnLinkObjects += delegate (IClientAPI remoteClient, uint parent, List<uint> children)
+            client.OnLinkObjects += delegate(IClientAPI remoteClient, uint parent, List<uint> children)
                 { this.Stale = true; };
             client.OnDelinkObjects += delegate(List<uint> primIds, IClientAPI clientApi) { this.Stale = true; };
             client.OnGrabUpdate += delegate(UUID objectID, Vector3 offset, Vector3 grapPos,
@@ -88,12 +112,6 @@ namespace OpenSim.Region.DataSnapshot.Providers
                 bool RezSelected,
                 bool RemoveItem, UUID fromTaskID) { this.Stale = true; };
         }
-
-        public Scene GetParentScene
-        {
-            get { return m_scene; }
-        }
-
         public XmlNode RequestSnapshotData(XmlDocument nodeFactory)
         {
             m_log.Debug("[DATASNAPSHOT]: Generating object data for scene " + m_scene.RegionInfo.RegionName);
@@ -109,11 +127,11 @@ namespace OpenSim.Region.DataSnapshot.Providers
                 {
                     SceneObjectGroup obj = (SceneObjectGroup)entity;
 
-//                    m_log.Debug("[DATASNAPSHOT]: Found object " + obj.Name + " in scene");
+                    //                    m_log.Debug("[DATASNAPSHOT]: Found object " + obj.Name + " in scene");
 
                     // libomv will complain about PrimFlags.JointWheel
                     // being obsolete, so we...
-                    #pragma warning disable 0612
+#pragma warning disable 0612
                     if ((obj.RootPart.Flags & PrimFlags.JointWheel) == PrimFlags.JointWheel)
                     {
                         SceneObjectPart m_rootPart = obj.RootPart;
@@ -169,35 +187,12 @@ namespace OpenSim.Region.DataSnapshot.Providers
 
                         parent.AppendChild(xmlobject);
                     }
-                    #pragma warning disable 0612
+#pragma warning disable 0612
                 }
             }
             this.Stale = false;
             return parent;
         }
-
-        public String Name
-        {
-            get { return "ObjectSnapshot"; }
-        }
-
-        public bool Stale
-        {
-            get
-            {
-                return m_stale;
-            }
-            set
-            {
-                m_stale = value;
-
-                if (m_stale)
-                    OnStale(this);
-            }
-        }
-
-        public event ProviderStale OnStale;
-
         /// <summary>
         /// Guesses the best image, based on a simple heuristic. It guesses only for boxes.
         /// We're optimizing for boxes, because those are the most common objects

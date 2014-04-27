@@ -25,17 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-
+using log4net;
+using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Server.Base;
-
-using OpenMetaverse;
-using log4net;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.Groups
 {
@@ -52,154 +47,6 @@ namespace OpenSim.Groups
                 m_ServerURI += "/";
 
             m_log.DebugFormat("[Groups.HGConnector]: Groups server at {0}", m_ServerURI);
-        }
-
-        public bool CreateProxy(string RequestingAgentID, string AgentID, string accessToken, UUID groupID, string url, string name, out string reason)
-        {
-            reason = string.Empty;
-
-            Dictionary<string, object> sendData = new Dictionary<string,object>();
-            sendData["RequestingAgentID"] = RequestingAgentID;
-            sendData["AgentID"] = AgentID.ToString();
-            sendData["AccessToken"] = accessToken;
-            sendData["GroupID"] = groupID.ToString();
-            sendData["Location"] = url;
-            sendData["Name"] = name;
-            Dictionary<string, object> ret = MakeRequest("POSTGROUP", sendData);
-
-            if (ret == null)
-                return false;
-
-            if (!ret.ContainsKey("RESULT"))
-                return false;
-
-            if (ret["RESULT"].ToString().ToLower() != "true")
-            {
-                reason = ret["REASON"].ToString();
-                return false;
-            }
-
-            return true;
-
-        }
-
-        public void RemoveAgentFromGroup(string AgentID, UUID GroupID, string token)
-        {
-            Dictionary<string, object> sendData = new Dictionary<string, object>();
-            sendData["AgentID"] = AgentID;
-            sendData["GroupID"] = GroupID.ToString();
-            sendData["AccessToken"] = GroupsDataUtils.Sanitize(token);
-            MakeRequest("REMOVEAGENTFROMGROUP", sendData);
-        }
-
-        public ExtendedGroupRecord GetGroupRecord(string RequestingAgentID, UUID GroupID, string GroupName, string token)
-        {
-            if (GroupID == UUID.Zero && (GroupName == null || (GroupName != null && GroupName == string.Empty)))
-                return null;
-
-            Dictionary<string, object> sendData = new Dictionary<string, object>();
-            if (GroupID != UUID.Zero)
-                sendData["GroupID"] = GroupID.ToString();
-            if (!string.IsNullOrEmpty(GroupName))
-                sendData["Name"] = GroupsDataUtils.Sanitize(GroupName);
-
-            sendData["RequestingAgentID"] = RequestingAgentID;
-            sendData["AccessToken"] = GroupsDataUtils.Sanitize(token);
-
-            Dictionary<string, object> ret = MakeRequest("GETGROUP", sendData);
-
-            if (ret == null)
-                return null;
-
-            if (!ret.ContainsKey("RESULT"))
-                return null;
-
-            if (ret["RESULT"].ToString() == "NULL")
-                return null;
-
-            return GroupsDataUtils.GroupRecord((Dictionary<string, object>)ret["RESULT"]);
-        }
-
-        public List<ExtendedGroupMembersData> GetGroupMembers(string RequestingAgentID, UUID GroupID, string token)
-        {
-            List<ExtendedGroupMembersData> members = new List<ExtendedGroupMembersData>();
-
-            Dictionary<string, object> sendData = new Dictionary<string, object>();
-            sendData["GroupID"] = GroupID.ToString();
-            sendData["RequestingAgentID"] = RequestingAgentID;
-            sendData["AccessToken"] = GroupsDataUtils.Sanitize(token);
-            Dictionary<string, object> ret = MakeRequest("GETGROUPMEMBERS", sendData);
-
-            if (ret == null)
-                return members;
-
-            if (!ret.ContainsKey("RESULT"))
-                return members;
-
-            if (ret["RESULT"].ToString() == "NULL")
-                return members;
-            foreach (object v in ((Dictionary<string, object>)ret["RESULT"]).Values)
-            {
-                ExtendedGroupMembersData m = GroupsDataUtils.GroupMembersData((Dictionary<string, object>)v);
-                members.Add(m);
-            }
-
-            return members;
-        }
-
-        public List<GroupRolesData> GetGroupRoles(string RequestingAgentID, UUID GroupID, string token)
-        {
-            List<GroupRolesData> roles = new List<GroupRolesData>();
-
-            Dictionary<string, object> sendData = new Dictionary<string, object>();
-            sendData["GroupID"] = GroupID.ToString();
-            sendData["RequestingAgentID"] = RequestingAgentID;
-            sendData["AccessToken"] = GroupsDataUtils.Sanitize(token);
-            Dictionary<string, object> ret = MakeRequest("GETGROUPROLES", sendData);
-
-            if (ret == null)
-                return roles;
-
-            if (!ret.ContainsKey("RESULT"))
-                return roles;
-
-            if (ret["RESULT"].ToString() == "NULL")
-                return roles;
-            foreach (object v in ((Dictionary<string, object>)ret["RESULT"]).Values)
-            {
-                GroupRolesData m = GroupsDataUtils.GroupRolesData((Dictionary<string, object>)v);
-                roles.Add(m);
-            }
-
-            return roles;
-        }
-
-        public List<ExtendedGroupRoleMembersData> GetGroupRoleMembers(string RequestingAgentID, UUID GroupID, string token)
-        {
-            List<ExtendedGroupRoleMembersData> rmembers = new List<ExtendedGroupRoleMembersData>();
-
-            Dictionary<string, object> sendData = new Dictionary<string, object>();
-            sendData["GroupID"] = GroupID.ToString();
-            sendData["RequestingAgentID"] = RequestingAgentID;
-            sendData["AccessToken"] = GroupsDataUtils.Sanitize(token);
-            Dictionary<string, object> ret = MakeRequest("GETROLEMEMBERS", sendData);
-
-            if (ret == null)
-                return rmembers;
-
-            if (!ret.ContainsKey("RESULT"))
-                return rmembers;
-
-            if (ret["RESULT"].ToString() == "NULL")
-                return rmembers;
-
-            foreach (object v in ((Dictionary<string, object>)ret["RESULT"]).Values)
-            {
-                ExtendedGroupRoleMembersData m = GroupsDataUtils.GroupRoleMembersData((Dictionary<string, object>)v);
-                rmembers.Add(m);
-            }
-
-            return rmembers;
         }
 
         public bool AddNotice(string RequestingAgentID, UUID groupID, UUID noticeID, string fromName, string subject, string message,
@@ -235,6 +82,152 @@ namespace OpenSim.Groups
             return true;
         }
 
+        public bool CreateProxy(string RequestingAgentID, string AgentID, string accessToken, UUID groupID, string url, string name, out string reason)
+        {
+            reason = string.Empty;
+
+            Dictionary<string, object> sendData = new Dictionary<string, object>();
+            sendData["RequestingAgentID"] = RequestingAgentID;
+            sendData["AgentID"] = AgentID.ToString();
+            sendData["AccessToken"] = accessToken;
+            sendData["GroupID"] = groupID.ToString();
+            sendData["Location"] = url;
+            sendData["Name"] = name;
+            Dictionary<string, object> ret = MakeRequest("POSTGROUP", sendData);
+
+            if (ret == null)
+                return false;
+
+            if (!ret.ContainsKey("RESULT"))
+                return false;
+
+            if (ret["RESULT"].ToString().ToLower() != "true")
+            {
+                reason = ret["REASON"].ToString();
+                return false;
+            }
+
+            return true;
+        }
+
+        public List<ExtendedGroupMembersData> GetGroupMembers(string RequestingAgentID, UUID GroupID, string token)
+        {
+            List<ExtendedGroupMembersData> members = new List<ExtendedGroupMembersData>();
+
+            Dictionary<string, object> sendData = new Dictionary<string, object>();
+            sendData["GroupID"] = GroupID.ToString();
+            sendData["RequestingAgentID"] = RequestingAgentID;
+            sendData["AccessToken"] = GroupsDataUtils.Sanitize(token);
+            Dictionary<string, object> ret = MakeRequest("GETGROUPMEMBERS", sendData);
+
+            if (ret == null)
+                return members;
+
+            if (!ret.ContainsKey("RESULT"))
+                return members;
+
+            if (ret["RESULT"].ToString() == "NULL")
+                return members;
+            foreach (object v in ((Dictionary<string, object>)ret["RESULT"]).Values)
+            {
+                ExtendedGroupMembersData m = GroupsDataUtils.GroupMembersData((Dictionary<string, object>)v);
+                members.Add(m);
+            }
+
+            return members;
+        }
+
+        public ExtendedGroupRecord GetGroupRecord(string RequestingAgentID, UUID GroupID, string GroupName, string token)
+        {
+            if (GroupID == UUID.Zero && (GroupName == null || (GroupName != null && GroupName == string.Empty)))
+                return null;
+
+            Dictionary<string, object> sendData = new Dictionary<string, object>();
+            if (GroupID != UUID.Zero)
+                sendData["GroupID"] = GroupID.ToString();
+            if (!string.IsNullOrEmpty(GroupName))
+                sendData["Name"] = GroupsDataUtils.Sanitize(GroupName);
+
+            sendData["RequestingAgentID"] = RequestingAgentID;
+            sendData["AccessToken"] = GroupsDataUtils.Sanitize(token);
+
+            Dictionary<string, object> ret = MakeRequest("GETGROUP", sendData);
+
+            if (ret == null)
+                return null;
+
+            if (!ret.ContainsKey("RESULT"))
+                return null;
+
+            if (ret["RESULT"].ToString() == "NULL")
+                return null;
+
+            return GroupsDataUtils.GroupRecord((Dictionary<string, object>)ret["RESULT"]);
+        }
+
+        public List<ExtendedGroupRoleMembersData> GetGroupRoleMembers(string RequestingAgentID, UUID GroupID, string token)
+        {
+            List<ExtendedGroupRoleMembersData> rmembers = new List<ExtendedGroupRoleMembersData>();
+
+            Dictionary<string, object> sendData = new Dictionary<string, object>();
+            sendData["GroupID"] = GroupID.ToString();
+            sendData["RequestingAgentID"] = RequestingAgentID;
+            sendData["AccessToken"] = GroupsDataUtils.Sanitize(token);
+            Dictionary<string, object> ret = MakeRequest("GETROLEMEMBERS", sendData);
+
+            if (ret == null)
+                return rmembers;
+
+            if (!ret.ContainsKey("RESULT"))
+                return rmembers;
+
+            if (ret["RESULT"].ToString() == "NULL")
+                return rmembers;
+
+            foreach (object v in ((Dictionary<string, object>)ret["RESULT"]).Values)
+            {
+                ExtendedGroupRoleMembersData m = GroupsDataUtils.GroupRoleMembersData((Dictionary<string, object>)v);
+                rmembers.Add(m);
+            }
+
+            return rmembers;
+        }
+
+        public List<GroupRolesData> GetGroupRoles(string RequestingAgentID, UUID GroupID, string token)
+        {
+            List<GroupRolesData> roles = new List<GroupRolesData>();
+
+            Dictionary<string, object> sendData = new Dictionary<string, object>();
+            sendData["GroupID"] = GroupID.ToString();
+            sendData["RequestingAgentID"] = RequestingAgentID;
+            sendData["AccessToken"] = GroupsDataUtils.Sanitize(token);
+            Dictionary<string, object> ret = MakeRequest("GETGROUPROLES", sendData);
+
+            if (ret == null)
+                return roles;
+
+            if (!ret.ContainsKey("RESULT"))
+                return roles;
+
+            if (ret["RESULT"].ToString() == "NULL")
+                return roles;
+            foreach (object v in ((Dictionary<string, object>)ret["RESULT"]).Values)
+            {
+                GroupRolesData m = GroupsDataUtils.GroupRolesData((Dictionary<string, object>)v);
+                roles.Add(m);
+            }
+
+            return roles;
+        }
+
+        public void RemoveAgentFromGroup(string AgentID, UUID GroupID, string token)
+        {
+            Dictionary<string, object> sendData = new Dictionary<string, object>();
+            sendData["AgentID"] = AgentID;
+            sendData["GroupID"] = GroupID.ToString();
+            sendData["AccessToken"] = GroupsDataUtils.Sanitize(token);
+            MakeRequest("REMOVEAGENTFROMGROUP", sendData);
+        }
         public bool VerifyNotice(UUID noticeID, UUID groupID)
         {
             Dictionary<string, object> sendData = new Dictionary<string, object>();
@@ -281,7 +274,7 @@ namespace OpenSim.Groups
 
             return replyData;
         }
-        #endregion
 
+        #endregion Make Request
     }
 }

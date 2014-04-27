@@ -25,36 +25,27 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
 using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Server.Base;
 using OpenSim.Server.Handlers.Base;
-
-using log4net;
+using OpenSim.Services.Interfaces;
+using System;
 
 namespace OpenSim.Server.Handlers.Hypergrid
 {
     public class GatekeeperServiceInConnector : ServiceConnector
     {
-//        private static readonly ILog m_log =
-//                LogManager.GetLogger(
-//                MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log =
+        //                LogManager.GetLogger(
+        //                MethodBase.GetCurrentMethod().DeclaringType);
 
         private IGatekeeperService m_GatekeeperService;
-        public IGatekeeperService GateKeeper
-        {
-            get { return m_GatekeeperService; }
-        }
 
-        bool m_Proxy = false;
+        private bool m_Proxy = false;
 
         public GatekeeperServiceInConnector(IConfigSource config, IHttpServer server, ISimulationService simService) :
-                base(config, server, String.Empty)
+            base(config, server, String.Empty)
         {
             IConfig gridConfig = config.Configs["GatekeeperService"];
             if (gridConfig != null)
@@ -62,7 +53,6 @@ namespace OpenSim.Server.Handlers.Hypergrid
                 string serviceDll = gridConfig.GetString("LocalServiceModule", string.Empty);
                 Object[] args = new Object[] { config, simService };
                 m_GatekeeperService = ServerUtils.LoadPlugin<IGatekeeperService>(serviceDll, args);
-
             }
             if (m_GatekeeperService == null)
                 throw new Exception("Gatekeeper server connector cannot proceed because of missing service");
@@ -84,6 +74,11 @@ namespace OpenSim.Server.Handlers.Hypergrid
         public GatekeeperServiceInConnector(IConfigSource config, IHttpServer server)
             : this(config, server, String.Empty)
         {
+        }
+
+        public IGatekeeperService GateKeeper
+        {
+            get { return m_GatekeeperService; }
         }
     }
 }

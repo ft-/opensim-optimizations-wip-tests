@@ -25,81 +25,43 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Linq;
-using System.Reflection;
-using System.Timers;
-using System.Threading;
-using System.Collections.Generic;
 using log4net;
+using Mono.Addins;
 using Nini.Config;
 using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Framework.Console;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using Timer=System.Timers.Timer;
-using Mono.Addins;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Timers;
+using Timer = System.Timers.Timer;
 
 namespace OpenSim.Region.CoreModules.World.Region
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "RestartModule")]
     public class RestartModule : INonSharedRegionModule, IRestartModule
     {
-        private static readonly ILog m_log =
-            LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        protected Scene m_Scene;
-        protected Timer m_CountdownTimer = null;
-        protected DateTime m_RestartBegin;
         protected List<int> m_Alerts;
-        protected string m_Message;
-        protected UUID m_Initiator;
-        protected bool m_Notice = false;
+
+        protected Timer m_CountdownTimer = null;
+
         protected IDialogModule m_DialogModule = null;
 
-        public void Initialise(IConfigSource config)
-        {
-        }
+        protected UUID m_Initiator;
 
-        public void AddRegion(Scene scene)
-        {
-            m_Scene = scene;
-            
-            scene.RegisterModuleInterface<IRestartModule>(this);
-            MainConsole.Instance.Commands.AddCommand("Regions",
-                    false, "region restart bluebox",
-                    "region restart bluebox <message> <delta seconds>+",
-                    "Schedule a region restart", 
-                    "Schedule a region restart after a given number of seconds.  If one delta is given then the region is restarted in delta seconds time.  A time to restart is sent to users in the region as a dismissable bluebox notice.  If multiple deltas are given then a notice is sent when we reach each delta.",
-                    HandleRegionRestart);
-            
-            MainConsole.Instance.Commands.AddCommand("Regions",
-                    false, "region restart notice",
-                    "region restart notice <message> <delta seconds>+",
-                    "Schedule a region restart", 
-                    "Schedule a region restart after a given number of seconds.  If one delta is given then the region is restarted in delta seconds time.  A time to restart is sent to users in the region as a transient notice.  If multiple deltas are given then a notice is sent when we reach each delta.",
-                    HandleRegionRestart);
-            
-            MainConsole.Instance.Commands.AddCommand("Regions",
-                    false, "region restart abort",
-                    "region restart abort [<message>]",
-                    "Abort a region restart", HandleRegionRestart);
-        }
+        protected string m_Message;
 
-        public void RegionLoaded(Scene scene)
-        {
-            m_DialogModule = m_Scene.RequestModuleInterface<IDialogModule>();
-        }
+        protected bool m_Notice = false;
 
-        public void RemoveRegion(Scene scene)
-        {
-        }
+        protected DateTime m_RestartBegin;
 
-        public void Close()
-        {
-        }
+        protected Scene m_Scene;
 
+        private static readonly ILog m_log =
+            LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         public string Name
         {
             get { return "RestartModule"; }
@@ -115,33 +77,44 @@ namespace OpenSim.Region.CoreModules.World.Region
             get { return DateTime.Now - m_RestartBegin; }
         }
 
-        public void ScheduleRestart(UUID initiator, string message, int[] alerts, bool notice)
+        public void AbortRestart(string message)
         {
             if (m_CountdownTimer != null)
-                return;
-
-            if (alerts == null)
             {
-                m_Scene.RestartNow();
-                return;
+                m_CountdownTimer.Stop();
+                m_CountdownTimer = null;
+                if (m_DialogModule != null && message != String.Empty)
+                    m_DialogModule.SendGeneralAlert(message);
             }
+        }
 
-            m_Message = message;
-            m_Initiator = initiator;
-            m_Notice = notice;
-            m_Alerts = new List<int>(alerts);
-            m_Alerts.Sort();
-            m_Alerts.Reverse();
+        public void AddRegion(Scene scene)
+        {
+            m_Scene = scene;
 
-            if (m_Alerts[0] == 0)
-            {
-                m_Scene.RestartNow();
-                return;
-            }
+            scene.RegisterModuleInterface<IRestartModule>(this);
+            MainConsole.Instance.Commands.AddCommand("Regions",
+                    false, "region restart bluebox",
+                    "region restart bluebox <message> <delta seconds>+",
+                    "Schedule a region restart",
+                    "Schedule a region restart after a given number of seconds.  If one delta is given then the region is restarted in delta seconds time.  A time to restart is sent to users in the region as a dismissable bluebox notice.  If multiple deltas are given then a notice is sent when we reach each delta.",
+                    HandleRegionRestart);
 
-            int nextInterval = DoOneNotice();
+            MainConsole.Instance.Commands.AddCommand("Regions",
+                    false, "region restart notice",
+                    "region restart notice <message> <delta seconds>+",
+                    "Schedule a region restart",
+                    "Schedule a region restart after a given number of seconds.  If one delta is given then the region is restarted in delta seconds time.  A time to restart is sent to users in the region as a transient notice.  If multiple deltas are given then a notice is sent when we reach each delta.",
+                    HandleRegionRestart);
 
-            SetTimer(nextInterval);
+            MainConsole.Instance.Commands.AddCommand("Regions",
+                    false, "region restart abort",
+                    "region restart abort [<message>]",
+                    "Abort a region restart", HandleRegionRestart);
+        }
+
+        public void Close()
+        {
         }
 
         public int DoOneNotice()
@@ -163,7 +136,7 @@ namespace OpenSim.Region.CoreModules.World.Region
                 nextAlert = m_Alerts[1];
                 break;
             }
-            
+
             int currentAlert = m_Alerts[0];
 
             m_Alerts.RemoveAt(0);
@@ -201,6 +174,45 @@ namespace OpenSim.Region.CoreModules.World.Region
             return currentAlert - nextAlert;
         }
 
+        public void Initialise(IConfigSource config)
+        {
+        }
+        public void RegionLoaded(Scene scene)
+        {
+            m_DialogModule = m_Scene.RequestModuleInterface<IDialogModule>();
+        }
+
+        public void RemoveRegion(Scene scene)
+        {
+        }
+        public void ScheduleRestart(UUID initiator, string message, int[] alerts, bool notice)
+        {
+            if (m_CountdownTimer != null)
+                return;
+
+            if (alerts == null)
+            {
+                m_Scene.RestartNow();
+                return;
+            }
+
+            m_Message = message;
+            m_Initiator = initiator;
+            m_Notice = notice;
+            m_Alerts = new List<int>(alerts);
+            m_Alerts.Sort();
+            m_Alerts.Reverse();
+
+            if (m_Alerts[0] == 0)
+            {
+                m_Scene.RestartNow();
+                return;
+            }
+
+            int nextInterval = DoOneNotice();
+
+            SetTimer(nextInterval);
+        }
         public void SetTimer(int intervalSeconds)
         {
             if (intervalSeconds > 0)
@@ -219,27 +231,11 @@ namespace OpenSim.Region.CoreModules.World.Region
             else
             {
                 m_log.WarnFormat(
-                    "[RESTART MODULE]: Tried to set restart timer to {0} in {1}, which is not a valid interval", 
+                    "[RESTART MODULE]: Tried to set restart timer to {0} in {1}, which is not a valid interval",
                     intervalSeconds, m_Scene.Name);
             }
         }
 
-        private void OnTimer(object source, ElapsedEventArgs e)
-        {
-            SetTimer(DoOneNotice());
-        }
-
-        public void AbortRestart(string message)
-        {
-            if (m_CountdownTimer != null)
-            {
-                m_CountdownTimer.Stop();
-                m_CountdownTimer = null;
-                if (m_DialogModule != null && message != String.Empty)
-                    m_DialogModule.SendGeneralAlert(message);
-            }
-        }
-        
         private void HandleRegionRestart(string module, string[] args)
         {
             if (!(MainConsole.Instance.ConsoleScene is Scene))
@@ -274,13 +270,18 @@ namespace OpenSim.Region.CoreModules.World.Region
                 notice = true;
 
             List<int> times = new List<int>();
-            for (int i = 4 ; i < args.Length ; i++)
+            for (int i = 4; i < args.Length; i++)
                 times.Add(Convert.ToInt32(args[i]));
 
             MainConsole.Instance.OutputFormat(
                 "Region {0} scheduled for restart in {1} seconds", m_Scene.Name, times.Sum());
 
             ScheduleRestart(UUID.Zero, args[3], times.ToArray(), notice);
+        }
+
+        private void OnTimer(object source, ElapsedEventArgs e)
+        {
+            SetTimer(DoOneNotice());
         }
     }
 }

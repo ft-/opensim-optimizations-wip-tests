@@ -25,17 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Threading;
 using log4net;
 using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
 using OpenSim.Region.Physics.Manager;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.Region.Framework.Scenes.Animation
 {
@@ -44,43 +40,43 @@ namespace OpenSim.Region.Framework.Scenes.Animation
     /// </summary>
     public class ScenePresenceAnimator
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        public int m_animTickJump;
+        // ScenePresence has to see this to control +Z force
+        public bool m_jumping = false;
 
-        public AnimationSet Animations
-        {
-            get { return m_animations;  }
-        }
-        protected AnimationSet m_animations = new AnimationSet();
-
-        /// <value>
-        /// The current movement animation
-        /// </value>
-        public string CurrentMovementAnimation { get; private set; }
-        
-        private int m_animTickFall;
-        public int m_animTickJump;		// ScenePresence has to see this to control +Z force
-        public bool m_jumping = false; 
         public float m_jumpVelocity = 0f;
-//        private int m_landing = 0;
-
-        /// <summary>
-        /// Is the avatar falling?
-        /// </summary>
-        public bool Falling { get; private set; }
-
-        private float m_fallHeight;
-
+        protected AnimationSet m_animations = new AnimationSet();
         /// <value>
         /// The scene presence that this animator applies to
         /// </value>
         protected ScenePresence m_scenePresence;
-        
+
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        private int m_animTickFall;
+
+        private float m_fallHeight;
+
         public ScenePresenceAnimator(ScenePresence sp)
         {
             m_scenePresence = sp;
             CurrentMovementAnimation = "CROUCH";
         }
-        
+
+        public AnimationSet Animations
+        {
+            get { return m_animations; }
+        }
+        /// <value>
+        /// The current movement animation
+        /// </value>
+        public string CurrentMovementAnimation { get; private set; }
+        //        private int m_landing = 0;
+
+        /// <summary>
+        /// Is the avatar falling?
+        /// </summary>
+        public bool Falling { get; private set; }
         public void AddAnimation(UUID animID, UUID objectID)
         {
             if (m_scenePresence.IsChildAgent)
@@ -88,7 +84,7 @@ namespace OpenSim.Region.Framework.Scenes.Animation
 
             if (m_scenePresence.Scene.DebugAnimations)
                 m_log.DebugFormat(
-                    "[SCENE PRESENCE ANIMATOR]: Adding animation {0} {1} for {2}", 
+                    "[SCENE PRESENCE ANIMATOR]: Adding animation {0} {1} for {2}",
                     GetAnimName(animID), animID, m_scenePresence.Name);
 
             if (m_animations.Add(animID, m_scenePresence.ControllingClient.NextAnimationSequenceNumber, objectID))
@@ -110,9 +106,93 @@ namespace OpenSim.Region.Framework.Scenes.Animation
             if (animID == UUID.Zero)
                 return;
 
-//            m_log.DebugFormat("[SCENE PRESENCE ANIMATOR]: Adding animation {0} {1} for {2}", animID, name, m_scenePresence.Name);
+            //            m_log.DebugFormat("[SCENE PRESENCE ANIMATOR]: Adding animation {0} {1} for {2}", animID, name, m_scenePresence.Name);
 
             AddAnimation(animID, objectID);
+        }
+
+        public BinBVHAnimation GenerateRandomAnimation()
+        {
+            int rnditerations = 3;
+            BinBVHAnimation anim = new BinBVHAnimation();
+            List<string> parts = new List<string>();
+            parts.Add("mPelvis"); parts.Add("mHead"); parts.Add("mTorso");
+            parts.Add("mHipLeft"); parts.Add("mHipRight"); parts.Add("mHipLeft"); parts.Add("mKneeLeft");
+            parts.Add("mKneeRight"); parts.Add("mCollarLeft"); parts.Add("mCollarRight"); parts.Add("mNeck");
+            parts.Add("mElbowLeft"); parts.Add("mElbowRight"); parts.Add("mWristLeft"); parts.Add("mWristRight");
+            parts.Add("mShoulderLeft"); parts.Add("mShoulderRight"); parts.Add("mAnkleLeft"); parts.Add("mAnkleRight");
+            parts.Add("mEyeRight"); parts.Add("mChest"); parts.Add("mToeLeft"); parts.Add("mToeRight");
+            parts.Add("mFootLeft"); parts.Add("mFootRight"); parts.Add("mEyeLeft");
+            anim.HandPose = 1;
+            anim.InPoint = 0;
+            anim.OutPoint = (rnditerations * .10f);
+            anim.Priority = 7;
+            anim.Loop = false;
+            anim.Length = (rnditerations * .10f);
+            anim.ExpressionName = "afraid";
+            anim.EaseInTime = 0;
+            anim.EaseOutTime = 0;
+
+            string[] strjoints = parts.ToArray();
+            anim.Joints = new binBVHJoint[strjoints.Length];
+            for (int j = 0; j < strjoints.Length; j++)
+            {
+                anim.Joints[j] = new binBVHJoint();
+                anim.Joints[j].Name = strjoints[j];
+                anim.Joints[j].Priority = 7;
+                anim.Joints[j].positionkeys = new binBVHJointKey[rnditerations];
+                anim.Joints[j].rotationkeys = new binBVHJointKey[rnditerations];
+                Random rnd = new Random();
+                for (int i = 0; i < rnditerations; i++)
+                {
+                    anim.Joints[j].rotationkeys[i] = new binBVHJointKey();
+                    anim.Joints[j].rotationkeys[i].time = (i * .10f);
+                    anim.Joints[j].rotationkeys[i].key_element.X = ((float)rnd.NextDouble() * 2 - 1);
+                    anim.Joints[j].rotationkeys[i].key_element.Y = ((float)rnd.NextDouble() * 2 - 1);
+                    anim.Joints[j].rotationkeys[i].key_element.Z = ((float)rnd.NextDouble() * 2 - 1);
+                    anim.Joints[j].positionkeys[i] = new binBVHJointKey();
+                    anim.Joints[j].positionkeys[i].time = (i * .10f);
+                    anim.Joints[j].positionkeys[i].key_element.X = 0;
+                    anim.Joints[j].positionkeys[i].key_element.Y = 0;
+                    anim.Joints[j].positionkeys[i].key_element.Z = 0;
+                }
+            }
+
+            AssetBase Animasset = new AssetBase(UUID.Random(), "Random Animation", (sbyte)AssetType.Animation, m_scenePresence.UUID.ToString());
+            Animasset.Data = anim.ToBytes();
+            Animasset.Temporary = true;
+            Animasset.Local = true;
+            Animasset.Description = "dance";
+            //BinBVHAnimation bbvhanim = new BinBVHAnimation(Animasset.Data);
+
+            m_scenePresence.Scene.AssetService.Store(Animasset);
+            AddAnimation(Animasset.FullID, m_scenePresence.UUID);
+            return anim;
+        }
+
+        public UUID[] GetAnimationArray()
+        {
+            UUID[] animIDs;
+            int[] sequenceNums;
+            UUID[] objectIDs;
+            m_animations.GetArrays(out animIDs, out sequenceNums, out objectIDs);
+            return animIDs;
+        }
+
+        public string GetAnimName(UUID animId)
+        {
+            string animName;
+
+            if (!DefaultAvatarAnimations.AnimsNames.TryGetValue(animId, out animName))
+            {
+                AssetMetadata amd = m_scenePresence.Scene.AssetService.GetMetadata(animId.ToString());
+                if (amd != null)
+                    animName = amd.Name;
+                else
+                    animName = "Unknown";
+            }
+
+            return animName;
         }
 
         /// <summary>
@@ -120,7 +200,7 @@ namespace OpenSim.Region.Framework.Scenes.Animation
         /// </summary>
         /// <param name='animID'></param>
         /// <param name='allowNoDefault'>
-        /// If true, then the default animation can be entirely removed. 
+        /// If true, then the default animation can be entirely removed.
         /// If false, then removing the default animation will reset it to the simulator default (currently STAND).
         /// </param>
         public void RemoveAnimation(UUID animID, bool allowNoDefault)
@@ -130,7 +210,7 @@ namespace OpenSim.Region.Framework.Scenes.Animation
 
             if (m_scenePresence.Scene.DebugAnimations)
                 m_log.DebugFormat(
-                    "[SCENE PRESENCE ANIMATOR]: Removing animation {0} {1} for {2}", 
+                    "[SCENE PRESENCE ANIMATOR]: Removing animation {0} {1} for {2}",
                     GetAnimName(animID), animID, m_scenePresence.Name);
 
             if (m_animations.Remove(animID, allowNoDefault))
@@ -164,7 +244,63 @@ namespace OpenSim.Region.Framework.Scenes.Animation
 
             m_animations.Clear();
         }
-        
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="animations"></param>
+        /// <param name="seqs"></param>
+        /// <param name="objectIDs"></param>
+        public void SendAnimPack(UUID[] animations, int[] seqs, UUID[] objectIDs)
+        {
+            if (m_scenePresence.IsChildAgent)
+                return;
+
+            //            m_log.DebugFormat(
+            //                "[SCENE PRESENCE ANIMATOR]: Sending anim pack with animations '{0}', sequence '{1}', uuids '{2}'",
+            //                string.Join(",", Array.ConvertAll<UUID, string>(animations, a => a.ToString())),
+            //                string.Join(",", Array.ConvertAll<int, string>(seqs, s => s.ToString())),
+            //                string.Join(",", Array.ConvertAll<UUID, string>(objectIDs, o => o.ToString())));
+
+            m_scenePresence.Scene.ForEachClient(
+                delegate(IClientAPI client)
+                {
+                    client.SendAnimations(animations, seqs, m_scenePresence.ControllingClient.AgentId, objectIDs);
+                });
+        }
+
+        /// <summary>
+        /// Send animation information about this avatar to all clients.
+        /// </summary>
+        public void SendAnimPack()
+        {
+            //m_log.Debug("Sending animation pack to all");
+
+            if (m_scenePresence.IsChildAgent)
+                return;
+
+            UUID[] animIDs;
+            int[] sequenceNums;
+            UUID[] objectIDs;
+
+            m_animations.GetArrays(out animIDs, out sequenceNums, out objectIDs);
+
+            SendAnimPack(animIDs, sequenceNums, objectIDs);
+        }
+
+        public void SendAnimPackToClient(IClientAPI client)
+        {
+            if (m_scenePresence.IsChildAgent)
+                return;
+
+            UUID[] animIDs;
+            int[] sequenceNums;
+            UUID[] objectIDs;
+
+            m_animations.GetArrays(out animIDs, out sequenceNums, out objectIDs);
+            client.SendAnimations(animIDs, sequenceNums, m_scenePresence.ControllingClient.AgentId, objectIDs);
+        }
+
         /// <summary>
         /// The movement animation is reserved for "main" animations
         /// that are mutually exclusive, e.g. flying and sitting.
@@ -175,19 +311,19 @@ namespace OpenSim.Region.Framework.Scenes.Animation
             bool ret = false;
             if (!m_scenePresence.IsChildAgent)
             {
-//                m_log.DebugFormat(
-//                    "[SCENE PRESENCE ANIMATOR]: Setting movement animation {0} for {1}",
-//                    anim, m_scenePresence.Name);
+                //                m_log.DebugFormat(
+                //                    "[SCENE PRESENCE ANIMATOR]: Setting movement animation {0} for {1}",
+                //                    anim, m_scenePresence.Name);
 
                 if (m_animations.TrySetDefaultAnimation(
                     anim, m_scenePresence.ControllingClient.NextAnimationSequenceNumber, m_scenePresence.UUID))
                 {
-//                    m_log.DebugFormat(
-//                        "[SCENE PRESENCE ANIMATOR]: Updating movement animation to {0} for {1}",
-//                        anim, m_scenePresence.Name);
+                    //                    m_log.DebugFormat(
+                    //                        "[SCENE PRESENCE ANIMATOR]: Updating movement animation to {0} for {1}",
+                    //                        anim, m_scenePresence.Name);
 
                     // 16384 is CHANGED_ANIMATION
-                    m_scenePresence.SendScriptEventToAttachments("changed", new Object[] { (int)Changed.ANIMATION});
+                    m_scenePresence.SendScriptEventToAttachments("changed", new Object[] { (int)Changed.ANIMATION });
                     SendAnimPack();
                     ret = true;
                 }
@@ -202,6 +338,34 @@ namespace OpenSim.Region.Framework.Scenes.Animation
         }
 
         /// <summary>
+        /// Update the movement animation of this avatar according to its current state
+        /// </summary>
+        /// <returns>'true' if the animation was changed</returns>
+        public bool UpdateMovementAnimations()
+        {
+            //            m_log.DebugFormat("[SCENE PRESENCE ANIMATOR]: Updating movement animations for {0}", m_scenePresence.Name);
+
+            bool ret = false;
+            lock (m_animations)
+            {
+                string newMovementAnimation = DetermineMovementAnimation();
+                if (CurrentMovementAnimation != newMovementAnimation)
+                {
+                    CurrentMovementAnimation = DetermineMovementAnimation();
+
+                    //                    m_log.DebugFormat(
+                    //                        "[SCENE PRESENCE ANIMATOR]: Determined animation {0} for {1} in UpdateMovementAnimations()",
+                    //                        CurrentMovementAnimation, m_scenePresence.Name);
+
+                    // Only set it if it's actually changed, give a script
+                    // a chance to stop a default animation
+                    ret = TrySetMovementAnimation(CurrentMovementAnimation);
+                }
+            }
+            return ret;
+        }
+
+        /// <summary>
         /// This method determines the proper movement related animation
         /// </summary>
         private string DetermineMovementAnimation()
@@ -209,6 +373,7 @@ namespace OpenSim.Region.Framework.Scenes.Animation
             const float FALL_DELAY = 800f;
             const float PREJUMP_DELAY = 200f;
             const float JUMP_PERIOD = 800f;
+
             #region Inputs
 
             AgentManager.ControlFlags controlFlags = (AgentManager.ControlFlags)m_scenePresence.AgentControlFlags;
@@ -246,7 +411,8 @@ namespace OpenSim.Region.Framework.Scenes.Animation
             if (heldDown) { move.Z -= 1; }
 
             // Is the avatar trying to move?
-//            bool moving = (move != Vector3.Zero);
+            //            bool moving = (move != Vector3.Zero);
+
             #endregion Inputs
 
             #region Flying
@@ -296,7 +462,7 @@ namespace OpenSim.Region.Framework.Scenes.Animation
 
                 if (m_animTickFall == 0 || (fallVelocity >= 0.0f))
                 {
-                    // not falling yet, or going up         
+                    // not falling yet, or going up
                     // reset start of fall time
                     m_animTickFall = Environment.TickCount;
                 }
@@ -314,7 +480,6 @@ namespace OpenSim.Region.Framework.Scenes.Animation
             }
 
             #endregion Falling/Floating/Landing
-
 
             #region Jumping     // section added for jumping...
 
@@ -360,7 +525,7 @@ namespace OpenSim.Region.Framework.Scenes.Animation
                 }
             }
 
-            #endregion Jumping
+            #endregion Jumping     // section added for jumping...
 
             #region Ground Movement
 
@@ -429,179 +594,12 @@ namespace OpenSim.Region.Framework.Scenes.Animation
                 else
                     return "STAND";
             }
+
             #endregion Ground Movement
 
             Falling = false;
 
             return CurrentMovementAnimation;
-        }
-
-        /// <summary>
-        /// Update the movement animation of this avatar according to its current state
-        /// </summary>
-        /// <returns>'true' if the animation was changed</returns>
-        public bool UpdateMovementAnimations()
-        {
-//            m_log.DebugFormat("[SCENE PRESENCE ANIMATOR]: Updating movement animations for {0}", m_scenePresence.Name);
-
-            bool ret = false;
-            lock (m_animations)
-            {
-                string newMovementAnimation = DetermineMovementAnimation();
-                if (CurrentMovementAnimation != newMovementAnimation)
-                {
-                    CurrentMovementAnimation = DetermineMovementAnimation();
-
-//                    m_log.DebugFormat(
-//                        "[SCENE PRESENCE ANIMATOR]: Determined animation {0} for {1} in UpdateMovementAnimations()",
-//                        CurrentMovementAnimation, m_scenePresence.Name);
-
-                    // Only set it if it's actually changed, give a script
-                    // a chance to stop a default animation
-                    ret = TrySetMovementAnimation(CurrentMovementAnimation);
-                }
-            }
-            return ret;
-        }
-
-        public UUID[] GetAnimationArray()
-        {
-            UUID[] animIDs;
-            int[] sequenceNums;
-            UUID[] objectIDs;
-            m_animations.GetArrays(out animIDs, out sequenceNums, out objectIDs);
-            return animIDs;
-        }
-       
-        public BinBVHAnimation GenerateRandomAnimation()
-        {
-            int rnditerations = 3;
-            BinBVHAnimation anim = new BinBVHAnimation();
-            List<string> parts = new List<string>();
-            parts.Add("mPelvis");parts.Add("mHead");parts.Add("mTorso");
-            parts.Add("mHipLeft");parts.Add("mHipRight");parts.Add("mHipLeft");parts.Add("mKneeLeft");
-            parts.Add("mKneeRight");parts.Add("mCollarLeft");parts.Add("mCollarRight");parts.Add("mNeck");
-            parts.Add("mElbowLeft");parts.Add("mElbowRight");parts.Add("mWristLeft");parts.Add("mWristRight");
-            parts.Add("mShoulderLeft");parts.Add("mShoulderRight");parts.Add("mAnkleLeft");parts.Add("mAnkleRight");
-            parts.Add("mEyeRight");parts.Add("mChest");parts.Add("mToeLeft");parts.Add("mToeRight");
-            parts.Add("mFootLeft");parts.Add("mFootRight");parts.Add("mEyeLeft");
-            anim.HandPose = 1;
-            anim.InPoint = 0;
-            anim.OutPoint = (rnditerations * .10f);
-            anim.Priority = 7;
-            anim.Loop = false;
-            anim.Length = (rnditerations * .10f);
-            anim.ExpressionName = "afraid";
-            anim.EaseInTime = 0;
-            anim.EaseOutTime = 0;
-
-            string[] strjoints = parts.ToArray();
-            anim.Joints = new binBVHJoint[strjoints.Length];
-            for (int j = 0; j < strjoints.Length; j++)
-            {
-                anim.Joints[j] = new binBVHJoint();
-                anim.Joints[j].Name = strjoints[j];
-                anim.Joints[j].Priority = 7;
-                anim.Joints[j].positionkeys = new binBVHJointKey[rnditerations];
-                anim.Joints[j].rotationkeys = new binBVHJointKey[rnditerations];
-                Random rnd = new Random();
-                for (int i = 0; i < rnditerations; i++)
-                {
-                    anim.Joints[j].rotationkeys[i] = new binBVHJointKey();
-                    anim.Joints[j].rotationkeys[i].time = (i*.10f);
-                    anim.Joints[j].rotationkeys[i].key_element.X = ((float) rnd.NextDouble()*2 - 1);
-                    anim.Joints[j].rotationkeys[i].key_element.Y = ((float) rnd.NextDouble()*2 - 1);
-                    anim.Joints[j].rotationkeys[i].key_element.Z = ((float) rnd.NextDouble()*2 - 1);
-                    anim.Joints[j].positionkeys[i] = new binBVHJointKey();
-                    anim.Joints[j].positionkeys[i].time = (i*.10f);
-                    anim.Joints[j].positionkeys[i].key_element.X = 0;
-                    anim.Joints[j].positionkeys[i].key_element.Y = 0;
-                    anim.Joints[j].positionkeys[i].key_element.Z = 0;
-                }
-            }
-
-            AssetBase Animasset = new AssetBase(UUID.Random(), "Random Animation", (sbyte)AssetType.Animation, m_scenePresence.UUID.ToString());
-            Animasset.Data = anim.ToBytes();
-            Animasset.Temporary = true;
-            Animasset.Local = true;
-            Animasset.Description = "dance";
-            //BinBVHAnimation bbvhanim = new BinBVHAnimation(Animasset.Data);
-
-            m_scenePresence.Scene.AssetService.Store(Animasset);
-            AddAnimation(Animasset.FullID, m_scenePresence.UUID);
-            return anim;
-        }
-
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="animations"></param>
-        /// <param name="seqs"></param>
-        /// <param name="objectIDs"></param>
-        public void SendAnimPack(UUID[] animations, int[] seqs, UUID[] objectIDs)
-        {
-            if (m_scenePresence.IsChildAgent)
-                return;
-
-//            m_log.DebugFormat(
-//                "[SCENE PRESENCE ANIMATOR]: Sending anim pack with animations '{0}', sequence '{1}', uuids '{2}'", 
-//                string.Join(",", Array.ConvertAll<UUID, string>(animations, a => a.ToString())), 
-//                string.Join(",", Array.ConvertAll<int, string>(seqs, s => s.ToString())),
-//                string.Join(",", Array.ConvertAll<UUID, string>(objectIDs, o => o.ToString())));
-
-            m_scenePresence.Scene.ForEachClient(
-                delegate(IClientAPI client) 
-                { 
-                    client.SendAnimations(animations, seqs, m_scenePresence.ControllingClient.AgentId, objectIDs); 
-                });
-        }
-
-        public void SendAnimPackToClient(IClientAPI client)
-        {
-            if (m_scenePresence.IsChildAgent)
-                return;
-
-            UUID[] animIDs;
-            int[] sequenceNums;
-            UUID[] objectIDs;
-
-            m_animations.GetArrays(out animIDs, out sequenceNums, out objectIDs);
-            client.SendAnimations(animIDs, sequenceNums, m_scenePresence.ControllingClient.AgentId, objectIDs);
-        }
-
-        /// <summary>
-        /// Send animation information about this avatar to all clients.
-        /// </summary>
-        public void SendAnimPack()
-        {
-            //m_log.Debug("Sending animation pack to all");
-            
-            if (m_scenePresence.IsChildAgent)
-                return;
-
-            UUID[] animIDs;
-            int[] sequenceNums;
-            UUID[] objectIDs;
-
-            m_animations.GetArrays(out animIDs, out sequenceNums, out objectIDs);
-
-            SendAnimPack(animIDs, sequenceNums, objectIDs);
-        }
-
-        public string GetAnimName(UUID animId)
-        {
-            string animName;
-
-            if (!DefaultAvatarAnimations.AnimsNames.TryGetValue(animId, out animName))
-            {
-                AssetMetadata amd = m_scenePresence.Scene.AssetService.GetMetadata(animId.ToString());
-                if (amd != null)
-                    animName = amd.Name;
-                else
-                    animName = "Unknown";
-            }
-
-            return animName;
         }
     }
 }

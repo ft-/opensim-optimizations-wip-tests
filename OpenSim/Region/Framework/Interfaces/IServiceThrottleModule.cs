@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
@@ -15,5 +14,4 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="continuation">The continuation to be executed</param>
         void Enqueue(string category, string itemid, Action continuation);
     }
-
 }

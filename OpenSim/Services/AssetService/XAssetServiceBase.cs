@@ -25,29 +25,26 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
 using log4net;
 using Nini.Config;
-using OpenSim.Framework;
 using OpenSim.Data;
+using OpenSim.Framework;
 using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
 using OpenSim.Services.Base;
+using OpenSim.Services.Interfaces;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Services.AssetService
 {
     public class XAssetServiceBase : ServiceBase
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        protected IXAssetDataPlugin m_Database;
         protected IAssetLoader m_AssetLoader;
         protected IAssetService m_ChainedAssetService;
-
-        protected bool HasChainedAssetService { get { return m_ChainedAssetService != null; } }
-
-        public XAssetServiceBase(IConfigSource config, string configName) : base(config)
+        protected IXAssetDataPlugin m_Database;
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        public XAssetServiceBase(IConfigSource config, string configName)
+            : base(config)
         {
             string dllName = String.Empty;
             string connString = String.Empty;
@@ -115,5 +112,7 @@ namespace OpenSim.Services.AssetService
                 }
             }
         }
+
+        protected bool HasChainedAssetService { get { return m_ChainedAssetService != null; } }
     }
 }

@@ -25,40 +25,36 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using Mono.Addins;
+using OpenMetaverse;
+using OpenSim.Region.Framework.Interfaces;
 using System;
 using System.Collections.Generic;
-
-using OpenMetaverse;
-using Mono.Addins;
-
-using OpenSim.Region.Framework.Interfaces;
 
 namespace OpenSim.Region.CoreModules.World.Wind.Plugins
 {
     [Extension(Path = "/OpenSim/WindModule", NodeName = "WindModel", Id = "SimpleRandomWind")]
-    class SimpleRandomWind : Mono.Addins.TypeExtensionNode, IWindModelPlugin
+    internal class SimpleRandomWind : Mono.Addins.TypeExtensionNode, IWindModelPlugin
     {
-        private Vector2[] m_windSpeeds = new Vector2[16 * 16];
-        private float m_strength = 1.0f;
         private Random m_rndnums = new Random(Environment.TickCount);
-
+        private float m_strength = 1.0f;
+        private Vector2[] m_windSpeeds = new Vector2[16 * 16];
         #region IPlugin Members
-
-        public string Version
-        {
-            get { return "1.0.0.0"; }
-        }
 
         public string Name
         {
             get { return "SimpleRandomWind"; }
         }
 
+        public string Version
+        {
+            get { return "1.0.0.0"; }
+        }
         public void Initialise()
         {
         }
 
-        #endregion
+        #endregion IPlugin Members
 
         #region IDisposable Members
 
@@ -67,9 +63,17 @@ namespace OpenSim.Region.CoreModules.World.Wind.Plugins
             m_windSpeeds = null;
         }
 
-        #endregion
+        #endregion IDisposable Members
 
         #region IWindModelPlugin Members
+
+        public string Description
+        {
+            get
+            {
+                return "Provides a simple wind model that creates random wind of a given strength in 16m x 16m patches.";
+            }
+        }
 
         public void WindConfig(OpenSim.Region.Framework.Scenes.Scene scene, Nini.Config.IConfig windConfig)
         {
@@ -82,21 +86,39 @@ namespace OpenSim.Region.CoreModules.World.Wind.Plugins
             }
         }
 
-        public void WindUpdate(uint frame)
+        public Vector2[] WindLLClientArray()
         {
-            //Make sure our object is valid (we haven't been disposed of yet)
-            if (m_windSpeeds != null)
+            return m_windSpeeds;
+        }
+
+        public float WindParamGet(string param)
+        {
+            switch (param)
             {
-                for (int y = 0; y < 16; y++)
-                {
-                    for (int x = 0; x < 16; x++)
-                    {
-                        m_windSpeeds[y * 16 + x].X = (float)(m_rndnums.NextDouble() * 2d - 1d); // -1 to 1
-                        m_windSpeeds[y * 16 + x].Y = (float)(m_rndnums.NextDouble() * 2d - 1d); // -1 to 1
-                        m_windSpeeds[y * 16 + x].X *= m_strength;
-                        m_windSpeeds[y * 16 + x].Y *= m_strength;
-                    }
-                }
+                case "strength":
+                    return m_strength;
+
+                default:
+                    throw new Exception(String.Format("Unknown {0} parameter {1}", this.Name, param));
+            }
+        }
+
+        public System.Collections.Generic.Dictionary<string, string> WindParams()
+        {
+            Dictionary<string, string> Params = new Dictionary<string, string>();
+
+            Params.Add("strength", "wind strength");
+
+            return Params;
+        }
+
+        public void WindParamSet(string param, float value)
+        {
+            switch (param)
+            {
+                case "strength":
+                    m_strength = value;
+                    break;
             }
         }
 
@@ -121,50 +143,23 @@ namespace OpenSim.Region.CoreModules.World.Wind.Plugins
             return windVector;
         }
 
-        public Vector2[] WindLLClientArray()
+        public void WindUpdate(uint frame)
         {
-            return m_windSpeeds;
-        }
-
-        public string Description
-        {
-            get
+            //Make sure our object is valid (we haven't been disposed of yet)
+            if (m_windSpeeds != null)
             {
-                return "Provides a simple wind model that creates random wind of a given strength in 16m x 16m patches.";
+                for (int y = 0; y < 16; y++)
+                {
+                    for (int x = 0; x < 16; x++)
+                    {
+                        m_windSpeeds[y * 16 + x].X = (float)(m_rndnums.NextDouble() * 2d - 1d); // -1 to 1
+                        m_windSpeeds[y * 16 + x].Y = (float)(m_rndnums.NextDouble() * 2d - 1d); // -1 to 1
+                        m_windSpeeds[y * 16 + x].X *= m_strength;
+                        m_windSpeeds[y * 16 + x].Y *= m_strength;
+                    }
+                }
             }
         }
-
-        public System.Collections.Generic.Dictionary<string, string> WindParams()
-        {
-            Dictionary<string, string> Params = new Dictionary<string, string>();
-
-            Params.Add("strength", "wind strength");
-
-            return Params;
-        }
-
-        public void WindParamSet(string param, float value)
-        {
-            switch (param)
-            {
-                case "strength":
-                    m_strength = value;
-                    break;
-            }
-        }
-
-        public float WindParamGet(string param)
-        {
-            switch (param)
-            {
-                case "strength":
-                    return m_strength;
-                default:
-                    throw new Exception(String.Format("Unknown {0} parameter {1}", this.Name, param));
-            }
-        }
-
-        #endregion
-
+        #endregion IWindModelPlugin Members
     }
 }

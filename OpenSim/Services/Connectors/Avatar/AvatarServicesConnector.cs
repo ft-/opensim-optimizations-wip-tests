@@ -26,18 +26,15 @@
  */
 
 using log4net;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Server.Base;
+using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
-using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Services.Interfaces;
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 using IAvatarService = OpenSim.Services.Interfaces.IAvatarService;
-using OpenSim.Server.Base;
-using OpenMetaverse;
 
 namespace OpenSim.Services.Connectors
 {
@@ -83,7 +80,6 @@ namespace OpenSim.Services.Connectors
             m_ServerURI = serviceURI;
         }
 
-
         #region IAvatarService
 
         public AvatarAppearance GetAppearance(UUID userID)
@@ -91,13 +87,7 @@ namespace OpenSim.Services.Connectors
             AvatarData avatar = GetAvatar(userID);
             return avatar.ToAvatarAppearance();
         }
-        
-        public bool SetAppearance(UUID userID, AvatarAppearance appearance)
-        {
-            AvatarData avatar = new AvatarData(appearance);
-            return SetAvatar(userID,avatar);
-        }
-            
+
         public AvatarData GetAvatar(UUID userID)
         {
             Dictionary<string, object> sendData = new Dictionary<string, object>();
@@ -138,28 +128,22 @@ namespace OpenSim.Services.Connectors
             }
 
             return avatar;
-
         }
 
-        public bool SetAvatar(UUID userID, AvatarData avatar)
+        public bool RemoveItems(UUID userID, string[] names)
         {
             Dictionary<string, object> sendData = new Dictionary<string, object>();
             //sendData["SCOPEID"] = scopeID.ToString();
             sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
             sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
-            sendData["METHOD"] = "setavatar";
+            sendData["METHOD"] = "removeitems";
 
             sendData["UserID"] = userID.ToString();
-
-            Dictionary<string, object> structData = avatar.ToKeyValuePairs();
-
-            foreach (KeyValuePair<string, object> kvp in structData)
-                sendData[kvp.Key] = kvp.Value.ToString();
-
+            sendData["Names"] = new List<string>(names);
 
             string reqString = ServerUtils.BuildQueryString(sendData);
             string uri = m_ServerURI + "/avatar";
-            //m_log.DebugFormat("[AVATAR CONNECTOR]: queryString = {0}", reqString);
+            // m_log.DebugFormat("[AVATAR CONNECTOR]: queryString = {0}", reqString);
             try
             {
                 string reply = SynchronousRestFormsRequester.MakeRequest("POST", uri, reqString);
@@ -175,14 +159,10 @@ namespace OpenSim.Services.Connectors
                             return false;
                     }
                     else
-                    {
-                        m_log.DebugFormat("[AVATAR CONNECTOR]: SetAvatar reply data does not contain result field");
-                    }
+                        m_log.DebugFormat("[AVATAR CONNECTOR]: RemoveItems reply data does not contain result field");
                 }
                 else
-                {
-                    m_log.DebugFormat("[AVATAR CONNECTOR]: SetAvatar received empty reply");
-                }
+                    m_log.DebugFormat("[AVATAR CONNECTOR]: RemoveItems received empty reply");
             }
             catch (Exception e)
             {
@@ -221,7 +201,6 @@ namespace OpenSim.Services.Connectors
                     }
                     else
                         m_log.DebugFormat("[AVATAR CONNECTOR]: SetItems reply data does not contain result field");
-
                 }
                 else
                     m_log.DebugFormat("[AVATAR CONNECTOR]: SetItems received empty reply");
@@ -234,6 +213,60 @@ namespace OpenSim.Services.Connectors
             return false;
         }
 
+        public bool SetAppearance(UUID userID, AvatarAppearance appearance)
+        {
+            AvatarData avatar = new AvatarData(appearance);
+            return SetAvatar(userID, avatar);
+        }
+        public bool SetAvatar(UUID userID, AvatarData avatar)
+        {
+            Dictionary<string, object> sendData = new Dictionary<string, object>();
+            //sendData["SCOPEID"] = scopeID.ToString();
+            sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
+            sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
+            sendData["METHOD"] = "setavatar";
+
+            sendData["UserID"] = userID.ToString();
+
+            Dictionary<string, object> structData = avatar.ToKeyValuePairs();
+
+            foreach (KeyValuePair<string, object> kvp in structData)
+                sendData[kvp.Key] = kvp.Value.ToString();
+
+            string reqString = ServerUtils.BuildQueryString(sendData);
+            string uri = m_ServerURI + "/avatar";
+            //m_log.DebugFormat("[AVATAR CONNECTOR]: queryString = {0}", reqString);
+            try
+            {
+                string reply = SynchronousRestFormsRequester.MakeRequest("POST", uri, reqString);
+                if (reply != string.Empty)
+                {
+                    Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
+
+                    if (replyData.ContainsKey("result"))
+                    {
+                        if (replyData["result"].ToString().ToLower() == "success")
+                            return true;
+                        else
+                            return false;
+                    }
+                    else
+                    {
+                        m_log.DebugFormat("[AVATAR CONNECTOR]: SetAvatar reply data does not contain result field");
+                    }
+                }
+                else
+                {
+                    m_log.DebugFormat("[AVATAR CONNECTOR]: SetAvatar received empty reply");
+                }
+            }
+            catch (Exception e)
+            {
+                m_log.DebugFormat("[AVATAR CONNECTOR]: Exception when contacting presence server at {0}: {1}", uri, e.Message);
+            }
+
+            return false;
+        }
         public bool SetItems(UUID userID, string[] names, string[] values)
         {
             Dictionary<string, object> sendData = new Dictionary<string, object>();
@@ -264,7 +297,6 @@ namespace OpenSim.Services.Connectors
                     }
                     else
                         m_log.DebugFormat("[AVATAR CONNECTOR]: SetItems reply data does not contain result field");
-
                 }
                 else
                     m_log.DebugFormat("[AVATAR CONNECTOR]: SetItems received empty reply");
@@ -276,51 +308,6 @@ namespace OpenSim.Services.Connectors
 
             return false;
         }
-
-        public bool RemoveItems(UUID userID, string[] names)
-        {
-            Dictionary<string, object> sendData = new Dictionary<string, object>();
-            //sendData["SCOPEID"] = scopeID.ToString();
-            sendData["VERSIONMIN"] = ProtocolVersions.ClientProtocolVersionMin.ToString();
-            sendData["VERSIONMAX"] = ProtocolVersions.ClientProtocolVersionMax.ToString();
-            sendData["METHOD"] = "removeitems";
-
-            sendData["UserID"] = userID.ToString();
-            sendData["Names"] = new List<string>(names);
-
-            string reqString = ServerUtils.BuildQueryString(sendData);
-            string uri = m_ServerURI + "/avatar";
-            // m_log.DebugFormat("[AVATAR CONNECTOR]: queryString = {0}", reqString);
-            try
-            {
-                string reply = SynchronousRestFormsRequester.MakeRequest("POST", uri, reqString);
-                if (reply != string.Empty)
-                {
-                    Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
-
-                    if (replyData.ContainsKey("result"))
-                    {
-                        if (replyData["result"].ToString().ToLower() == "success")
-                            return true;
-                        else
-                            return false;
-                    }
-                    else
-                        m_log.DebugFormat("[AVATAR CONNECTOR]: RemoveItems reply data does not contain result field");
-
-                }
-                else
-                    m_log.DebugFormat("[AVATAR CONNECTOR]: RemoveItems received empty reply");
-            }
-            catch (Exception e)
-            {
-                m_log.DebugFormat("[AVATAR CONNECTOR]: Exception when contacting presence server at {0}: {1}", uri, e.Message);
-            }
-
-            return false;
-        }
-
-        #endregion
-
+        #endregion IAvatarService
     }
 }

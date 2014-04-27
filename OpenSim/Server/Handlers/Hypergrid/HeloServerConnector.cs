@@ -25,30 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Nini.Config;
+using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Server.Handlers.Base;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Reflection;
-using Nini.Config;
-using log4net;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
-using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Server.Handlers.Base;
 
 namespace OpenSim.Server.Handlers.Hypergrid
 {
-    public class HeloServiceInConnector : ServiceConnector
-    {
-        public HeloServiceInConnector(IConfigSource config, IHttpServer server, string configName) :
-                base(config, server, configName)
-        {
-            server.AddStreamHandler(new HeloServerGetHandler("opensim-robust"));
-            server.AddStreamHandler(new HeloServerHeadHandler("opensim-robust"));
-        }
-    }
-
     [Obsolete]
     public class HeloServerGetHandler : BaseStreamHandler
     {
@@ -76,7 +63,6 @@ namespace OpenSim.Server.Handlers.Hypergrid
             httpResponse.StatusDescription = "OK";
             return new byte[0];
         }
-
     }
 
     public class HeloServerHeadHandler : BaseStreamHandler
@@ -105,7 +91,15 @@ namespace OpenSim.Server.Handlers.Hypergrid
             httpResponse.StatusDescription = "OK";
             return new byte[0];
         }
-
     }
 
+    public class HeloServiceInConnector : ServiceConnector
+    {
+        public HeloServiceInConnector(IConfigSource config, IHttpServer server, string configName) :
+            base(config, server, configName)
+        {
+            server.AddStreamHandler(new HeloServerGetHandler("opensim-robust"));
+            server.AddStreamHandler(new HeloServerHeadHandler("opensim-robust"));
+        }
+    }
 }

@@ -25,12 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.IO;
-using System.Collections;
-using System.Collections.Generic;
-using System.Text;
 using OpenSim.Framework;
+using System.Collections;
+using System.IO;
 
 namespace OpenSim.Region.UserStatistics
 {
@@ -57,14 +54,14 @@ namespace OpenSim.Region.UserStatistics
             return pResult;
         }
 
+        public string RenderJson(Hashtable pModelResult)
+        {
+            return "{}";
+        }
+
         public string RenderView(Hashtable pModelResult)
         {
             return pModelResult["js"].ToString();
         }
-
-        public string RenderJson(Hashtable pModelResult) {
-            return "{}";
-        }
-
     }
 }

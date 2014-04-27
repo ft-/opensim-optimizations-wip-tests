@@ -25,10 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
@@ -36,6 +32,10 @@ using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 
 namespace OpenSim.Region.OptionalModules
 {
@@ -52,28 +52,10 @@ namespace OpenSim.Region.OptionalModules
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private bool m_enabled;
 
-        public string Name { get { return "PrimLimitsModule"; } }        
-        
+        public string Name { get { return "PrimLimitsModule"; } }
+
         public Type ReplaceableInterface { get { return null; } }
-        
-        public void Initialise(IConfigSource config)
-        {
-            string permissionModules = Util.GetConfigVarFromSections<string>(config, "permissionmodules",
-                new string[] { "Startup", "Permissions" }, "DefaultPermissionsModule"); 
 
-            List<string> modules = new List<string>(permissionModules.Split(',').Select(m => m.Trim()));
-
-            if(!modules.Contains("PrimLimitsModule"))
-                return;
-
-            m_log.DebugFormat("[PRIM LIMITS]: Initialized module");
-            m_enabled = true;
-        }
-        
-        public void Close()
-        {
-        }
-        
         public void AddRegion(Scene scene)
         {
             if (!m_enabled)
@@ -86,7 +68,29 @@ namespace OpenSim.Region.OptionalModules
 
             m_log.DebugFormat("[PRIM LIMITS]: Region {0} added", scene.RegionInfo.RegionName);
         }
-        
+
+        public void Close()
+        {
+        }
+
+        public void Initialise(IConfigSource config)
+        {
+            string permissionModules = Util.GetConfigVarFromSections<string>(config, "permissionmodules",
+                new string[] { "Startup", "Permissions" }, "DefaultPermissionsModule");
+
+            List<string> modules = new List<string>(permissionModules.Split(',').Select(m => m.Trim()));
+
+            if (!modules.Contains("PrimLimitsModule"))
+                return;
+
+            m_log.DebugFormat("[PRIM LIMITS]: Initialized module");
+            m_enabled = true;
+        }
+        public void RegionLoaded(Scene scene)
+        {
+            m_dialogModule = scene.RequestModuleInterface<IDialogModule>();
+        }
+
         public void RemoveRegion(Scene scene)
         {
             if (m_enabled)
@@ -97,27 +101,7 @@ namespace OpenSim.Region.OptionalModules
             scene.Permissions.OnRezObject -= CanRezObject;
             scene.Permissions.OnObjectEntry -= CanObjectEnter;
             scene.Permissions.OnDuplicateObject -= CanDuplicateObject;
-        }        
-        
-        public void RegionLoaded(Scene scene)
-        {
-            m_dialogModule = scene.RequestModuleInterface<IDialogModule>();
         }
-
-        private bool CanRezObject(int objectCount, UUID ownerID, Vector3 objectPosition, Scene scene)
-        {
-            ILandObject lo = scene.LandChannel.GetLandObject(objectPosition.X, objectPosition.Y);
-
-            string response = DoCommonChecks(objectCount, ownerID, lo, scene);
-
-            if (response != null)
-            {
-                m_dialogModule.SendAlertToUser(ownerID, response);
-                return false;
-            }
-            return true;
-        }
-
         //OnDuplicateObject
         private bool CanDuplicateObject(int objectCount, UUID objectID, UUID ownerID, Scene scene, Vector3 objectPosition)
         {
@@ -148,14 +132,14 @@ namespace OpenSim.Region.OptionalModules
 
             // The prim hasn't crossed a region boundary so we don't need to worry
             // about prim counts here
-            if(oldParcel.Equals(newParcel))
+            if (oldParcel.Equals(newParcel))
             {
                 return true;
             }
 
             // Prim counts are determined by the location of the root prim.  if we're
             // moving a child prim, just let it pass
-            if(!obj.IsRoot)
+            if (!obj.IsRoot)
             {
                 return true;
             }
@@ -172,6 +156,19 @@ namespace OpenSim.Region.OptionalModules
             return true;
         }
 
+        private bool CanRezObject(int objectCount, UUID ownerID, Vector3 objectPosition, Scene scene)
+        {
+            ILandObject lo = scene.LandChannel.GetLandObject(objectPosition.X, objectPosition.Y);
+
+            string response = DoCommonChecks(objectCount, ownerID, lo, scene);
+
+            if (response != null)
+            {
+                m_dialogModule.SendAlertToUser(ownerID, response);
+                return false;
+            }
+            return true;
+        }
         private string DoCommonChecks(int objectCount, UUID ownerID, ILandObject lo, Scene scene)
         {
             string response = null;
@@ -198,7 +195,7 @@ namespace OpenSim.Region.OptionalModules
                             if (!mgrs.Contains(ownerID))
                             {
                                 // caller is not an Estate Manager
-                                if ((lo.PrimCounts.Users[ownerID] + objectCount) >  maxPrimsPerUser)
+                                if ((lo.PrimCounts.Users[ownerID] + objectCount) > maxPrimsPerUser)
                                 {
                                     response = "Unable to rez object because you have reached your limit";
                                 }

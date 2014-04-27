@@ -25,8 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
+using System;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
@@ -36,6 +36,18 @@ namespace OpenSim.Region.Framework.Interfaces
         /// Maximum distance between a sound source and a recipient.
         /// </summary>
         float MaxDistance { get; }
+
+        /// <summary>
+        /// Loop specified sound at specified volume with specified radius,
+        /// optionally declaring object as new sync master.
+        /// </summary>
+        /// <param name="objectID">Sound source ID</param>
+        /// <param name="soundID">Sound asset ID</param>
+        /// <param name="gain">Sound volume</param>
+        /// <param name="radius">Sound radius</param>
+        /// <param name="isMaster">Set object to sync master if true</param>
+        void LoopSound(UUID objectID, UUID soundID, double gain,
+                double radius, bool isMaster);
 
         /// <summary>
         /// Play a sound from an object.
@@ -53,29 +65,6 @@ namespace OpenSim.Region.Framework.Interfaces
                 double gain, Vector3 position, byte flags, float radius);
 
         /// <summary>
-        /// Trigger a sound in the scene.
-        /// </summary>
-        /// <param name="soundId">Sound asset ID</param>
-        /// <param name="ownerID">Sound source owner</param>
-        /// <param name="objectID">Sound source ID</param>
-        /// <param name="parentID">Sound source parent.</param>
-        /// <param name="gain">Sound volume</param>
-        /// <param name="position">Sound source position</param>
-        /// <param name="handle"></param>
-        /// <param name="radius">
-        /// Radius used to affect gain over distance.
-        /// </param>
-        void TriggerSound(
-                UUID soundId, UUID ownerID, UUID objectID, UUID parentID,
-                double gain, Vector3 position, UInt64 handle, float radius);
-
-        /// <summary>
-        /// Stop sounds eminating from an object.
-        /// </summary>
-        /// <param name="objectID">Sound source ID</param>
-        void StopSound(UUID objectID);
-
-        /// <summary>
         /// Preload sound to viewers within range.
         /// </summary>
         /// <param name="objectID">Sound source ID</param>
@@ -84,18 +73,6 @@ namespace OpenSim.Region.Framework.Interfaces
         /// Radius used to determine which viewers should preload the sound.
         /// </param>
         void PreloadSound(UUID objectID, UUID soundID, float radius);
-
-        /// <summary>
-        /// Loop specified sound at specified volume with specified radius,
-        /// optionally declaring object as new sync master.
-        /// </summary>
-        /// <param name="objectID">Sound source ID</param>
-        /// <param name="soundID">Sound asset ID</param>
-        /// <param name="gain">Sound volume</param>
-        /// <param name="radius">Sound radius</param>
-        /// <param name="isMaster">Set object to sync master if true</param>
-        void LoopSound(UUID objectID, UUID soundID, double gain,
-                double radius, bool isMaster);
 
         /// <summary>
         /// Trigger or play an attached sound in this part's inventory.
@@ -112,6 +89,35 @@ namespace OpenSim.Region.Framework.Interfaces
                 bool isMaster);
 
         /// <summary>
+        /// Set whether sounds on the given prim should be queued.
+        /// </summary>
+        /// <param name='objectID'></param>
+        /// <param name='shouldQueue'></param>
+        void SetSoundQueueing(UUID objectID, bool shouldQueue);
+
+        /// <summary>
+        /// Stop sounds eminating from an object.
+        /// </summary>
+        /// <param name="objectID">Sound source ID</param>
+        void StopSound(UUID objectID);
+
+        /// <summary>
+        /// Trigger a sound in the scene.
+        /// </summary>
+        /// <param name="soundId">Sound asset ID</param>
+        /// <param name="ownerID">Sound source owner</param>
+        /// <param name="objectID">Sound source ID</param>
+        /// <param name="parentID">Sound source parent.</param>
+        /// <param name="gain">Sound volume</param>
+        /// <param name="position">Sound source position</param>
+        /// <param name="handle"></param>
+        /// <param name="radius">
+        /// Radius used to affect gain over distance.
+        /// </param>
+        void TriggerSound(
+                UUID soundId, UUID ownerID, UUID objectID, UUID parentID,
+                double gain, Vector3 position, UInt64 handle, float radius);
+        /// <summary>
         /// Trigger a sound to be played to all agents within an axis-aligned
         /// bounding box.
         /// </summary>
@@ -122,12 +128,5 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="max">AABB top north-east corner</param>
         void TriggerSoundLimited(UUID objectID, UUID sound, double volume,
                 Vector3 min, Vector3 max);
-
-        /// <summary>
-        /// Set whether sounds on the given prim should be queued.
-        /// </summary>
-        /// <param name='objectID'></param>
-        /// <param name='shouldQueue'></param>
-        void SetSoundQueueing(UUID objectID, bool shouldQueue);
     }
 }

@@ -25,17 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Runtime.Remoting;
-using System.Runtime.Remoting.Lifetime;
-using System.Security.Permissions;
-using System.Threading;
-using System.Reflection;
-using System.Collections;
-using System.Collections.Generic;
-using OpenSim.Region.ScriptEngine.Interfaces;
 using OpenSim.Region.ScriptEngine.Shared;
 using OpenSim.Region.ScriptEngine.Shared.ScriptBase;
+using System.Threading;
 
 namespace OpenSim.Region.ScriptEngine.XEngine.ScriptBase
 {
@@ -44,10 +36,11 @@ namespace OpenSim.Region.ScriptEngine.XEngine.ScriptBase
         /// <summary>
         /// Used for script sleeps when we are using co-operative script termination.
         /// </summary>
-        /// <remarks>null if co-operative script termination is not active</remarks>  
-        WaitHandle m_coopSleepHandle;
+        /// <remarks>null if co-operative script termination is not active</remarks>
+        private WaitHandle m_coopSleepHandle;
 
-        public XEngineScriptBase(WaitHandle coopSleepHandle) : base()
+        public XEngineScriptBase(WaitHandle coopSleepHandle)
+            : base()
         {
             m_coopSleepHandle = coopSleepHandle;
         }

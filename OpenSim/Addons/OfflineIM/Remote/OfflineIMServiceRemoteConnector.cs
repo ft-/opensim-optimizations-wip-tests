@@ -25,19 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-
+using log4net;
+using Nini.Config;
+using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Server.Base;
 using OpenSim.Services.Interfaces;
-
-using OpenMetaverse;
-using log4net;
-using Nini.Config;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.OfflineIM
 {
@@ -63,10 +58,18 @@ namespace OpenSim.OfflineIM
             }
 
             m_ServerURI = cnf.GetString("OfflineMessageURL", string.Empty);
-
         }
 
         #region IOfflineIMService
+
+        public void DeleteMessages(UUID userID)
+        {
+            Dictionary<string, object> sendData = new Dictionary<string, object>();
+            sendData["UserID"] = userID;
+
+            MakeRequest("DELETE", sendData);
+        }
+
         public List<GridInstantMessage> GetMessages(UUID principalID)
         {
             List<GridInstantMessage> ims = new List<GridInstantMessage>();
@@ -120,17 +123,7 @@ namespace OpenSim.OfflineIM
 
             return true;
         }
-
-        public void DeleteMessages(UUID userID)
-        {
-            Dictionary<string, object> sendData = new Dictionary<string, object>();
-            sendData["UserID"] = userID;
-            
-            MakeRequest("DELETE", sendData);
-        }
-
-        #endregion
-
+        #endregion IOfflineIMService
 
         #region Make Request
 
@@ -148,7 +141,7 @@ namespace OpenSim.OfflineIM
 
             return replyData;
         }
-        #endregion
 
+        #endregion Make Request
     }
 }

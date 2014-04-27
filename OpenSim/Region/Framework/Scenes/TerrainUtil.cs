@@ -25,24 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenSim.Region.Framework.Interfaces;
+using System;
 
 namespace OpenSim.Region.Framework.Scenes
 {
     public static class TerrainUtil
     {
-        public static double MetersToSphericalStrength(double size)
-        {
-            //return Math.Pow(2, size);
-            return (size + 1) * 1.35; // MCP: a more useful brush size range
-        }
-
-        public static double SphericalFactor(double x, double y, double rx, double ry, double size)
-        {
-            return size * size - ((x - rx) * (x - rx) + (y - ry) * (y - ry));
-        }
-
         public static double GetBilinearInterpolate(double x, double y, ITerrainChannel map)
         {
             int w = map.Width;
@@ -58,10 +47,10 @@ namespace OpenSim.Region.Framework.Scenes
                 y = 0.0;
 
             const int stepSize = 1;
-            double h00 = map[(int) x, (int) y];
-            double h10 = map[(int) x + stepSize, (int) y];
-            double h01 = map[(int) x, (int) y + stepSize];
-            double h11 = map[(int) x + stepSize, (int) y + stepSize];
+            double h00 = map[(int)x, (int)y];
+            double h10 = map[(int)x + stepSize, (int)y];
+            double h01 = map[(int)x, (int)y + stepSize];
+            double h11 = map[(int)x + stepSize, (int)y + stepSize];
             double h1 = h00;
             double h2 = h10;
             double h3 = h01;
@@ -70,38 +59,18 @@ namespace OpenSim.Region.Framework.Scenes
             double a10 = h2 - h1;
             double a01 = h3 - h1;
             double a11 = h1 - h2 - h3 + h4;
-            double partialx = x - (int) x;
-            double partialz = y - (int) y;
+            double partialx = x - (int)x;
+            double partialz = y - (int)y;
             double hi = a00 + (a10 * partialx) + (a01 * partialz) + (a11 * partialx * partialz);
             return hi;
         }
 
-        private static double Noise(double x, double y)
-        {
-            int n = (int) x + (int) (y * 749);
-            n = (n << 13) ^ n;
-            return (1.0 - ((n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0);
-        }
-
-        private static double SmoothedNoise1(double x, double y)
-        {
-            double corners = (Noise(x - 1, y - 1) + Noise(x + 1, y - 1) + Noise(x - 1, y + 1) + Noise(x + 1, y + 1)) / 16;
-            double sides = (Noise(x - 1, y) + Noise(x + 1, y) + Noise(x, y - 1) + Noise(x, y + 1)) / 8;
-            double center = Noise(x, y) / 4;
-            return corners + sides + center;
-        }
-
-        private static double Interpolate(double x, double y, double z)
-        {
-            return (x * (1.0 - z)) + (y * z);
-        }
-
         public static double InterpolatedNoise(double x, double y)
         {
-            int integer_X = (int) (x);
+            int integer_X = (int)(x);
             double fractional_X = x - integer_X;
 
-            int integer_Y = (int) y;
+            int integer_Y = (int)y;
             double fractional_Y = y - integer_Y;
 
             double v1 = SmoothedNoise1(integer_X, integer_Y);
@@ -113,6 +82,12 @@ namespace OpenSim.Region.Framework.Scenes
             double i2 = Interpolate(v3, v4, fractional_X);
 
             return Interpolate(i1, i2, fractional_Y);
+        }
+
+        public static double MetersToSphericalStrength(double size)
+        {
+            //return Math.Pow(2, size);
+            return (size + 1) * 1.35; // MCP: a more useful brush size range
         }
 
         public static double PerlinNoise2D(double x, double y, int octaves, double persistence)
@@ -127,6 +102,30 @@ namespace OpenSim.Region.Framework.Scenes
                 total += InterpolatedNoise(x * frequency, y * frequency) * amplitude;
             }
             return total;
+        }
+
+        public static double SphericalFactor(double x, double y, double rx, double ry, double size)
+        {
+            return size * size - ((x - rx) * (x - rx) + (y - ry) * (y - ry));
+        }
+        private static double Interpolate(double x, double y, double z)
+        {
+            return (x * (1.0 - z)) + (y * z);
+        }
+
+        private static double Noise(double x, double y)
+        {
+            int n = (int)x + (int)(y * 749);
+            n = (n << 13) ^ n;
+            return (1.0 - ((n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0);
+        }
+
+        private static double SmoothedNoise1(double x, double y)
+        {
+            double corners = (Noise(x - 1, y - 1) + Noise(x + 1, y - 1) + Noise(x - 1, y + 1) + Noise(x + 1, y + 1)) / 16;
+            double sides = (Noise(x - 1, y) + Noise(x + 1, y) + Noise(x, y - 1) + Noise(x, y + 1)) / 8;
+            double center = Noise(x, y) / 4;
+            return corners + sides + center;
         }
     }
 }

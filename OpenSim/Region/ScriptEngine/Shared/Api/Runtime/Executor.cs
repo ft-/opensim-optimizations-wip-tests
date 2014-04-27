@@ -28,10 +28,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Runtime.Remoting.Lifetime;
-using OpenSim.Region.ScriptEngine.Shared;
-using OpenSim.Region.ScriptEngine.Shared.ScriptBase;
-using log4net;
 
 namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
 {
@@ -39,12 +35,22 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
     {
         // private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
+        protected Dictionary<string, scriptEvents> m_eventFlagsMap = new Dictionary<string, scriptEvents>();
+
         /// <summary>
         /// Contains the script to execute functions in.
         /// </summary>
         protected IScript m_Script;
+        // Cache functions by keeping a reference to them in a dictionary
+        private Dictionary<string, MethodInfo> Events = new Dictionary<string, MethodInfo>();
 
-        protected Dictionary<string, scriptEvents> m_eventFlagsMap = new Dictionary<string, scriptEvents>();
+        private Dictionary<string, scriptEvents> m_stateEvents = new Dictionary<string, scriptEvents>();
+
+        public Executor(IScript script)
+        {
+            m_Script = script;
+            initEventFlags();
+        }
 
         [Flags]
         public enum scriptEvents : int
@@ -79,59 +85,6 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
             touch_start = 2097152,
             object_rez = 4194304
         }
-
-        // Cache functions by keeping a reference to them in a dictionary
-        private Dictionary<string, MethodInfo> Events = new Dictionary<string, MethodInfo>();
-        private Dictionary<string, scriptEvents> m_stateEvents = new Dictionary<string, scriptEvents>();
-
-        public Executor(IScript script)
-        {
-            m_Script = script;
-            initEventFlags();
-        }
-
-        public scriptEvents GetStateEventFlags(string state)
-        {
-            //m_log.Debug("Get event flags for " + state);
-
-            // Check to see if we've already computed the flags for this state
-            scriptEvents eventFlags = scriptEvents.None;
-            if (m_stateEvents.ContainsKey(state))
-            {
-                m_stateEvents.TryGetValue(state, out eventFlags);
-                return eventFlags;
-            }
-
-            Type type=m_Script.GetType();
-
-            // Fill in the events for this state, cache the results in the map
-            foreach (KeyValuePair<string, scriptEvents> kvp in m_eventFlagsMap)
-            {
-                string evname = state + "_event_" + kvp.Key;
-                //m_log.Debug("Trying event "+evname);
-                try
-                {
-                    MethodInfo mi = type.GetMethod(evname);
-                    if (mi != null)
-                    {
-                        //m_log.Debug("Found handler for " + kvp.Key);
-                        eventFlags |= kvp.Value;
-                    }
-                }
-                catch(Exception)
-                {
-                    //m_log.Debug("Exeption in GetMethod:\n"+e.ToString());
-                }
-            }
-
-            // Save the flags we just computed and return the result
-            if (eventFlags != 0)
-                m_stateEvents.Add(state, eventFlags);
-
-            //m_log.Debug("Returning {0:x}", eventFlags);
-            return (eventFlags);
-        }
-
         public void ExecuteEvent(string state, string FunctionName, object[] args)
         {
             // IMPORTANT: Types and MemberInfo-derived objects require a LOT of memory.
@@ -139,9 +92,9 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
 
             string EventName = state + "_event_" + FunctionName;
 
-//#if DEBUG
+            //#if DEBUG
             //m_log.Debug("ScriptEngine: Script event function name: " + EventName);
-//#endif
+            //#endif
 
             if (Events.ContainsKey(EventName) == false)
             {
@@ -170,7 +123,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
                 return;
             }
 
-//cfk 2-7-08 dont need this right now and the default Linux build has DEBUG defined
+            //cfk 2-7-08 dont need this right now and the default Linux build has DEBUG defined
 #if DEBUG
             //m_log.Debug("ScriptEngine: Executing function name: " + EventName);
 #endif
@@ -192,9 +145,49 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
                     throw;
                 }
             }
-
         }
 
+        public scriptEvents GetStateEventFlags(string state)
+        {
+            //m_log.Debug("Get event flags for " + state);
+
+            // Check to see if we've already computed the flags for this state
+            scriptEvents eventFlags = scriptEvents.None;
+            if (m_stateEvents.ContainsKey(state))
+            {
+                m_stateEvents.TryGetValue(state, out eventFlags);
+                return eventFlags;
+            }
+
+            Type type = m_Script.GetType();
+
+            // Fill in the events for this state, cache the results in the map
+            foreach (KeyValuePair<string, scriptEvents> kvp in m_eventFlagsMap)
+            {
+                string evname = state + "_event_" + kvp.Key;
+                //m_log.Debug("Trying event "+evname);
+                try
+                {
+                    MethodInfo mi = type.GetMethod(evname);
+                    if (mi != null)
+                    {
+                        //m_log.Debug("Found handler for " + kvp.Key);
+                        eventFlags |= kvp.Value;
+                    }
+                }
+                catch (Exception)
+                {
+                    //m_log.Debug("Exeption in GetMethod:\n"+e.ToString());
+                }
+            }
+
+            // Save the flags we just computed and return the result
+            if (eventFlags != 0)
+                m_stateEvents.Add(state, eventFlags);
+
+            //m_log.Debug("Returning {0:x}", eventFlags);
+            return (eventFlags);
+        }
         protected void initEventFlags()
         {
             // Initialize the table if it hasn't already been done

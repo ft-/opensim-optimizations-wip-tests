@@ -32,8 +32,10 @@ namespace OpenSim.Region.Framework.Interfaces
 {
     public interface IRegionConsole
     {
-        bool RunCommand(string command, UUID invokerID);
-        void SendConsoleOutput(UUID agentID, string message);
         void AddCommand(string module, bool shared, string command, string help, string longhelp, CommandDelegate fn);
+
+        bool RunCommand(string command, UUID invokerID);
+
+        void SendConsoleOutput(UUID agentID, string message);
     }
 }

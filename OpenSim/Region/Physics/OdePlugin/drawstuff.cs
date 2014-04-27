@@ -34,46 +34,35 @@ PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
 LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
- * 
+ *
+ *
  */
 
-using System;
-using System.Runtime.InteropServices;
 using Ode.NET;
+using System.Runtime.InteropServices;
 
 namespace Drawstuff.NET
 {
 #if dDOUBLE
     using dReal = System.Double;
 #else
+
     using dReal = System.Single;
+
 #endif
 
     public static class ds
     {
         public const int VERSION = 2;
 
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void CallbackFunction(int arg);
+
         public enum Texture
         {
             None,
             Wood
         }
-
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void CallbackFunction(int arg);
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct Functions
-        {
-            public int version;
-            public CallbackFunction start;
-            public CallbackFunction step;
-            public CallbackFunction command;
-            public CallbackFunction stop;
-            public string path_to_textures;
-        }
-
         [DllImport("drawstuff", EntryPoint = "dsDrawBox")]
         public static extern void DrawBox(ref d.Vector3 pos, ref d.Matrix3 R, ref d.Vector3 sides);
 
@@ -94,5 +83,16 @@ namespace Drawstuff.NET
 
         [DllImport("drawstuff", EntryPoint = "dsSimulationLoop")]
         public static extern void SimulationLoop(int argc, string[] argv, int window_width, int window_height, ref Functions fn);
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct Functions
+        {
+            public int version;
+            public CallbackFunction start;
+            public CallbackFunction step;
+            public CallbackFunction command;
+            public CallbackFunction stop;
+            public string path_to_textures;
+        }
     }
 }

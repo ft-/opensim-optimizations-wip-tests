@@ -25,22 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
 using OpenMetaverse;
+using System;
 
 namespace OpenSim.Region.OptionalModules.Scripting.Minimodule.Object
 {
-    public enum SculptType
-    {
-        Default = 1,
-        Sphere = 1,
-        Torus = 2,
-        Plane = 3,
-        Cylinder = 4
-    }
-
     public enum HoleShape
     {
         Default = 0x00,
@@ -62,14 +51,24 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule.Object
         Sculpt = 7
     }
 
+    public enum SculptType
+    {
+        Default = 1,
+        Sphere = 1,
+        Torus = 2,
+        Plane = 3,
+        Cylinder = 4
+    }
     public interface IObjectShape
     {
-        UUID SculptMap { get; set; }
-        SculptType SculptType { get; set; }
+        Double HoleSize { get; set; }
 
         HoleShape HoleType { get; set; }
-        Double HoleSize { get; set; }
+
         PrimType PrimType { get; set; }
 
+        UUID SculptMap { get; set; }
+
+        SculptType SculptType { get; set; }
     }
 }

@@ -25,13 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-
 using Nini.Config;
-using OpenSim.Framework;
 using OpenMetaverse;
+using OpenSim.Framework;
 using OpenSim.Region.Framework.Scenes;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
@@ -48,20 +46,15 @@ namespace OpenSim.Region.Framework.Interfaces
         void WindConfig(Scene scene, IConfig windConfig);
 
         /// <summary>
-        /// Update wind.
-        /// </summary>
-        void WindUpdate(uint frame);
-
-        /// <summary>
-        /// Returns the wind vector at the given local region coordinates.
-        /// </summary>
-        Vector3 WindSpeed(float x, float y, float z);
-
-        /// <summary>
         /// Generate a 16 x 16 Vector2 array of wind speeds for LL* based viewers
         /// </summary>
         /// <returns>Must return a Vector2[256]</returns>
         Vector2[] WindLLClientArray();
+
+        /// <summary>
+        /// Get the specified parameter
+        /// </summary>
+        float WindParamGet(string param);
 
         /// <summary>
         /// Retrieve a list of parameter/description pairs.
@@ -75,9 +68,13 @@ namespace OpenSim.Region.Framework.Interfaces
         void WindParamSet(string param, float value);
 
         /// <summary>
-        /// Get the specified parameter
+        /// Returns the wind vector at the given local region coordinates.
         /// </summary>
-        float WindParamGet(string param);
+        Vector3 WindSpeed(float x, float y, float z);
 
+        /// <summary>
+        /// Update wind.
+        /// </summary>
+        void WindUpdate(uint frame);
     }
 }

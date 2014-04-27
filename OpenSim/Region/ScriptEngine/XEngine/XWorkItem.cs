@@ -25,9 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.IO;
-using System.Threading;
 using Amib.Threading;
 using OpenSim.Region.ScriptEngine.Interfaces;
 
@@ -37,33 +34,31 @@ namespace OpenSim.Region.ScriptEngine.XEngine
     {
         private IWorkItemResult wr;
 
+        public XWorkItem(IWorkItemResult w)
+        {
+            wr = w;
+        }
+
         public IWorkItemResult WorkItem
         {
             get { return wr; }
         }
-
-        public XWorkItem(IWorkItemResult w)
+        public bool Abort()
         {
-            wr = w;
+            return wr.Cancel(true);
         }
 
         public bool Cancel()
         {
             return wr.Cancel();
         }
-
-        public bool Abort()
-        {
-            return wr.Cancel(true);
-        }
-
         public bool Wait(int t)
         {
             // We use the integer version of WaitAll because the current version of SmartThreadPool has a bug with the
-            // TimeSpan version.  The number of milliseconds in TimeSpan is an int64 so when STP casts it down to an 
+            // TimeSpan version.  The number of milliseconds in TimeSpan is an int64 so when STP casts it down to an
             // int (32-bit) we can end up with bad values.  This occurs on Windows though curiously not on Mono 2.10.8
             // (or very likely other versions of Mono at least up until 3.0.3).
-            return SmartThreadPool.WaitAll(new IWorkItemResult[] {wr}, t, false);
+            return SmartThreadPool.WaitAll(new IWorkItemResult[] { wr }, t, false);
         }
     }
 }

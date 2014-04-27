@@ -25,19 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Threading;
-using System.IO;
-using System.Diagnostics;
-using log4net;
-using Nini.Config;
 using Ode.NET;
 using OpenSim.Framework;
 using OpenSim.Region.Physics.Manager;
-using OpenMetaverse;
+using System;
 
 namespace OpenSim.Region.Physics.OdePlugin
 {
@@ -46,13 +37,17 @@ namespace OpenSim.Region.Physics.OdePlugin
     /// </summary>
     public class OdePlugin : IPhysicsPlugin
     {
-//        private static readonly log4net.ILog m_log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly log4net.ILog m_log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
         private OdeScene m_scene;
 
-        public bool Init()
+        public void Dispose()
         {
-            return true;
+        }
+
+        public string GetName()
+        {
+            return ("OpenDynamicsEngine");
         }
 
         public PhysicsScene GetScene(String sceneIdentifier)
@@ -71,20 +66,16 @@ namespace OpenSim.Region.Physics.OdePlugin
                 // Initializing ODE only when a scene is created allows alternative ODE plugins to co-habit (according to
                 // http://opensimulator.org/mantis/view.php?id=2750).
                 d.InitODE();
-                
+
                 m_scene = new OdeScene(GetName(), sceneIdentifier);
             }
 
             return m_scene;
         }
 
-        public string GetName()
+        public bool Init()
         {
-            return ("OpenDynamicsEngine");
-        }
-
-        public void Dispose()
-        {
+            return true;
         }
     }
 }

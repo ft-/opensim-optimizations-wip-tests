@@ -26,29 +26,24 @@
 *
 */
 
+using log4net;
+using OpenSim.Framework.Servers;
+using OpenSim.Region.Framework.Scenes;
 using System.Collections;
 using System.Reflection;
 using System.Xml;
-using log4net;
-using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Framework.Capabilities;
-using OpenSim.Framework.Servers;
-using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Region.Framework.Scenes;
-using Caps = OpenSim.Framework.Capabilities.Caps;
 
 namespace OpenSim.Region.DataSnapshot
 {
     public class DataRequestHandler
     {
-//        private Scene m_scene = null;
-        private DataSnapshotManager m_externalData = null;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
+        //        private Scene m_scene = null;
+        private DataSnapshotManager m_externalData = null;
         public DataRequestHandler(Scene scene, DataSnapshotManager externalData)
         {
-//            m_scene = scene;
+            //            m_scene = scene;
             m_externalData = externalData;
 
             //Register HTTP handler
@@ -58,7 +53,6 @@ namespace OpenSim.Region.DataSnapshot
             }
             // Register validation callback handler
             MainServer.Instance.AddHTTPHandler("validate", OnValidate);
-
         }
 
         public Hashtable OnGetSnapshot(Hashtable keysvals)
@@ -94,6 +88,5 @@ namespace OpenSim.Region.DataSnapshot
 
             return reply;
         }
-
     }
 }

@@ -25,21 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
 using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Framework.Console;
-using OpenSim.Framework.Monitoring;
-using OpenSim.Region.ClientStack.LindenUDP;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Reflection;
 using PermissionMask = OpenSim.Framework.PermissionMask;
 
 namespace OpenSim.Region.OptionalModules.Avatar.Attachments
@@ -49,21 +43,29 @@ namespace OpenSim.Region.OptionalModules.Avatar.Attachments
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private Scene m_scene;
         private IRegionConsole m_console;
-
-        public void Initialise(IConfigSource configSource)
+        private Scene m_scene;
+        public string Name
         {
+            get { return "TempAttachmentsModule"; }
+        }
+
+        public Type ReplaceableInterface
+        {
+            get { return null; }
         }
 
         public void AddRegion(Scene scene)
         {
         }
 
-        public void RemoveRegion(Scene scene)
+        public void Close()
         {
         }
 
+        public void Initialise(IConfigSource configSource)
+        {
+        }
         public void RegionLoaded(Scene scene)
         {
             m_scene = scene;
@@ -71,7 +73,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Attachments
             IScriptModuleComms comms = scene.RequestModuleInterface<IScriptModuleComms>();
             if (comms != null)
             {
-                comms.RegisterScriptInvocation( this, "llAttachToAvatarTemp");
+                comms.RegisterScriptInvocation(this, "llAttachToAvatarTemp");
                 m_log.DebugFormat("[TEMP ATTACHS]: Registered script functions");
                 m_console = scene.RequestModuleInterface<IRegionConsole>();
 
@@ -86,51 +88,9 @@ namespace OpenSim.Region.OptionalModules.Avatar.Attachments
             }
         }
 
-        public void Close()
+        public void RemoveRegion(Scene scene)
         {
         }
-
-        public Type ReplaceableInterface
-        {
-            get { return null; }
-        }
-
-        public string Name
-        {
-            get { return "TempAttachmentsModule"; }
-        }
-
-        private void SendConsoleOutput(UUID agentID, string text)
-        {
-            if (m_console == null)
-                return;
-
-            m_console.SendConsoleOutput(agentID, text);
-        }
-
-        private void SetAutoGrantAttachPerms(string module, string[] parms)
-        {
-            UUID agentID = new UUID(parms[parms.Length - 1]);
-            Array.Resize(ref parms, parms.Length - 1);
-
-            if (parms.Length != 3)
-            {
-                SendConsoleOutput(agentID, "Command parameter error");
-                return;
-            }
-
-            string val = parms[2];
-            if (val != "true" && val != "false")
-            {
-                SendConsoleOutput(agentID, "Command parameter error");
-                return;
-            }
-             
-            m_scene.StoreExtraSetting("auto_grant_attach_perms", val);
-
-            SendConsoleOutput(agentID, String.Format("auto_grant_attach_perms set to {0}", val));
-        }
-
         private int llAttachToAvatarTemp(UUID host, UUID script, int attachmentPoint)
         {
             SceneObjectPart hostPart = m_scene.GetSceneObjectPart(host);
@@ -155,7 +115,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Attachments
             ScenePresence target;
             if (!m_scene.TryGetScenePresence(item.PermsGranter, out target))
                 return 0;
-            
+
             if (target.UUID != hostPart.ParentGroup.OwnerID)
             {
                 uint effectivePerms = hostPart.ParentGroup.GetEffectivePermissions();
@@ -185,6 +145,37 @@ namespace OpenSim.Region.OptionalModules.Avatar.Attachments
             }
 
             return attachmentsModule.AttachObject(target, hostPart.ParentGroup, (uint)attachmentPoint, false, false, true) ? 1 : 0;
+        }
+
+        private void SendConsoleOutput(UUID agentID, string text)
+        {
+            if (m_console == null)
+                return;
+
+            m_console.SendConsoleOutput(agentID, text);
+        }
+
+        private void SetAutoGrantAttachPerms(string module, string[] parms)
+        {
+            UUID agentID = new UUID(parms[parms.Length - 1]);
+            Array.Resize(ref parms, parms.Length - 1);
+
+            if (parms.Length != 3)
+            {
+                SendConsoleOutput(agentID, "Command parameter error");
+                return;
+            }
+
+            string val = parms[2];
+            if (val != "true" && val != "false")
+            {
+                SendConsoleOutput(agentID, "Command parameter error");
+                return;
+            }
+
+            m_scene.StoreExtraSetting("auto_grant_attach_perms", val);
+
+            SendConsoleOutput(agentID, String.Format("auto_grant_attach_perms set to {0}", val));
         }
     }
 }

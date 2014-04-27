@@ -25,13 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
 using Nini.Config;
-using OpenSim.Framework;
 using OpenSim.Data;
-using OpenSim.Services.Interfaces;
 using OpenSim.Services.Base;
+using System;
 
 namespace OpenSim.Services.GridService
 {
@@ -68,7 +65,7 @@ namespace OpenSim.Services.GridService
                 connString = gridConfig.GetString("ConnectionString", connString);
                 realm = gridConfig.GetString("Realm", realm);
             }
-            
+
             //
             // We tried, but this doesn't exist. We can't proceed.
             //
@@ -78,7 +75,6 @@ namespace OpenSim.Services.GridService
             m_Database = LoadPlugin<IRegionData>(dllName, new Object[] { connString, realm });
             if (m_Database == null)
                 throw new Exception("Could not find a storage interface in the given module");
-
         }
     }
 }

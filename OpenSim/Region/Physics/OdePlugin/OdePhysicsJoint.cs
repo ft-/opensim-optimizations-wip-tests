@@ -25,17 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using OpenMetaverse;
-using Ode.NET;
-using OpenSim.Framework;
 using OpenSim.Region.Physics.Manager;
-using OpenSim.Region.Physics.OdePlugin;
+using System;
 
 namespace OpenSim.Region.Physics.OdePlugin
 {
-    class OdePhysicsJoint : PhysicsJoint
+    internal class OdePhysicsJoint : PhysicsJoint
     {
+        public IntPtr jointID;
+
         public override bool IsInPhysicsEngine
         {
             get
@@ -43,6 +41,5 @@ namespace OpenSim.Region.Physics.OdePlugin
                 return (jointID != IntPtr.Zero);
             }
         }
-        public IntPtr jointID;
     }
 }

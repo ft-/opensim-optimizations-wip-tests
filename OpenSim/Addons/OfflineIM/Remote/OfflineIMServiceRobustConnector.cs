@@ -25,44 +25,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Server.Base;
+using OpenSim.Server.Handlers.Base;
+using OpenSim.Services.Interfaces;
 using System;
-using System.Reflection;
-using System.Text;
-using System.Xml;
 using System.Collections.Generic;
 using System.IO;
-using Nini.Config;
-using OpenSim.Framework;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
-using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Server.Handlers.Base;
-using log4net;
-using OpenMetaverse;
+using System.Reflection;
+using System.Xml;
 
 namespace OpenSim.OfflineIM
 {
-    public class OfflineIMServiceRobustConnector : ServiceConnector
-    {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        private IOfflineIMService m_OfflineIMService;
-        private string m_ConfigName = "Messaging";
-
-        public OfflineIMServiceRobustConnector(IConfigSource config, IHttpServer server, string configName) :
-            base(config, server, configName)
-        {
-            if (configName != String.Empty)
-                m_ConfigName = configName;
-
-            m_log.DebugFormat("[OfflineIM.V2.RobustConnector]: Starting with config name {0}", m_ConfigName);
-
-            m_OfflineIMService = new OfflineIMService(config);
-
-            server.AddStreamHandler(new OfflineIMServicePostHandler(m_OfflineIMService));
-        }
-    }
-
     public class OfflineIMServicePostHandler : BaseStreamHandler
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
@@ -100,8 +78,10 @@ namespace OpenSim.OfflineIM
                 {
                     case "GET":
                         return HandleGet(request);
+
                     case "STORE":
                         return HandleStore(request);
+
                     case "DELETE":
                         return HandleDelete(request);
                 }
@@ -115,27 +95,22 @@ namespace OpenSim.OfflineIM
             return FailureResult();
         }
 
-        byte[] HandleStore(Dictionary<string, object> request)
+        private byte[] HandleDelete(Dictionary<string, object> request)
         {
-            Dictionary<string, object> result = new Dictionary<string, object>();
+            if (!request.ContainsKey("UserID"))
+            {
+                return FailureResult();
+            }
+            else
+            {
+                UUID userID = new UUID(request["UserID"].ToString());
+                m_OfflineIMService.DeleteMessages(userID);
 
-            GridInstantMessage im = OfflineIMDataUtils.GridInstantMessage(request);
-
-            string reason = string.Empty;
-
-            bool success = m_OfflineIMService.StoreMessage(im, out reason);
-
-            result["RESULT"] = success.ToString();
-            if (!success)
-                result["REASON"] = reason;
-
-            string xmlString = ServerUtils.BuildXmlResponse(result);
-
-            //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
-            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
+                return SuccessResult();
+            }
         }
 
-        byte[] HandleGet(Dictionary<string, object> request)
+        private byte[] HandleGet(Dictionary<string, object> request)
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
 
@@ -160,38 +135,26 @@ namespace OpenSim.OfflineIM
             return Util.UTF8NoBomEncoding.GetBytes(xmlString);
         }
 
-        byte[] HandleDelete(Dictionary<string, object> request)
+        private byte[] HandleStore(Dictionary<string, object> request)
         {
-            if (!request.ContainsKey("UserID"))
-            {
-                return FailureResult();
-            }
-            else
-            {
-                UUID userID = new UUID(request["UserID"].ToString());
-                m_OfflineIMService.DeleteMessages(userID);
+            Dictionary<string, object> result = new Dictionary<string, object>();
 
-                return SuccessResult();
-            }
+            GridInstantMessage im = OfflineIMDataUtils.GridInstantMessage(request);
+
+            string reason = string.Empty;
+
+            bool success = m_OfflineIMService.StoreMessage(im, out reason);
+
+            result["RESULT"] = success.ToString();
+            if (!success)
+                result["REASON"] = reason;
+
+            string xmlString = ServerUtils.BuildXmlResponse(result);
+
+            //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
+            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
         }
-
         #region Helpers
-
-        private void NullResult(Dictionary<string, object> result, string reason)
-        {
-            result["RESULT"] = "NULL";
-            result["REASON"] = reason;
-        }
-
-        private byte[] FailureResult()
-        {
-            return BoolResult(false);
-        }
-
-        private byte[] SuccessResult()
-        {
-            return BoolResult(true);
-        }
 
         private byte[] BoolResult(bool value)
         {
@@ -226,6 +189,40 @@ namespace OpenSim.OfflineIM
             return ms.ToArray();
         }
 
-        #endregion
+        private byte[] FailureResult()
+        {
+            return BoolResult(false);
+        }
+
+        private void NullResult(Dictionary<string, object> result, string reason)
+        {
+            result["RESULT"] = "NULL";
+            result["REASON"] = reason;
+        }
+        private byte[] SuccessResult()
+        {
+            return BoolResult(true);
+        }
+        #endregion Helpers
+    }
+
+    public class OfflineIMServiceRobustConnector : ServiceConnector
+    {
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        private string m_ConfigName = "Messaging";
+        private IOfflineIMService m_OfflineIMService;
+        public OfflineIMServiceRobustConnector(IConfigSource config, IHttpServer server, string configName) :
+            base(config, server, configName)
+        {
+            if (configName != String.Empty)
+                m_ConfigName = configName;
+
+            m_log.DebugFormat("[OfflineIM.V2.RobustConnector]: Starting with config name {0}", m_ConfigName);
+
+            m_OfflineIMService = new OfflineIMService(config);
+
+            server.AddStreamHandler(new OfflineIMServicePostHandler(m_OfflineIMService));
+        }
     }
 }

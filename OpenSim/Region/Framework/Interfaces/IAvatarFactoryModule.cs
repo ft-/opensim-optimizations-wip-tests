@@ -25,9 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
 using OpenMetaverse;
 using OpenSim.Framework;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Framework.Interfaces
 {
@@ -35,16 +35,6 @@ namespace OpenSim.Region.Framework.Interfaces
 
     public interface IAvatarFactoryModule
     {
-        void SetAppearance(IScenePresence sp, AvatarAppearance appearance, WearableCacheItem[] cacheItems);
-        void SetAppearance(IScenePresence sp, Primitive.TextureEntry textureEntry, byte[] visualParams, WearableCacheItem[] cacheItems);
-
-        /// <summary>
-        /// Send the appearance of an avatar to others in the scene.
-        /// </summary>
-        /// <param name="agentId"></param>
-        /// <returns></returns>
-        bool SendAppearance(UUID agentId);
-
         /// <summary>
         /// Return the baked texture ids of the given agent.
         /// </summary>
@@ -52,27 +42,11 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <returns>An empty list if this agent has no baked textures (e.g. because it's a child agent)</returns>
         Dictionary<BakeType, Primitive.TextureEntryFace> GetBakedTextureFaces(UUID agentId);
 
-
         WearableCacheItem[] GetCachedItems(UUID agentId);
-        /// <summary>
-        /// Save the baked textures for the given agent permanently in the asset database.
-        /// </summary>
-        /// <remarks>
-        /// This is used to preserve apperance textures for NPCs
-        /// </remarks>
-        /// <param name="agentId"></param>
-        /// <returns>true if a valid agent was found, false otherwise</returns>
-        bool SaveBakedTextures(UUID agentId);
 
-        /// <summary>
-        /// Validate that OpenSim can find the baked textures need to display a given avatar
-        /// </summary>
-        /// <param name="client"></param>
-        /// <param name="checkonly"></param>
-        /// <returns>
-        /// true if all the baked textures referenced by the texture IDs exist or the appearance is only using default textures.  false otherwise.
-        /// </returns>
-        bool ValidateBakedTextureCache(IScenePresence sp);
+        void QueueAppearanceSave(UUID agentid);
+
+        void QueueAppearanceSend(UUID agentid);
 
         /// <summary>
         /// Request a rebake of textures for an avatar.
@@ -90,9 +64,35 @@ namespace OpenSim.Region.Framework.Interfaces
         /// </returns>
         int RequestRebake(IScenePresence sp, bool missingTexturesOnly);
 
-        void QueueAppearanceSend(UUID agentid);
-        void QueueAppearanceSave(UUID agentid);
+        /// <summary>
+        /// Save the baked textures for the given agent permanently in the asset database.
+        /// </summary>
+        /// <remarks>
+        /// This is used to preserve apperance textures for NPCs
+        /// </remarks>
+        /// <param name="agentId"></param>
+        /// <returns>true if a valid agent was found, false otherwise</returns>
+        bool SaveBakedTextures(UUID agentId);
 
+        /// <summary>
+        /// Send the appearance of an avatar to others in the scene.
+        /// </summary>
+        /// <param name="agentId"></param>
+        /// <returns></returns>
+        bool SendAppearance(UUID agentId);
+
+        void SetAppearance(IScenePresence sp, AvatarAppearance appearance, WearableCacheItem[] cacheItems);
+
+        void SetAppearance(IScenePresence sp, Primitive.TextureEntry textureEntry, byte[] visualParams, WearableCacheItem[] cacheItems);
+        /// <summary>
+        /// Validate that OpenSim can find the baked textures need to display a given avatar
+        /// </summary>
+        /// <param name="client"></param>
+        /// <param name="checkonly"></param>
+        /// <returns>
+        /// true if all the baked textures referenced by the texture IDs exist or the appearance is only using default textures.  false otherwise.
+        /// </returns>
+        bool ValidateBakedTextureCache(IScenePresence sp);
         /// <summary>
         /// Get a report about the current state of a scene presence's baked appearance textures.
         /// </summary>

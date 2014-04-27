@@ -25,19 +25,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using OpenSim.Framework;
 using OpenSim.Framework.Console;
 using OpenSim.Region.ScriptEngine.Interfaces;
 using OpenSim.Region.ScriptEngine.Shared.Api;
 using OpenSim.Region.ScriptEngine.Shared.Api.Plugins;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.ScriptEngine.XEngine
 {
     public class ScriptEngineConsoleCommands
     {
-        IScriptEngine m_engine;
+        private IScriptEngine m_engine;
 
         public ScriptEngineConsoleCommands(IScriptEngine engine)
         {
@@ -53,11 +52,6 @@ namespace OpenSim.Region.ScriptEngine.XEngine
             MainConsole.Instance.Commands.AddCommand(
                 "Scripts", false, "show script timers", "show script timers", "Show script sensors information",
                 HandleShowTimers);
-        }
-
-        private bool IsSceneSelected()
-        {
-            return MainConsole.Instance.ConsoleScene == null || MainConsole.Instance.ConsoleScene == m_engine.World;
         }
 
         private void HandleShowSensors(string module, string[] cmdparams)
@@ -121,6 +115,11 @@ namespace OpenSim.Region.ScriptEngine.XEngine
 
             MainConsole.Instance.Output(cdt.ToString());
             MainConsole.Instance.OutputFormat("Total: {0}", timersInfo.Count);
+        }
+
+        private bool IsSceneSelected()
+        {
+            return MainConsole.Instance.ConsoleScene == null || MainConsole.Instance.ConsoleScene == m_engine.World;
         }
     }
 }

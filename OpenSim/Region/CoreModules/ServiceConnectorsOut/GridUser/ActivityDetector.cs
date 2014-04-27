@@ -1,3 +1,9 @@
+using log4net;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Region.Framework.Scenes;
+using OpenSim.Services.Interfaces;
+
 /*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
@@ -24,20 +30,12 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-using System;
-using System.Collections.Generic;
+
 using System.Reflection;
-
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
-
-using OpenMetaverse;
-using log4net;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
 {
-    public class ActivityDetector 
+    public class ActivityDetector
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
@@ -55,28 +53,6 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
             // But we could trigger the position update more often
             scene.EventManager.OnMakeRootAgent += OnMakeRootAgent;
             scene.EventManager.OnNewClient += OnNewClient;
-        }
-
-        public void RemoveRegion(Scene scene)
-        {
-            scene.EventManager.OnMakeRootAgent -= OnMakeRootAgent;
-            scene.EventManager.OnNewClient -= OnNewClient;
-        }
-
-        public void OnMakeRootAgent(ScenePresence sp)
-        {
-            if (sp.PresenceType != PresenceType.Npc)
-            {
-                string userid = sp.Scene.UserManagementModule.GetUserUUI(sp.UUID);
-                //m_log.DebugFormat("[ACTIVITY DETECTOR]: Detected root presence {0} in {1}", userid, sp.Scene.RegionInfo.RegionName);
-                m_GridUserService.SetLastPosition(
-                    userid, UUID.Zero, sp.Scene.RegionInfo.RegionID, sp.AbsolutePosition, sp.Lookat);
-            }
-        }
-
-        public void OnNewClient(IClientAPI client)
-        {
-            client.OnConnectionClosed += OnConnectionClose;
         }
 
         public void OnConnectionClose(IClientAPI client)
@@ -100,6 +76,28 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
             m_GridUserService.LoggedOut(
                 userId, client.SessionId, client.Scene.RegionInfo.RegionID,
                 client.SceneAgent.AbsolutePosition, client.SceneAgent.Lookat);
+        }
+
+        public void OnMakeRootAgent(ScenePresence sp)
+        {
+            if (sp.PresenceType != PresenceType.Npc)
+            {
+                string userid = sp.Scene.UserManagementModule.GetUserUUI(sp.UUID);
+                //m_log.DebugFormat("[ACTIVITY DETECTOR]: Detected root presence {0} in {1}", userid, sp.Scene.RegionInfo.RegionName);
+                m_GridUserService.SetLastPosition(
+                    userid, UUID.Zero, sp.Scene.RegionInfo.RegionID, sp.AbsolutePosition, sp.Lookat);
+            }
+        }
+
+        public void OnNewClient(IClientAPI client)
+        {
+            client.OnConnectionClosed += OnConnectionClose;
+        }
+
+        public void RemoveRegion(Scene scene)
+        {
+            scene.EventManager.OnMakeRootAgent -= OnMakeRootAgent;
+            scene.EventManager.OnNewClient -= OnNewClient;
         }
     }
 }
