@@ -30,6 +30,7 @@ using OpenSim.Region.Physics.Manager;
  */
 
 using System;
+using System.Threading;
 using System.Collections.Generic;
 
 namespace OpenSim.Region.Physics.BulletSPlugin
@@ -77,6 +78,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         // If doing mega-regions, if we're region zero we will be managing multiple
         //    region terrains since region zero does the physics for the whole mega-region.
         private Dictionary<Vector3, BSTerrainPhys> m_terrains;
+        private ReaderWriterLock m_terrainsRwLock = new ReaderWriterLock();
 
         // If the parent region (region 0), this is the extent of the combined regions
         //     relative to the origin of region zero
@@ -205,10 +207,15 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             m_physicsScene.PE.ForceActivationState(m_groundPlane, ActivationState.DISABLE_SIMULATION);
 
             BSTerrainPhys initialTerrain = new BSTerrainHeightmap(m_physicsScene, Vector3.Zero, BSScene.TERRAIN_ID, DefaultRegionSize);
-            lock (m_terrains)
+            m_terrainsRwLock.AcquireWriterLock(-1);
+            try
             {
                 // Build an initial terrain and put it in the world. This quickly gets replaced by the real region terrain.
                 m_terrains.Add(Vector3.Zero, initialTerrain);
+            }
+            finally
+            {
+                m_terrainsRwLock.ReleaseWriterLock();
             }
         }
 
@@ -293,13 +300,18 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         // Release all the terrain we have allocated
         public void ReleaseTerrain()
         {
-            lock (m_terrains)
+            m_terrainsRwLock.AcquireWriterLock(-1);
+            try
             {
                 foreach (KeyValuePair<Vector3, BSTerrainPhys> kvp in m_terrains)
                 {
                     kvp.Value.Dispose();
                 }
                 m_terrains.Clear();
+            }
+            finally
+            {
+                m_terrainsRwLock.ReleaseWriterLock();
             }
         }
 
@@ -409,7 +421,8 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             ret.Y = Util.Clamp<float>(ret.Y, 0f, 1000000f);
             ret.Z = 0f;
 
-            lock (m_terrains)
+            m_terrainsRwLock.AcquireReaderLock(-1);
+            try
             {
                 // Once down to the <0,0> region, we have to be done.
                 while (ret.X > 0f || ret.Y > 0f)
@@ -429,6 +442,10 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                             break;
                     }
                 }
+            }
+            finally
+            {
+                m_terrainsRwLock.ReleaseReaderLock();
             }
 
             return ret;
@@ -454,9 +471,14 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             }
 
             BSTerrainPhys physTerrain = null;
-            lock (m_terrains)
+            m_terrainsRwLock.AcquireReaderLock(-1);
+            try
             {
                 ret = m_terrains.TryGetValue(terrainBaseXYZ, out physTerrain);
+            }
+            finally
+            {
+                m_terrainsRwLock.ReleaseReaderLock();
             }
             outTerrainBase = terrainBaseXYZ;
             outPhysTerrain = physTerrain;
@@ -498,7 +520,8 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
             Vector3 terrainRegionBase = new Vector3(minCoords.X, minCoords.Y, 0f);
 
-            lock (m_terrains)
+            m_terrainsRwLock.AcquireWriterLock(-1);
+            try
             {
                 BSTerrainPhys terrainPhys;
                 if (m_terrains.TryGetValue(terrainRegionBase, out terrainPhys))
@@ -550,6 +573,10 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
                     m_terrainModified = true;
                 }
+            }
+            finally
+            {
+                m_terrainsRwLock.ReleaseWriterLock();
             }
         }
     }

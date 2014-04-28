@@ -32,6 +32,7 @@ using OpenSim.Region.Physics.Meshing;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using OMV = OpenMetaverse;
 
 namespace OpenSim.Region.Physics.BulletSPlugin
@@ -430,7 +431,8 @@ namespace OpenSim.Region.Physics.BulletSPlugin
     // ============================================================================================================
     public class BSShapeCompound : BSShape
     {
-        public static Dictionary<string, BSShapeCompound> CompoundShapes = new Dictionary<string, BSShapeCompound>();
+        private static Dictionary<string, BSShapeCompound> CompoundShapes = new Dictionary<string, BSShapeCompound>();
+        private static ReaderWriterLock CompoundShapesRwLock = new ReaderWriterLock();
         private static string LogHeader = "[BULLETSIM SHAPE COMPOUND]";
         public BSShapeCompound(BulletShape pShape)
             : base(pShape)
@@ -442,16 +444,29 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             // Base compound shapes are not shared so this returns a raw shape.
             // A built compound shape can be reused in linksets.
             BSShapeCompound ret = new BSShapeCompound(CreatePhysicalCompoundShape(physicsScene));
-            CompoundShapes.Add(ret.AddrString, ret);
+            CompoundShapesRwLock.AcquireWriterLock(-1);
+            try
+            {
+                CompoundShapes.Add(ret.AddrString, ret);
+            }
+            finally
+            {
+                CompoundShapesRwLock.ReleaseWriterLock();
+            }
             return ret;
         }
 
         public static bool TryGetCompoundByPtr(BulletShape pShape, out BSShapeCompound outCompound)
         {
-            lock (CompoundShapes)
+            CompoundShapesRwLock.AcquireReaderLock(-1);
+            try
             {
                 string addr = pShape.AddrString;
                 return CompoundShapes.TryGetValue(addr, out outCompound);
+            }
+            finally
+            {
+                CompoundShapesRwLock.ReleaseReaderLock();
             }
         }
 
@@ -485,8 +500,15 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                         DereferenceAnonCollisionShape(physicsScene, childShape);
                     }
 
-                    lock (CompoundShapes)
+                    CompoundShapesRwLock.AcquireWriterLock(-1);
+                    try
+                    {
                         CompoundShapes.Remove(physShapeInfo.AddrString);
+                    }
+                    finally
+                    {
+                        CompoundShapesRwLock.ReleaseWriterLock();
+                    }
                     physicsScene.PE.DeleteCollisionShape(physicsScene.World, physShapeInfo);
                 }
             }
@@ -573,7 +595,8 @@ namespace OpenSim.Region.Physics.BulletSPlugin
     public class BSShapeConvexHull : BSShape
     {
 #pragma warning disable 414
-        public static Dictionary<System.UInt64, BSShapeConvexHull> ConvexHulls = new Dictionary<System.UInt64, BSShapeConvexHull>();
+        private static Dictionary<System.UInt64, BSShapeConvexHull> ConvexHulls = new Dictionary<System.UInt64, BSShapeConvexHull>();
+        private static ReaderWriterLock ConvexHullsRwLock = new ReaderWriterLock();
         private static string LogHeader = "[BULLETSIM SHAPE CONVEX HULL]";
 #pragma warning restore 414
         public BSShapeConvexHull(BulletShape pShape)
@@ -590,7 +613,8 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                                     prim.LocalID, newMeshKey.ToString("X"), prim.Size, lod);
 
             BSShapeConvexHull retConvexHull = null;
-            lock (ConvexHulls)
+            ConvexHullsRwLock.AcquireWriterLock(-1);
+            try
             {
                 if (ConvexHulls.TryGetValue(newMeshKey, out retConvexHull))
                 {
@@ -627,6 +651,10 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                     retConvexHull.physShapeInfo = convexShape;
                 }
             }
+            finally
+            {
+                ConvexHullsRwLock.ReleaseWriterLock();
+            }
             return retConvexHull;
         }
 
@@ -635,7 +663,8 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         {
             bool ret = false;
             BSShapeConvexHull foundDesc = null;
-            lock (ConvexHulls)
+            ConvexHullsRwLock.AcquireWriterLock(-1);
+            try
             {
                 foreach (BSShapeConvexHull sh in ConvexHulls.Values)
                 {
@@ -647,6 +676,10 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                     }
                 }
             }
+            finally
+            {
+                ConvexHullsRwLock.ReleaseWriterLock();
+            }
             outHull = foundDesc;
             return ret;
         }
@@ -654,11 +687,16 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         // Dereferencing a compound shape releases the hold on all the child shapes.
         public override void Dereference(BSScene physicsScene)
         {
-            lock (ConvexHulls)
+            ConvexHullsRwLock.AcquireWriterLock(-1);
+            try
             {
                 this.DecrementReference();
                 physicsScene.DetailLog("{0},BSShapeConvexHull.Dereference,shape={1}", BSScene.DetailLogZero, this);
                 // TODO: schedule aging and destruction of unused meshes.
+            }
+            finally
+            {
+                ConvexHullsRwLock.ReleaseWriterLock();
             }
         }
 
@@ -675,7 +713,8 @@ namespace OpenSim.Region.Physics.BulletSPlugin
     public class BSShapeGImpact : BSShape
     {
 #pragma warning disable 414
-        public static Dictionary<System.UInt64, BSShapeGImpact> GImpacts = new Dictionary<System.UInt64, BSShapeGImpact>();
+        private static Dictionary<System.UInt64, BSShapeGImpact> GImpacts = new Dictionary<System.UInt64, BSShapeGImpact>();
+        private static ReaderWriterLock GImpactsRwLock = new ReaderWriterLock();
         private static string LogHeader = "[BULLETSIM SHAPE GIMPACT]";
 #pragma warning restore 414
         public BSShapeGImpact(BulletShape pShape)
@@ -692,7 +731,8 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                                     prim.LocalID, newMeshKey.ToString("X"), prim.Size, lod);
 
             BSShapeGImpact retGImpact = null;
-            lock (GImpacts)
+            GImpactsRwLock.AcquireWriterLock(-1);
+            try
             {
                 if (GImpacts.TryGetValue(newMeshKey, out retGImpact))
                 {
@@ -720,6 +760,10 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                     retGImpact.physShapeInfo = newShape;
                 }
             }
+            finally
+            {
+                GImpactsRwLock.ReleaseWriterLock();
+            }
             return retGImpact;
         }
 
@@ -728,7 +772,8 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         {
             bool ret = false;
             BSShapeGImpact foundDesc = null;
-            lock (GImpacts)
+            GImpactsRwLock.AcquireReaderLock(-1);
+            try
             {
                 foreach (BSShapeGImpact sh in GImpacts.Values)
                 {
@@ -740,6 +785,10 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                     }
                 }
             }
+            finally
+            {
+                GImpactsRwLock.ReleaseReaderLock();
+            }
             outHull = foundDesc;
             return ret;
         }
@@ -747,11 +796,16 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         // Dereferencing a compound shape releases the hold on all the child shapes.
         public override void Dereference(BSScene physicsScene)
         {
-            lock (GImpacts)
+            GImpactsRwLock.AcquireWriterLock(-1);
+            try
             {
                 this.DecrementReference();
                 physicsScene.DetailLog("{0},BSShapeGImpact.Dereference,shape={1}", BSScene.DetailLogZero, this);
                 // TODO: schedule aging and destruction of unused meshes.
+            }
+            finally
+            {
+                GImpactsRwLock.ReleaseWriterLock();
             }
         }
 
@@ -786,7 +840,8 @@ namespace OpenSim.Region.Physics.BulletSPlugin
     public class BSShapeHull : BSShape
     {
 #pragma warning disable 414
-        public static Dictionary<System.UInt64, BSShapeHull> Hulls = new Dictionary<System.UInt64, BSShapeHull>();
+        private static Dictionary<System.UInt64, BSShapeHull> Hulls = new Dictionary<System.UInt64, BSShapeHull>();
+        private static ReaderWriterLock HullsRwLock = new ReaderWriterLock();
         private static string LogHeader = "[BULLETSIM SHAPE HULL]";
 #pragma warning restore 414
         private List<ConvexResult> m_hulls;
@@ -802,7 +857,8 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             System.UInt64 newHullKey = BSShape.ComputeShapeKey(prim.Size, prim.BaseShape, out lod);
 
             BSShapeHull retHull = null;
-            lock (Hulls)
+            HullsRwLock.AcquireWriterLock(-1);
+            try
             {
                 if (Hulls.TryGetValue(newHullKey, out retHull))
                 {
@@ -827,6 +883,10 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                     retHull.physShapeInfo = newShape;
                 }
             }
+            finally
+            {
+                HullsRwLock.ReleaseWriterLock();
+            }
             physicsScene.DetailLog("{0},BSShapeHull,getReference,hull={1},size={2},lod={3}", prim.LocalID, retHull, prim.Size, lod);
             return retHull;
         }
@@ -836,7 +896,8 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         {
             bool ret = false;
             BSShapeHull foundDesc = null;
-            lock (Hulls)
+            HullsRwLock.AcquireReaderLock(-1);
+            try
             {
                 foreach (BSShapeHull sh in Hulls.Values)
                 {
@@ -848,17 +909,26 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                     }
                 }
             }
+            finally
+            {
+                HullsRwLock.ReleaseReaderLock();
+            }
             outHull = foundDesc;
             return ret;
         }
 
         public override void Dereference(BSScene physicsScene)
         {
-            lock (Hulls)
+            HullsRwLock.AcquireWriterLock(-1);
+            try
             {
                 this.DecrementReference();
                 physicsScene.DetailLog("{0},BSShapeHull.Dereference,shape={1}", BSScene.DetailLogZero, this);
                 // TODO: schedule aging and destruction of unused meshes.
+            }
+            finally
+            {
+                HullsRwLock.ReleaseWriterLock();
             }
         }
 
@@ -1103,7 +1173,8 @@ namespace OpenSim.Region.Physics.BulletSPlugin
     // ============================================================================================================
     public class BSShapeMesh : BSShape
     {
-        public static Dictionary<System.UInt64, BSShapeMesh> Meshes = new Dictionary<System.UInt64, BSShapeMesh>();
+        private static Dictionary<System.UInt64, BSShapeMesh> Meshes = new Dictionary<System.UInt64, BSShapeMesh>();
+        private static ReaderWriterLock MeshesRwLock = new ReaderWriterLock();
         private static string LogHeader = "[BULLETSIM SHAPE MESH]";
         public BSShapeMesh(BulletShape pShape)
             : base(pShape)
@@ -1201,7 +1272,8 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             System.UInt64 newMeshKey = BSShape.ComputeShapeKey(prim.Size, prim.BaseShape, out lod);
 
             BSShapeMesh retMesh = null;
-            lock (Meshes)
+            MeshesRwLock.AcquireWriterLock(-1);
+            try
             {
                 if (Meshes.TryGetValue(newMeshKey, out retMesh))
                 {
@@ -1228,6 +1300,10 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                     retMesh.physShapeInfo = newShape;
                 }
             }
+            finally
+            {
+                MeshesRwLock.ReleaseWriterLock();
+            }
             physicsScene.DetailLog("{0},BSShapeMesh,getReference,mesh={1},size={2},lod={3}", prim.LocalID, retMesh, prim.Size, lod);
             return retMesh;
         }
@@ -1237,7 +1313,8 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         {
             bool ret = false;
             BSShapeMesh foundDesc = null;
-            lock (Meshes)
+            MeshesRwLock.AcquireReaderLock(-1);
+            try
             {
                 foreach (BSShapeMesh sm in Meshes.Values)
                 {
@@ -1249,17 +1326,26 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                     }
                 }
             }
+            finally
+            {
+                MeshesRwLock.ReleaseReaderLock();
+            }
             outMesh = foundDesc;
             return ret;
         }
 
         public override void Dereference(BSScene physicsScene)
         {
-            lock (Meshes)
+            MeshesRwLock.AcquireWriterLock(-1);
+            try
             {
                 this.DecrementReference();
                 physicsScene.DetailLog("{0},BSShapeMesh.Dereference,shape={1}", BSScene.DetailLogZero, this);
                 // TODO: schedule aging and destruction of unused meshes.
+            }
+            finally
+            {
+                MeshesRwLock.ReleaseWriterLock();
             }
         }
 
