@@ -761,13 +761,12 @@ namespace OpenSim.Region.ClientStack.Linden
                         string param, IOSHttpRequest httpRequest,
                         IOSHttpResponse httpResponse)
         {
-            //            OSDMap req = (OSDMap)OSDParser.DeserializeLLSDXml(request);
+            OSDMap req = (OSDMap)OSDParser.DeserializeLLSDXml(request);
+            OSDMap accessPrefs = (OSDMap)req["access_prefs"];
             OSDMap resp = new OSDMap();
-
-            OSDMap accessPrefs = new OSDMap();
-            accessPrefs["max"] = "A";
-
-            resp["access_prefs"] = accessPrefs;
+            OSDMap respAccessPrefs = new OSDMap();
+            respAccessPrefs["max"] = accessPrefs["max"];
+            resp["access_prefs"] = respAccessPrefs;
 
             string response = OSDParser.SerializeLLSDXmlString(resp);
             return response;
