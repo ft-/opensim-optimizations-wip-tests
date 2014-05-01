@@ -75,6 +75,7 @@ namespace OpenSim.ApplicationPlugins.RemoteController
         {
             get { return m_version; }
         }
+
         public void Dispose()
         {
         }
@@ -1177,6 +1178,7 @@ namespace OpenSim.ApplicationPlugins.RemoteController
 
             return response;
         }
+
         private bool LoadHeightmap(string file, UUID regionID)
         {
             m_log.InfoFormat("[RADMIN]: Terrain Loading: {0}", file);
@@ -2537,6 +2539,7 @@ namespace OpenSim.ApplicationPlugins.RemoteController
 
             m_log.Info("[RADMIN]: Restart Region request complete");
         }
+
         private void XmlRpcSaveHeightmapMethod(XmlRpcRequest request, XmlRpcResponse response, IPEndPoint remoteClient)
         {
             m_log.Info("[RADMIN]: Save height maps request started");
@@ -2791,6 +2794,7 @@ namespace OpenSim.ApplicationPlugins.RemoteController
 
             m_log.Info("[RADMIN]: Shutdown Administrator Request complete");
         }
+
         private void XmlRpcTeleportAgentMethod(XmlRpcRequest request, XmlRpcResponse response, IPEndPoint remoteClient)
         {
             Hashtable responseData = (Hashtable)response.Value;

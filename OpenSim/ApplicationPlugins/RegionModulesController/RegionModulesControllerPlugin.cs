@@ -53,12 +53,14 @@ namespace OpenSim.ApplicationPlugins.RegionModulesController
 
         // Config access
         private OpenSimBase m_openSim;
+
         // List of shared module instances, for adding to Scenes
         private List<ISharedRegionModule> m_sharedInstances =
                 new List<ISharedRegionModule>();
 
         private List<TypeExtensionNode> m_sharedModules =
                 new List<TypeExtensionNode>();
+
         #region IApplicationPlugin implementation
 
         public void Initialise(OpenSimBase openSim)
@@ -234,6 +236,7 @@ namespace OpenSim.ApplicationPlugins.RegionModulesController
                 return AddinManager.CurrentAddin.Version;
             }
         }
+
         #region Region Module interfacesController implementation
 
         // The root of all evil.
@@ -496,6 +499,7 @@ namespace OpenSim.ApplicationPlugins.RegionModulesController
 
             return true;
         }
+
         #endregion Region Module interfacesController implementation
     }
 }

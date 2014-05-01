@@ -44,6 +44,7 @@ namespace OpenSim.ApplicationPlugins.LoadRegions
         private NewRegionCreated m_newRegionCreatedHandler;
 
         public event NewRegionCreated OnNewRegionCreated;
+
         #region IApplicationPlugin Members
 
         protected OpenSimBase m_openSim;
@@ -62,6 +63,7 @@ namespace OpenSim.ApplicationPlugins.LoadRegions
         {
             get { return m_version; }
         }
+
         public void Dispose()
         {
         }
@@ -143,6 +145,7 @@ namespace OpenSim.ApplicationPlugins.LoadRegions
                 }
             }
         }
+
         #endregion IApplicationPlugin Members
 
         /// <summary>
