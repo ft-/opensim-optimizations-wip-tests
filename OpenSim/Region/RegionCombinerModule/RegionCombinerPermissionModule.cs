@@ -262,6 +262,7 @@ namespace OpenSim.Region.RegionCombinerModule
         {
             m_rootScene.Permissions.SetBypassPermissions(value);
         }
+
         #endregion Permission Override
     }
 }

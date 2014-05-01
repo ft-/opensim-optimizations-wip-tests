@@ -55,6 +55,7 @@ namespace OpenSim.Region.RegionCombinerModule
         /// Root Region Scene
         /// </summary>
         public Scene RegionScene;
+
         /// <summary>
         /// The x map co-ordinate for this region (where each co-ordinate is a Constants.RegionSize block).
         /// </summary>
@@ -84,6 +85,7 @@ namespace OpenSim.Region.RegionCombinerModule
         /// The Y meters co-ordinate of this connection.
         /// </summary>
         public uint PosY { get { return Util.RegionToWorldLoc(Y); } }
+
         public void UpdateExtents(Vector3 extents)
         {
             XEnd = (uint)extents.X;

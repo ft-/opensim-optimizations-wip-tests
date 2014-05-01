@@ -38,6 +38,7 @@ namespace OpenSim.Region.RegionCombinerModule
 
         private Scene m_rootScene;
         private Dictionary<UUID, Scene> m_virtScene = new Dictionary<UUID, Scene>();
+
         public RegionCombinerClientEventForwarder(RegionConnections rootScene)
         {
             m_rootScene = rootScene.RegionScene;

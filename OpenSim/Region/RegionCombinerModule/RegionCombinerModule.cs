@@ -69,6 +69,7 @@ namespace OpenSim.Region.RegionCombinerModule
         {
             get { return null; }
         }
+
         public void AddRegion(Scene scene)
         {
             if (m_combineContiguousRegions)
@@ -155,6 +156,7 @@ namespace OpenSim.Region.RegionCombinerModule
                 "Fixes phantom objects after an import to a megaregion or a change from a megaregion back to normal regions",
                 FixPhantoms);
         }
+
         public bool IsRootForMegaregion(UUID regionId)
         {
             lock (m_regions)
@@ -226,6 +228,7 @@ namespace OpenSim.Region.RegionCombinerModule
             lock (m_startingScenes)
                 m_startingScenes.Remove(scene.RegionInfo.originRegionID);
         }
+
         private void DistributeCoarseLocationUpdates(List<Vector3> locations, List<UUID> uuids,
                                                      RegionConnections connectiondata, ScenePresence rootPresence)
         {
@@ -703,6 +706,7 @@ namespace OpenSim.Region.RegionCombinerModule
                 }
             }
         }
+
         /*
          * 20140215 radams1: The border stuff was removed and the addition of regions to the mega-regions
          *   was generalized. These functions are not needed for the generalized solution but left for reference.
@@ -787,6 +791,7 @@ namespace OpenSim.Region.RegionCombinerModule
             //scene.PhysicsScene.Combine(conn.RegionScene.PhysicsScene, offset,extents);
         }
          */
+
         // This delegate was refactored for non-combined regions.
         // This combined region version will not use the pre-compiled lists of locations and ids
         private void SendCoarseLocationUpdates(UUID sceneId, ScenePresence presence, List<Vector3> coarseLocations, List<UUID> avatarUUIDs)
@@ -819,6 +824,7 @@ namespace OpenSim.Region.RegionCombinerModule
         {
             presence.SetSendCoarseLocationMethod(SendCoarseLocationUpdates);
         }
+
         //        /// <summary>
         //        /// TODO:
         //        /// </summary>
@@ -846,6 +852,7 @@ namespace OpenSim.Region.RegionCombinerModule
         //                }
         //            }
         //        }
+
         #region console commands
 
         public void FixPhantoms(string module, string[] cmdparams)

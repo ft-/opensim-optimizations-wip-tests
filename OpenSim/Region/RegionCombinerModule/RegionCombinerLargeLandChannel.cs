@@ -39,6 +39,7 @@ namespace OpenSim.Region.RegionCombinerModule
         private readonly List<RegionData> RegionConnections;
         private RegionData RegData;
         private ILandChannel RootRegionLandChannel;
+
         #region ILandChannel Members
 
         public RegionCombinerLargeLandChannel(RegionData regData, ILandChannel rootRegionLandChannel,
@@ -160,6 +161,7 @@ namespace OpenSim.Region.RegionCombinerModule
             //m_log.DebugFormat("[LANDPARCELNEARPOINT]: {0}>", position);
             return RootRegionLandChannel.ParcelsNearPoint(position - RegData.Offset);
         }
+
         public void ReturnObjectsInParcel(int localID, uint returnType, UUID[] agentIDs, UUID[] taskIDs, IClientAPI remoteClient)
         {
             RootRegionLandChannel.ReturnObjectsInParcel(localID, returnType, agentIDs, taskIDs, remoteClient);
@@ -189,6 +191,7 @@ namespace OpenSim.Region.RegionCombinerModule
         {
             RootRegionLandChannel.UpdateLandObject(localID, data);
         }
+
         #endregion ILandChannel Members
     }
 }

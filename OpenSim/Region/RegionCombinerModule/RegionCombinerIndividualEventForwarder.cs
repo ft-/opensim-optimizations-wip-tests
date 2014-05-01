@@ -81,6 +81,7 @@ namespace OpenSim.Region.RegionCombinerModule
 
             m_rootScene.SubscribeToClientNetworkEvents(client);
         }
+
         /// <summary>
         /// Fixes position based on the region the AddPrimShape event came in on
         /// </summary>
