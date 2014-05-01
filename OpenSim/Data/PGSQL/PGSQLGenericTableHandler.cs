@@ -25,16 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Npgsql;
+using OpenMetaverse;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Reflection;
-using log4net;
-using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Interfaces;
 using System.Text;
-using Npgsql;
 
 namespace OpenSim.Data.PGSQL
 {
@@ -45,6 +43,7 @@ namespace OpenSim.Data.PGSQL
 
         protected string m_ConnectionString;
         protected PGSQLManager m_database; //used for parameter type translation
+
         protected Dictionary<string, FieldInfo> m_Fields =
                 new Dictionary<string, FieldInfo>();
 
@@ -64,7 +63,7 @@ namespace OpenSim.Data.PGSQL
             : base(connectionString)
         {
             m_Realm = realm;
-            
+
             m_ConnectionString = connectionString;
 
             if (storeName != String.Empty)
@@ -75,7 +74,6 @@ namespace OpenSim.Data.PGSQL
                     Migration m = new Migration(conn, GetType().Assembly, storeName);
                     m.Update();
                 }
-
             }
             m_database = new PGSQLManager(m_ConnectionString);
 
@@ -96,7 +94,6 @@ namespace OpenSim.Data.PGSQL
                 else
                     m_DataField = f;
             }
-
         }
 
         private void LoadFieldTypes()
@@ -104,7 +101,7 @@ namespace OpenSim.Data.PGSQL
             m_FieldTypes = new Dictionary<string, string>();
 
             string query = string.Format(@"select column_name,data_type
-                        from INFORMATION_SCHEMA.COLUMNS 
+                        from INFORMATION_SCHEMA.COLUMNS
                        where table_name = lower('{0}');
 
                 ", m_Realm);
@@ -137,7 +134,6 @@ namespace OpenSim.Data.PGSQL
                 if (row["ColumnName"] != null &&
                         (!m_Fields.ContainsKey(row["ColumnName"].ToString())))
                     m_ColumnNames.Add(row["ColumnName"].ToString());
-
             }
         }
 
@@ -162,7 +158,7 @@ namespace OpenSim.Data.PGSQL
                         AND rc.unique_constraint_schema = ccu.constraint_schema
                         AND rc.unique_constraint_name = ccu.constraint_name
 
-                        where tc.table_name = lower('{0}') 
+                        where tc.table_name = lower('{0}')
                         and lower(tc.constraint_type) in ('primary key')
                         and kcu.column_name is not null
                         ;", m_Realm);
@@ -198,10 +194,9 @@ namespace OpenSim.Data.PGSQL
             using (NpgsqlConnection conn = new NpgsqlConnection(m_ConnectionString))
             using (NpgsqlCommand cmd = new NpgsqlCommand())
             {
-
                 for (int i = 0; i < fields.Length; i++)
                 {
-                    if ( m_FieldTypes.ContainsKey(fields[i]) )
+                    if (m_FieldTypes.ContainsKey(fields[i]))
                         cmd.Parameters.Add(m_database.CreateParameter(fields[i], keys[i], m_FieldTypes[fields[i]]));
                     else
                         cmd.Parameters.Add(m_database.CreateParameter(fields[i], keys[i]));
@@ -237,7 +232,7 @@ namespace OpenSim.Data.PGSQL
                 if (reader == null)
                     return new T[0];
 
-                CheckColumnNames(reader);                
+                CheckColumnNames(reader);
 
                 while (reader.Read())
                 {
@@ -295,7 +290,6 @@ namespace OpenSim.Data.PGSQL
             using (NpgsqlConnection conn = new NpgsqlConnection(m_ConnectionString))
             using (NpgsqlCommand cmd = new NpgsqlCommand())
             {
-
                 string query = String.Format("SELECT * FROM {0} WHERE {1}",
                         m_Realm, where);
                 cmd.Connection = conn;
@@ -316,7 +310,6 @@ namespace OpenSim.Data.PGSQL
             using (NpgsqlConnection conn = new NpgsqlConnection(m_ConnectionString))
             using (NpgsqlCommand cmd = new NpgsqlCommand())
             {
-
                 StringBuilder query = new StringBuilder();
                 List<String> names = new List<String>();
                 List<String> values = new List<String>();
@@ -326,7 +319,7 @@ namespace OpenSim.Data.PGSQL
                     names.Add(fi.Name);
                     values.Add(":" + fi.Name);
                     // Temporarily return more information about what field is unexpectedly null for
-                    // http://opensimulator.org/mantis/view.php?id=5403.  This might be due to a bug in the 
+                    // http://opensimulator.org/mantis/view.php?id=5403.  This might be due to a bug in the
                     // InventoryTransferModule or we may be required to substitute a DBNull here.
                     if (fi.GetValue(row) == null)
                         throw new NullReferenceException(
@@ -336,7 +329,7 @@ namespace OpenSim.Data.PGSQL
 
                     if (constraintFields.Count > 0 && constraintFields.Contains(fi.Name))
                     {
-                        constraints.Add(new KeyValuePair<string, string>(fi.Name, fi.GetValue(row).ToString() ));
+                        constraints.Add(new KeyValuePair<string, string>(fi.Name, fi.GetValue(row).ToString()));
                     }
                     if (m_FieldTypes.ContainsKey(fi.Name))
                         cmd.Parameters.Add(m_database.CreateParameter(fi.Name, fi.GetValue(row), m_FieldTypes[fi.Name]));
@@ -363,7 +356,6 @@ namespace OpenSim.Data.PGSQL
                         else
                             cmd.Parameters.Add(m_database.CreateParameter("" + kvp.Key, kvp.Value));
                     }
-
                 }
 
                 query.AppendFormat("UPDATE {0} SET ", m_Realm);
@@ -382,11 +374,10 @@ namespace OpenSim.Data.PGSQL
                     }
                     string where = String.Join(" AND ", terms.ToArray());
                     query.AppendFormat(" WHERE {0} ", where);
-                    
                 }
                 cmd.Connection = conn;
                 cmd.CommandText = query.ToString();
-                
+
                 conn.Open();
                 if (cmd.ExecuteNonQuery() > 0)
                 {
@@ -403,7 +394,7 @@ namespace OpenSim.Data.PGSQL
                     query.Append("\") values (" + String.Join(",", values.ToArray()) + ")");
                     cmd.Connection = conn;
                     cmd.CommandText = query.ToString();
-                    
+
                     // m_log.WarnFormat("[PGSQLGenericTable]: Inserting into {0} sql {1}", m_Realm, cmd.CommandText);
 
                     if (conn.State != ConnectionState.Open)
@@ -457,6 +448,7 @@ namespace OpenSim.Data.PGSQL
                 return false;
             }
         }
+
         public long GetCount(string field, string key)
         {
             return GetCount(new string[] { field }, new string[] { key });

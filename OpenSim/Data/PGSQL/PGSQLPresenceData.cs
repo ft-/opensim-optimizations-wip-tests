@@ -25,15 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Reflection;
-using System.Threading;
-using log4net;
-using OpenMetaverse;
-using OpenSim.Framework;
 using Npgsql;
+using OpenMetaverse;
+using System;
 
 namespace OpenSim.Data.PGSQL
 {
@@ -43,10 +37,10 @@ namespace OpenSim.Data.PGSQL
     public class PGSQLPresenceData : PGSQLGenericTableHandler<PresenceData>,
             IPresenceData
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         public PGSQLPresenceData(string connectionString, string realm) :
-                base(connectionString, realm, "Presence")
+            base(connectionString, realm, "Presence")
         {
         }
 
@@ -65,7 +59,6 @@ namespace OpenSim.Data.PGSQL
             using (NpgsqlConnection conn = new NpgsqlConnection(m_ConnectionString))
             using (NpgsqlCommand cmd = new NpgsqlCommand())
             {
-
                 cmd.CommandText = String.Format(@"DELETE FROM {0} WHERE ""RegionID""=:RegionID", m_Realm);
 
                 cmd.Parameters.Add(m_database.CreateParameter("RegionID", regionID));
@@ -84,8 +77,7 @@ namespace OpenSim.Data.PGSQL
             using (NpgsqlConnection conn = new NpgsqlConnection(m_ConnectionString))
             using (NpgsqlCommand cmd = new NpgsqlCommand())
             {
-
-                cmd.CommandText = String.Format(@"UPDATE {0} SET 
+                cmd.CommandText = String.Format(@"UPDATE {0} SET
                                                 ""RegionID"" = :RegionID
                                         WHERE ""SessionID"" = :SessionID", m_Realm);
 
@@ -102,11 +94,11 @@ namespace OpenSim.Data.PGSQL
         public bool VerifyAgent(UUID agentId, UUID secureSessionID)
         {
             PresenceData[] ret = Get("SecureSessionID", secureSessionID.ToString());
-            
+
             if (ret.Length == 0)
                 return false;
 
-            if(ret[0].UserID != agentId.ToString())
+            if (ret[0].UserID != agentId.ToString())
                 return false;
 
             return true;

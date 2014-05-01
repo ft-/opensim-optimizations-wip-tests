@@ -25,10 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using OpenMetaverse;
-using OpenSim.Framework;
+using System.Collections.Generic;
 
 namespace OpenSim.Data
 {
@@ -48,12 +46,16 @@ namespace OpenSim.Data
     /// <summary>
     /// An interface for connecting to the user grid datastore
     /// </summary>
-    public interface IHGTravelingData 
+    public interface IHGTravelingData
     {
         HGTravelingData Get(UUID sessionID);
+
         HGTravelingData[] GetSessions(UUID userID);
+
         bool Store(HGTravelingData data);
+
         bool Delete(UUID sessionID);
+
         void DeleteOld();
     }
 }

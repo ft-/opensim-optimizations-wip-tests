@@ -25,13 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
-using OpenSim.Framework;
-using OpenMetaverse;
 using Npgsql;
+using OpenMetaverse;
+using OpenSim.Framework;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Data.PGSQL
 {
@@ -57,6 +55,7 @@ namespace OpenSim.Data.PGSQL
         }
 
         #region groups table
+
         public bool StoreGroup(GroupData data)
         {
             return m_Groups.Store(data);
@@ -100,9 +99,10 @@ namespace OpenSim.Data.PGSQL
             return (int)m_Groups.GetCount(" \"Location\" = \"\"");
         }
 
-        #endregion
+        #endregion groups table
 
         #region membership table
+
         public MembershipData[] RetrieveMembers(UUID groupID)
         {
             return m_Membership.Get("GroupID", groupID.ToString());
@@ -130,17 +130,19 @@ namespace OpenSim.Data.PGSQL
 
         public bool DeleteMember(UUID groupID, string pricipalID)
         {
-            return m_Membership.Delete(new string[] { "GroupID", "PrincipalID" }, 
+            return m_Membership.Delete(new string[] { "GroupID", "PrincipalID" },
                                        new string[] { groupID.ToString(), pricipalID });
         }
-        
+
         public int MemberCount(UUID groupID)
         {
             return (int)m_Membership.GetCount("GroupID", groupID.ToString());
         }
-        #endregion
+
+        #endregion membership table
 
         #region roles table
+
         public bool StoreRole(RoleData data)
         {
             return m_Roles.Store(data);
@@ -165,7 +167,7 @@ namespace OpenSim.Data.PGSQL
 
         public bool DeleteRole(UUID groupID, UUID roleID)
         {
-            return m_Roles.Delete(new string[] { "GroupID", "RoleID" }, 
+            return m_Roles.Delete(new string[] { "GroupID", "RoleID" },
                                   new string[] { groupID.ToString(), roleID.ToString() });
         }
 
@@ -174,10 +176,10 @@ namespace OpenSim.Data.PGSQL
             return (int)m_Roles.GetCount("GroupID", groupID.ToString());
         }
 
-
-        #endregion
+        #endregion roles table
 
         #region rolememberhip table
+
         public RoleMembershipData[] RetrieveRolesMembers(UUID groupID)
         {
             RoleMembershipData[] data = m_RoleMembership.Get("GroupID", groupID.ToString());
@@ -225,7 +227,7 @@ namespace OpenSim.Data.PGSQL
 
         public bool DeleteRoleMember(RoleMembershipData data)
         {
-            return m_RoleMembership.Delete(new string[] { "GroupID", "RoleID", "PrincipalID"},
+            return m_RoleMembership.Delete(new string[] { "GroupID", "RoleID", "PrincipalID" },
                                            new string[] { data.GroupID.ToString(), data.RoleID.ToString(), data.PrincipalID });
         }
 
@@ -235,9 +237,10 @@ namespace OpenSim.Data.PGSQL
                                            new string[] { groupID.ToString(), principalID });
         }
 
-        #endregion
+        #endregion rolememberhip table
 
         #region principals table
+
         public bool StorePrincipal(PrincipalData data)
         {
             return m_Principals.Store(data);
@@ -256,7 +259,8 @@ namespace OpenSim.Data.PGSQL
         {
             return m_Principals.Delete("PrincipalID", principalID);
         }
-        #endregion
+
+        #endregion principals table
 
         #region invites table
 
@@ -296,7 +300,7 @@ namespace OpenSim.Data.PGSQL
             m_Invites.DeleteOld();
         }
 
-        #endregion
+        #endregion invites table
 
         #region notices table
 
@@ -332,21 +336,23 @@ namespace OpenSim.Data.PGSQL
             m_Notices.DeleteOld();
         }
 
-        #endregion
+        #endregion notices table
 
         #region combinations
+
         public MembershipData RetrievePrincipalGroupMembership(string principalID, UUID groupID)
         {
             // TODO
             return null;
         }
+
         public MembershipData[] RetrievePrincipalGroupMemberships(string principalID)
         {
             // TODO
             return null;
         }
 
-        #endregion
+        #endregion combinations
     }
 
     public class PGSqlGroupsGroupsHandler : PGSQLGenericTableHandler<GroupData>
@@ -357,11 +363,10 @@ namespace OpenSim.Data.PGSQL
             get { return GetType().Assembly; }
         }
 
-        public PGSqlGroupsGroupsHandler(string connectionString, string realm, string store) 
+        public PGSqlGroupsGroupsHandler(string connectionString, string realm, string store)
             : base(connectionString, realm, store)
         {
         }
-
     }
 
     public class PGSqlGroupsMembershipHandler : PGSQLGenericTableHandler<MembershipData>
@@ -372,11 +377,10 @@ namespace OpenSim.Data.PGSQL
             get { return GetType().Assembly; }
         }
 
-        public PGSqlGroupsMembershipHandler(string connectionString, string realm) 
+        public PGSqlGroupsMembershipHandler(string connectionString, string realm)
             : base(connectionString, realm, string.Empty)
         {
         }
-
     }
 
     public class PGSqlGroupsRolesHandler : PGSQLGenericTableHandler<RoleData>
@@ -387,11 +391,10 @@ namespace OpenSim.Data.PGSQL
             get { return GetType().Assembly; }
         }
 
-        public PGSqlGroupsRolesHandler(string connectionString, string realm) 
+        public PGSqlGroupsRolesHandler(string connectionString, string realm)
             : base(connectionString, realm, string.Empty)
         {
         }
-
     }
 
     public class PGSqlGroupsRoleMembershipHandler : PGSQLGenericTableHandler<RoleMembershipData>
@@ -402,11 +405,10 @@ namespace OpenSim.Data.PGSQL
             get { return GetType().Assembly; }
         }
 
-        public PGSqlGroupsRoleMembershipHandler(string connectionString, string realm) 
+        public PGSqlGroupsRoleMembershipHandler(string connectionString, string realm)
             : base(connectionString, realm, string.Empty)
         {
         }
-
     }
 
     public class PGSqlGroupsInvitesHandler : PGSQLGenericTableHandler<InvitationData>
@@ -417,7 +419,7 @@ namespace OpenSim.Data.PGSQL
             get { return GetType().Assembly; }
         }
 
-        public PGSqlGroupsInvitesHandler(string connectionString, string realm) 
+        public PGSqlGroupsInvitesHandler(string connectionString, string realm)
             : base(connectionString, realm, string.Empty)
         {
         }
@@ -433,7 +435,6 @@ namespace OpenSim.Data.PGSQL
 
                 ExecuteNonQuery(cmd);
             }
-
         }
     }
 
@@ -445,7 +446,7 @@ namespace OpenSim.Data.PGSQL
             get { return GetType().Assembly; }
         }
 
-        public PGSqlGroupsNoticesHandler(string connectionString, string realm) 
+        public PGSqlGroupsNoticesHandler(string connectionString, string realm)
             : base(connectionString, realm, string.Empty)
         {
         }
@@ -461,7 +462,6 @@ namespace OpenSim.Data.PGSQL
 
                 ExecuteNonQuery(cmd);
             }
-
         }
     }
 
@@ -473,7 +473,7 @@ namespace OpenSim.Data.PGSQL
             get { return GetType().Assembly; }
         }
 
-        public PGSqlGroupsPrincipalsHandler(string connectionString, string realm) 
+        public PGSqlGroupsPrincipalsHandler(string connectionString, string realm)
             : base(connectionString, realm, string.Empty)
         {
         }

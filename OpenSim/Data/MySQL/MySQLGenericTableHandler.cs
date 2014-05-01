@@ -25,22 +25,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using MySql.Data.MySqlClient;
+using OpenMetaverse;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Reflection;
-using log4net;
-using MySql.Data.MySqlClient;
-using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Interfaces;
 
 namespace OpenSim.Data.MySQL
 {
-    public class MySQLGenericTableHandler<T> : MySqlFramework where T: class, new()
+    public class MySQLGenericTableHandler<T> : MySqlFramework where T : class, new()
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         protected Dictionary<string, FieldInfo> m_Fields =
                 new Dictionary<string, FieldInfo>();
 
@@ -54,11 +51,12 @@ namespace OpenSim.Data.MySQL
         }
 
         public MySQLGenericTableHandler(string connectionString,
-                string realm, string storeName) : base(connectionString)
+                string realm, string storeName)
+            : base(connectionString)
         {
             m_Realm = realm;
             m_connectionString = connectionString;
-            
+
             if (storeName != String.Empty)
             {
                 using (MySqlConnection dbcon = new MySqlConnection(m_connectionString))
@@ -77,7 +75,7 @@ namespace OpenSim.Data.MySQL
             if (fields.Length == 0)
                 return;
 
-            foreach (FieldInfo f in  fields)
+            foreach (FieldInfo f in fields)
             {
                 if (f.Name != "Data")
                     m_Fields[f.Name] = f;
@@ -118,7 +116,7 @@ namespace OpenSim.Data.MySQL
 
             using (MySqlCommand cmd = new MySqlCommand())
             {
-                for (int i = 0 ; i < fields.Length ; i++)
+                for (int i = 0; i < fields.Length; i++)
                 {
                     cmd.Parameters.AddWithValue(fields[i], keys[i]);
                     terms.Add("`" + fields[i] + "` = ?" + fields[i]);
@@ -130,7 +128,7 @@ namespace OpenSim.Data.MySQL
                                              m_Realm, where);
 
                 cmd.CommandText = query;
-                
+
                 return DoQuery(cmd);
             }
         }
@@ -180,7 +178,7 @@ namespace OpenSim.Data.MySQL
                                 m_Fields[name].SetValue(row, reader[name]);
                             }
                         }
-                
+
                         if (m_DataField != null)
                         {
                             Dictionary<string, string> data =
@@ -210,16 +208,16 @@ namespace OpenSim.Data.MySQL
             {
                 string query = String.Format("select * from {0} where {1}",
                                              m_Realm, where);
-                
+
                 cmd.CommandText = query;
-                
+
                 return DoQuery(cmd);
             }
         }
 
         public virtual bool Store(T row)
         {
-//            m_log.DebugFormat("[MYSQL GENERIC TABLE HANDLER]: Store(T row) invoked");
+            //            m_log.DebugFormat("[MYSQL GENERIC TABLE HANDLER]: Store(T row) invoked");
 
             using (MySqlCommand cmd = new MySqlCommand())
             {
@@ -231,16 +229,16 @@ namespace OpenSim.Data.MySQL
                 {
                     names.Add(fi.Name);
                     values.Add("?" + fi.Name);
-                    
+
                     // Temporarily return more information about what field is unexpectedly null for
-                    // http://opensimulator.org/mantis/view.php?id=5403.  This might be due to a bug in the 
+                    // http://opensimulator.org/mantis/view.php?id=5403.  This might be due to a bug in the
                     // InventoryTransferModule or we may be required to substitute a DBNull here.
                     if (fi.GetValue(row) == null)
                         throw new NullReferenceException(
                             string.Format(
-                                "[MYSQL GENERIC TABLE HANDLER]: Trying to store field {0} for {1} which is unexpectedly null", 
+                                "[MYSQL GENERIC TABLE HANDLER]: Trying to store field {0} for {1} which is unexpectedly null",
                                 fi.Name, row));
-                    
+
                     cmd.Parameters.AddWithValue(fi.Name, fi.GetValue(row).ToString());
                 }
 
@@ -275,9 +273,9 @@ namespace OpenSim.Data.MySQL
 
         public virtual bool Delete(string[] fields, string[] keys)
         {
-//            m_log.DebugFormat(
-//                "[MYSQL GENERIC TABLE HANDLER]: Delete(string[] fields, string[] keys) invoked with {0}:{1}",
-//                string.Join(",", fields), string.Join(",", keys));
+            //            m_log.DebugFormat(
+            //                "[MYSQL GENERIC TABLE HANDLER]: Delete(string[] fields, string[] keys) invoked with {0}:{1}",
+            //                string.Join(",", fields), string.Join(",", keys));
 
             if (fields.Length != keys.Length)
                 return false;
@@ -286,7 +284,7 @@ namespace OpenSim.Data.MySQL
 
             using (MySqlCommand cmd = new MySqlCommand())
             {
-                for (int i = 0 ; i < fields.Length ; i++)
+                for (int i = 0; i < fields.Length; i++)
                 {
                     cmd.Parameters.AddWithValue(fields[i], keys[i]);
                     terms.Add("`" + fields[i] + "` = ?" + fields[i]);
@@ -360,6 +358,5 @@ namespace OpenSim.Data.MySQL
                 return cmd.ExecuteScalar();
             }
         }
-
     }
 }

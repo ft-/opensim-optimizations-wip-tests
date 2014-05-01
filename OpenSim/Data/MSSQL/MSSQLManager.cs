@@ -25,14 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
 using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.IO;
 using System.Reflection;
-using log4net;
-using OpenMetaverse;
 
 namespace OpenSim.Data.MSSQL
 {
@@ -41,7 +38,7 @@ namespace OpenSim.Data.MSSQL
     /// </summary>
     public class MSSQLManager
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         /// <summary>
         /// Connection string for ADO.net
@@ -123,7 +120,7 @@ namespace OpenSim.Data.MSSQL
 
             if (valueType == typeof(UUID)) //TODO check if this works
             {
-                return ((UUID) value).Guid;
+                return ((UUID)value).Guid;
             }
             if (valueType == typeof(UUID))
             {
@@ -191,7 +188,7 @@ namespace OpenSim.Data.MSSQL
         /// <param name="migrationStore">migrationStore.</param>
         public void CheckMigration(string migrationStore)
         {
-            using (SqlConnection connection = new SqlConnection(connectionString)) 
+            using (SqlConnection connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 Assembly assem = GetType().Assembly;

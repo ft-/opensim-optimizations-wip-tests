@@ -25,27 +25,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.IO;
-using System.Collections.Generic;
-using log4net.Config;
-using NUnit.Framework;
-using NUnit.Framework.Constraints;
-using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Tests.Common;
 using log4net;
+using NUnit.Framework;
+using OpenSim.Framework;
+using System;
 using System.Data;
 using System.Data.Common;
-using System.Reflection;
+using System.IO;
 
 namespace OpenSim.Data.Tests
 {
-    /// <summary>This is a base class for testing any Data service for any DBMS. 
+    /// <summary>This is a base class for testing any Data service for any DBMS.
     /// Requires NUnit 2.5 or better (to support the generics).
     /// </summary>
     /// <remarks>
-    /// FIXME: Should extend OpenSimTestCase but compile on mono 2.4.3 currently fails with 
+    /// FIXME: Should extend OpenSimTestCase but compile on mono 2.4.3 currently fails with
     /// AssetTests`2 : System.MemberAccessException : Cannot create an instance of OpenSim.Data.Tests.AssetTests`2[TConn,TAssetData] because Type.ContainsGenericParameters is true.
     /// and similar on EstateTests, InventoryTests and RegionTests.
     /// Runs fine with mono 2.10.8.1, so easiest thing is to wait until min Mono version uplifts.
@@ -60,15 +54,15 @@ namespace OpenSim.Data.Tests
         private TService m_service;
         private string m_file;
 
-        // TODO: Is this in the right place here? 
+        // TODO: Is this in the right place here?
         // Later:  apparently it's not, but does it matter here?
-//        protected static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        protected static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         protected ILog m_log;  // doesn't matter here that it's not static, init to correct type in instance .ctor
 
         public BasicDataServiceTest()
             : this("")
-        { 
+        {
         }
 
         public BasicDataServiceTest(string conn)
@@ -220,13 +214,14 @@ namespace OpenSim.Data.Tests
                 try
                 {
                     ExecuteSql("DROP TABLE " + tbl + ";");
-                }catch
+                }
+                catch
                 {
                 }
             }
         }
 
-        /// <summary>Clear tables listed as parameters (without dropping them). 
+        /// <summary>Clear tables listed as parameters (without dropping them).
         /// </summary>
         /// <param name="tables"></param>
         protected virtual void ResetMigrations(params string[] stores)
@@ -251,7 +246,7 @@ namespace OpenSim.Data.Tests
             }
         }
 
-        /// <summary>Clear tables listed as parameters (without dropping them). 
+        /// <summary>Clear tables listed as parameters (without dropping them).
         /// </summary>
         /// <param name="tables"></param>
         protected virtual void ClearTables(params string[] tables)

@@ -25,16 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
+using Npgsql;
 using OpenMetaverse;
-using OpenSim.Framework;
+using System;
+using System.Collections.Generic;
+using System.Data;
 using System.Reflection;
 using System.Text;
-using System.Data;
-using Npgsql;
-using NpgsqlTypes;
 
 namespace OpenSim.Data.PGSQL
 {
@@ -93,7 +90,7 @@ namespace OpenSim.Data.PGSQL
 
                         foreach (string s in m_ColumnNames)
                         {
-                            if (s == "UUID"||s == "uuid")
+                            if (s == "UUID" || s == "uuid")
                                 continue;
 
                             ret.Data[s] = result[s].ToString();
@@ -142,10 +139,10 @@ namespace OpenSim.Data.PGSQL
                 {
                     if (!first)
                         updateBuilder.Append(", ");
-                    updateBuilder.AppendFormat("\"{0}\" = :{0}",field);
+                    updateBuilder.AppendFormat("\"{0}\" = :{0}", field);
 
                     first = false;
-                    
+
                     cmd.Parameters.Add(m_database.CreateParameter("" + field, data.Data[field]));
                 }
 
@@ -154,7 +151,7 @@ namespace OpenSim.Data.PGSQL
                 cmd.CommandText = updateBuilder.ToString();
                 cmd.Connection = conn;
                 cmd.Parameters.Add(m_database.CreateParameter("principalID", data.PrincipalID));
-                
+
                 conn.Open();
                 if (cmd.ExecuteNonQuery() < 1)
                 {
@@ -195,7 +192,7 @@ namespace OpenSim.Data.PGSQL
         {
             if (System.Environment.TickCount - m_LastExpire > 30000)
                 DoExpire();
-            
+
             string sql = "insert into tokens (uuid, token, validity) values (:principalID, :token, :lifetime)";
             using (NpgsqlConnection conn = new NpgsqlConnection(m_ConnectionString))
             using (NpgsqlCommand cmd = new NpgsqlCommand(sql, conn))

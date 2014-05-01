@@ -25,20 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
 using OpenMetaverse;
+using System;
 
 namespace OpenSim.Data
 {
-
     public static class DBGuid
     {
         /// <summary>This function converts a value returned from the database in one of the
         /// supported formats into a UUID.  This function is not actually DBMS-specific right
         /// now
-        /// 
+        ///
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>

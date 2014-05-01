@@ -25,16 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Reflection;
 using log4net;
 using MySql.Data.MySqlClient;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Data;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Reflection;
 
 namespace OpenSim.Data.MySQL
 {
@@ -48,9 +47,10 @@ namespace OpenSim.Data.MySQL
         private string m_connectionString;
         private long m_waitTimeout;
         private long m_waitTimeoutLeeway = 60 * TimeSpan.TicksPerSecond;
-//        private long m_lastConnectionUse;
+        //        private long m_lastConnectionUse;
 
         private FieldInfo[] m_Fields;
+
         private Dictionary<string, FieldInfo> m_FieldMap =
                 new Dictionary<string, FieldInfo>();
 
@@ -127,7 +127,7 @@ namespace OpenSim.Data.MySQL
                     }
                 }
 
-//                m_lastConnectionUse = DateTime.Now.Ticks;
+                //                m_lastConnectionUse = DateTime.Now.Ticks;
 
                 m_log.DebugFormat(
                     "[REGION DB]: Connection wait timeout {0} seconds",
@@ -362,7 +362,7 @@ namespace OpenSim.Data.MySQL
             }
         }
 
-        void SaveUUIDList(uint EstateID, string table, UUID[] data)
+        private void SaveUUIDList(uint EstateID, string table, UUID[] data)
         {
             using (MySqlConnection dbcon = new MySqlConnection(m_connectionString))
             {
@@ -391,7 +391,7 @@ namespace OpenSim.Data.MySQL
             }
         }
 
-        UUID[] LoadUUIDList(uint EstateID, string table)
+        private UUID[] LoadUUIDList(uint EstateID, string table)
         {
             List<UUID> uuids = new List<UUID>();
 
@@ -430,19 +430,19 @@ namespace OpenSim.Data.MySQL
                 return DoLoad(cmd, UUID.Zero, false);
             }
         }
-        
+
         public List<EstateSettings> LoadEstateSettingsAll()
         {
-            List<EstateSettings> allEstateSettings = new List<EstateSettings>();            
-            
+            List<EstateSettings> allEstateSettings = new List<EstateSettings>();
+
             List<int> allEstateIds = GetEstatesAll();
-            
+
             foreach (int estateId in allEstateIds)
                 allEstateSettings.Add(LoadEstateSettings(estateId));
-            
+
             return allEstateSettings;
         }
-        
+
         public List<int> GetEstatesAll()
         {
             List<int> result = new List<int>();
@@ -468,7 +468,7 @@ namespace OpenSim.Data.MySQL
                 dbcon.Close();
             }
 
-            return result;            
+            return result;
         }
 
         public List<int> GetEstates(string search)
@@ -539,8 +539,8 @@ namespace OpenSim.Data.MySQL
                 try
                 {
                     // Delete any existing association of this region with an estate.
-                     using (MySqlCommand cmd = dbcon.CreateCommand())
-                     {
+                    using (MySqlCommand cmd = dbcon.CreateCommand())
+                    {
                         cmd.Transaction = transaction;
                         cmd.CommandText = "delete from estate_map where RegionID = ?RegionID";
                         cmd.Parameters.AddWithValue("?RegionID", regionID);
@@ -596,7 +596,7 @@ namespace OpenSim.Data.MySQL
 
                         using (IDataReader reader = cmd.ExecuteReader())
                         {
-                            while(reader.Read())
+                            while (reader.Read())
                                 result.Add(DBGuid.FromDB(reader["RegionID"]));
                             reader.Close();
                         }

@@ -26,7 +26,6 @@
  */
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Reflection;
@@ -37,7 +36,9 @@ using OpenSim.Framework;
 #if CSharpSqlite
     using Community.CsharpSqlite.Sqlite;
 #else
-    using Mono.Data.Sqlite;
+
+using Mono.Data.Sqlite;
+
 #endif
 
 namespace OpenSim.Data.SQLite
@@ -45,7 +46,7 @@ namespace OpenSim.Data.SQLite
     public class SQLiteAuthenticationData : SQLiteFramework, IAuthenticationData
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        
+
         private string m_Realm;
         private List<string> m_ColumnNames;
         private int m_LastExpire;
@@ -59,7 +60,7 @@ namespace OpenSim.Data.SQLite
         }
 
         public SQLiteAuthenticationData(string connectionString, string realm)
-                : base(connectionString)
+            : base(connectionString)
         {
             m_Realm = realm;
 
@@ -143,8 +144,6 @@ namespace OpenSim.Data.SQLite
             {
                 if (Get(data.PrincipalID) != null)
                 {
-
-
                     string update = "update `" + m_Realm + "` set ";
                     bool first = true;
                     foreach (string field in fields)
@@ -223,7 +222,7 @@ namespace OpenSim.Data.SQLite
             if (System.Environment.TickCount - m_LastExpire > 30000)
                 DoExpire();
 
-            using (SqliteCommand cmd = new SqliteCommand("insert into tokens (UUID, token, validity) values ('" + principalID.ToString() + 
+            using (SqliteCommand cmd = new SqliteCommand("insert into tokens (UUID, token, validity) values ('" + principalID.ToString() +
                 "', '" + token + "', datetime('now', 'localtime', '+" + lifetime.ToString() + " minutes'))"))
             {
                 if (ExecuteNonQuery(cmd, m_Connection) > 0)
@@ -238,7 +237,7 @@ namespace OpenSim.Data.SQLite
             if (System.Environment.TickCount - m_LastExpire > 30000)
                 DoExpire();
 
-            using (SqliteCommand cmd = new SqliteCommand("update tokens set validity = datetime('now', 'localtime', '+" + lifetime.ToString() + 
+            using (SqliteCommand cmd = new SqliteCommand("update tokens set validity = datetime('now', 'localtime', '+" + lifetime.ToString() +
                 " minutes') where UUID = '" + principalID.ToString() + "' and token = '" + token + "' and validity > datetime('now', 'localtime')"))
             {
                 if (ExecuteNonQuery(cmd, m_Connection) > 0)

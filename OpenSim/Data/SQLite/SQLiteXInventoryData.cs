@@ -27,14 +27,16 @@
 
 using System;
 using System.Data;
-using System.Reflection;
 using System.Collections.Generic;
+
 #if CSharpSqlite
     using Community.CsharpSqlite.Sqlite;
 #else
-    using Mono.Data.Sqlite;
+
+using Mono.Data.Sqlite;
+
 #endif
-using log4net;
+
 using OpenMetaverse;
 using OpenSim.Framework;
 
@@ -45,7 +47,7 @@ namespace OpenSim.Data.SQLite
     /// </summary>
     public class SQLiteXInventoryData : IXInventoryData
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private SqliteFolderHandler m_Folders;
         private SqliteItemHandler m_Items;
@@ -107,7 +109,7 @@ namespace OpenSim.Data.SQLite
         public bool DeleteItems(string[] fields, string[] vals)
         {
             return m_Items.Delete(fields, vals);
-        }        
+        }
 
         public bool MoveItem(string id, string newParent)
         {
@@ -133,7 +135,7 @@ namespace OpenSim.Data.SQLite
     public class SqliteItemHandler : SqliteInventoryHandler<XInventoryItem>
     {
         public SqliteItemHandler(string c, string t, string m) :
-                base(c, t, m)
+            base(c, t, m)
         {
         }
 
@@ -157,7 +159,7 @@ namespace OpenSim.Data.SQLite
                 return false;
 
             // Don't increment folder version here since Delete(string, string) calls Delete(string[], string[])
-//            IncrementFolderVersion(retrievedItems[0].parentFolderID);
+            //            IncrementFolderVersion(retrievedItems[0].parentFolderID);
 
             return true;
         }
@@ -207,7 +209,7 @@ namespace OpenSim.Data.SQLite
 
         public XInventoryItem[] GetActiveGestures(UUID principalID)
         {
-            using (SqliteCommand cmd  = new SqliteCommand())
+            using (SqliteCommand cmd = new SqliteCommand())
             {
                 cmd.CommandText = String.Format("select * from inventoryitems where avatarId = :uuid and assetType = :type and flags = 1", m_Realm);
 
@@ -248,7 +250,7 @@ namespace OpenSim.Data.SQLite
     public class SqliteFolderHandler : SqliteInventoryHandler<XInventoryFolder>
     {
         public SqliteFolderHandler(string c, string t, string m) :
-                base(c, t, m)
+            base(c, t, m)
         {
         }
 
@@ -286,12 +288,14 @@ namespace OpenSim.Data.SQLite
 
             return true;
         }
-
     }
 
-    public class SqliteInventoryHandler<T> : SQLiteGenericTableHandler<T> where T: class, new()
+    public class SqliteInventoryHandler<T> : SQLiteGenericTableHandler<T> where T : class, new()
     {
-        public SqliteInventoryHandler(string c, string t, string m) : base(c, t, m) {}
+        public SqliteInventoryHandler(string c, string t, string m)
+            : base(c, t, m)
+        {
+        }
 
         protected bool IncrementFolderVersion(UUID folderID)
         {
@@ -300,9 +304,9 @@ namespace OpenSim.Data.SQLite
 
         protected bool IncrementFolderVersion(string folderID)
         {
-//            m_log.DebugFormat("[MYSQL ITEM HANDLER]: Incrementing version on folder {0}", folderID);
-//            Util.PrintCallStack();
-            
+            //            m_log.DebugFormat("[MYSQL ITEM HANDLER]: Incrementing version on folder {0}", folderID);
+            //            Util.PrintCallStack();
+
             using (SqliteCommand cmd = new SqliteCommand())
             {
                 cmd.CommandText = "update inventoryfolders set version=version+1 where folderID = ?folderID";

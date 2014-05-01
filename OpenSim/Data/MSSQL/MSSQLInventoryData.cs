@@ -25,14 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using OpenMetaverse;
+using OpenSim.Framework;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Reflection;
-using log4net;
-using OpenMetaverse;
-using OpenSim.Framework;
 
 namespace OpenSim.Data.MSSQL
 {
@@ -49,6 +49,7 @@ namespace OpenSim.Data.MSSQL
         /// The database manager
         /// </summary>
         private MSSQLManager database;
+
         private string m_connectionString;
 
         #region IPlugin members
@@ -69,7 +70,7 @@ namespace OpenSim.Data.MSSQL
         {
             m_connectionString = connectionString;
             database = new MSSQLManager(connectionString);
-          
+
             //New migrations check of store
             database.CheckMigration(_migrationStore);
         }
@@ -100,7 +101,7 @@ namespace OpenSim.Data.MSSQL
             get { return database.getVersion(); }
         }
 
-        #endregion
+        #endregion IPlugin members
 
         #region Folder methods
 
@@ -190,8 +191,8 @@ namespace OpenSim.Data.MSSQL
             /*  NOTE: the implementation below is very inefficient (makes a separate request to get subfolders for
              * every found folder, recursively).  Inventory code for other DBs has been already rewritten to get ALL
              * inventory for a specific user at once.
-             * 
-             * Meanwhile, one little thing is corrected:  getFolderHierarchy(UUID.Zero) doesn't make sense and should never 
+             *
+             * Meanwhile, one little thing is corrected:  getFolderHierarchy(UUID.Zero) doesn't make sense and should never
              * be used, so check for that and return an empty list.
              */
 
@@ -228,7 +229,7 @@ namespace OpenSim.Data.MSSQL
         /// <param name="folder">Folder to create</param>
         public void addInventoryFolder(InventoryFolderBase folder)
         {
-            string sql = @"INSERT INTO inventoryfolders ([folderID], [agentID], [parentFolderID], [folderName], [type], [version]) 
+            string sql = @"INSERT INTO inventoryfolders ([folderID], [agentID], [parentFolderID], [folderName], [type], [version])
                             VALUES (@folderID, @agentID, @parentFolderID, @folderName, @type, @version);";
 
             string folderName = folder.Name;
@@ -264,11 +265,11 @@ namespace OpenSim.Data.MSSQL
         /// <param name="folder">Folder to update</param>
         public void updateInventoryFolder(InventoryFolderBase folder)
         {
-            string sql = @"UPDATE inventoryfolders SET agentID = @agentID, 
+            string sql = @"UPDATE inventoryfolders SET agentID = @agentID,
                                                        parentFolderID = @parentFolderID,
                                                        folderName = @folderName,
                                                        type = @type,
-                                                       version = @version 
+                                                       version = @version
                            WHERE folderID = @folderID";
 
             string folderName = folder.Name;
@@ -337,7 +338,6 @@ namespace OpenSim.Data.MSSQL
                 cmd.Parameters.Add(database.CreateParameter("@parentID", UUID.Zero));
                 conn.Open();
                 subFolders = getFolderHierarchy(folderID, cmd);
-                
 
                 //Delete all sub-folders
                 foreach (InventoryFolderBase f in subFolders)
@@ -352,7 +352,7 @@ namespace OpenSim.Data.MSSQL
             }
         }
 
-        #endregion
+        #endregion Folder methods
 
         #region Item Methods
 
@@ -403,7 +403,7 @@ namespace OpenSim.Data.MSSQL
                     }
                 }
             }
-            
+
             m_log.InfoFormat("[INVENTORY DB]: Found no inventory item with ID : {0}", itemID);
             return null;
         }
@@ -420,24 +420,24 @@ namespace OpenSim.Data.MSSQL
                 return;
             }
 
-            string sql = @"INSERT INTO inventoryitems 
-                            ([inventoryID], [assetID], [assetType], [parentFolderID], [avatarID], [inventoryName], 
+            string sql = @"INSERT INTO inventoryitems
+                            ([inventoryID], [assetID], [assetType], [parentFolderID], [avatarID], [inventoryName],
                              [inventoryDescription], [inventoryNextPermissions], [inventoryCurrentPermissions],
                              [invType], [creatorID], [inventoryBasePermissions], [inventoryEveryOnePermissions], [inventoryGroupPermissions],
-                             [salePrice], [saleType], [creationDate], [groupID], [groupOwned], [flags]) 
+                             [salePrice], [saleType], [creationDate], [groupID], [groupOwned], [flags])
                         VALUES
                             (@inventoryID, @assetID, @assetType, @parentFolderID, @avatarID, @inventoryName, @inventoryDescription,
                              @inventoryNextPermissions, @inventoryCurrentPermissions, @invType, @creatorID,
                              @inventoryBasePermissions, @inventoryEveryOnePermissions, @inventoryGroupPermissions, @salePrice, @saleType,
                              @creationDate, @groupID, @groupOwned, @flags)";
-            
+
             string itemName = item.Name;
             if (item.Name.Length > 64)
             {
                 itemName = item.Name.Substring(0, 64);
                 m_log.Warn("[INVENTORY DB]: Name field truncated from " + item.Name.Length.ToString() + " to " + itemName.Length.ToString() + " characters");
             }
-            
+
             string itemDesc = item.Description;
             if (item.Description.Length > 128)
             {
@@ -502,25 +502,25 @@ namespace OpenSim.Data.MSSQL
         /// <param name="item">Inventory item to update</param>
         public void updateInventoryItem(InventoryItemBase item)
         {
-            string sql = @"UPDATE inventoryitems SET assetID = @assetID, 
+            string sql = @"UPDATE inventoryitems SET assetID = @assetID,
                                                 assetType = @assetType,
                                                 parentFolderID = @parentFolderID,
                                                 avatarID = @avatarID,
-                                                inventoryName = @inventoryName, 
-                                                inventoryDescription = @inventoryDescription, 
-                                                inventoryNextPermissions = @inventoryNextPermissions, 
-                                                inventoryCurrentPermissions = @inventoryCurrentPermissions, 
-                                                invType = @invType, 
-                                                creatorID = @creatorID, 
-                                                inventoryBasePermissions = @inventoryBasePermissions, 
-                                                inventoryEveryOnePermissions = @inventoryEveryOnePermissions, 
-                                                inventoryGroupPermissions = @inventoryGroupPermissions, 
-                                                salePrice = @salePrice, 
-                                                saleType = @saleType, 
-                                                creationDate = @creationDate, 
-                                                groupID = @groupID, 
-                                                groupOwned = @groupOwned, 
-                                                flags = @flags 
+                                                inventoryName = @inventoryName,
+                                                inventoryDescription = @inventoryDescription,
+                                                inventoryNextPermissions = @inventoryNextPermissions,
+                                                inventoryCurrentPermissions = @inventoryCurrentPermissions,
+                                                invType = @invType,
+                                                creatorID = @creatorID,
+                                                inventoryBasePermissions = @inventoryBasePermissions,
+                                                inventoryEveryOnePermissions = @inventoryEveryOnePermissions,
+                                                inventoryGroupPermissions = @inventoryGroupPermissions,
+                                                salePrice = @salePrice,
+                                                saleType = @saleType,
+                                                creationDate = @creationDate,
+                                                groupID = @groupID,
+                                                groupOwned = @groupOwned,
+                                                flags = @flags
                                         WHERE inventoryID = @inventoryID";
 
             string itemName = item.Name;
@@ -529,7 +529,7 @@ namespace OpenSim.Data.MSSQL
                 itemName = item.Name.Substring(0, 64);
                 m_log.Warn("[INVENTORY DB]: Name field truncated from " + item.Name.Length.ToString() + " to " + itemName.Length.ToString() + " characters on update");
             }
-            
+
             string itemDesc = item.Description;
             if (item.Description.Length > 128)
             {
@@ -635,7 +635,7 @@ namespace OpenSim.Data.MSSQL
             }
         }
 
-        #endregion
+        #endregion Item Methods
 
         #region Private methods
 
@@ -725,7 +725,6 @@ namespace OpenSim.Data.MSSQL
         {
             using (SqlDataReader reader = command.ExecuteReader())
             {
-
                 List<InventoryFolderBase> items = new List<InventoryFolderBase>();
                 while (reader.Read())
                 {
@@ -826,6 +825,6 @@ namespace OpenSim.Data.MSSQL
             }
         }
 
-        #endregion
+        #endregion Private methods
     }
 }

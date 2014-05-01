@@ -29,16 +29,18 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
-using System.IO;
 using System.Reflection;
 using log4net;
+
 #if CSharpSqlite
     using Community.CsharpSqlite.Sqlite;
 #else
+
 using Mono.Data.Sqlite;
+
 #endif
+
 using OpenMetaverse;
-using OpenMetaverse.StructuredData;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
@@ -388,7 +390,6 @@ namespace OpenSim.Data.SQLite
             StoreSpawnPoints(rs);
 
             Commit();
-
         }
 
         public void StoreSpawnPoints(RegionSettings rs)
@@ -399,7 +400,6 @@ namespace OpenSim.Data.SQLite
                     new SqliteCommand("delete from spawn_points where RegionID=:RegionID",
                                         m_conn))
             {
-
                 cmd.Parameters.Add(new SqliteParameter(":RegionID", rs.RegionUUID.ToString()));
                 cmd.ExecuteNonQuery();
             }
@@ -479,6 +479,7 @@ namespace OpenSim.Data.SQLite
         }
 
         #region Region Environment Settings
+
         public string LoadRegionEnvironmentSettings(UUID regionUUID)
         {
             DataTable environmentTable = ds.Tables["regionenvironment"];
@@ -524,7 +525,7 @@ namespace OpenSim.Data.SQLite
             regionEnvironmentDa.Update(ds, "regionenvironment");
         }
 
-        #endregion
+        #endregion Region Environment Settings
 
         public RegionSettings LoadRegionSettings(UUID regionUUID)
         {
@@ -602,7 +603,6 @@ namespace OpenSim.Data.SQLite
         /// <param name="regionUUID">the region UUID</param>
         public void RemoveObject(UUID obj, UUID regionUUID)
         {
-
             DataTable prims = ds.Tables["prims"];
             DataTable shapes = ds.Tables["primshapes"];
 
@@ -663,7 +663,7 @@ namespace OpenSim.Data.SQLite
 
             DataRow[] primsForRegion = prims.Select(byRegion);
 
-            // First, create all groups 
+            // First, create all groups
             foreach (DataRow primRow in primsForRegion)
             {
                 try
@@ -689,12 +689,10 @@ namespace OpenSim.Data.SQLite
                         }
 
                         SceneObjectGroup group = new SceneObjectGroup(prim);
-                            
+
                         createdObjects.Add(group.UUID, group);
                         retvals.Add(group);
                         LoadItems(prim);
-
-                           
                     }
                 }
                 catch (Exception e)
@@ -1137,7 +1135,7 @@ namespace OpenSim.Data.SQLite
             createCol(prims, "VolumeDetect", typeof(Int16));
 
             createCol(prims, "MediaURL", typeof(String));
-            
+
             createCol(prims, "AttachedPosX", typeof(Double));
             createCol(prims, "AttachedPosY", typeof(Double));
             createCol(prims, "AttachedPosZ", typeof(Double));
@@ -1626,10 +1624,10 @@ namespace OpenSim.Data.SQLite
 
             if (!(row["MediaURL"] is System.DBNull))
             {
-//                m_log.DebugFormat("[SQLITE]: MediaUrl type [{0}]", row["MediaURL"].GetType());
+                //                m_log.DebugFormat("[SQLITE]: MediaUrl type [{0}]", row["MediaURL"].GetType());
                 prim.MediaUrl = (string)row["MediaURL"];
             }
-            
+
             prim.AttachedPos = new Vector3(
                 Convert.ToSingle(row["AttachedPosX"]),
                 Convert.ToSingle(row["AttachedPosY"]),
@@ -1640,7 +1638,7 @@ namespace OpenSim.Data.SQLite
             {
                 //m_log.DebugFormat("[SQLITE]: DynAttrs type [{0}]", row["DynAttrs"].GetType());
                 prim.DynAttrs = DAMap.FromXml((string)row["DynAttrs"]);
-            }   
+            }
             else
             {
                 prim.DynAttrs = new DAMap();
@@ -1652,7 +1650,6 @@ namespace OpenSim.Data.SQLite
             prim.Friction = Convert.ToSingle(row["Friction"]);
             prim.Restitution = Convert.ToSingle(row["Restitution"]);
 
-            
             if (!(row["KeyframeMotion"] is DBNull))
             {
                 Byte[] data = (byte[])row["KeyframeMotion"];
@@ -1665,7 +1662,7 @@ namespace OpenSim.Data.SQLite
             {
                 prim.KeyframeMotion = null;
             }
-            
+
             return prim;
         }
 
@@ -1758,7 +1755,6 @@ namespace OpenSim.Data.SQLite
                 newData.UserLookAt =
                     new Vector3(Convert.ToSingle(row["UserLookAtX"]), Convert.ToSingle(row["UserLookAtY"]),
                                   Convert.ToSingle(row["UserLookAtZ"]));
-
             }
             catch (InvalidCastException)
             {
@@ -2007,7 +2003,6 @@ namespace OpenSim.Data.SQLite
             row["CameraAtOffsetY"] = prim.GetCameraAtOffset().Y;
             row["CameraAtOffsetZ"] = prim.GetCameraAtOffset().Z;
 
-
             if ((prim.SoundFlags & 1) != 0) // Looped
             {
                 row["LoopedSound"] = prim.Sound.ToString();
@@ -2073,8 +2068,6 @@ namespace OpenSim.Data.SQLite
                 row["KeyframeMotion"] = prim.KeyframeMotion.Serialize();
             else
                 row["KeyframeMotion"] = new Byte[0];
-            
-            
         }
 
         /// <summary>
@@ -2335,7 +2328,7 @@ namespace OpenSim.Data.SQLite
 
             if (!(row["Media"] is System.DBNull))
                 s.Media = PrimitiveBaseShape.MediaList.FromXml((string)row["Media"]);
-                        
+
             return s;
         }
 
@@ -2489,7 +2482,7 @@ namespace OpenSim.Data.SQLite
             sql += ") values (:";
             sql += String.Join(", :", cols);
             sql += ")";
-//            m_log.DebugFormat("[SQLITE]: Created insert command {0}", sql);
+            //            m_log.DebugFormat("[SQLITE]: Created insert command {0}", sql);
             SqliteCommand cmd = new SqliteCommand(sql);
 
             // this provides the binding for all our parameters, so
@@ -2500,7 +2493,6 @@ namespace OpenSim.Data.SQLite
             }
             return cmd;
         }
-
 
         /// <summary>
         /// create an update command
@@ -2814,7 +2806,7 @@ namespace OpenSim.Data.SQLite
             }
         }
 
-        static void PrintDataSet(DataSet ds)
+        private static void PrintDataSet(DataSet ds)
         {
             // Print out any name and extended properties.
             Console.WriteLine("DataSet is named: {0}", ds.DataSetName);

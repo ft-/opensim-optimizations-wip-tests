@@ -25,10 +25,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using OpenMetaverse;
-using OpenSim.Framework;
 
 namespace OpenSim.Data
 {
@@ -79,9 +76,11 @@ namespace OpenSim.Data
     public interface IXInventoryData
     {
         XInventoryFolder[] GetFolders(string[] fields, string[] vals);
+
         XInventoryItem[] GetItems(string[] fields, string[] vals);
 
         bool StoreFolder(XInventoryFolder folder);
+
         bool StoreItem(XInventoryItem item);
 
         /// <summary>
@@ -133,6 +132,7 @@ namespace OpenSim.Data
         bool MoveFolder(string id, string newParentFolderID);
 
         XInventoryItem[] GetActiveGestures(UUID principalID);
+
         int GetAssetPermissions(UUID principalID, UUID assetID);
     }
 }

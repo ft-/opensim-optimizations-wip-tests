@@ -25,23 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Data;
 using OpenMetaverse;
-using OpenSim.Framework;
+using System;
 using System.Data.SqlClient;
-using System.Reflection;
-using System.Text;
-using log4net;
 
 namespace OpenSim.Data.MSSQL
 {
     public class MSSQLXInventoryData : IXInventoryData
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(
-//                MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(
+        //                MethodBase.GetCurrentMethod().DeclaringType);
 
         private MSSQLFolderHandler m_Folders;
         private MSSQLItemHandler m_Items;
@@ -141,7 +134,6 @@ namespace OpenSim.Data.MSSQL
             {
                 using (SqlCommand cmd = new SqlCommand())
                 {
-
                     cmd.CommandText = String.Format("update {0} set parentFolderID = @ParentFolderID where inventoryID = @InventoryID", m_Realm);
                     cmd.Parameters.Add(m_database.CreateParameter("@ParentFolderID", newParent));
                     cmd.Parameters.Add(m_database.CreateParameter("@InventoryID", id));
@@ -189,7 +181,6 @@ namespace OpenSim.Data.MSSQL
                     conn.Open();
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
-
                         int perms = 0;
 
                         if (reader.Read())
@@ -199,7 +190,6 @@ namespace OpenSim.Data.MSSQL
 
                         return perms;
                     }
-
                 }
             }
         }
@@ -235,7 +225,6 @@ namespace OpenSim.Data.MSSQL
             {
                 using (SqlCommand cmd = new SqlCommand())
                 {
-
                     cmd.CommandText = String.Format("update {0} set parentFolderID = @ParentFolderID where folderID = @folderID", m_Realm);
                     cmd.Parameters.Add(m_database.CreateParameter("@ParentFolderID", newParentFolderID));
                     cmd.Parameters.Add(m_database.CreateParameter("@folderID", id));
@@ -264,9 +253,12 @@ namespace OpenSim.Data.MSSQL
         }
     }
 
-    public class MSSQLInventoryHandler<T> : MSSQLGenericTableHandler<T> where T: class, new()
+    public class MSSQLInventoryHandler<T> : MSSQLGenericTableHandler<T> where T : class, new()
     {
-        public MSSQLInventoryHandler(string c, string t, string m) : base(c, t, m) {}
+        public MSSQLInventoryHandler(string c, string t, string m)
+            : base(c, t, m)
+        {
+        }
 
         protected bool IncrementFolderVersion(UUID folderID)
         {
@@ -275,11 +267,11 @@ namespace OpenSim.Data.MSSQL
 
         protected bool IncrementFolderVersion(string folderID)
         {
-//            m_log.DebugFormat("[MYSQL ITEM HANDLER]: Incrementing version on folder {0}", folderID);
-//            Util.PrintCallStack();
+            //            m_log.DebugFormat("[MYSQL ITEM HANDLER]: Incrementing version on folder {0}", folderID);
+            //            Util.PrintCallStack();
 
             string sql = "update inventoryfolders set version=version+1 where folderID = @folderID";
-            
+
             using (SqlConnection conn = new SqlConnection(m_ConnectionString))
             {
                 using (SqlCommand cmd = new SqlCommand(sql, conn))

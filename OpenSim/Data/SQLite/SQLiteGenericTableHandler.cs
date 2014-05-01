@@ -29,21 +29,22 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Reflection;
-using log4net;
+
 #if CSharpSqlite
     using Community.CsharpSqlite.Sqlite;
 #else
-    using Mono.Data.Sqlite;
+
+using Mono.Data.Sqlite;
+
 #endif
+
 using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Interfaces;
 
 namespace OpenSim.Data.SQLite
 {
-    public class SQLiteGenericTableHandler<T> : SQLiteFramework where T: class, new()
+    public class SQLiteGenericTableHandler<T> : SQLiteFramework where T : class, new()
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         protected Dictionary<string, FieldInfo> m_Fields =
                 new Dictionary<string, FieldInfo>();
@@ -61,7 +62,8 @@ namespace OpenSim.Data.SQLite
         }
 
         public SQLiteGenericTableHandler(string connectionString,
-                string realm, string storeName) : base(connectionString)
+                string realm, string storeName)
+            : base(connectionString)
         {
             m_Realm = realm;
 
@@ -95,7 +97,7 @@ namespace OpenSim.Data.SQLite
             if (fields.Length == 0)
                 return;
 
-            foreach (FieldInfo f in  fields)
+            foreach (FieldInfo f in fields)
             {
                 if (f.Name != "Data")
                     m_Fields[f.Name] = f;
@@ -134,7 +136,7 @@ namespace OpenSim.Data.SQLite
 
             using (SqliteCommand cmd = new SqliteCommand())
             {
-                for (int i = 0 ; i < fields.Length ; i++)
+                for (int i = 0; i < fields.Length; i++)
                 {
                     cmd.Parameters.Add(new SqliteParameter(":" + fields[i], keys[i]));
                     terms.Add("`" + fields[i] + "` = :" + fields[i]);
@@ -189,7 +191,7 @@ namespace OpenSim.Data.SQLite
                         m_Fields[name].SetValue(row, reader[name]);
                     }
                 }
-                
+
                 if (m_DataField != null)
                 {
                     Dictionary<string, string> data =
@@ -268,7 +270,7 @@ namespace OpenSim.Data.SQLite
         public virtual bool Delete(string field, string key)
         {
             return Delete(new string[] { field }, new string[] { key });
-        }        
+        }
 
         public virtual bool Delete(string[] fields, string[] keys)
         {
@@ -279,7 +281,7 @@ namespace OpenSim.Data.SQLite
 
             using (SqliteCommand cmd = new SqliteCommand())
             {
-                for (int i = 0 ; i < fields.Length ; i++)
+                for (int i = 0; i < fields.Length; i++)
                 {
                     cmd.Parameters.Add(new SqliteParameter(":" + fields[i], keys[i]));
                     terms.Add("`" + fields[i] + "` = :" + fields[i]);

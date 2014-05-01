@@ -25,11 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-
 using OpenMetaverse;
 using OpenSim.Framework;
+using System.Collections.Generic;
 
 namespace OpenSim.Data.Null
 {
@@ -57,7 +55,6 @@ namespace OpenSim.Data.Null
         public void Initialise(string connect)
         {
         }
-
 
         /// <summary>
         /// Returns all descendent folders of this folder.  Does not return the parent folder itself.

@@ -25,26 +25,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Reflection;
-using log4net;
 using System.Data.SqlClient;
-using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Interfaces;
+using System.Reflection;
 using System.Text;
 
 namespace OpenSim.Data.MSSQL
 {
     public class MSSQLGenericTableHandler<T> where T : class, new()
     {
-//        private static readonly ILog m_log =
-//            LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log =
+        //            LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         protected string m_ConnectionString;
         protected MSSQLManager m_database; //used for parameter type translation
+
         protected Dictionary<string, FieldInfo> m_Fields =
                 new Dictionary<string, FieldInfo>();
 
@@ -56,7 +54,7 @@ namespace OpenSim.Data.MSSQL
                 string realm, string storeName)
         {
             m_Realm = realm;
-            
+
             m_ConnectionString = connectionString;
 
             if (storeName != String.Empty)
@@ -67,7 +65,6 @@ namespace OpenSim.Data.MSSQL
                     Migration m = new Migration(conn, GetType().Assembly, storeName);
                     m.Update();
                 }
-
             }
             m_database = new MSSQLManager(m_ConnectionString);
 
@@ -86,7 +83,6 @@ namespace OpenSim.Data.MSSQL
                 else
                     m_DataField = f;
             }
-
         }
 
         private void CheckColumnNames(SqlDataReader reader)
@@ -102,19 +98,18 @@ namespace OpenSim.Data.MSSQL
                 if (row["ColumnName"] != null &&
                         (!m_Fields.ContainsKey(row["ColumnName"].ToString())))
                     m_ColumnNames.Add(row["ColumnName"].ToString());
-
             }
         }
 
         private List<string> GetConstraints()
         {
             List<string> constraints = new List<string>();
-            string query = string.Format(@"SELECT 
+            string query = string.Format(@"SELECT
                             COL_NAME(ic.object_id,ic.column_id) AS column_name
                             FROM sys.indexes AS i
-                            INNER JOIN sys.index_columns AS ic 
+                            INNER JOIN sys.index_columns AS ic
                               ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-                            WHERE i.is_primary_key = 1 
+                            WHERE i.is_primary_key = 1
                             AND i.object_id = OBJECT_ID('{0}');", m_Realm);
             using (SqlConnection conn = new SqlConnection(m_ConnectionString))
             using (SqlCommand cmd = new SqlCommand(query, conn))
@@ -147,7 +142,6 @@ namespace OpenSim.Data.MSSQL
             using (SqlConnection conn = new SqlConnection(m_ConnectionString))
             using (SqlCommand cmd = new SqlCommand())
             {
-
                 for (int i = 0; i < fields.Length; i++)
                 {
                     cmd.Parameters.Add(m_database.CreateParameter(fields[i], keys[i]));
@@ -174,7 +168,7 @@ namespace OpenSim.Data.MSSQL
                 if (reader == null)
                     return new T[0];
 
-                CheckColumnNames(reader);                
+                CheckColumnNames(reader);
 
                 while (reader.Read())
                 {
@@ -231,7 +225,6 @@ namespace OpenSim.Data.MSSQL
             using (SqlConnection conn = new SqlConnection(m_ConnectionString))
             using (SqlCommand cmd = new SqlCommand())
             {
-
                 string query = String.Format("SELECT * FROM {0} WHERE {1}",
                         m_Realm, where);
                 cmd.Connection = conn;
@@ -252,7 +245,6 @@ namespace OpenSim.Data.MSSQL
             using (SqlConnection conn = new SqlConnection(m_ConnectionString))
             using (SqlCommand cmd = new SqlCommand())
             {
-
                 StringBuilder query = new StringBuilder();
                 List<String> names = new List<String>();
                 List<String> values = new List<String>();
@@ -262,7 +254,7 @@ namespace OpenSim.Data.MSSQL
                     names.Add(fi.Name);
                     values.Add("@" + fi.Name);
                     // Temporarily return more information about what field is unexpectedly null for
-                    // http://opensimulator.org/mantis/view.php?id=5403.  This might be due to a bug in the 
+                    // http://opensimulator.org/mantis/view.php?id=5403.  This might be due to a bug in the
                     // InventoryTransferModule or we may be required to substitute a DBNull here.
                     if (fi.GetValue(row) == null)
                         throw new NullReferenceException(
@@ -292,7 +284,6 @@ namespace OpenSim.Data.MSSQL
                         values.Add("@" + kvp.Key);
                         cmd.Parameters.Add(m_database.CreateParameter("@" + kvp.Key, kvp.Value));
                     }
-
                 }
 
                 query.AppendFormat("UPDATE {0} SET ", m_Realm);
@@ -311,11 +302,10 @@ namespace OpenSim.Data.MSSQL
                     }
                     string where = String.Join(" AND ", terms.ToArray());
                     query.AppendFormat(" WHERE {0} ", where);
-                    
                 }
                 cmd.Connection = conn;
                 cmd.CommandText = query.ToString();
-                
+
                 conn.Open();
                 if (cmd.ExecuteNonQuery() > 0)
                 {

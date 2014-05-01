@@ -25,15 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Data;
 using OpenMetaverse;
-using OpenSim.Framework;
+using System;
 using System.Data.SqlClient;
-using System.Reflection;
-using System.Text;
 
 namespace OpenSim.Data.MSSQL
 {
@@ -81,7 +75,6 @@ namespace OpenSim.Data.MSSQL
             using (SqlConnection conn = new SqlConnection(m_ConnectionString))
             using (SqlCommand cmd = new SqlCommand())
             {
-
                 cmd.CommandText = String.Format("select a.*,case when b.Flags is null then -1 else b.Flags end as TheirFlags from {0} as a left join {0} as b on a.PrincipalID = b.Friend and a.Friend = b.PrincipalID where a.PrincipalID = @PrincipalID", m_Realm);
                 cmd.Parameters.Add(m_database.CreateParameter("@PrincipalID", principalID.ToString()));
                 cmd.Connection = conn;
@@ -94,6 +87,5 @@ namespace OpenSim.Data.MSSQL
         {
             return GetFriends(principalID.ToString());
         }
- 
     }
 }

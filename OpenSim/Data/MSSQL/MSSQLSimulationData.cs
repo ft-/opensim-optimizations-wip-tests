@@ -25,18 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Data.SqlClient;
-using System.Drawing;
-using System.IO;
-using System.Reflection;
 using log4net;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.Drawing;
+using System.Reflection;
 
 namespace OpenSim.Data.MSSQL
 {
@@ -49,13 +48,16 @@ namespace OpenSim.Data.MSSQL
 
         // private static FileSystemDataStore Instance = new FileSystemDataStore();
         private static readonly ILog _Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         private static string LogHeader = "[REGION DB MSSQL]";
 
         /// <summary>
         /// The database manager
         /// </summary>
         private MSSQLManager _Database;
+
         private string m_connectionString;
+
         protected virtual Assembly Assembly
         {
             get { return GetType().Assembly; }
@@ -91,7 +93,9 @@ namespace OpenSim.Data.MSSQL
         /// <summary>
         /// Dispose the database
         /// </summary>
-        public void Dispose() { }
+        public void Dispose()
+        {
+        }
 
         #region SceneObjectGroup region for loading and Store of the scene.
 
@@ -144,7 +148,7 @@ namespace OpenSim.Data.MSSQL
                             // There sometimes exist OpenSim bugs that 'orphan groups' so that none of the prims are
                             // recorded as the root prim (for which the UUID must equal the persisted group UUID).  In
                             // this case, force the UUID to be the same as the group UUID so that at least these can be
-                            // deleted (we need to change the UUID so that any other prims in the linkset can also be 
+                            // deleted (we need to change the UUID so that any other prims in the linkset can also be
                             // deleted).
                             if (sceneObjectPart.UUID != groupID && groupID != UUID.Zero)
                             {
@@ -176,7 +180,7 @@ namespace OpenSim.Data.MSSQL
                 objects[grp.UUID] = grp;
 
             // Instead of attempting to LoadItems on every prim,
-            // most of which probably have no items... get a 
+            // most of which probably have no items... get a
             // list from DB of all prims which have items and
             // LoadItems only on those
             List<SceneObjectPart> primsWithInventory = new List<SceneObjectPart>();
@@ -313,7 +317,6 @@ namespace OpenSim.Data.MSSQL
                     {
                         //Show error
                         _Log.InfoFormat("[REGION DB]: Rollback of SceneObjectGroup store transaction failed with error: {0}", ex2.Message);
-
                     }
                 }
             }
@@ -333,24 +336,24 @@ namespace OpenSim.Data.MSSQL
             string queryPrims = @"
 IF EXISTS (SELECT UUID FROM prims WHERE UUID = @UUID)
     BEGIN
-        UPDATE prims SET 
-            CreationDate = @CreationDate, Name = @Name, Text = @Text, Description = @Description, SitName = @SitName, 
-            TouchName = @TouchName, ObjectFlags = @ObjectFlags, OwnerMask = @OwnerMask, NextOwnerMask = @NextOwnerMask, GroupMask = @GroupMask, 
-            EveryoneMask = @EveryoneMask, BaseMask = @BaseMask, PositionX = @PositionX, PositionY = @PositionY, PositionZ = @PositionZ, 
-            GroupPositionX = @GroupPositionX, GroupPositionY = @GroupPositionY, GroupPositionZ = @GroupPositionZ, VelocityX = @VelocityX, 
-            VelocityY = @VelocityY, VelocityZ = @VelocityZ, AngularVelocityX = @AngularVelocityX, AngularVelocityY = @AngularVelocityY, 
-            AngularVelocityZ = @AngularVelocityZ, AccelerationX = @AccelerationX, AccelerationY = @AccelerationY, 
-            AccelerationZ = @AccelerationZ, RotationX = @RotationX, RotationY = @RotationY, RotationZ = @RotationZ, RotationW = @RotationW, 
-            SitTargetOffsetX = @SitTargetOffsetX, SitTargetOffsetY = @SitTargetOffsetY, SitTargetOffsetZ = @SitTargetOffsetZ, 
-            SitTargetOrientW = @SitTargetOrientW, SitTargetOrientX = @SitTargetOrientX, SitTargetOrientY = @SitTargetOrientY, 
-            SitTargetOrientZ = @SitTargetOrientZ, RegionUUID = @RegionUUID, CreatorID = @CreatorID, OwnerID = @OwnerID, GroupID = @GroupID, 
-            LastOwnerID = @LastOwnerID, SceneGroupID = @SceneGroupID, PayPrice = @PayPrice, PayButton1 = @PayButton1, PayButton2 = @PayButton2, 
-            PayButton3 = @PayButton3, PayButton4 = @PayButton4, LoopedSound = @LoopedSound, LoopedSoundGain = @LoopedSoundGain, 
-            TextureAnimation = @TextureAnimation, OmegaX = @OmegaX, OmegaY = @OmegaY, OmegaZ = @OmegaZ, CameraEyeOffsetX = @CameraEyeOffsetX, 
-            CameraEyeOffsetY = @CameraEyeOffsetY, CameraEyeOffsetZ = @CameraEyeOffsetZ, CameraAtOffsetX = @CameraAtOffsetX, 
-            CameraAtOffsetY = @CameraAtOffsetY, CameraAtOffsetZ = @CameraAtOffsetZ, ForceMouselook = @ForceMouselook, 
-            ScriptAccessPin = @ScriptAccessPin, AllowedDrop = @AllowedDrop, DieAtEdge = @DieAtEdge, SalePrice = @SalePrice, 
-            SaleType = @SaleType, ColorR = @ColorR, ColorG = @ColorG, ColorB = @ColorB, ColorA = @ColorA, ParticleSystem = @ParticleSystem, 
+        UPDATE prims SET
+            CreationDate = @CreationDate, Name = @Name, Text = @Text, Description = @Description, SitName = @SitName,
+            TouchName = @TouchName, ObjectFlags = @ObjectFlags, OwnerMask = @OwnerMask, NextOwnerMask = @NextOwnerMask, GroupMask = @GroupMask,
+            EveryoneMask = @EveryoneMask, BaseMask = @BaseMask, PositionX = @PositionX, PositionY = @PositionY, PositionZ = @PositionZ,
+            GroupPositionX = @GroupPositionX, GroupPositionY = @GroupPositionY, GroupPositionZ = @GroupPositionZ, VelocityX = @VelocityX,
+            VelocityY = @VelocityY, VelocityZ = @VelocityZ, AngularVelocityX = @AngularVelocityX, AngularVelocityY = @AngularVelocityY,
+            AngularVelocityZ = @AngularVelocityZ, AccelerationX = @AccelerationX, AccelerationY = @AccelerationY,
+            AccelerationZ = @AccelerationZ, RotationX = @RotationX, RotationY = @RotationY, RotationZ = @RotationZ, RotationW = @RotationW,
+            SitTargetOffsetX = @SitTargetOffsetX, SitTargetOffsetY = @SitTargetOffsetY, SitTargetOffsetZ = @SitTargetOffsetZ,
+            SitTargetOrientW = @SitTargetOrientW, SitTargetOrientX = @SitTargetOrientX, SitTargetOrientY = @SitTargetOrientY,
+            SitTargetOrientZ = @SitTargetOrientZ, RegionUUID = @RegionUUID, CreatorID = @CreatorID, OwnerID = @OwnerID, GroupID = @GroupID,
+            LastOwnerID = @LastOwnerID, SceneGroupID = @SceneGroupID, PayPrice = @PayPrice, PayButton1 = @PayButton1, PayButton2 = @PayButton2,
+            PayButton3 = @PayButton3, PayButton4 = @PayButton4, LoopedSound = @LoopedSound, LoopedSoundGain = @LoopedSoundGain,
+            TextureAnimation = @TextureAnimation, OmegaX = @OmegaX, OmegaY = @OmegaY, OmegaZ = @OmegaZ, CameraEyeOffsetX = @CameraEyeOffsetX,
+            CameraEyeOffsetY = @CameraEyeOffsetY, CameraEyeOffsetZ = @CameraEyeOffsetZ, CameraAtOffsetX = @CameraAtOffsetX,
+            CameraAtOffsetY = @CameraAtOffsetY, CameraAtOffsetZ = @CameraAtOffsetZ, ForceMouselook = @ForceMouselook,
+            ScriptAccessPin = @ScriptAccessPin, AllowedDrop = @AllowedDrop, DieAtEdge = @DieAtEdge, SalePrice = @SalePrice,
+            SaleType = @SaleType, ColorR = @ColorR, ColorG = @ColorG, ColorB = @ColorB, ColorA = @ColorA, ParticleSystem = @ParticleSystem,
             ClickAction = @ClickAction, Material = @Material, CollisionSound = @CollisionSound, CollisionSoundVolume = @CollisionSoundVolume, PassTouches = @PassTouches,
             LinkNumber = @LinkNumber, MediaURL = @MediaURL, AttachedPosX = @AttachedPosX, AttachedPosY = @AttachedPosY, AttachedPosZ = @AttachedPosZ, DynAttrs = @DynAttrs,
             PhysicsShapeType = @PhysicsShapeType, Density = @Density, GravityModifier = @GravityModifier, Friction = @Friction, Restitution = @Restitution
@@ -358,27 +361,27 @@ IF EXISTS (SELECT UUID FROM prims WHERE UUID = @UUID)
     END
 ELSE
     BEGIN
-        INSERT INTO 
+        INSERT INTO
             prims (
-            UUID, CreationDate, Name, Text, Description, SitName, TouchName, ObjectFlags, OwnerMask, NextOwnerMask, GroupMask, 
-            EveryoneMask, BaseMask, PositionX, PositionY, PositionZ, GroupPositionX, GroupPositionY, GroupPositionZ, VelocityX, 
-            VelocityY, VelocityZ, AngularVelocityX, AngularVelocityY, AngularVelocityZ, AccelerationX, AccelerationY, AccelerationZ, 
-            RotationX, RotationY, RotationZ, RotationW, SitTargetOffsetX, SitTargetOffsetY, SitTargetOffsetZ, SitTargetOrientW, 
-            SitTargetOrientX, SitTargetOrientY, SitTargetOrientZ, RegionUUID, CreatorID, OwnerID, GroupID, LastOwnerID, SceneGroupID, 
-            PayPrice, PayButton1, PayButton2, PayButton3, PayButton4, LoopedSound, LoopedSoundGain, TextureAnimation, OmegaX, 
-            OmegaY, OmegaZ, CameraEyeOffsetX, CameraEyeOffsetY, CameraEyeOffsetZ, CameraAtOffsetX, CameraAtOffsetY, CameraAtOffsetZ, 
-            ForceMouselook, ScriptAccessPin, AllowedDrop, DieAtEdge, SalePrice, SaleType, ColorR, ColorG, ColorB, ColorA, 
+            UUID, CreationDate, Name, Text, Description, SitName, TouchName, ObjectFlags, OwnerMask, NextOwnerMask, GroupMask,
+            EveryoneMask, BaseMask, PositionX, PositionY, PositionZ, GroupPositionX, GroupPositionY, GroupPositionZ, VelocityX,
+            VelocityY, VelocityZ, AngularVelocityX, AngularVelocityY, AngularVelocityZ, AccelerationX, AccelerationY, AccelerationZ,
+            RotationX, RotationY, RotationZ, RotationW, SitTargetOffsetX, SitTargetOffsetY, SitTargetOffsetZ, SitTargetOrientW,
+            SitTargetOrientX, SitTargetOrientY, SitTargetOrientZ, RegionUUID, CreatorID, OwnerID, GroupID, LastOwnerID, SceneGroupID,
+            PayPrice, PayButton1, PayButton2, PayButton3, PayButton4, LoopedSound, LoopedSoundGain, TextureAnimation, OmegaX,
+            OmegaY, OmegaZ, CameraEyeOffsetX, CameraEyeOffsetY, CameraEyeOffsetZ, CameraAtOffsetX, CameraAtOffsetY, CameraAtOffsetZ,
+            ForceMouselook, ScriptAccessPin, AllowedDrop, DieAtEdge, SalePrice, SaleType, ColorR, ColorG, ColorB, ColorA,
             ParticleSystem, ClickAction, Material, CollisionSound, CollisionSoundVolume, PassTouches, LinkNumber, MediaURL, AttachedPosX, AttachedPosY, AttachedPosZ, DynAttrs,
             PhysicsShapeType, Density, GravityModifier, Friction, Restitution
             ) VALUES (
-            @UUID, @CreationDate, @Name, @Text, @Description, @SitName, @TouchName, @ObjectFlags, @OwnerMask, @NextOwnerMask, @GroupMask, 
-            @EveryoneMask, @BaseMask, @PositionX, @PositionY, @PositionZ, @GroupPositionX, @GroupPositionY, @GroupPositionZ, @VelocityX, 
-            @VelocityY, @VelocityZ, @AngularVelocityX, @AngularVelocityY, @AngularVelocityZ, @AccelerationX, @AccelerationY, @AccelerationZ, 
-            @RotationX, @RotationY, @RotationZ, @RotationW, @SitTargetOffsetX, @SitTargetOffsetY, @SitTargetOffsetZ, @SitTargetOrientW, 
-            @SitTargetOrientX, @SitTargetOrientY, @SitTargetOrientZ, @RegionUUID, @CreatorID, @OwnerID, @GroupID, @LastOwnerID, @SceneGroupID, 
-            @PayPrice, @PayButton1, @PayButton2, @PayButton3, @PayButton4, @LoopedSound, @LoopedSoundGain, @TextureAnimation, @OmegaX, 
-            @OmegaY, @OmegaZ, @CameraEyeOffsetX, @CameraEyeOffsetY, @CameraEyeOffsetZ, @CameraAtOffsetX, @CameraAtOffsetY, @CameraAtOffsetZ, 
-            @ForceMouselook, @ScriptAccessPin, @AllowedDrop, @DieAtEdge, @SalePrice, @SaleType, @ColorR, @ColorG, @ColorB, @ColorA, 
+            @UUID, @CreationDate, @Name, @Text, @Description, @SitName, @TouchName, @ObjectFlags, @OwnerMask, @NextOwnerMask, @GroupMask,
+            @EveryoneMask, @BaseMask, @PositionX, @PositionY, @PositionZ, @GroupPositionX, @GroupPositionY, @GroupPositionZ, @VelocityX,
+            @VelocityY, @VelocityZ, @AngularVelocityX, @AngularVelocityY, @AngularVelocityZ, @AccelerationX, @AccelerationY, @AccelerationZ,
+            @RotationX, @RotationY, @RotationZ, @RotationW, @SitTargetOffsetX, @SitTargetOffsetY, @SitTargetOffsetZ, @SitTargetOrientW,
+            @SitTargetOrientX, @SitTargetOrientY, @SitTargetOrientZ, @RegionUUID, @CreatorID, @OwnerID, @GroupID, @LastOwnerID, @SceneGroupID,
+            @PayPrice, @PayButton1, @PayButton2, @PayButton3, @PayButton4, @LoopedSound, @LoopedSoundGain, @TextureAnimation, @OmegaX,
+            @OmegaY, @OmegaZ, @CameraEyeOffsetX, @CameraEyeOffsetY, @CameraEyeOffsetZ, @CameraAtOffsetX, @CameraAtOffsetY, @CameraAtOffsetZ,
+            @ForceMouselook, @ScriptAccessPin, @AllowedDrop, @DieAtEdge, @SalePrice, @SaleType, @ColorR, @ColorG, @ColorB, @ColorA,
             @ParticleSystem, @ClickAction, @Material, @CollisionSound, @CollisionSoundVolume, @PassTouches, @LinkNumber, @MediaURL, @AttachedPosX, @AttachedPosY, @AttachedPosZ, @DynAttrs,
             @PhysicsShapeType, @Density, @GravityModifier, @Friction, @Restitution
             )
@@ -407,25 +410,25 @@ ELSE
             string queryPrimShapes = @"
 IF EXISTS (SELECT UUID FROM primshapes WHERE UUID = @UUID)
     BEGIN
-        UPDATE primshapes SET 
-            Shape = @Shape, ScaleX = @ScaleX, ScaleY = @ScaleY, ScaleZ = @ScaleZ, PCode = @PCode, PathBegin = @PathBegin, 
-            PathEnd = @PathEnd, PathScaleX = @PathScaleX, PathScaleY = @PathScaleY, PathShearX = @PathShearX, PathShearY = @PathShearY, 
-            PathSkew = @PathSkew, PathCurve = @PathCurve, PathRadiusOffset = @PathRadiusOffset, PathRevolutions = @PathRevolutions, 
-            PathTaperX = @PathTaperX, PathTaperY = @PathTaperY, PathTwist = @PathTwist, PathTwistBegin = @PathTwistBegin, 
-            ProfileBegin = @ProfileBegin, ProfileEnd = @ProfileEnd, ProfileCurve = @ProfileCurve, ProfileHollow = @ProfileHollow, 
+        UPDATE primshapes SET
+            Shape = @Shape, ScaleX = @ScaleX, ScaleY = @ScaleY, ScaleZ = @ScaleZ, PCode = @PCode, PathBegin = @PathBegin,
+            PathEnd = @PathEnd, PathScaleX = @PathScaleX, PathScaleY = @PathScaleY, PathShearX = @PathShearX, PathShearY = @PathShearY,
+            PathSkew = @PathSkew, PathCurve = @PathCurve, PathRadiusOffset = @PathRadiusOffset, PathRevolutions = @PathRevolutions,
+            PathTaperX = @PathTaperX, PathTaperY = @PathTaperY, PathTwist = @PathTwist, PathTwistBegin = @PathTwistBegin,
+            ProfileBegin = @ProfileBegin, ProfileEnd = @ProfileEnd, ProfileCurve = @ProfileCurve, ProfileHollow = @ProfileHollow,
             Texture = @Texture, ExtraParams = @ExtraParams, State = @State, Media = @Media
         WHERE UUID = @UUID
     END
 ELSE
     BEGIN
-        INSERT INTO 
+        INSERT INTO
             primshapes (
-            UUID, Shape, ScaleX, ScaleY, ScaleZ, PCode, PathBegin, PathEnd, PathScaleX, PathScaleY, PathShearX, PathShearY, 
-            PathSkew, PathCurve, PathRadiusOffset, PathRevolutions, PathTaperX, PathTaperY, PathTwist, PathTwistBegin, ProfileBegin, 
+            UUID, Shape, ScaleX, ScaleY, ScaleZ, PCode, PathBegin, PathEnd, PathScaleX, PathScaleY, PathShearX, PathShearY,
+            PathSkew, PathCurve, PathRadiusOffset, PathRevolutions, PathTaperX, PathTaperY, PathTwist, PathTwistBegin, ProfileBegin,
             ProfileEnd, ProfileCurve, ProfileHollow, Texture, ExtraParams, State, Media
             ) VALUES (
-            @UUID, @Shape, @ScaleX, @ScaleY, @ScaleZ, @PCode, @PathBegin, @PathEnd, @PathScaleX, @PathScaleY, @PathShearX, @PathShearY, 
-            @PathSkew, @PathCurve, @PathRadiusOffset, @PathRevolutions, @PathTaperX, @PathTaperY, @PathTwist, @PathTwistBegin, @ProfileBegin, 
+            @UUID, @Shape, @ScaleX, @ScaleY, @ScaleZ, @PCode, @PathBegin, @PathEnd, @PathScaleX, @PathScaleY, @PathShearX, @PathShearY,
+            @PathSkew, @PathCurve, @PathRadiusOffset, @PathRevolutions, @PathTaperX, @PathTaperY, @PathTwist, @PathTwistBegin, @ProfileBegin,
             @ProfileEnd, @ProfileCurve, @ProfileHollow, @Texture, @ExtraParams, @State, @Media
             )
     END";
@@ -438,7 +441,6 @@ ELSE
 
             //Execute the query. If it fails then error is trapped in calling function
             sqlCommand.ExecuteNonQuery();
-
         }
 
         /// <summary>
@@ -505,7 +507,7 @@ ELSE
             sql =
                 @"INSERT INTO primitems (
             itemID,primID,assetID,parentFolderID,invType,assetType,name,description,creationDate,creatorID,ownerID,lastOwnerID,groupID,
-            nextPermissions,currentPermissions,basePermissions,everyonePermissions,groupPermissions,flags) 
+            nextPermissions,currentPermissions,basePermissions,everyonePermissions,groupPermissions,flags)
             VALUES (@itemID,@primID,@assetID,@parentFolderID,@invType,@assetType,@name,@description,@creationDate,@creatorID,@ownerID,
             @lastOwnerID,@groupID,@nextPermissions,@currentPermissions,@basePermissions,@everyonePermissions,@groupPermissions,@flags)";
 
@@ -522,7 +524,7 @@ ELSE
             }
         }
 
-        #endregion
+        #endregion SceneObjectGroup region for loading and Store of the scene.
 
         /// <summary>
         /// Loads the terrain map.
@@ -680,7 +682,7 @@ ELSE
             RemoveLandObject(parcel.LandData.GlobalID);
 
             //Insert new values
-            string sql = @"INSERT INTO [land] 
+            string sql = @"INSERT INTO [land]
 ([UUID],[RegionUUID],[LocalLandID],[Bitmap],[Name],[Description],[OwnerUUID],[IsGroupOwned],[Area],[AuctionID],[Category],[ClaimDate],[ClaimPrice],[GroupUUID],[SalePrice],[LandStatus],[LandFlags],[LandingType],[MediaAutoScale],[MediaTextureUUID],[MediaURL],[MusicURL],[PassHours],[PassPrice],[SnapshotUUID],[UserLocationX],[UserLocationY],[UserLocationZ],[UserLookAtX],[UserLookAtY],[UserLookAtZ],[AuthbuyerID],[OtherCleanTime])
 VALUES
 (@UUID,@RegionUUID,@LocalLandID,@Bitmap,@Name,@Description,@OwnerUUID,@IsGroupOwned,@Area,@AuctionID,@Category,@ClaimDate,@ClaimPrice,@GroupUUID,@SalePrice,@LandStatus,@LandFlags,@LandingType,@MediaAutoScale,@MediaTextureUUID,@MediaURL,@MusicURL,@PassHours,@PassPrice,@SnapshotUUID,@UserLocationX,@UserLocationY,@UserLocationZ,@UserLookAtX,@UserLookAtY,@UserLookAtZ,@AuthbuyerID,@OtherCleanTime)";
@@ -732,6 +734,7 @@ VALUES
                 cmd.ExecuteNonQuery();
             }
         }
+
         public RegionLightShareData LoadRegionWindlightSettings(UUID regionUUID)
         {
             RegionLightShareData nWP = new RegionLightShareData();
@@ -1054,7 +1057,9 @@ VALUES
                     cmd.ExecuteNonQuery();
                 }
             }
+
             #region update
+
             //            }
             //            else
             //            {
@@ -1197,10 +1202,12 @@ VALUES
             //                    }
             //                }
             //            }
-            #endregion
+
+            #endregion update
         }
 
         #region Environment Settings
+
         public string LoadRegionEnvironmentSettings(UUID regionUUID)
         {
             string sql = "select * from [regionenvironment] where region_id = @region_id";
@@ -1263,7 +1270,8 @@ VALUES
                 cmd.ExecuteNonQuery();
             }
         }
-        #endregion
+
+        #endregion Environment Settings
 
         /// <summary>
         /// Loads the settings of a region.
@@ -1329,15 +1337,15 @@ VALUES
             {
                 //This method only updates region settings!!! First call LoadRegionSettings to create new region settings in DB
                 sql =
-                   @"UPDATE [regionsettings] SET [block_terraform] = @block_terraform ,[block_fly] = @block_fly ,[allow_damage] = @allow_damage 
-,[restrict_pushing] = @restrict_pushing ,[allow_land_resell] = @allow_land_resell ,[allow_land_join_divide] = @allow_land_join_divide 
-,[block_show_in_search] = @block_show_in_search ,[agent_limit] = @agent_limit ,[object_bonus] = @object_bonus ,[maturity] = @maturity 
-,[disable_scripts] = @disable_scripts ,[disable_collisions] = @disable_collisions ,[disable_physics] = @disable_physics 
-,[terrain_texture_1] = @terrain_texture_1 ,[terrain_texture_2] = @terrain_texture_2 ,[terrain_texture_3] = @terrain_texture_3 
-,[terrain_texture_4] = @terrain_texture_4 ,[elevation_1_nw] = @elevation_1_nw ,[elevation_2_nw] = @elevation_2_nw 
-,[elevation_1_ne] = @elevation_1_ne ,[elevation_2_ne] = @elevation_2_ne ,[elevation_1_se] = @elevation_1_se ,[elevation_2_se] = @elevation_2_se 
-,[elevation_1_sw] = @elevation_1_sw ,[elevation_2_sw] = @elevation_2_sw ,[water_height] = @water_height ,[terrain_raise_limit] = @terrain_raise_limit 
-,[terrain_lower_limit] = @terrain_lower_limit ,[use_estate_sun] = @use_estate_sun ,[fixed_sun] = @fixed_sun ,[sun_position] = @sun_position 
+                   @"UPDATE [regionsettings] SET [block_terraform] = @block_terraform ,[block_fly] = @block_fly ,[allow_damage] = @allow_damage
+,[restrict_pushing] = @restrict_pushing ,[allow_land_resell] = @allow_land_resell ,[allow_land_join_divide] = @allow_land_join_divide
+,[block_show_in_search] = @block_show_in_search ,[agent_limit] = @agent_limit ,[object_bonus] = @object_bonus ,[maturity] = @maturity
+,[disable_scripts] = @disable_scripts ,[disable_collisions] = @disable_collisions ,[disable_physics] = @disable_physics
+,[terrain_texture_1] = @terrain_texture_1 ,[terrain_texture_2] = @terrain_texture_2 ,[terrain_texture_3] = @terrain_texture_3
+,[terrain_texture_4] = @terrain_texture_4 ,[elevation_1_nw] = @elevation_1_nw ,[elevation_2_nw] = @elevation_2_nw
+,[elevation_1_ne] = @elevation_1_ne ,[elevation_2_ne] = @elevation_2_ne ,[elevation_1_se] = @elevation_1_se ,[elevation_2_se] = @elevation_2_se
+,[elevation_1_sw] = @elevation_1_sw ,[elevation_2_sw] = @elevation_2_sw ,[water_height] = @water_height ,[terrain_raise_limit] = @terrain_raise_limit
+,[terrain_lower_limit] = @terrain_lower_limit ,[use_estate_sun] = @use_estate_sun ,[fixed_sun] = @fixed_sun ,[sun_position] = @sun_position
 ,[covenant] = @covenant ,[covenant_datetime] = @covenant_datetime, [sunvectorx] = @sunvectorx, [sunvectory] = @sunvectory, [sunvectorz] = @sunvectorz,  [Sandbox] = @Sandbox, [loaded_creation_datetime] = @loaded_creation_datetime, [loaded_creation_id] = @loaded_creation_id, [map_tile_id] = @TerrainImageID, [telehubobject] = @telehubobject, [parcel_tile_id] = @ParcelImageID
  WHERE [regionUUID] = @regionUUID";
 
@@ -1371,7 +1379,7 @@ VALUES
                                 [terrain_texture_1],[terrain_texture_2],[terrain_texture_3],[terrain_texture_4],[elevation_1_nw],[elevation_2_nw],[elevation_1_ne],
                                 [elevation_2_ne],[elevation_1_se],[elevation_2_se],[elevation_1_sw],[elevation_2_sw],[water_height],[terrain_raise_limit],
                                 [terrain_lower_limit],[use_estate_sun],[fixed_sun],[sun_position],[covenant],[covenant_datetime],[sunvectorx], [sunvectory], [sunvectorz],[Sandbox], [loaded_creation_datetime], [loaded_creation_id]
- ) 
+ )
                             VALUES
                                 (@regionUUID,@block_terraform,@block_fly,@allow_damage,@restrict_pushing,@allow_land_resell,@allow_land_join_divide,
                                 @block_show_in_search,@agent_limit,@object_bonus,@maturity,@disable_scripts,@disable_collisions,@disable_physics,
@@ -1685,7 +1693,7 @@ VALUES
 
             if (!(primRow["MediaURL"] is System.DBNull))
                 prim.MediaUrl = (string)primRow["MediaURL"];
-            
+
             if (!(primRow["AttachedPosX"] is System.DBNull))
                 prim.AttachedPos = new Vector3(
                                         Convert.ToSingle(primRow["AttachedPosX"]),
@@ -1695,7 +1703,7 @@ VALUES
             if (!(primRow["DynAttrs"] is System.DBNull))
                 prim.DynAttrs = DAMap.FromXml((string)primRow["DynAttrs"]);
             else
-                prim.DynAttrs = new DAMap();             
+                prim.DynAttrs = new DAMap();
 
             prim.PhysicsShapeType = Convert.ToByte(primRow["PhysicsShapeType"]);
             prim.Density = Convert.ToSingle(primRow["Density"]);
@@ -1799,7 +1807,7 @@ VALUES
             return taskItem;
         }
 
-        #endregion
+        #endregion Private DataRecord conversion methods
 
         #region Create parameters methods
 
@@ -2104,7 +2112,7 @@ VALUES
                 parameters.Add(_Database.CreateParameter("DynAttrs", prim.DynAttrs.ToXml()));
             else
                 parameters.Add(_Database.CreateParameter("DynAttrs", null));
-            
+
             parameters.Add(_Database.CreateParameter("PhysicsShapeType", prim.PhysicsShapeType));
             parameters.Add(_Database.CreateParameter("Density", (double)prim.Density));
             parameters.Add(_Database.CreateParameter("GravityModifier", (double)prim.GravityModifier));
@@ -2170,9 +2178,9 @@ VALUES
             return parameters.ToArray();
         }
 
-        #endregion
+        #endregion Create parameters methods
 
-        #endregion
+        #endregion Private Methods
 
         private void LoadSpawnPoints(RegionSettings rs)
         {

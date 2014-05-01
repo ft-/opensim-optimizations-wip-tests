@@ -26,15 +26,14 @@
  */
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Data;
 using OpenMetaverse;
-using OpenSim.Framework;
+
 #if CSharpSqlite
     using Community.CsharpSqlite.Sqlite;
 #else
-    using Mono.Data.Sqlite;
+
+using Mono.Data.Sqlite;
+
 #endif
 
 namespace OpenSim.Data.SQLite
@@ -80,6 +79,5 @@ namespace OpenSim.Data.SQLite
 
             return true;
         }
-
     }
 }

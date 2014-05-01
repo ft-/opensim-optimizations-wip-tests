@@ -25,16 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
-
-using OpenSim.Framework;
-using OpenSim.Data.MySQL;
-
-using OpenMetaverse;
 using MySql.Data.MySqlClient;
+using OpenMetaverse;
+using OpenSim.Framework;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Data.MySQL
 {
@@ -60,6 +55,7 @@ namespace OpenSim.Data.MySQL
         }
 
         #region groups table
+
         public bool StoreGroup(GroupData data)
         {
             return m_Groups.Store(data);
@@ -103,9 +99,10 @@ namespace OpenSim.Data.MySQL
             return (int)m_Groups.GetCount("Location=\"\"");
         }
 
-        #endregion
+        #endregion groups table
 
         #region membership table
+
         public MembershipData[] RetrieveMembers(UUID groupID)
         {
             return m_Membership.Get("GroupID", groupID.ToString());
@@ -133,17 +130,19 @@ namespace OpenSim.Data.MySQL
 
         public bool DeleteMember(UUID groupID, string pricipalID)
         {
-            return m_Membership.Delete(new string[] { "GroupID", "PrincipalID" }, 
+            return m_Membership.Delete(new string[] { "GroupID", "PrincipalID" },
                                        new string[] { groupID.ToString(), pricipalID });
         }
-        
+
         public int MemberCount(UUID groupID)
         {
             return (int)m_Membership.GetCount("GroupID", groupID.ToString());
         }
-        #endregion
+
+        #endregion membership table
 
         #region roles table
+
         public bool StoreRole(RoleData data)
         {
             return m_Roles.Store(data);
@@ -168,7 +167,7 @@ namespace OpenSim.Data.MySQL
 
         public bool DeleteRole(UUID groupID, UUID roleID)
         {
-            return m_Roles.Delete(new string[] { "GroupID", "RoleID" }, 
+            return m_Roles.Delete(new string[] { "GroupID", "RoleID" },
                                   new string[] { groupID.ToString(), roleID.ToString() });
         }
 
@@ -177,10 +176,10 @@ namespace OpenSim.Data.MySQL
             return (int)m_Roles.GetCount("GroupID", groupID.ToString());
         }
 
-
-        #endregion
+        #endregion roles table
 
         #region rolememberhip table
+
         public RoleMembershipData[] RetrieveRolesMembers(UUID groupID)
         {
             RoleMembershipData[] data = m_RoleMembership.Get("GroupID", groupID.ToString());
@@ -228,7 +227,7 @@ namespace OpenSim.Data.MySQL
 
         public bool DeleteRoleMember(RoleMembershipData data)
         {
-            return m_RoleMembership.Delete(new string[] { "GroupID", "RoleID", "PrincipalID"},
+            return m_RoleMembership.Delete(new string[] { "GroupID", "RoleID", "PrincipalID" },
                                            new string[] { data.GroupID.ToString(), data.RoleID.ToString(), data.PrincipalID });
         }
 
@@ -238,9 +237,10 @@ namespace OpenSim.Data.MySQL
                                            new string[] { groupID.ToString(), principalID });
         }
 
-        #endregion
+        #endregion rolememberhip table
 
         #region principals table
+
         public bool StorePrincipal(PrincipalData data)
         {
             return m_Principals.Store(data);
@@ -259,7 +259,8 @@ namespace OpenSim.Data.MySQL
         {
             return m_Principals.Delete("PrincipalID", principalID);
         }
-        #endregion
+
+        #endregion principals table
 
         #region invites table
 
@@ -299,7 +300,7 @@ namespace OpenSim.Data.MySQL
             m_Invites.DeleteOld();
         }
 
-        #endregion
+        #endregion invites table
 
         #region notices table
 
@@ -335,21 +336,23 @@ namespace OpenSim.Data.MySQL
             m_Notices.DeleteOld();
         }
 
-        #endregion
+        #endregion notices table
 
         #region combinations
+
         public MembershipData RetrievePrincipalGroupMembership(string principalID, UUID groupID)
         {
             // TODO
             return null;
         }
+
         public MembershipData[] RetrievePrincipalGroupMemberships(string principalID)
         {
             // TODO
             return null;
         }
 
-        #endregion
+        #endregion combinations
     }
 
     public class MySqlGroupsGroupsHandler : MySQLGenericTableHandler<GroupData>
@@ -360,11 +363,10 @@ namespace OpenSim.Data.MySQL
             get { return GetType().Assembly; }
         }
 
-        public MySqlGroupsGroupsHandler(string connectionString, string realm, string store) 
+        public MySqlGroupsGroupsHandler(string connectionString, string realm, string store)
             : base(connectionString, realm, store)
         {
         }
-
     }
 
     public class MySqlGroupsMembershipHandler : MySQLGenericTableHandler<MembershipData>
@@ -375,11 +377,10 @@ namespace OpenSim.Data.MySQL
             get { return GetType().Assembly; }
         }
 
-        public MySqlGroupsMembershipHandler(string connectionString, string realm) 
+        public MySqlGroupsMembershipHandler(string connectionString, string realm)
             : base(connectionString, realm, string.Empty)
         {
         }
-
     }
 
     public class MySqlGroupsRolesHandler : MySQLGenericTableHandler<RoleData>
@@ -390,11 +391,10 @@ namespace OpenSim.Data.MySQL
             get { return GetType().Assembly; }
         }
 
-        public MySqlGroupsRolesHandler(string connectionString, string realm) 
+        public MySqlGroupsRolesHandler(string connectionString, string realm)
             : base(connectionString, realm, string.Empty)
         {
         }
-
     }
 
     public class MySqlGroupsRoleMembershipHandler : MySQLGenericTableHandler<RoleMembershipData>
@@ -405,11 +405,10 @@ namespace OpenSim.Data.MySQL
             get { return GetType().Assembly; }
         }
 
-        public MySqlGroupsRoleMembershipHandler(string connectionString, string realm) 
+        public MySqlGroupsRoleMembershipHandler(string connectionString, string realm)
             : base(connectionString, realm, string.Empty)
         {
         }
-
     }
 
     public class MySqlGroupsInvitesHandler : MySQLGenericTableHandler<InvitationData>
@@ -420,7 +419,7 @@ namespace OpenSim.Data.MySQL
             get { return GetType().Assembly; }
         }
 
-        public MySqlGroupsInvitesHandler(string connectionString, string realm) 
+        public MySqlGroupsInvitesHandler(string connectionString, string realm)
             : base(connectionString, realm, string.Empty)
         {
         }
@@ -436,7 +435,6 @@ namespace OpenSim.Data.MySQL
 
                 ExecuteNonQuery(cmd);
             }
-
         }
     }
 
@@ -448,7 +446,7 @@ namespace OpenSim.Data.MySQL
             get { return GetType().Assembly; }
         }
 
-        public MySqlGroupsNoticesHandler(string connectionString, string realm) 
+        public MySqlGroupsNoticesHandler(string connectionString, string realm)
             : base(connectionString, realm, string.Empty)
         {
         }
@@ -464,7 +462,6 @@ namespace OpenSim.Data.MySQL
 
                 ExecuteNonQuery(cmd);
             }
-
         }
     }
 
@@ -476,7 +473,7 @@ namespace OpenSim.Data.MySQL
             get { return GetType().Assembly; }
         }
 
-        public MySqlGroupsPrincipalsHandler(string connectionString, string realm) 
+        public MySqlGroupsPrincipalsHandler(string connectionString, string realm)
             : base(connectionString, realm, string.Empty)
         {
         }

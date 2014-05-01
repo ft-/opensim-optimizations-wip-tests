@@ -25,14 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Data;
-using OpenMetaverse;
-using OpenSim.Framework;
 using MySql.Data.MySqlClient;
+using OpenMetaverse;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Reflection;
 
 namespace OpenSim.Data.MySQL
 {
@@ -49,7 +47,7 @@ namespace OpenSim.Data.MySQL
         }
 
         public MySqlAuthenticationData(string connectionString, string realm)
-                : base(connectionString)
+            : base(connectionString)
         {
             m_Realm = realm;
             m_connectionString = connectionString;
@@ -77,21 +75,21 @@ namespace OpenSim.Data.MySQL
                     cmd.Parameters.AddWithValue("?principalID", principalID.ToString());
 
                     IDataReader result = cmd.ExecuteReader();
-    
+
                     if (result.Read())
                     {
                         ret.PrincipalID = principalID;
-    
+
                         CheckColumnNames(result);
-    
+
                         foreach (string s in m_ColumnNames)
                         {
                             if (s == "UUID")
                                 continue;
-    
+
                             ret.Data[s] = result[s].ToString();
                         }
-    
+
                         return ret;
                     }
                     else
@@ -125,32 +123,32 @@ namespace OpenSim.Data.MySQL
 
             using (MySqlCommand cmd = new MySqlCommand())
             {
-                string update = "update `"+m_Realm+"` set ";
+                string update = "update `" + m_Realm + "` set ";
                 bool first = true;
                 foreach (string field in fields)
                 {
                     if (!first)
                         update += ", ";
-                    update += "`" + field + "` = ?"+field;
-    
+                    update += "`" + field + "` = ?" + field;
+
                     first = false;
-    
-                    cmd.Parameters.AddWithValue("?"+field, data.Data[field]);
+
+                    cmd.Parameters.AddWithValue("?" + field, data.Data[field]);
                 }
-    
+
                 update += " where UUID = ?principalID";
-    
+
                 cmd.CommandText = update;
                 cmd.Parameters.AddWithValue("?principalID", data.PrincipalID.ToString());
-    
+
                 if (ExecuteNonQuery(cmd) < 1)
                 {
                     string insert = "insert into `" + m_Realm + "` (`UUID`, `" +
                             String.Join("`, `", fields) +
                             "`) values (?principalID, ?" + String.Join(", ?", fields) + ")";
-    
+
                     cmd.CommandText = insert;
-    
+
                     if (ExecuteNonQuery(cmd) < 1)
                         return false;
                 }
@@ -164,9 +162,9 @@ namespace OpenSim.Data.MySQL
             using (MySqlCommand cmd
                 = new MySqlCommand("update `" + m_Realm + "` set `" + item + "` = ?" + item + " where UUID = ?UUID"))
             {
-                cmd.Parameters.AddWithValue("?"+item, value);
+                cmd.Parameters.AddWithValue("?" + item, value);
                 cmd.Parameters.AddWithValue("?UUID", principalID.ToString());
-    
+
                 if (ExecuteNonQuery(cmd) > 0)
                     return true;
             }
@@ -186,7 +184,7 @@ namespace OpenSim.Data.MySQL
                 cmd.Parameters.AddWithValue("?principalID", principalID.ToString());
                 cmd.Parameters.AddWithValue("?token", token);
                 cmd.Parameters.AddWithValue("?lifetime", lifetime.ToString());
-    
+
                 if (ExecuteNonQuery(cmd) > 0)
                     return true;
             }

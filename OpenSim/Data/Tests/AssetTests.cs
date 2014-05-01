@@ -25,31 +25,25 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using log4net.Config;
-using NUnit.Framework;
-using NUnit.Framework.Constraints;
-using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Tests.Common;
-using System.Data.Common;
-using log4net;
+using Mono.Data.Sqlite;
 
 // DBMS-specific:
 using MySql.Data.MySqlClient;
-using OpenSim.Data.MySQL;
-
-using System.Data.SqlClient;
+using NUnit.Framework;
+using OpenMetaverse;
 using OpenSim.Data.MSSQL;
-
-using Mono.Data.Sqlite;
+using OpenSim.Data.MySQL;
 using OpenSim.Data.SQLite;
+using OpenSim.Framework;
+using OpenSim.Tests.Common;
+using System.Collections.Generic;
+using System.Data.Common;
+using System.Data.SqlClient;
 
 namespace OpenSim.Data.Tests
 {
     [TestFixture(Description = "Asset store tests (SQLite)")]
-    public class SQLiteAssetTests :  AssetTests<SqliteConnection, SQLiteAssetData>
+    public class SQLiteAssetTests : AssetTests<SqliteConnection, SQLiteAssetData>
     {
     }
 
@@ -67,7 +61,7 @@ namespace OpenSim.Data.Tests
         where TConn : DbConnection, new()
         where TAssetData : AssetDataBase, new()
     {
-        TAssetData m_db;
+        private TAssetData m_db;
 
         public UUID uuid1 = UUID.Random();
         public UUID uuid2 = UUID.Random();
@@ -79,7 +73,7 @@ namespace OpenSim.Data.Tests
 
         public byte[] data1 = new byte[100];
 
-        PropertyScrambler<AssetBase> scrambler = new PropertyScrambler<AssetBase>()
+        private PropertyScrambler<AssetBase> scrambler = new PropertyScrambler<AssetBase>()
                 .DontScramble(x => x.ID)
                 .DontScramble(x => x.Type)
                 .DontScramble(x => x.FullID)
@@ -102,7 +96,6 @@ namespace OpenSim.Data.Tests
             ResetMigrations("AssetStore");
         }
 
-
         [Test]
         public void T001_LoadEmpty()
         {
@@ -118,7 +111,7 @@ namespace OpenSim.Data.Tests
         public void T010_StoreReadVerifyAssets()
         {
             TestHelpers.InMethod();
-            
+
             AssetBase a1 = new AssetBase(uuid1, "asset one", (sbyte)AssetType.Texture, critter1.ToString());
             AssetBase a2 = new AssetBase(uuid2, "asset two", (sbyte)AssetType.Texture, critter2.ToString());
             AssetBase a3 = new AssetBase(uuid3, "asset three", (sbyte)AssetType.Texture, critter3.ToString());
@@ -133,7 +126,7 @@ namespace OpenSim.Data.Tests
             m_db.StoreAsset(a1);
             m_db.StoreAsset(a2);
             m_db.StoreAsset(a3);
-            
+
             AssetBase a1a = m_db.GetAsset(uuid1);
             Assert.That(a1a, Constraints.PropertyCompareConstraint(a1));
 
@@ -186,7 +179,7 @@ namespace OpenSim.Data.Tests
         public void T020_CheckForWeirdCreatorID()
         {
             TestHelpers.InMethod();
-            
+
             // It is expected that eventually the CreatorID might be an arbitrary string (an URI)
             // rather than a valid UUID (?).  This test is to make sure that the database layer does not
             // attempt to convert CreatorID to GUID, but just passes it both ways as a string.

@@ -27,10 +27,13 @@
 
 using System;
 using System.Data;
+
 #if CSharpSqlite
     using Community.CsharpSqlite.Sqlite;
 #else
-    using Mono.Data.Sqlite;
+
+using Mono.Data.Sqlite;
+
 #endif
 
 namespace OpenSim.Data.SQLite
@@ -49,7 +52,7 @@ namespace OpenSim.Data.SQLite
          **********************************************************************/
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="dt"></param>
         /// <param name="name"></param>
@@ -87,7 +90,6 @@ namespace OpenSim.Data.SQLite
         /// </remarks>
         public static SqliteCommand createInsertCommand(string table, DataTable dt)
         {
-
             string[] cols = new string[dt.Columns.Count];
             for (int i = 0; i < dt.Columns.Count; i++)
             {
@@ -147,7 +149,7 @@ namespace OpenSim.Data.SQLite
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="dt">Data Table</param>
         /// <returns></returns>
@@ -191,7 +193,7 @@ namespace OpenSim.Data.SQLite
         /// lines for defining SqliteParameters to 2 parameters:
         /// column name and database type.
         /// </para>
-        /// 
+        ///
         /// <para>
         /// It assumes certain conventions like :param as the param
         /// name to replace in parametrized queries, and that source
@@ -225,35 +227,35 @@ namespace OpenSim.Data.SQLite
         /// <returns>a DbType</returns>
         public static DbType dbtypeFromType(Type type)
         {
-            if (type == typeof (String))
+            if (type == typeof(String))
             {
                 return DbType.String;
             }
-            else if (type == typeof (Int32))
+            else if (type == typeof(Int32))
             {
                 return DbType.Int32;
             }
-            else if (type == typeof (UInt32))
+            else if (type == typeof(UInt32))
             {
                 return DbType.UInt32;
             }
-            else if (type == typeof (Int64))
+            else if (type == typeof(Int64))
             {
                 return DbType.Int64;
             }
-            else if (type == typeof (UInt64))
+            else if (type == typeof(UInt64))
             {
                 return DbType.UInt64;
             }
-            else if (type == typeof (Double))
+            else if (type == typeof(Double))
             {
                 return DbType.Double;
             }
-            else if (type == typeof (Boolean))
+            else if (type == typeof(Boolean))
             {
                 return DbType.Boolean;
             }
-            else if (type == typeof (Byte[]))
+            else if (type == typeof(Byte[]))
             {
                 return DbType.Binary;
             }
@@ -270,35 +272,35 @@ namespace OpenSim.Data.SQLite
         /// <remarks>this is something we'll need to implement for each db slightly differently.</remarks>
         public static string sqliteType(Type type)
         {
-            if (type == typeof (String))
+            if (type == typeof(String))
             {
                 return "varchar(255)";
             }
-            else if (type == typeof (Int32))
+            else if (type == typeof(Int32))
             {
                 return "integer";
             }
-            else if (type == typeof (UInt32))
+            else if (type == typeof(UInt32))
             {
                 return "integer";
             }
-            else if (type == typeof (Int64))
+            else if (type == typeof(Int64))
             {
                 return "varchar(255)";
             }
-            else if (type == typeof (UInt64))
+            else if (type == typeof(UInt64))
             {
                 return "varchar(255)";
             }
-            else if (type == typeof (Double))
+            else if (type == typeof(Double))
             {
                 return "float";
             }
-            else if (type == typeof (Boolean))
+            else if (type == typeof(Boolean))
             {
                 return "integer";
             }
-            else if (type == typeof (Byte[]))
+            else if (type == typeof(Byte[]))
             {
                 return "blob";
             }

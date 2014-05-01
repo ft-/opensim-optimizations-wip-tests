@@ -25,15 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Data;
-using System.Reflection;
-using System.Collections.Generic;
 using log4net;
 using MySql.Data.MySqlClient;
 using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Data;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Reflection;
 
 namespace OpenSim.Data.MySQL
 {
@@ -83,7 +82,9 @@ namespace OpenSim.Data.MySQL
             throw new NotImplementedException();
         }
 
-        public override void Dispose() { }
+        public override void Dispose()
+        {
+        }
 
         /// <summary>
         /// The name of this DB provider
@@ -93,7 +94,7 @@ namespace OpenSim.Data.MySQL
             get { return "MySQL Asset storage engine"; }
         }
 
-        #endregion
+        #endregion IPlugin Members
 
         #region IAssetDataPlugin Members
 
@@ -169,19 +170,19 @@ namespace OpenSim.Data.MySQL
                     {
                         assetName = asset.Name.Substring(0, AssetBase.MAX_ASSET_NAME);
                         m_log.WarnFormat(
-                            "[ASSET DB]: Name '{0}' for asset {1} truncated from {2} to {3} characters on add", 
+                            "[ASSET DB]: Name '{0}' for asset {1} truncated from {2} to {3} characters on add",
                             asset.Name, asset.ID, asset.Name.Length, assetName.Length);
                     }
-    
+
                     string assetDescription = asset.Description;
                     if (asset.Description.Length > AssetBase.MAX_ASSET_DESC)
                     {
                         assetDescription = asset.Description.Substring(0, AssetBase.MAX_ASSET_DESC);
                         m_log.WarnFormat(
-                            "[ASSET DB]: Description '{0}' for asset {1} truncated from {2} to {3} characters on add", 
+                            "[ASSET DB]: Description '{0}' for asset {1} truncated from {2} to {3} characters on add",
                             asset.Description, asset.ID, asset.Description.Length, assetDescription.Length);
                     }
-    
+
                     try
                     {
                         using (cmd)
@@ -238,8 +239,8 @@ namespace OpenSim.Data.MySQL
                     {
                         m_log.Error(
                             string.Format(
-                                "[ASSETS DB]: Failure updating access_time for asset {0} with name {1}.  Exception  ", 
-                                asset.FullID, asset.Name), 
+                                "[ASSETS DB]: Failure updating access_time for asset {0} with name {1}.  Exception  ",
+                                asset.FullID, asset.Name),
                             e);
                     }
                 }
@@ -307,7 +308,7 @@ namespace OpenSim.Data.MySQL
                 {
                     cmd.Parameters.AddWithValue("?start", start);
                     cmd.Parameters.AddWithValue("?count", count);
-    
+
                     try
                     {
                         using (MySqlDataReader dbReader = cmd.ExecuteReader())
@@ -322,10 +323,10 @@ namespace OpenSim.Data.MySQL
                                 metadata.Flags = (AssetFlags)Convert.ToInt32(dbReader["asset_flags"]);
                                 metadata.FullID = DBGuid.FromDB(dbReader["id"]);
                                 metadata.CreatorID = dbReader["CreatorID"].ToString();
-    
+
                                 // Current SHA1s are not stored/computed.
                                 metadata.SHA1 = new byte[] { };
-    
+
                                 retList.Add(metadata);
                             }
                         }
@@ -334,8 +335,8 @@ namespace OpenSim.Data.MySQL
                     {
                         m_log.Error(
                             string.Format(
-                                "[ASSETS DB]: MySql failure fetching asset set from {0}, count {1}.  Exception  ", 
-                                start, count), 
+                                "[ASSETS DB]: MySql failure fetching asset set from {0}, count {1}.  Exception  ",
+                                start, count),
                             e);
                     }
                 }
@@ -360,6 +361,6 @@ namespace OpenSim.Data.MySQL
             return true;
         }
 
-        #endregion
+        #endregion IAssetDataPlugin Members
     }
 }

@@ -25,14 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using OpenMetaverse;
+using OpenSim.Framework;
 using System;
-using System.Data;
+using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Reflection;
-using System.Collections.Generic;
-using OpenMetaverse;
-using log4net;
-using OpenSim.Framework;
 
 namespace OpenSim.Data.MSSQL
 {
@@ -45,15 +44,19 @@ namespace OpenSim.Data.MSSQL
 
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private long m_ticksToEpoch;
+
         /// <summary>
         /// Database manager
         /// </summary>
         private MSSQLManager m_database;
+
         private string m_connectionString;
 
         #region IPlugin Members
 
-        override public void Dispose() { }
+        override public void Dispose()
+        {
+        }
 
         /// <summary>
         /// <para>Initialises asset interface</para>
@@ -99,7 +102,7 @@ namespace OpenSim.Data.MSSQL
             get { return "MSSQL Asset storage engine"; }
         }
 
-        #endregion
+        #endregion IPlugin Members
 
         #region IAssetDataPlugin Members
 
@@ -145,38 +148,37 @@ namespace OpenSim.Data.MSSQL
         /// <param name="asset">the asset</param>
         override public void StoreAsset(AssetBase asset)
         {
-           
             string sql =
-                @"IF EXISTS(SELECT * FROM assets WHERE id=@id) 
+                @"IF EXISTS(SELECT * FROM assets WHERE id=@id)
                     UPDATE assets set name = @name, description = @description, assetType = @assetType,
                             local = @local, temporary = @temporary, creatorid = @creatorid, data = @data
                            WHERE id=@id
                    ELSE
                     INSERT INTO assets
-                    ([id], [name], [description], [assetType], [local], 
+                    ([id], [name], [description], [assetType], [local],
                      [temporary], [create_time], [access_time], [creatorid], [asset_flags], [data])
                     VALUES
-                    (@id, @name, @description, @assetType, @local, 
+                    (@id, @name, @description, @assetType, @local,
                      @temporary, @create_time, @access_time, @creatorid, @asset_flags, @data)";
-            
+
             string assetName = asset.Name;
             if (asset.Name.Length > AssetBase.MAX_ASSET_NAME)
             {
                 assetName = asset.Name.Substring(0, AssetBase.MAX_ASSET_NAME);
                 m_log.WarnFormat(
-                    "[ASSET DB]: Name '{0}' for asset {1} truncated from {2} to {3} characters on add", 
+                    "[ASSET DB]: Name '{0}' for asset {1} truncated from {2} to {3} characters on add",
                     asset.Name, asset.ID, asset.Name.Length, assetName.Length);
             }
-            
+
             string assetDescription = asset.Description;
             if (asset.Description.Length > AssetBase.MAX_ASSET_DESC)
             {
                 assetDescription = asset.Description.Substring(0, AssetBase.MAX_ASSET_DESC);
                 m_log.WarnFormat(
-                    "[ASSET DB]: Description '{0}' for asset {1} truncated from {2} to {3} characters on add", 
+                    "[ASSET DB]: Description '{0}' for asset {1} truncated from {2} to {3} characters on add",
                     asset.Description, asset.ID, asset.Description.Length, assetDescription.Length);
             }
-            
+
             using (SqlConnection conn = new SqlConnection(m_connectionString))
             using (SqlCommand command = new SqlCommand(sql, conn))
             {
@@ -197,32 +199,31 @@ namespace OpenSim.Data.MSSQL
                 {
                     command.ExecuteNonQuery();
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     m_log.Error("[ASSET DB]: Error storing item :" + e.Message);
                 }
             }
         }
 
-
-// Commented out since currently unused - this probably should be called in GetAsset()
-//        private void UpdateAccessTime(AssetBase asset)
-//        {
-//            using (AutoClosingSqlCommand cmd = m_database.Query("UPDATE assets SET access_time = @access_time WHERE id=@id"))
-//            {
-//                int now = (int)((System.DateTime.Now.Ticks - m_ticksToEpoch) / 10000000);
-//                cmd.Parameters.AddWithValue("@id", asset.FullID.ToString());
-//                cmd.Parameters.AddWithValue("@access_time", now);
-//                try
-//                {
-//                    cmd.ExecuteNonQuery();
-//                }
-//                catch (Exception e)
-//                {
-//                    m_log.Error(e.ToString());
-//                }
-//            }
-//        }
+        // Commented out since currently unused - this probably should be called in GetAsset()
+        //        private void UpdateAccessTime(AssetBase asset)
+        //        {
+        //            using (AutoClosingSqlCommand cmd = m_database.Query("UPDATE assets SET access_time = @access_time WHERE id=@id"))
+        //            {
+        //                int now = (int)((System.DateTime.Now.Ticks - m_ticksToEpoch) / 10000000);
+        //                cmd.Parameters.AddWithValue("@id", asset.FullID.ToString());
+        //                cmd.Parameters.AddWithValue("@access_time", now);
+        //                try
+        //                {
+        //                    cmd.ExecuteNonQuery();
+        //                }
+        //                catch (Exception e)
+        //                {
+        //                    m_log.Error(e.ToString());
+        //                }
+        //            }
+        //        }
 
         /// <summary>
         /// Check if the assets exist in the database.
@@ -274,9 +275,9 @@ namespace OpenSim.Data.MSSQL
                 (
                     SELECT id, name, description, assetType, temporary, creatorid,
                     RowNumber = ROW_NUMBER() OVER (ORDER BY id)
-                    FROM assets 
-                ) 
-                SELECT * 
+                    FROM assets
+                )
+                SELECT *
                 FROM OrderedAssets
                 WHERE RowNumber BETWEEN @start AND @stop;";
 
@@ -309,6 +310,7 @@ namespace OpenSim.Data.MSSQL
         {
             return false;
         }
-        #endregion
+
+        #endregion IAssetDataPlugin Members
     }
 }

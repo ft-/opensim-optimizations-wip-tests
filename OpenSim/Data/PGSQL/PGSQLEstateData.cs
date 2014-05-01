@@ -25,16 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using log4net;
+using Npgsql;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
+using System;
+using System.Collections.Generic;
 using System.Data;
-using Npgsql;
-using NpgsqlTypes;
+using System.Reflection;
 
 namespace OpenSim.Data.PGSQL
 {
@@ -107,8 +106,8 @@ namespace OpenSim.Data.PGSQL
         {
             EstateSettings es = new EstateSettings();
 
-            string sql = "select estate_settings.\"" + String.Join("\",estate_settings.\"", FieldList) + 
-                         "\" from estate_map left join estate_settings on estate_map.\"EstateID\" = estate_settings.\"EstateID\" " + 
+            string sql = "select estate_settings.\"" + String.Join("\",estate_settings.\"", FieldList) +
+                         "\" from estate_map left join estate_settings on estate_map.\"EstateID\" = estate_settings.\"EstateID\" " +
                          " where estate_settings.\"EstateID\" is not null and \"RegionID\" = :RegionID";
 
             bool insertEstate = false;
@@ -229,7 +228,6 @@ namespace OpenSim.Data.PGSQL
                         }
                     }
                 }
-
             }
 
             //TODO check if this is needed??
@@ -273,7 +271,7 @@ namespace OpenSim.Data.PGSQL
             SaveUUIDList(es.EstateID, "estate_groups", es.EstateGroups);
         }
 
-        #endregion
+        #endregion Public methods
 
         #region Private methods
 
@@ -421,7 +419,6 @@ namespace OpenSim.Data.PGSQL
                                     f.SetValue(es, v);
                             }
                         }
-
                     }
                 }
             }
@@ -434,7 +431,6 @@ namespace OpenSim.Data.PGSQL
             //Set event
             es.OnSave += StoreEstateSettings;
             return es;
-
         }
 
         public List<EstateSettings> LoadEstateSettingsAll()
@@ -594,9 +590,10 @@ namespace OpenSim.Data.PGSQL
 
         public bool DeleteEstate(int estateID)
         {
-            // TODO: Implementation!            
+            // TODO: Implementation!
             return false;
         }
-        #endregion
+
+        #endregion Private methods
     }
 }

@@ -25,10 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using OpenMetaverse;
-using OpenSim.Framework;
+using System.Collections.Generic;
 
 namespace OpenSim.Data
 {
@@ -47,8 +45,11 @@ namespace OpenSim.Data
     public interface IUserAccountData
     {
         UserAccountData[] Get(string[] fields, string[] values);
+
         bool Store(UserAccountData data);
+
         bool Delete(string field, string val);
+
         UserAccountData[] GetUsers(UUID scopeID, string query);
     }
 }

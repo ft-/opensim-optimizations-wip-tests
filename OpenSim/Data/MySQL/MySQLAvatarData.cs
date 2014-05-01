@@ -25,15 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Reflection;
-using System.Threading;
-using log4net;
-using OpenMetaverse;
-using OpenSim.Framework;
 using MySql.Data.MySqlClient;
+using OpenMetaverse;
+using System;
 
 namespace OpenSim.Data.MySQL
 {
@@ -43,10 +37,10 @@ namespace OpenSim.Data.MySQL
     public class MySQLAvatarData : MySQLGenericTableHandler<AvatarBaseData>,
             IAvatarData
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         public MySQLAvatarData(string connectionString, string realm) :
-                base(connectionString, realm, "Avatar")
+            base(connectionString, realm, "Avatar")
         {
         }
 
@@ -57,7 +51,7 @@ namespace OpenSim.Data.MySQL
                 cmd.CommandText = String.Format("delete from {0} where `PrincipalID` = ?PrincipalID and `Name` = ?Name", m_Realm);
                 cmd.Parameters.AddWithValue("?PrincipalID", principalID.ToString());
                 cmd.Parameters.AddWithValue("?Name", name);
-    
+
                 if (ExecuteNonQuery(cmd) > 0)
                     return true;
             }

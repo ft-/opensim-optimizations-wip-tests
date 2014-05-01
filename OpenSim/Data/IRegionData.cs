@@ -25,10 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using OpenMetaverse;
 using OpenSim.Framework;
+using System;
+using System.Collections.Generic;
 
 namespace OpenSim.Data
 {
@@ -67,11 +67,14 @@ namespace OpenSim.Data
     /// <summary>
     /// An interface for connecting to the authentication datastore
     /// </summary>
-    public interface IRegionData 
+    public interface IRegionData
     {
         RegionData Get(UUID regionID, UUID ScopeID);
+
         List<RegionData> Get(string regionName, UUID ScopeID);
+
         RegionData Get(int x, int y, UUID ScopeID);
+
         List<RegionData> Get(int xStart, int yStart, int xEnd, int yEnd, UUID ScopeID);
 
         bool Store(RegionData data);
@@ -81,8 +84,11 @@ namespace OpenSim.Data
         bool Delete(UUID regionID);
 
         List<RegionData> GetDefaultRegions(UUID scopeID);
+
         List<RegionData> GetDefaultHypergridRegions(UUID scopeID);
+
         List<RegionData> GetFallbackRegions(UUID scopeID, int x, int y);
+
         List<RegionData> GetHyperlinks(UUID scopeID);
     }
 

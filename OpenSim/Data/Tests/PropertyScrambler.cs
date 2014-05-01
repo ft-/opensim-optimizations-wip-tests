@@ -25,24 +25,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using NUnit.Framework;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Tests.Common;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
-using NUnit.Framework;
-using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Tests.Common;
 
 namespace OpenSim.Data.Tests
 {
     //This is generic so that the lambda expressions will work right in IDEs.
     public class PropertyScrambler<T>
     {
-        readonly System.Collections.Generic.List<string> membersToNotScramble = new List<string>();
-        
+        private readonly System.Collections.Generic.List<string> membersToNotScramble = new List<string>();
+
         private void AddExpressionToNotScrableList(Expression expression)
         {
             UnaryExpression unaryExpression = expression as UnaryExpression;
@@ -102,6 +102,7 @@ namespace OpenSim.Data.Tests
         }
 
         private readonly Random random = new Random();
+
         private void RandomizeProperty(object obj, PropertyInfo property, object[] index)
         {//I'd like a better way to compare, but I had lots of problems with InventoryFolderBase because the ID is inherited.
             if (membersToNotScramble.Contains(property.Name))

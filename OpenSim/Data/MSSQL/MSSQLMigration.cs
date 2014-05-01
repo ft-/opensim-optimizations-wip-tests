@@ -28,8 +28,8 @@
 using System;
 using System.Data;
 using System.Data.Common;
-using System.Reflection;
 using System.Data.SqlClient;
+using System.Reflection;
 
 namespace OpenSim.Data.MSSQL
 {
@@ -52,7 +52,7 @@ namespace OpenSim.Data.MSSQL
             {
                 try
                 {
-                    cmd.CommandText = "select top 1 version from migrations where name = '" + type + "' order by version desc"; //Must be 
+                    cmd.CommandText = "select top 1 version from migrations where name = '" + type + "' order by version desc"; //Must be
                     using (IDataReader reader = cmd.ExecuteReader())
                     {
                         if (reader.Read())
@@ -91,7 +91,6 @@ namespace OpenSim.Data.MSSQL
                 catch (Exception)
                 {
                     throw new Exception(sql);
-
                 }
             }
         }

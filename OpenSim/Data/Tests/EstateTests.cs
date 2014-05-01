@@ -25,27 +25,20 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using log4net.Config;
-using NUnit.Framework;
-using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Tests.Common;
-using System.Text;
-using log4net;
-using System.Reflection;
-using System.Data.Common;
+using Mono.Data.Sqlite;
 
 // DBMS-specific:
 using MySql.Data.MySqlClient;
-using OpenSim.Data.MySQL;
-
-using System.Data.SqlClient;
+using NUnit.Framework;
+using OpenMetaverse;
 using OpenSim.Data.MSSQL;
-
-using Mono.Data.Sqlite;
+using OpenSim.Data.MySQL;
 using OpenSim.Data.SQLite;
+using OpenSim.Framework;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Tests.Common;
+using System.Data.Common;
+using System.Data.SqlClient;
 
 namespace OpenSim.Data.Tests
 {
@@ -108,7 +101,7 @@ namespace OpenSim.Data.Tests
         public void T010_EstateSettingsSimpleStorage_MinimumParameterSet()
         {
             TestHelpers.InMethod();
-            
+
             EstateSettingsSimpleStorage(
                 REGION_ID,
                 DataTestUtil.STRING_MIN,
@@ -141,7 +134,7 @@ namespace OpenSim.Data.Tests
         public void T011_EstateSettingsSimpleStorage_MaximumParameterSet()
         {
             TestHelpers.InMethod();
-            
+
             EstateSettingsSimpleStorage(
                 REGION_ID,
                 DataTestUtil.STRING_MAX(64),
@@ -174,7 +167,7 @@ namespace OpenSim.Data.Tests
         public void T012_EstateSettingsSimpleStorage_AccurateParameterSet()
         {
             TestHelpers.InMethod();
-            
+
             EstateSettingsSimpleStorage(
                 REGION_ID,
                 DataTestUtil.STRING_MAX(1),
@@ -207,11 +200,11 @@ namespace OpenSim.Data.Tests
         public void T012_EstateSettingsRandomStorage()
         {
             TestHelpers.InMethod();
-            
+
             // Letting estate store generate rows to database for us
             EstateSettings originalSettings = db.LoadEstateSettings(REGION_ID, true);
             new PropertyScrambler<EstateSettings>()
-                .DontScramble(x=>x.EstateID)
+                .DontScramble(x => x.EstateID)
                 .Scramble(originalSettings);
 
             // Saving settings.
@@ -228,7 +221,7 @@ namespace OpenSim.Data.Tests
         public void T020_EstateSettingsManagerList()
         {
             TestHelpers.InMethod();
-            
+
             // Letting estate store generate rows to database for us
             EstateSettings originalSettings = db.LoadEstateSettings(REGION_ID, true);
 
@@ -249,7 +242,7 @@ namespace OpenSim.Data.Tests
         public void T021_EstateSettingsUserList()
         {
             TestHelpers.InMethod();
-            
+
             // Letting estate store generate rows to database for us
             EstateSettings originalSettings = db.LoadEstateSettings(REGION_ID, true);
 
@@ -270,7 +263,7 @@ namespace OpenSim.Data.Tests
         public void T022_EstateSettingsGroupList()
         {
             TestHelpers.InMethod();
-            
+
             // Letting estate store generate rows to database for us
             EstateSettings originalSettings = db.LoadEstateSettings(REGION_ID, true);
 
@@ -291,7 +284,7 @@ namespace OpenSim.Data.Tests
         public void T022_EstateSettingsBanList()
         {
             TestHelpers.InMethod();
-            
+
             // Letting estate store generate rows to database for us
             EstateSettings originalSettings = db.LoadEstateSettings(REGION_ID, true);
 
@@ -313,12 +306,11 @@ namespace OpenSim.Data.Tests
             Assert.AreEqual(DataTestUtil.UUID_MIN, loadedSettings.EstateBans[0].BannedUserID);
 
             Assert.AreEqual(DataTestUtil.UUID_MAX, loadedSettings.EstateBans[1].BannedUserID);
-
         }
 
-        #endregion
+        #endregion 0Tests
 
-        #region Parametrizable Test Implementations 
+        #region Parametrizable Test Implementations
 
         private void EstateSettingsSimpleStorage(
             UUID regionId,
@@ -347,7 +339,6 @@ namespace OpenSim.Data.Tests
             UUID estateOwner
             )
         {
-
             // Letting estate store generate rows to database for us
             EstateSettings originalSettings = db.LoadEstateSettings(regionId, true);
 
@@ -409,10 +400,9 @@ namespace OpenSim.Data.Tests
                 abuseEmail,
                 estateOwner
                 );
-
         }
 
-        #endregion
+        #endregion Parametrizable Test Implementations
 
         #region EstateSetting Initialization and Validation Methods
 
@@ -524,6 +514,6 @@ namespace OpenSim.Data.Tests
             Assert.AreEqual(estateOwner, estateSettings.EstateOwner);
         }
 
-        #endregion
+        #endregion EstateSetting Initialization and Validation Methods
     }
 }

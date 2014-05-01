@@ -26,14 +26,6 @@
  */
 
 using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Reflection;
-using System.Threading;
-using log4net;
-using OpenMetaverse;
-using OpenSim.Framework;
-using System.Data.SqlClient;
 
 namespace OpenSim.Data.MSSQL
 {
@@ -43,7 +35,7 @@ namespace OpenSim.Data.MSSQL
     public class MSSQLGridUserData : MSSQLGenericTableHandler<GridUserData>,
             IGridUserData
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         public MSSQLGridUserData(string connectionString, string realm) :
             base(connectionString, realm, "GridUserStore")
@@ -64,6 +56,5 @@ namespace OpenSim.Data.MSSQL
         {
             return base.Get(String.Format("UserID LIKE '{0}%'", userID));
         }
-
     }
 }

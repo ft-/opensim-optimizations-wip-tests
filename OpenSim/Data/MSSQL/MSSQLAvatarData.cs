@@ -25,14 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Reflection;
-using System.Threading;
-using log4net;
 using OpenMetaverse;
-using OpenSim.Framework;
+using System;
 using System.Data.SqlClient;
 
 namespace OpenSim.Data.MSSQL
@@ -43,10 +37,10 @@ namespace OpenSim.Data.MSSQL
     public class MSSQLAvatarData : MSSQLGenericTableHandler<AvatarBaseData>,
             IAvatarData
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public MSSQLAvatarData(string connectionString, string realm) :
-                base(connectionString, realm, "Avatar")
+            base(connectionString, realm, "Avatar")
         {
         }
 
@@ -55,7 +49,6 @@ namespace OpenSim.Data.MSSQL
             using (SqlConnection conn = new SqlConnection(m_ConnectionString))
             using (SqlCommand cmd = new SqlCommand())
             {
-
                 cmd.CommandText = String.Format("DELETE FROM {0} where [PrincipalID] = @PrincipalID and [Name] = @Name", m_Realm);
                 cmd.Parameters.Add(m_database.CreateParameter("@PrincipalID", principalID.ToString()));
                 cmd.Parameters.Add(m_database.CreateParameter("@Name", name));

@@ -25,11 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using OpenMetaverse;
 using NUnit.Framework;
+using OpenMetaverse;
+using System;
+using System.Text;
 
 namespace OpenSim.Data.Tests
 {
@@ -39,6 +38,7 @@ namespace OpenSim.Data.Tests
     public class DataTestUtil
     {
         public const uint UNSIGNED_INTEGER_MIN = uint.MinValue;
+
         //public const uint UNSIGNED_INTEGER_MAX = uint.MaxValue;
         public const uint UNSIGNED_INTEGER_MAX = INTEGER_MAX;
 
@@ -56,6 +56,7 @@ namespace OpenSim.Data.Tests
         public const double DOUBLE_PRECISSION = 1E-14; // Native MySQL is severly limited with double accuracy
 
         public const string STRING_MIN = "";
+
         public static string STRING_MAX(int length)
         {
             StringBuilder stringBuilder = new StringBuilder();
@@ -85,4 +86,3 @@ namespace OpenSim.Data.Tests
         }
     }
 }
-

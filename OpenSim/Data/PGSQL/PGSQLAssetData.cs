@@ -25,15 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Data;
-using System.Reflection;
-using System.Collections.Generic;
-using OpenMetaverse;
 using log4net;
-using OpenSim.Framework;
 using Npgsql;
-using NpgsqlTypes;
+using OpenMetaverse;
+using OpenSim.Framework;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.Data.PGSQL
 {
@@ -46,10 +44,12 @@ namespace OpenSim.Data.PGSQL
 
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private long m_ticksToEpoch;
+
         /// <summary>
         /// Database manager
         /// </summary>
         private PGSQLManager m_database;
+
         private string m_connectionString;
 
         protected virtual Assembly Assembly
@@ -59,7 +59,9 @@ namespace OpenSim.Data.PGSQL
 
         #region IPlugin Members
 
-        override public void Dispose() { }
+        override public void Dispose()
+        {
+        }
 
         /// <summary>
         /// <para>Initialises asset interface</para>
@@ -105,7 +107,7 @@ namespace OpenSim.Data.PGSQL
             get { return "PGSQL Asset storage engine"; }
         }
 
-        #endregion
+        #endregion IPlugin Members
 
         #region IAssetDataPlugin Members
 
@@ -151,35 +153,34 @@ namespace OpenSim.Data.PGSQL
         /// <param name="asset">the asset</param>
         override public void StoreAsset(AssetBase asset)
         {
-           
             string sql =
                 @"UPDATE assets set name = :name, description = :description, " + "\"assetType\" " + @" = :assetType,
                          local = :local, temporary = :temporary, creatorid = :creatorid, data = :data
                     WHERE id=:id;
 
                   INSERT INTO assets
-                    (id, name, description, " + "\"assetType\" " + @", local, 
+                    (id, name, description, " + "\"assetType\" " + @", local,
                      temporary, create_time, access_time, creatorid, asset_flags, data)
-                  Select :id, :name, :description, :assetType, :local, 
+                  Select :id, :name, :description, :assetType, :local,
                          :temporary, :create_time, :access_time, :creatorid, :asset_flags, :data
-                   Where not EXISTS(SELECT * FROM assets WHERE id=:id) 
+                   Where not EXISTS(SELECT * FROM assets WHERE id=:id)
                 ";
-            
+
             string assetName = asset.Name;
             if (asset.Name.Length > AssetBase.MAX_ASSET_NAME)
             {
                 assetName = asset.Name.Substring(0, AssetBase.MAX_ASSET_NAME);
                 m_log.WarnFormat(
-                    "[ASSET DB]: Name '{0}' for asset {1} truncated from {2} to {3} characters on add", 
+                    "[ASSET DB]: Name '{0}' for asset {1} truncated from {2} to {3} characters on add",
                     asset.Name, asset.ID, asset.Name.Length, assetName.Length);
             }
-            
+
             string assetDescription = asset.Description;
             if (asset.Description.Length > AssetBase.MAX_ASSET_DESC)
             {
                 assetDescription = asset.Description.Substring(0, AssetBase.MAX_ASSET_DESC);
                 m_log.WarnFormat(
-                    "[ASSET DB]: Description '{0}' for asset {1} truncated from {2} to {3} characters on add", 
+                    "[ASSET DB]: Description '{0}' for asset {1} truncated from {2} to {3} characters on add",
                     asset.Description, asset.ID, asset.Description.Length, assetDescription.Length);
             }
 
@@ -203,32 +204,31 @@ namespace OpenSim.Data.PGSQL
                 {
                     command.ExecuteNonQuery();
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
-                    m_log.Error("[ASSET DB]: Error storing item :" + e.Message + " sql "+sql);
+                    m_log.Error("[ASSET DB]: Error storing item :" + e.Message + " sql " + sql);
                 }
             }
         }
 
-
-// Commented out since currently unused - this probably should be called in GetAsset()
-//        private void UpdateAccessTime(AssetBase asset)
-//        {
-//            using (AutoClosingSqlCommand cmd = m_database.Query("UPDATE assets SET access_time = :access_time WHERE id=:id"))
-//            {
-//                int now = (int)((System.DateTime.Now.Ticks - m_ticksToEpoch) / 10000000);
-//                cmd.Parameters.AddWithValue(":id", asset.FullID.ToString());
-//                cmd.Parameters.AddWithValue(":access_time", now);
-//                try
-//                {
-//                    cmd.ExecuteNonQuery();
-//                }
-//                catch (Exception e)
-//                {
-//                    m_log.Error(e.ToString());
-//                }
-//            }
-//        }
+        // Commented out since currently unused - this probably should be called in GetAsset()
+        //        private void UpdateAccessTime(AssetBase asset)
+        //        {
+        //            using (AutoClosingSqlCommand cmd = m_database.Query("UPDATE assets SET access_time = :access_time WHERE id=:id"))
+        //            {
+        //                int now = (int)((System.DateTime.Now.Ticks - m_ticksToEpoch) / 10000000);
+        //                cmd.Parameters.AddWithValue(":id", asset.FullID.ToString());
+        //                cmd.Parameters.AddWithValue(":access_time", now);
+        //                try
+        //                {
+        //                    cmd.ExecuteNonQuery();
+        //                }
+        //                catch (Exception e)
+        //                {
+        //                    m_log.Error(e.ToString());
+        //                }
+        //            }
+        //        }
 
         /// <summary>
         /// Check if the assets exist in the database.
@@ -277,7 +277,7 @@ namespace OpenSim.Data.PGSQL
         {
             List<AssetMetadata> retList = new List<AssetMetadata>(count);
             string sql = @" SELECT id, name, description, " + "\"assetType\"" + @", temporary, creatorid
-                              FROM assets 
+                              FROM assets
                              order by id
                              limit :stop
                             offset :start;";
@@ -311,6 +311,7 @@ namespace OpenSim.Data.PGSQL
         {
             return false;
         }
-        #endregion
+
+        #endregion IAssetDataPlugin Members
     }
 }

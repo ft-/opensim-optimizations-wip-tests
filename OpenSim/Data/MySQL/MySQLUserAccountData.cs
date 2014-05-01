@@ -25,28 +25,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Data;
-using OpenMetaverse;
-using OpenSim.Framework;
 using MySql.Data.MySqlClient;
+using OpenMetaverse;
+using System;
 
 namespace OpenSim.Data.MySQL
 {
     public class MySqlUserAccountData : MySQLGenericTableHandler<UserAccountData>, IUserAccountData
     {
         public MySqlUserAccountData(string connectionString, string realm)
-                : base(connectionString, realm, "UserAccount")
+            : base(connectionString, realm, "UserAccount")
         {
         }
 
         public UserAccountData[] GetUsers(UUID scopeID, string query)
         {
-            string[] words = query.Split(new char[] {' '});
+            string[] words = query.Split(new char[] { ' ' });
 
-            for (int i = 0 ; i < words.Length ; i++)
+            for (int i = 0; i < words.Length; i++)
             {
                 if (words[i].Length < 3)
                 {

@@ -25,23 +25,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Data;
 using OpenMetaverse;
-using OpenSim.Framework;
+using System;
 using System.Data.SqlClient;
-using System.Text;
 
 namespace OpenSim.Data.MSSQL
 {
-    public class MSSQLUserAccountData : MSSQLGenericTableHandler<UserAccountData>,IUserAccountData
+    public class MSSQLUserAccountData : MSSQLGenericTableHandler<UserAccountData>, IUserAccountData
     {
         public MSSQLUserAccountData(string connectionString, string realm) :
             base(connectionString, realm, "UserAccount")
         {
         }
+
         //private string m_Realm;
         //private List<string> m_ColumnNames = null;
         //private MSSQLManager m_database;
@@ -79,7 +75,7 @@ namespace OpenSim.Data.MSSQL
         //    {
         //        cmd.Parameters.Add(m_database.CreateParameter("@principalID", principalID));
         //        cmd.Parameters.Add(m_database.CreateParameter("@scopeID", scopeID));
-                
+
         //        conn.Open();
         //        using (SqlDataReader result = cmd.ExecuteReader())
         //        {

@@ -25,11 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System.Collections.Generic;
 
 namespace OpenSim.Data.Null
 {
@@ -106,7 +106,8 @@ namespace OpenSim.Data.Null
                     EnvironmentSettings.Remove(regionUUID);
             }
         }
-        #endregion
+
+        #endregion Environment Settings
 
         public RegionSettings LoadRegionSettings(UUID regionUUID)
         {
@@ -132,7 +133,8 @@ namespace OpenSim.Data.Null
             return new List<SceneObjectGroup>();
         }
 
-        Dictionary<UUID, TerrainData> m_terrains = new Dictionary<UUID, TerrainData>();
+        private Dictionary<UUID, TerrainData> m_terrains = new Dictionary<UUID, TerrainData>();
+
         public void StoreTerrain(TerrainData ter, UUID regionID)
         {
             if (m_terrains.ContainsKey(regionID))

@@ -25,10 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using OpenMetaverse;
-using OpenSim.Framework;
+using System.Collections.Generic;
 
 namespace OpenSim.Data
 {
@@ -38,12 +36,12 @@ namespace OpenSim.Data
         public UUID ownerRoleID;
         public string name;
         public string charter;
-        public bool showInList; 
-        public UUID insigniaID; 
+        public bool showInList;
+        public UUID insigniaID;
         public int membershipFee;
         public bool openEnrollment;
         public bool allowPublish;
-        public bool maturePublish; 
+        public bool maturePublish;
         public UUID founderID;
         public ulong everyonePowers;
         public ulong ownersPowers;
@@ -111,8 +109,11 @@ namespace OpenSim.Data
     public interface IXGroupData
     {
         bool StoreGroup(XGroup group);
+
         XGroup GetGroup(UUID groupID);
+
         Dictionary<UUID, XGroup> GetGroups();
+
         bool DeleteGroup(UUID groupID);
     }
 }

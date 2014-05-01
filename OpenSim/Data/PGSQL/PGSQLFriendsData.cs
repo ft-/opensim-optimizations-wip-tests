@@ -25,15 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Data;
-using OpenMetaverse;
-using OpenSim.Framework;
-using System.Reflection;
-using System.Text;
 using Npgsql;
+using OpenMetaverse;
+using System;
 
 namespace OpenSim.Data.PGSQL
 {
@@ -50,7 +44,6 @@ namespace OpenSim.Data.PGSQL
             }
         }
 
-        
         public override bool Delete(string principalID, string friend)
         {
             UUID princUUID = UUID.Zero;
@@ -86,7 +79,7 @@ namespace OpenSim.Data.PGSQL
             bool ret = UUID.TryParse(principalID, out princUUID);
 
             if (ret)
-               return GetFriends(princUUID);
+                return GetFriends(princUUID);
             else
                 return new FriendsData[0];
         }
@@ -96,8 +89,7 @@ namespace OpenSim.Data.PGSQL
             using (NpgsqlConnection conn = new NpgsqlConnection(m_ConnectionString))
             using (NpgsqlCommand cmd = new NpgsqlCommand())
             {
-
-                cmd.CommandText = String.Format("select a.*,case when b.\"Flags\" is null then '-1' else b.\"Flags\" end as \"TheirFlags\" from {0} as a " + 
+                cmd.CommandText = String.Format("select a.*,case when b.\"Flags\" is null then '-1' else b.\"Flags\" end as \"TheirFlags\" from {0} as a " +
                                                 " left join {0} as b on a.\"PrincipalID\" = b.\"Friend\" and a.\"Friend\" = b.\"PrincipalID\" " +
                                                 " where a.\"PrincipalID\" = :PrincipalID", m_Realm);
                 cmd.Parameters.Add(m_database.CreateParameter("PrincipalID", principalID.ToString()));
@@ -111,6 +103,5 @@ namespace OpenSim.Data.PGSQL
         {
             return GetFriends(principalID);
         }
- 
     }
 }

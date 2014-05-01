@@ -44,6 +44,7 @@ namespace OpenSim.ConsoleClient
         private static int m_Port;
         private static UUID m_SessionID;
         private static string m_User;
+
         public static void CommandReply(string requestUrl, string requestData, string replyData)
         {
         }

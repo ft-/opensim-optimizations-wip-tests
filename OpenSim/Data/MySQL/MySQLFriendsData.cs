@@ -25,20 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Data;
-using OpenMetaverse;
-using OpenSim.Framework;
 using MySql.Data.MySqlClient;
+using OpenMetaverse;
+using System;
 
 namespace OpenSim.Data.MySQL
 {
     public class MySqlFriendsData : MySQLGenericTableHandler<FriendsData>, IFriendsData
     {
         public MySqlFriendsData(string connectionString, string realm)
-                : base(connectionString, realm, "FriendsStore")
+            : base(connectionString, realm, "FriendsStore")
         {
         }
 

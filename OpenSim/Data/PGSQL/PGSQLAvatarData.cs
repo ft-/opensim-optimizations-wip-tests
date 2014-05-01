@@ -25,16 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Threading;
-using log4net;
-using OpenMetaverse;
-using OpenSim.Framework;
 using Npgsql;
-using NpgsqlTypes;
-
+using OpenMetaverse;
+using System;
 
 namespace OpenSim.Data.PGSQL
 {
@@ -44,10 +37,10 @@ namespace OpenSim.Data.PGSQL
     public class PGSQLAvatarData : PGSQLGenericTableHandler<AvatarBaseData>,
             IAvatarData
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public PGSQLAvatarData(string connectionString, string realm) :
-                base(connectionString, realm, "Avatar")
+            base(connectionString, realm, "Avatar")
         {
         }
 
@@ -56,7 +49,6 @@ namespace OpenSim.Data.PGSQL
             using (NpgsqlConnection conn = new NpgsqlConnection(m_ConnectionString))
             using (NpgsqlCommand cmd = new NpgsqlCommand())
             {
-
                 cmd.CommandText = String.Format("DELETE FROM {0} where \"PrincipalID\" = :PrincipalID and \"Name\" = :Name", m_Realm);
                 cmd.Parameters.Add(m_database.CreateParameter("PrincipalID", principalID));
                 cmd.Parameters.Add(m_database.CreateParameter("Name", name));

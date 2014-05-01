@@ -25,14 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Data;
-using OpenMetaverse;
-using OpenSim.Framework;
 using System.Data.SqlClient;
-using System.Reflection;
 using System.Text;
 
 namespace OpenSim.Data.MSSQL
@@ -106,7 +103,7 @@ namespace OpenSim.Data.MSSQL
 
             string[] fields = new List<string>(data.Data.Keys).ToArray();
             StringBuilder updateBuilder = new StringBuilder();
-           
+
             using (SqlConnection conn = new SqlConnection(m_ConnectionString))
             using (SqlCommand cmd = new SqlCommand())
             {
@@ -117,7 +114,7 @@ namespace OpenSim.Data.MSSQL
                 {
                     if (!first)
                         updateBuilder.Append(", ");
-                    updateBuilder.AppendFormat("{0} = @{0}",field);
+                    updateBuilder.AppendFormat("{0} = @{0}", field);
 
                     first = false;
                     cmd.Parameters.Add(m_database.CreateParameter("@" + field, data.Data[field]));
@@ -128,7 +125,7 @@ namespace OpenSim.Data.MSSQL
                 cmd.CommandText = updateBuilder.ToString();
                 cmd.Connection = conn;
                 cmd.Parameters.Add(m_database.CreateParameter("@principalID", data.PrincipalID));
-                
+
                 conn.Open();
                 if (cmd.ExecuteNonQuery() < 1)
                 {
@@ -169,7 +166,7 @@ namespace OpenSim.Data.MSSQL
         {
             if (System.Environment.TickCount - m_LastExpire > 30000)
                 DoExpire();
-            
+
             string sql = "insert into tokens (UUID, token, validity) values (@principalID, @token, @lifetime)";
             using (SqlConnection conn = new SqlConnection(m_ConnectionString))
             using (SqlCommand cmd = new SqlCommand(sql, conn))

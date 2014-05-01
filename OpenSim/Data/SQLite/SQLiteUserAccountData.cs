@@ -26,15 +26,14 @@
  */
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Data;
 using OpenMetaverse;
-using OpenSim.Framework;
+
 #if CSharpSqlite
     using Community.CsharpSqlite.Sqlite;
 #else
-    using Mono.Data.Sqlite;
+
+using Mono.Data.Sqlite;
+
 #endif
 
 namespace OpenSim.Data.SQLite
@@ -42,15 +41,15 @@ namespace OpenSim.Data.SQLite
     public class SQLiteUserAccountData : SQLiteGenericTableHandler<UserAccountData>, IUserAccountData
     {
         public SQLiteUserAccountData(string connectionString, string realm)
-                : base(connectionString, realm, "UserAccount")
+            : base(connectionString, realm, "UserAccount")
         {
         }
 
         public UserAccountData[] GetUsers(UUID scopeID, string query)
         {
-            string[] words = query.Split(new char[] {' '});
+            string[] words = query.Split(new char[] { ' ' });
 
-            for (int i = 0 ; i < words.Length ; i++)
+            for (int i = 0; i < words.Length; i++)
             {
                 if (words[i].Length < 3)
                 {
@@ -75,7 +74,7 @@ namespace OpenSim.Data.SQLite
                 }
                 else
                 {
-                    cmd.CommandText = String.Format("select * from {0} where (ScopeID='{1}' or ScopeID='00000000-0000-0000-0000-000000000000') and (FirstName like '{2}%' or LastName like '{3}%')", 
+                    cmd.CommandText = String.Format("select * from {0} where (ScopeID='{1}' or ScopeID='00000000-0000-0000-0000-000000000000') and (FirstName like '{2}%' or LastName like '{3}%')",
                         m_Realm, scopeID.ToString(), words[0], words[1]);
                 }
 

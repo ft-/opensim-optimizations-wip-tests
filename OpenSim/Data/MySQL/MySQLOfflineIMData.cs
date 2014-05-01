@@ -25,16 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
-
-using OpenSim.Framework;
-using OpenSim.Data.MySQL;
-
-using OpenMetaverse;
 using MySql.Data.MySqlClient;
+using System;
 
 namespace OpenSim.Data.MySQL
 {
@@ -50,10 +42,9 @@ namespace OpenSim.Data.MySQL
             using (MySqlCommand cmd = new MySqlCommand())
             {
                 cmd.CommandText = String.Format("delete from {0} where TMStamp < NOW() - INTERVAL 2 WEEK", m_Realm);
-         
+
                 ExecuteNonQuery(cmd);
             }
-
         }
     }
 }

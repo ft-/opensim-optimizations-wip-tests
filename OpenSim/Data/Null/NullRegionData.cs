@@ -25,14 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Data;
-using System.Reflection;
-using log4net;
+using System;
+using System.Collections.Generic;
 using RegionFlags = OpenSim.Framework.RegionFlags;
 
 namespace OpenSim.Data.Null
@@ -46,14 +41,14 @@ namespace OpenSim.Data.Null
         /// </summary>
         private bool m_useStaticInstance = true;
 
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        Dictionary<UUID, RegionData> m_regionData = new Dictionary<UUID, RegionData>();
+        private Dictionary<UUID, RegionData> m_regionData = new Dictionary<UUID, RegionData>();
 
         public NullRegionData(string connectionString, string realm)
         {
-//            m_log.DebugFormat(
-//                "[NULL REGION DATA]: Constructor got connectionString {0}, realm {1}", connectionString, realm);
+            //            m_log.DebugFormat(
+            //                "[NULL REGION DATA]: Constructor got connectionString {0}, realm {1}", connectionString, realm);
 
             // The !static connection string is a hack so that regression tests can use this module without a high degree of fragility
             // in having to deal with the static reference in the once-loaded NullRegionData class.
@@ -73,7 +68,7 @@ namespace OpenSim.Data.Null
             if (m_useStaticInstance && Instance != this)
                 return Instance.Get(regionName, scopeID);
 
-//            m_log.DebugFormat("[NULL REGION DATA]: Getting region {0}, scope {1}", regionName, scopeID);
+            //            m_log.DebugFormat("[NULL REGION DATA]: Getting region {0}, scope {1}", regionName, scopeID);
 
             string cleanName = regionName.ToLower();
 
@@ -189,8 +184,8 @@ namespace OpenSim.Data.Null
             if (m_useStaticInstance && Instance != this)
                 return Instance.Store(data);
 
-//            m_log.DebugFormat(
-//                "[NULL REGION DATA]: Storing region {0} {1}, scope {2}", data.RegionName, data.RegionID, data.ScopeID);
+            //            m_log.DebugFormat(
+            //                "[NULL REGION DATA]: Storing region {0} {1}, scope {2}", data.RegionName, data.RegionID, data.ScopeID);
 
             lock (m_regionData)
             {
@@ -221,7 +216,7 @@ namespace OpenSim.Data.Null
             if (m_useStaticInstance && Instance != this)
                 return Instance.Delete(regionID);
 
-//            m_log.DebugFormat("[NULL REGION DATA]: Deleting region {0}", regionID);
+            //            m_log.DebugFormat("[NULL REGION DATA]: Deleting region {0}", regionID);
 
             lock (m_regionData)
             {

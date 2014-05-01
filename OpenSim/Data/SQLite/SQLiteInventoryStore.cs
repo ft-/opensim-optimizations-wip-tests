@@ -30,11 +30,15 @@ using System.Collections.Generic;
 using System.Data;
 using System.Reflection;
 using log4net;
+
 #if CSharpSqlite
     using Community.CsharpSqlite.Sqlite;
 #else
-    using Mono.Data.Sqlite;
+
+using Mono.Data.Sqlite;
+
 #endif
+
 using OpenMetaverse;
 using OpenSim.Framework;
 
@@ -153,15 +157,15 @@ namespace OpenSim.Data.SQLite
         public InventoryItemBase buildItem(DataRow row)
         {
             InventoryItemBase item = new InventoryItemBase();
-            item.ID = new UUID((string) row["UUID"]);
-            item.AssetID = new UUID((string) row["assetID"]);
+            item.ID = new UUID((string)row["UUID"]);
+            item.AssetID = new UUID((string)row["assetID"]);
             item.AssetType = Convert.ToInt32(row["assetType"]);
             item.InvType = Convert.ToInt32(row["invType"]);
-            item.Folder = new UUID((string) row["parentFolderID"]);
-            item.Owner = new UUID((string) row["avatarID"]);
+            item.Folder = new UUID((string)row["parentFolderID"]);
+            item.Owner = new UUID((string)row["avatarID"]);
             item.CreatorIdentification = (string)row["creatorsID"];
-            item.Name = (string) row["inventoryName"];
-            item.Description = (string) row["inventoryDescription"];
+            item.Name = (string)row["inventoryName"];
+            item.Description = (string)row["inventoryDescription"];
 
             item.NextPermissions = Convert.ToUInt32(row["inventoryNextPermissions"]);
             item.CurrentPermissions = Convert.ToUInt32(row["inventoryCurrentPermissions"]);
@@ -236,7 +240,7 @@ namespace OpenSim.Data.SQLite
             DataRow inventoryRow = inventoryFolderTable.Rows.Find(folder.ID.ToString());
             if (inventoryRow == null)
             {
-                if (! add)
+                if (!add)
                     m_log.ErrorFormat("Interface Misuse: Attempting to Update non-existant inventory folder: {0}", folder.ID);
 
                 inventoryRow = inventoryFolderTable.NewRow();
@@ -343,7 +347,6 @@ namespace OpenSim.Data.SQLite
                 Module module = GetType().Module;
                 // string dllName = module.Assembly.ManifestModule.Name;
                 Version dllVersion = module.Assembly.GetName().Version;
-
 
                 return
                     string.Format("{0}.{1}.{2}.{3}", dllVersion.Major, dllVersion.Minor, dllVersion.Build,
@@ -495,7 +498,6 @@ namespace OpenSim.Data.SQLite
                     */
                 else
                 {                                                         // Querying a non-root folder
-
                     // Build a hash table of all user's inventory folders, indexed by each folder's parent ID
                     Dictionary<UUID, List<InventoryFolderBase>> hashtable =
                         new Dictionary<UUID, List<InventoryFolderBase>>(folderRows.GetLength(0));
@@ -527,7 +529,6 @@ namespace OpenSim.Data.SQLite
                     for (int i = 0; i < folders.Count; i++)
                         if (hashtable.ContainsKey(folders[i].ID))
                             folders.AddRange(hashtable[folders[i].ID]);
-
                 } // if requesting a subfolder heirarchy
             } // if folder parentID exists and has children
             return folders;
@@ -717,22 +718,22 @@ namespace OpenSim.Data.SQLite
         {
             DataTable inv = new DataTable("inventoryitems");
 
-            createCol(inv, "UUID", typeof (String)); //inventoryID
-            createCol(inv, "assetID", typeof (String));
-            createCol(inv, "assetType", typeof (Int32));
-            createCol(inv, "invType", typeof (Int32));
-            createCol(inv, "parentFolderID", typeof (String));
-            createCol(inv, "avatarID", typeof (String));
-            createCol(inv, "creatorsID", typeof (String));
+            createCol(inv, "UUID", typeof(String)); //inventoryID
+            createCol(inv, "assetID", typeof(String));
+            createCol(inv, "assetType", typeof(Int32));
+            createCol(inv, "invType", typeof(Int32));
+            createCol(inv, "parentFolderID", typeof(String));
+            createCol(inv, "avatarID", typeof(String));
+            createCol(inv, "creatorsID", typeof(String));
 
-            createCol(inv, "inventoryName", typeof (String));
-            createCol(inv, "inventoryDescription", typeof (String));
+            createCol(inv, "inventoryName", typeof(String));
+            createCol(inv, "inventoryDescription", typeof(String));
             // permissions
-            createCol(inv, "inventoryNextPermissions", typeof (Int32));
-            createCol(inv, "inventoryCurrentPermissions", typeof (Int32));
-            createCol(inv, "inventoryBasePermissions", typeof (Int32));
-            createCol(inv, "inventoryEveryOnePermissions", typeof (Int32));
-            createCol(inv, "inventoryGroupPermissions", typeof (Int32));
+            createCol(inv, "inventoryNextPermissions", typeof(Int32));
+            createCol(inv, "inventoryCurrentPermissions", typeof(Int32));
+            createCol(inv, "inventoryBasePermissions", typeof(Int32));
+            createCol(inv, "inventoryEveryOnePermissions", typeof(Int32));
+            createCol(inv, "inventoryGroupPermissions", typeof(Int32));
 
             // sale info
             createCol(inv, "salePrice", typeof(Int32));
@@ -760,14 +761,14 @@ namespace OpenSim.Data.SQLite
         {
             DataTable fol = new DataTable("inventoryfolders");
 
-            createCol(fol, "UUID", typeof (String)); //folderID
-            createCol(fol, "name", typeof (String));
-            createCol(fol, "agentID", typeof (String));
-            createCol(fol, "parentID", typeof (String));
-            createCol(fol, "type", typeof (Int32));
-            createCol(fol, "version", typeof (Int32));
+            createCol(fol, "UUID", typeof(String)); //folderID
+            createCol(fol, "name", typeof(String));
+            createCol(fol, "agentID", typeof(String));
+            createCol(fol, "parentID", typeof(String));
+            createCol(fol, "type", typeof(Int32));
+            createCol(fol, "version", typeof(Int32));
 
-            fol.PrimaryKey = new DataColumn[] {fol.Columns["UUID"]};
+            fol.PrimaryKey = new DataColumn[] { fol.Columns["UUID"] };
             return fol;
         }
 
@@ -817,10 +818,10 @@ namespace OpenSim.Data.SQLite
         private static InventoryFolderBase buildFolder(DataRow row)
         {
             InventoryFolderBase folder = new InventoryFolderBase();
-            folder.ID = new UUID((string) row["UUID"]);
-            folder.Name = (string) row["name"];
-            folder.Owner = new UUID((string) row["agentID"]);
-            folder.ParentID = new UUID((string) row["parentID"]);
+            folder.ID = new UUID((string)row["UUID"]);
+            folder.Name = (string)row["name"];
+            folder.Owner = new UUID((string)row["agentID"]);
+            folder.ParentID = new UUID((string)row["parentID"]);
             folder.Type = Convert.ToInt16(row["type"]);
             folder.Version = Convert.ToUInt16(row["version"]);
             return folder;
@@ -852,12 +853,12 @@ namespace OpenSim.Data.SQLite
             row["parentID"] = folder.ParentID.ToString();
         }
 
-        public List<InventoryItemBase> fetchActiveGestures (UUID avatarID)
+        public List<InventoryItemBase> fetchActiveGestures(UUID avatarID)
         {
             List<InventoryItemBase> items = new List<InventoryItemBase>();
 
             DataTable inventoryItemTable = ds.Tables["inventoryitems"];
-            string selectExp 
+            string selectExp
                 = "avatarID = '" + avatarID + "' AND assetType = " + (int)AssetType.Gesture + " AND flags = 1";
             //m_log.DebugFormat("[SQL]: sql = " + selectExp);
             DataRow[] rows = inventoryItemTable.Select(selectExp);

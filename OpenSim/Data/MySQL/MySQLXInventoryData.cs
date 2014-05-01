@@ -25,15 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using MySql.Data.MySqlClient;
+using OpenMetaverse;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Reflection;
-using log4net;
-using MySql.Data.MySqlClient;
-using OpenMetaverse;
-using OpenSim.Framework;
 
 namespace OpenSim.Data.MySQL
 {
@@ -80,7 +76,7 @@ namespace OpenSim.Data.MySQL
 
             return m_Items.Store(item);
         }
-        
+
         public bool DeleteFolders(string field, string val)
         {
             return m_Folders.Delete(field, val);
@@ -124,10 +120,10 @@ namespace OpenSim.Data.MySQL
 
     public class MySqlItemHandler : MySqlInventoryHandler<XInventoryItem>
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         public MySqlItemHandler(string c, string t, string m) :
-                base(c, t, m)
+            base(c, t, m)
         {
         }
 
@@ -141,7 +137,7 @@ namespace OpenSim.Data.MySQL
                 return false;
 
             // Don't increment folder version here since Delete(string, string) calls Delete(string[], string[])
-//            IncrementFolderVersion(retrievedItems[0].parentFolderID);
+            //            IncrementFolderVersion(retrievedItems[0].parentFolderID);
 
             return true;
         }
@@ -191,7 +187,7 @@ namespace OpenSim.Data.MySQL
 
         public XInventoryItem[] GetActiveGestures(UUID principalID)
         {
-            using (MySqlCommand cmd  = new MySqlCommand())
+            using (MySqlCommand cmd = new MySqlCommand())
             {
                 cmd.CommandText = String.Format("select * from inventoryitems where avatarId = ?uuid and assetType = ?type and flags & 1", m_Realm);
 
@@ -215,12 +211,11 @@ namespace OpenSim.Data.MySQL
                     cmd.CommandText = String.Format("select bit_or(inventoryCurrentPermissions) as inventoryCurrentPermissions from inventoryitems where avatarID = ?PrincipalID and assetID = ?AssetID group by assetID", m_Realm);
                     cmd.Parameters.AddWithValue("?PrincipalID", principalID.ToString());
                     cmd.Parameters.AddWithValue("?AssetID", assetID.ToString());
-                
+
                     using (IDataReader reader = cmd.ExecuteReader())
                     {
-
                         int perms = 0;
-                    
+
                         if (reader.Read())
                         {
                             perms = Convert.ToInt32(reader["inventoryCurrentPermissions"]);
@@ -245,10 +240,10 @@ namespace OpenSim.Data.MySQL
 
     public class MySqlFolderHandler : MySqlInventoryHandler<XInventoryFolder>
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         public MySqlFolderHandler(string c, string t, string m) :
-                base(c, t, m)
+            base(c, t, m)
         {
         }
 
@@ -290,9 +285,12 @@ namespace OpenSim.Data.MySQL
         }
     }
 
-    public class MySqlInventoryHandler<T> : MySQLGenericTableHandler<T> where T: class, new()
+    public class MySqlInventoryHandler<T> : MySQLGenericTableHandler<T> where T : class, new()
     {
-        public MySqlInventoryHandler(string c, string t, string m) : base(c, t, m) {}
+        public MySqlInventoryHandler(string c, string t, string m)
+            : base(c, t, m)
+        {
+        }
 
         protected bool IncrementFolderVersion(UUID folderID)
         {
@@ -301,8 +299,8 @@ namespace OpenSim.Data.MySQL
 
         protected bool IncrementFolderVersion(string folderID)
         {
-//            m_log.DebugFormat("[MYSQL FOLDER HANDLER]: Incrementing version on folder {0}", folderID);
-//            Util.PrintCallStack();
+            //            m_log.DebugFormat("[MYSQL FOLDER HANDLER]: Incrementing version on folder {0}", folderID);
+            //            Util.PrintCallStack();
 
             using (MySqlConnection dbcon = new MySqlConnection(m_connectionString))
             {

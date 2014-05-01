@@ -25,18 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using OpenMetaverse;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.Drawing;
-using System.IO;
 using System.Reflection;
-using log4net;
-using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
 using RegionFlags = OpenSim.Framework.RegionFlags;
 
 namespace OpenSim.Data.MSSQL
@@ -52,7 +47,7 @@ namespace OpenSim.Data.MSSQL
         private MSSQLManager m_database;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        public MSSQLRegionData(string connectionString, string realm) 
+        public MSSQLRegionData(string connectionString, string realm)
         {
             m_Realm = realm;
             m_ConnectionString = connectionString;
@@ -64,11 +59,11 @@ namespace OpenSim.Data.MSSQL
                 Migration m = new Migration(conn, GetType().Assembly, "GridStore");
                 m.Update();
             }
-         }
+        }
 
         public List<RegionData> Get(string regionName, UUID scopeID)
         {
-            string sql = "select * from ["+m_Realm+"] where regionName like @regionName";
+            string sql = "select * from [" + m_Realm + "] where regionName like @regionName";
             if (scopeID != UUID.Zero)
                 sql += " and ScopeID = @scopeID";
             sql += " order by regionName";
@@ -84,7 +79,7 @@ namespace OpenSim.Data.MSSQL
 
         public RegionData Get(int posX, int posY, UUID scopeID)
         {
-            string sql = "select * from ["+m_Realm+"] where locX = @posX and locY = @posY";
+            string sql = "select * from [" + m_Realm + "] where locX = @posX and locY = @posY";
             if (scopeID != UUID.Zero)
                 sql += " and ScopeID = @scopeID";
 
@@ -105,7 +100,7 @@ namespace OpenSim.Data.MSSQL
 
         public RegionData Get(UUID regionID, UUID scopeID)
         {
-            string sql = "select * from ["+m_Realm+"] where uuid = @regionID";
+            string sql = "select * from [" + m_Realm + "] where uuid = @regionID";
             if (scopeID != UUID.Zero)
                 sql += " and ScopeID = @scopeID";
             using (SqlConnection conn = new SqlConnection(m_ConnectionString))
@@ -124,7 +119,7 @@ namespace OpenSim.Data.MSSQL
 
         public List<RegionData> Get(int startX, int startY, int endX, int endY, UUID scopeID)
         {
-            string sql = "select * from ["+m_Realm+"] where locX between @startX and @endX and locY between @startY and @endY";
+            string sql = "select * from [" + m_Realm + "] where locX between @startX and @endX and locY between @startY and @endY";
             if (scopeID != UUID.Zero)
                 sql += " and ScopeID = @scopeID";
 
@@ -220,12 +215,10 @@ namespace OpenSim.Data.MSSQL
             using (SqlConnection conn = new SqlConnection(m_ConnectionString))
             using (SqlCommand cmd = new SqlCommand())
             {
-
                 string update = "update [" + m_Realm + "] set locX=@posX, locY=@posY, sizeX=@sizeX, sizeY=@sizeY ";
-                
+
                 foreach (string field in fields)
                 {
-
                     update += ", ";
                     update += "[" + field + "] = @" + field;
 

@@ -25,15 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Region.Framework.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Reflection;
-using log4net;
-using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Interfaces;
 
 namespace OpenSim.Data.MSSQL
 {
@@ -249,7 +249,7 @@ namespace OpenSim.Data.MSSQL
             SaveUUIDList(es.EstateID, "estate_groups", es.EstateGroups);
         }
 
-        #endregion
+        #endregion Public methods
 
         #region Private methods
 
@@ -397,7 +397,6 @@ namespace OpenSim.Data.MSSQL
                                     f.SetValue(es, v);
                             }
                         }
-
                     }
                 }
             }
@@ -410,7 +409,6 @@ namespace OpenSim.Data.MSSQL
             //Set event
             es.OnSave += StoreEstateSettings;
             return es;
-
         }
 
         public List<EstateSettings> LoadEstateSettingsAll()
@@ -569,9 +567,10 @@ namespace OpenSim.Data.MSSQL
 
         public bool DeleteEstate(int estateID)
         {
-            // TODO: Implementation!            
+            // TODO: Implementation!
             return false;
         }
-        #endregion
+
+        #endregion Private methods
     }
 }

@@ -25,15 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Reflection;
-using System.Threading;
-using log4net;
-using OpenMetaverse;
-using OpenSim.Framework;
 using MySql.Data.MySqlClient;
+using OpenMetaverse;
+using System;
 
 namespace OpenSim.Data.MySQL
 {
@@ -43,10 +37,10 @@ namespace OpenSim.Data.MySQL
     public class MySQLPresenceData : MySQLGenericTableHandler<PresenceData>,
             IPresenceData
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         public MySQLPresenceData(string connectionString, string realm) :
-                base(connectionString, realm, "Presence")
+            base(connectionString, realm, "Presence")
         {
         }
 
@@ -66,9 +60,9 @@ namespace OpenSim.Data.MySQL
             using (MySqlCommand cmd = new MySqlCommand())
             {
                 cmd.CommandText = String.Format("delete from {0} where `RegionID`=?RegionID", m_Realm);
-    
+
                 cmd.Parameters.AddWithValue("?RegionID", regionID.ToString());
-    
+
                 ExecuteNonQuery(cmd);
             }
         }
@@ -85,10 +79,10 @@ namespace OpenSim.Data.MySQL
             using (MySqlCommand cmd = new MySqlCommand())
             {
                 cmd.CommandText = String.Format("update {0} set RegionID=?RegionID, LastSeen=NOW() where `SessionID`=?SessionID", m_Realm);
-    
+
                 cmd.Parameters.AddWithValue("?SessionID", sessionID.ToString());
                 cmd.Parameters.AddWithValue("?RegionID", regionID.ToString());
-    
+
                 if (ExecuteNonQuery(cmd) == 0)
                     return false;
             }
@@ -104,7 +98,7 @@ namespace OpenSim.Data.MySQL
             if (ret.Length == 0)
                 return false;
 
-            if(ret[0].UserID != agentId.ToString())
+            if (ret[0].UserID != agentId.ToString())
                 return false;
 
             return true;

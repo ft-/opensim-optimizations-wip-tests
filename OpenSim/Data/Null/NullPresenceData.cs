@@ -25,24 +25,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
-using log4net;
 using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Data;
+using System.Collections.Generic;
 
 namespace OpenSim.Data.Null
 {
     public class NullPresenceData : IPresenceData
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public static NullPresenceData Instance;
 
-        Dictionary<UUID, PresenceData> m_presenceData = new Dictionary<UUID, PresenceData>();
+        private Dictionary<UUID, PresenceData> m_presenceData = new Dictionary<UUID, PresenceData>();
 
         public NullPresenceData(string connectionString, string realm)
         {
@@ -59,8 +53,8 @@ namespace OpenSim.Data.Null
             if (Instance != this)
                 return Instance.Store(data);
 
-//            m_log.DebugFormat("[NULL PRESENCE DATA]: Storing presence {0}", data.UserID);
-//            Console.WriteLine("HOME for " + data.UserID + " is " + (data.Data.ContainsKey("HomeRegionID") ? data.Data["HomeRegionID"] : "Not found"));
+            //            m_log.DebugFormat("[NULL PRESENCE DATA]: Storing presence {0}", data.UserID);
+            //            Console.WriteLine("HOME for " + data.UserID + " is " + (data.Data.ContainsKey("HomeRegionID") ? data.Data["HomeRegionID"] : "Not found"));
 
             m_presenceData[data.SessionID] = data;
             return true;
@@ -100,7 +94,7 @@ namespace OpenSim.Data.Null
         {
             if (Instance != this)
                 return Instance.ReportAgent(sessionID, regionID);
-            
+
             if (m_presenceData.ContainsKey(sessionID))
             {
                 m_presenceData[sessionID].RegionID = regionID;
@@ -115,8 +109,8 @@ namespace OpenSim.Data.Null
             if (Instance != this)
                 return Instance.Get(field, data);
 
-//            m_log.DebugFormat(
-//                "[NULL PRESENCE DATA]: Getting presence data for field {0} with parameter {1}", field, data);
+            //            m_log.DebugFormat(
+            //                "[NULL PRESENCE DATA]: Getting presence data for field {0} with parameter {1}", field, data);
 
             List<PresenceData> presences = new List<PresenceData>();
             if (field == "UserID")
@@ -126,10 +120,10 @@ namespace OpenSim.Data.Null
                     if (p.UserID == data)
                     {
                         presences.Add(p);
-//                        Console.WriteLine("HOME for " + p.UserID + " is " + (p.Data.ContainsKey("HomeRegionID") ? p.Data["HomeRegionID"] : "Not found"));
+                        //                        Console.WriteLine("HOME for " + p.UserID + " is " + (p.Data.ContainsKey("HomeRegionID") ? p.Data["HomeRegionID"] : "Not found"));
                     }
                 }
-                
+
                 return presences.ToArray();
             }
             else if (field == "SessionID")
@@ -167,12 +161,11 @@ namespace OpenSim.Data.Null
             return presences.ToArray();
         }
 
-
         public bool Delete(string field, string data)
         {
-//            m_log.DebugFormat(
-//                "[NULL PRESENCE DATA]: Deleting presence data for field {0} with parameter {1}", field, data);
-            
+            //            m_log.DebugFormat(
+            //                "[NULL PRESENCE DATA]: Deleting presence data for field {0} with parameter {1}", field, data);
+
             if (Instance != this)
                 return Instance.Delete(field, data);
 
@@ -229,6 +222,5 @@ namespace OpenSim.Data.Null
 
             return false;
         }
-
     }
 }

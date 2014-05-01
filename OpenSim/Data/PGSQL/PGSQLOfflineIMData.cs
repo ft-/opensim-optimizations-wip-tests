@@ -25,13 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
-using OpenSim.Framework;
-using OpenMetaverse;
 using Npgsql;
+using System;
 
 namespace OpenSim.Data.PGSQL
 {
@@ -47,10 +42,9 @@ namespace OpenSim.Data.PGSQL
             using (NpgsqlCommand cmd = new NpgsqlCommand())
             {
                 cmd.CommandText = String.Format("delete from {0} where \"TMStamp\" < CURRENT_DATE - INTERVAL '2 week'", m_Realm);
-         
+
                 ExecuteNonQuery(cmd);
             }
-
         }
     }
 }

@@ -27,7 +27,6 @@
 
 using Npgsql;
 using System;
-using System.Data;
 using System.Data.Common;
 using System.Reflection;
 
@@ -54,8 +53,8 @@ namespace OpenSim.Data.PGSQL
             {
                 try
                 {
-                    cmd.CommandText = "select version from migrations where name = '" + type + "' " + 
-                                      " order by version desc limit 1"; //Must be 
+                    cmd.CommandText = "select version from migrations where name = '" + type + "' " +
+                                      " order by version desc limit 1"; //Must be
                     using (NpgsqlDataReader reader = cmd.ExecuteReader())
                     {
                         if (reader.Read())
@@ -94,7 +93,6 @@ namespace OpenSim.Data.PGSQL
                 catch (Exception)
                 {
                     throw new Exception(sql);
-
                 }
             }
         }

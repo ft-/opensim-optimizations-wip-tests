@@ -25,55 +25,59 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using Npgsql;
+using OpenMetaverse;
+using OpenMetaverse.StructuredData;
+using OpenSim.Framework;
 using System;
 using System.Data;
 using System.Reflection;
-using OpenSim.Data;
-using OpenSim.Framework;
-using OpenMetaverse;
-using OpenMetaverse.StructuredData;
-using log4net;
-using Npgsql;
 
 namespace OpenSim.Data.PGSQL
 {
-    public class UserProfilesData: IProfilesData
+    public class UserProfilesData : IProfilesData
     {
-        static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         #region Properites
-        string ConnectionString
+
+        private string ConnectionString
         {
-            get; set;
+            get;
+            set;
         }
 
         protected virtual Assembly Assembly
         {
             get { return GetType().Assembly; }
         }
-        
-        #endregion Properties
-        
+
+        #endregion Properites
+
         #region class Member Functions
+
         public UserProfilesData(string connectionString)
         {
             ConnectionString = connectionString;
             Init();
         }
-        
-        void Init()
+
+        private void Init()
         {
             using (NpgsqlConnection dbcon = new NpgsqlConnection(ConnectionString))
             {
                 dbcon.Open();
-                
+
                 Migration m = new Migration(dbcon, Assembly, "UserProfiles");
                 m.Update();
             }
         }
-        #endregion Member Functions
-        
+
+        #endregion class Member Functions
+
         #region Classifieds Queries
+
         /// <summary>
         /// Gets the classified records.
         /// </summary>
@@ -86,7 +90,7 @@ namespace OpenSim.Data.PGSQL
         public OSDArray GetClassifiedRecords(UUID creatorId)
         {
             OSDArray data = new OSDArray();
-            
+
             using (NpgsqlConnection dbcon = new NpgsqlConnection(ConnectionString))
             {
                 string query = @"SELECT ""classifieduuid"", ""name"" FROM classifieds WHERE ""creatoruuid"" = :Id";
@@ -94,19 +98,19 @@ namespace OpenSim.Data.PGSQL
                 using (NpgsqlCommand cmd = new NpgsqlCommand(query, dbcon))
                 {
                     cmd.Parameters.AddWithValue("Id", creatorId);
-                    using( NpgsqlDataReader reader = cmd.ExecuteReader(CommandBehavior.Default))
+                    using (NpgsqlDataReader reader = cmd.ExecuteReader(CommandBehavior.Default))
                     {
-                        if(reader.HasRows)
+                        if (reader.HasRows)
                         {
                             while (reader.Read())
                             {
                                 OSDMap n = new OSDMap();
                                 UUID Id = UUID.Zero;
-                                
+
                                 string Name = null;
                                 try
                                 {
-                                    UUID.TryParse(Convert.ToString( reader["classifieduuid"]), out Id);
+                                    UUID.TryParse(Convert.ToString(reader["classifieduuid"]), out Id);
                                     Name = Convert.ToString(reader["name"]);
                                 }
                                 catch (Exception e)
@@ -124,60 +128,60 @@ namespace OpenSim.Data.PGSQL
             }
             return data;
         }
-        
+
         public bool UpdateClassifiedRecord(UserClassifiedAdd ad, ref string result)
         {
             string query = @"INSERT INTO classifieds ( ""classifieduuid"",""creatoruuid"", ""creationdate"", ""expirationdate"", ""category"",
                                     ""name"", ""description"", ""parceluuid"", ""parentestate"", ""snapshotuuid"", ""simname"",
                                     ""posglobal"", ""parcelname"", ""classifiedflags"", ""priceforlisting"")
                               Select :ClassifiedId, :CreatorId, :CreatedDate, :ExpirationDate, :Category,
-                                     :Name, :Description, :ParcelId, :ParentEstate, :SnapshotId, :SimName 
-                                     :GlobalPos, :ParcelName, :Flags, :ListingPrice 
+                                     :Name, :Description, :ParcelId, :ParentEstate, :SnapshotId, :SimName
+                                     :GlobalPos, :ParcelName, :Flags, :ListingPrice
                                 Where not exists( Select ""classifieduuid"" from classifieds where ""classifieduuid"" = :ClassifiedId );
 
                            update classifieds
-                              set category =:Category, 
-                                  expirationdate = :ExpirationDate, 
-                                  name = :Name, 
-                                  description  = :Description, 
-                                  parentestate = :ParentEstate, 
-                                  posglobal       = :GlobalPos, 
+                              set category =:Category,
+                                  expirationdate = :ExpirationDate,
+                                  name = :Name,
+                                  description  = :Description,
+                                  parentestate = :ParentEstate,
+                                  posglobal       = :GlobalPos,
                                   parcelname      = :ParcelName,
-                                  classifiedflags = :Flags, 
-                                  priceforlisting = :ListingPrice, 
+                                  classifiedflags = :Flags,
+                                  priceforlisting = :ListingPrice,
                                   snapshotuuid    = :SnapshotId
                             where classifieduuid = :ClassifiedId ;
                                 ";
-            
-            if(string.IsNullOrEmpty(ad.ParcelName))
+
+            if (string.IsNullOrEmpty(ad.ParcelName))
                 ad.ParcelName = "Unknown";
-            if(ad.ParcelId == null)
+            if (ad.ParcelId == null)
                 ad.ParcelId = UUID.Zero;
-            if(string.IsNullOrEmpty(ad.Description))
+            if (string.IsNullOrEmpty(ad.Description))
                 ad.Description = "No Description";
-            
+
             DateTime epoch = new DateTime(1970, 1, 1);
             DateTime now = DateTime.Now;
             TimeSpan epochnow = now - epoch;
             TimeSpan duration;
             DateTime expiration;
             TimeSpan epochexp;
-            
-            if(ad.Flags == 2)
+
+            if (ad.Flags == 2)
             {
-                duration = new TimeSpan(7,0,0,0);
+                duration = new TimeSpan(7, 0, 0, 0);
                 expiration = now.Add(duration);
                 epochexp = expiration - epoch;
             }
             else
             {
-                duration = new TimeSpan(365,0,0,0);
+                duration = new TimeSpan(365, 0, 0, 0);
                 expiration = now.Add(duration);
                 epochexp = expiration - epoch;
             }
             ad.CreationDate = (int)epochnow.TotalSeconds;
             ad.ExpirationDate = (int)epochexp.TotalSeconds;
-            
+
             try
             {
                 using (NpgsqlConnection dbcon = new NpgsqlConnection(ConnectionString))
@@ -194,13 +198,13 @@ namespace OpenSim.Data.PGSQL
                         cmd.Parameters.AddWithValue("Description", ad.Description.ToString());
                         cmd.Parameters.AddWithValue("ParcelId", ad.ParcelId.ToString());
                         cmd.Parameters.AddWithValue("ParentEstate", ad.ParentEstate.ToString());
-                        cmd.Parameters.AddWithValue("SnapshotId", ad.SnapshotId.ToString ());
+                        cmd.Parameters.AddWithValue("SnapshotId", ad.SnapshotId.ToString());
                         cmd.Parameters.AddWithValue("SimName", ad.SimName.ToString());
                         cmd.Parameters.AddWithValue("GlobalPos", ad.GlobalPos.ToString());
                         cmd.Parameters.AddWithValue("ParcelName", ad.ParcelName.ToString());
                         cmd.Parameters.AddWithValue("Flags", ad.Flags.ToString());
-                        cmd.Parameters.AddWithValue("ListingPrice", ad.Price.ToString ());
-                        
+                        cmd.Parameters.AddWithValue("ListingPrice", ad.Price.ToString());
+
                         cmd.ExecuteNonQuery();
                     }
                 }
@@ -214,24 +218,23 @@ namespace OpenSim.Data.PGSQL
             }
             return true;
         }
-        
-       
+
         public bool DeleteClassifiedRecord(UUID recordId)
         {
             string query = string.Empty;
-            
+
             query = @"DELETE FROM classifieds WHERE classifieduuid = :ClasifiedId ;";
-            
+
             try
             {
                 using (NpgsqlConnection dbcon = new NpgsqlConnection(ConnectionString))
                 {
                     dbcon.Open();
-                    
+
                     using (NpgsqlCommand cmd = new NpgsqlCommand(query, dbcon))
                     {
                         cmd.Parameters.AddWithValue("ClassifiedId", recordId.ToString());
-                        
+
                         cmd.ExecuteNonQuery();
                     }
                 }
@@ -244,14 +247,14 @@ namespace OpenSim.Data.PGSQL
             }
             return true;
         }
-        
+
         public bool GetClassifiedInfo(ref UserClassifiedAdd ad, ref string result)
         {
             string query = string.Empty;
-            
+
             query += "SELECT * FROM classifieds WHERE ";
             query += "classifieduuid = :AdId";
-            
+
             try
             {
                 using (NpgsqlConnection dbcon = new NpgsqlConnection(ConnectionString))
@@ -260,10 +263,10 @@ namespace OpenSim.Data.PGSQL
                     using (NpgsqlCommand cmd = new NpgsqlCommand(query, dbcon))
                     {
                         cmd.Parameters.AddWithValue("AdId", ad.ClassifiedId.ToString());
-                        
+
                         using (NpgsqlDataReader reader = cmd.ExecuteReader())
                         {
-                            if(reader.Read ())
+                            if (reader.Read())
                             {
                                 ad.CreatorId = GetUUID(reader["creatoruuid"]);
                                 ad.ParcelId = GetUUID(reader["parceluuid"]);
@@ -279,7 +282,6 @@ namespace OpenSim.Data.PGSQL
                                 ad.SimName = reader["simname"].ToString();
                                 ad.GlobalPos = reader["posglobal"].ToString();
                                 ad.ParcelName = reader["parcelname"].ToString();
-                                
                             }
                         }
                     }
@@ -294,8 +296,8 @@ namespace OpenSim.Data.PGSQL
             return true;
         }
 
-        public static UUID GetUUID( object uuidValue ) {
-
+        public static UUID GetUUID(object uuidValue)
+        {
             UUID ret = UUID.Zero;
 
             UUID.TryParse(uuidValue.ToString(), out ret);
@@ -303,18 +305,18 @@ namespace OpenSim.Data.PGSQL
             return ret;
         }
 
-
         #endregion Classifieds Queries
 
         #region Picks Queries
+
         public OSDArray GetAvatarPicks(UUID avatarId)
         {
             string query = string.Empty;
-            
+
             query += "SELECT \"pickuuid\",\"name\" FROM userpicks WHERE ";
             query += "creatoruuid = :Id";
             OSDArray data = new OSDArray();
-            
+
             try
             {
                 using (NpgsqlConnection dbcon = new NpgsqlConnection(ConnectionString))
@@ -323,17 +325,17 @@ namespace OpenSim.Data.PGSQL
                     using (NpgsqlCommand cmd = new NpgsqlCommand(query, dbcon))
                     {
                         cmd.Parameters.AddWithValue("Id", avatarId.ToString());
-                        
+
                         using (NpgsqlDataReader reader = cmd.ExecuteReader())
                         {
-                            if(reader.HasRows)
+                            if (reader.HasRows)
                             {
                                 while (reader.Read())
                                 {
                                     OSDMap record = new OSDMap();
-                                    
-                                    record.Add("pickuuid",OSD.FromString((string)reader["pickuuid"]));
-                                    record.Add("name",OSD.FromString((string)reader["name"]));
+
+                                    record.Add("pickuuid", OSD.FromString((string)reader["pickuuid"]));
+                                    record.Add("name", OSD.FromString((string)reader["name"]));
                                     data.Add(record);
                                 }
                             }
@@ -348,16 +350,16 @@ namespace OpenSim.Data.PGSQL
             }
             return data;
         }
-        
+
         public UserProfilePick GetPickInfo(UUID avatarId, UUID pickId)
         {
             string query = string.Empty;
             UserProfilePick pick = new UserProfilePick();
-            
+
             query += "SELECT * FROM userpicks WHERE ";
             query += "creatoruuid = :CreatorId AND ";
             query += "pickuuid =  :PickId";
-            
+
             try
             {
                 using (NpgsqlConnection dbcon = new NpgsqlConnection(ConnectionString))
@@ -367,18 +369,18 @@ namespace OpenSim.Data.PGSQL
                     {
                         cmd.Parameters.AddWithValue("CreatorId", avatarId.ToString());
                         cmd.Parameters.AddWithValue("PickId", pickId.ToString());
-                        
+
                         using (NpgsqlDataReader reader = cmd.ExecuteReader())
                         {
-                            if(reader.HasRows)
+                            if (reader.HasRows)
                             {
                                 reader.Read();
-                                
+
                                 string description = (string)reader["description"];
-                                
+
                                 if (string.IsNullOrEmpty(description))
                                     description = "No description given.";
-                                
+
                                 UUID.TryParse((string)reader["pickuuid"], out pick.PickId);
                                 UUID.TryParse((string)reader["creatoruuid"], out pick.CreatorId);
                                 UUID.TryParse((string)reader["parceluuid"], out pick.ParcelId);
@@ -405,13 +407,13 @@ namespace OpenSim.Data.PGSQL
             }
             return pick;
         }
-        
+
         public bool UpdatePicksRecord(UserProfilePick pick)
-        {       
+        {
             string query = string.Empty;
 
             query = @"INSERT INTO userpicks VALUES ( :PickId, :CreatorId, :TopPick, :ParcelId,:Name, :Desc, :SnapshotId,:User,
-                          :Original, :SimName, :GlobalPos, :SortOrder, :Enabled) 
+                          :Original, :SimName, :GlobalPos, :SortOrder, :Enabled)
                       where not exists ( select pickid from userpicks where pickid = :pickid);
 
                      Update userpicks
@@ -423,7 +425,7 @@ namespace OpenSim.Data.PGSQL
                             posglobal    = :GlobalPos
                        where pickid = :PickId;
                     ";
-            
+
             try
             {
                 using (NpgsqlConnection dbcon = new NpgsqlConnection(ConnectionString))
@@ -440,11 +442,11 @@ namespace OpenSim.Data.PGSQL
                         cmd.Parameters.AddWithValue("SnapshotId", pick.SnapshotId.ToString());
                         cmd.Parameters.AddWithValue("User", pick.User.ToString());
                         cmd.Parameters.AddWithValue("Original", pick.OriginalName.ToString());
-                        cmd.Parameters.AddWithValue("SimName",pick.SimName.ToString());
+                        cmd.Parameters.AddWithValue("SimName", pick.SimName.ToString());
                         cmd.Parameters.AddWithValue("GlobalPos", pick.GlobalPos);
-                        cmd.Parameters.AddWithValue("SortOrder", pick.SortOrder.ToString ());
+                        cmd.Parameters.AddWithValue("SortOrder", pick.SortOrder.ToString());
                         cmd.Parameters.AddWithValue("Enabled", pick.Enabled.ToString());
-                        
+
                         cmd.ExecuteNonQuery();
                     }
                 }
@@ -457,24 +459,24 @@ namespace OpenSim.Data.PGSQL
             }
             return true;
         }
-        
+
         public bool DeletePicksRecord(UUID pickId)
         {
             string query = string.Empty;
-            
+
             query += "DELETE FROM userpicks WHERE ";
             query += "pickuuid = :PickId";
-            
+
             try
             {
                 using (NpgsqlConnection dbcon = new NpgsqlConnection(ConnectionString))
                 {
                     dbcon.Open();
-                    
+
                     using (NpgsqlCommand cmd = new NpgsqlCommand(query, dbcon))
                     {
                         cmd.Parameters.AddWithValue("PickId", pickId.ToString());
-                        
+
                         cmd.ExecuteNonQuery();
                     }
                 }
@@ -487,18 +489,20 @@ namespace OpenSim.Data.PGSQL
             }
             return true;
         }
+
         #endregion Picks Queries
-        
+
         #region Avatar Notes Queries
+
         public bool GetAvatarNotes(ref UserProfileNotes notes)
         {  // WIP
             string query = string.Empty;
-            
+
             query += "SELECT \"notes\" FROM usernotes WHERE ";
             query += "useruuid = :Id AND ";
             query += "targetuuid = :TargetId";
             OSDArray data = new OSDArray();
-            
+
             try
             {
                 using (NpgsqlConnection dbcon = new NpgsqlConnection(ConnectionString))
@@ -508,10 +512,10 @@ namespace OpenSim.Data.PGSQL
                     {
                         cmd.Parameters.AddWithValue("Id", notes.UserId.ToString());
                         cmd.Parameters.AddWithValue("TargetId", notes.TargetId.ToString());
-                        
+
                         using (NpgsqlDataReader reader = cmd.ExecuteReader(CommandBehavior.SingleRow))
                         {
-                            if(reader.HasRows)
+                            if (reader.HasRows)
                             {
                                 reader.Read();
                                 notes.Notes = OSD.FromString((string)reader["notes"]);
@@ -527,13 +531,13 @@ namespace OpenSim.Data.PGSQL
             }
             return true;
         }
-        
+
         public bool UpdateAvatarNotes(ref UserProfileNotes note, ref string result)
-        {          
+        {
             string query = string.Empty;
             bool remove;
-            
-            if(string.IsNullOrEmpty(note.Notes))
+
+            if (string.IsNullOrEmpty(note.Notes))
             {
                 remove = true;
                 query += "DELETE FROM usernotes WHERE ";
@@ -548,11 +552,11 @@ namespace OpenSim.Data.PGSQL
 
                            update usernotes
                               set notes = :Notes
-                            where useruuid = :UserId 
+                            where useruuid = :UserId
                               and targetuuid = :TargetId;
                         ";
             }
-            
+
             try
             {
                 using (NpgsqlConnection dbcon = new NpgsqlConnection(ConnectionString))
@@ -560,11 +564,11 @@ namespace OpenSim.Data.PGSQL
                     dbcon.Open();
                     using (NpgsqlCommand cmd = new NpgsqlCommand(query, dbcon))
                     {
-                        if(!remove)
+                        if (!remove)
                             cmd.Parameters.AddWithValue("Notes", note.Notes);
-                        cmd.Parameters.AddWithValue("TargetId", note.TargetId.ToString ());
+                        cmd.Parameters.AddWithValue("TargetId", note.TargetId.ToString());
                         cmd.Parameters.AddWithValue("UserId", note.UserId.ToString());
-                        
+
                         cmd.ExecuteNonQuery();
                     }
                 }
@@ -576,18 +580,19 @@ namespace OpenSim.Data.PGSQL
                 return false;
             }
             return true;
-            
         }
+
         #endregion Avatar Notes Queries
-        
+
         #region Avatar Properties
+
         public bool GetAvatarProperties(ref UserProfileProperties props, ref string result)
         {
             string query = string.Empty;
-            
+
             query += "SELECT * FROM userprofile WHERE ";
             query += "useruuid = :Id";
-            
+
             try
             {
                 using (NpgsqlConnection dbcon = new NpgsqlConnection(ConnectionString))
@@ -596,10 +601,10 @@ namespace OpenSim.Data.PGSQL
                     using (NpgsqlCommand cmd = new NpgsqlCommand(query, dbcon))
                     {
                         cmd.Parameters.AddWithValue("Id", props.UserId.ToString());
-                        
+
                         using (NpgsqlDataReader reader = cmd.ExecuteReader(CommandBehavior.SingleRow))
                         {
-                            if(reader.HasRows)
+                            if (reader.HasRows)
                             {
                                 m_log.DebugFormat("[PROFILES_DATA]" +
                                                   ": Getting data for {0}.", props.UserId);
@@ -620,7 +625,7 @@ namespace OpenSim.Data.PGSQL
                             {
                                 m_log.DebugFormat("[PROFILES_DATA]" +
                                                  ": No data for {0}", props.UserId);
-                               
+
                                 props.WebUrl = string.Empty;
                                 props.ImageId = UUID.Zero;
                                 props.AboutText = string.Empty;
@@ -701,11 +706,11 @@ namespace OpenSim.Data.PGSQL
             }
             return true;
         }
-        
+
         public bool UpdateAvatarProperties(ref UserProfileProperties props, ref string result)
-        {            
+        {
             string query = string.Empty;
-            
+
             query += "UPDATE userprofile SET ";
             query += "profileURL=:profileURL, ";
             query += "profileImage=:image, ";
@@ -713,7 +718,7 @@ namespace OpenSim.Data.PGSQL
             query += "profileFirstImage=:firstlifeimage,";
             query += "profileFirstText=:firstlifetext ";
             query += "WHERE useruuid=:uuid";
-            
+
             try
             {
                 using (NpgsqlConnection dbcon = new NpgsqlConnection(ConnectionString))
@@ -727,7 +732,7 @@ namespace OpenSim.Data.PGSQL
                         cmd.Parameters.AddWithValue("firstlifeimage", props.FirstLifeImageId.ToString());
                         cmd.Parameters.AddWithValue("firstlifetext", props.FirstLifeText);
                         cmd.Parameters.AddWithValue("uuid", props.UserId.ToString());
-                        
+
                         cmd.ExecuteNonQuery();
                     }
                 }
@@ -736,18 +741,20 @@ namespace OpenSim.Data.PGSQL
             {
                 m_log.DebugFormat("[PROFILES_DATA]" +
                                  ": AgentPropertiesUpdate exception {0}", e.Message);
-                
+
                 return false;
             }
             return true;
         }
+
         #endregion Avatar Properties
-        
+
         #region Avatar Interests
+
         public bool UpdateAvatarInterests(UserProfileProperties up, ref string result)
-        {           
+        {
             string query = string.Empty;
-            
+
             query += "UPDATE userprofile SET ";
             query += "profileWantToMask=:WantMask, ";
             query += "profileWantToText=:WantText,";
@@ -755,7 +762,7 @@ namespace OpenSim.Data.PGSQL
             query += "profileSkillsText=:SkillsText, ";
             query += "profileLanguages=:Languages ";
             query += "WHERE useruuid=:uuid";
-            
+
             try
             {
                 using (NpgsqlConnection dbcon = new NpgsqlConnection(ConnectionString))
@@ -769,7 +776,7 @@ namespace OpenSim.Data.PGSQL
                         cmd.Parameters.AddWithValue("SkillsText", up.SkillsText);
                         cmd.Parameters.AddWithValue("Languages", up.Language);
                         cmd.Parameters.AddWithValue("uuid", up.UserId.ToString());
-                        
+
                         cmd.ExecuteNonQuery();
                     }
                 }
@@ -783,6 +790,7 @@ namespace OpenSim.Data.PGSQL
             }
             return true;
         }
+
         #endregion Avatar Interests
 
         public OSDArray GetUserImageAssets(UUID avatarId)
@@ -791,25 +799,24 @@ namespace OpenSim.Data.PGSQL
             string query = "SELECT \"snapshotuuid\" FROM {0} WHERE \"creatoruuid\" = :Id";
 
             // Get classified image assets
-            
-            
+
             try
             {
                 using (NpgsqlConnection dbcon = new NpgsqlConnection(ConnectionString))
                 {
                     dbcon.Open();
 
-                    using (NpgsqlCommand cmd = new NpgsqlCommand(string.Format (query,"\"classifieds\""), dbcon))
+                    using (NpgsqlCommand cmd = new NpgsqlCommand(string.Format(query, "\"classifieds\""), dbcon))
                     {
                         cmd.Parameters.AddWithValue("Id", avatarId.ToString());
-                        
+
                         using (NpgsqlDataReader reader = cmd.ExecuteReader(CommandBehavior.SingleRow))
                         {
-                            if(reader.HasRows)
+                            if (reader.HasRows)
                             {
                                 while (reader.Read())
                                 {
-                                    data.Add(new OSDString((string)reader["snapshotuuid"].ToString ()));
+                                    data.Add(new OSDString((string)reader["snapshotuuid"].ToString()));
                                 }
                             }
                         }
@@ -818,39 +825,39 @@ namespace OpenSim.Data.PGSQL
                     dbcon.Close();
                     dbcon.Open();
 
-                    using (NpgsqlCommand cmd = new NpgsqlCommand(string.Format (query,"\"userpicks\""), dbcon))
+                    using (NpgsqlCommand cmd = new NpgsqlCommand(string.Format(query, "\"userpicks\""), dbcon))
                     {
                         cmd.Parameters.AddWithValue("Id", avatarId.ToString());
-                        
+
                         using (NpgsqlDataReader reader = cmd.ExecuteReader(CommandBehavior.SingleRow))
                         {
-                            if(reader.HasRows)
+                            if (reader.HasRows)
                             {
                                 while (reader.Read())
                                 {
-                                    data.Add(new OSDString((string)reader["snapshotuuid"].ToString ()));
+                                    data.Add(new OSDString((string)reader["snapshotuuid"].ToString()));
                                 }
                             }
                         }
                     }
-                    
+
                     dbcon.Close();
                     dbcon.Open();
 
                     query = "SELECT \"profileImage\", \"profileFirstImage\" FROM \"userprofile\" WHERE \"useruuid\" = :Id";
 
-                    using (NpgsqlCommand cmd = new NpgsqlCommand(string.Format (query,"\"userpicks\""), dbcon))
+                    using (NpgsqlCommand cmd = new NpgsqlCommand(string.Format(query, "\"userpicks\""), dbcon))
                     {
                         cmd.Parameters.AddWithValue("Id", avatarId.ToString());
-                        
+
                         using (NpgsqlDataReader reader = cmd.ExecuteReader(CommandBehavior.SingleRow))
                         {
-                            if(reader.HasRows)
+                            if (reader.HasRows)
                             {
                                 while (reader.Read())
                                 {
-                                    data.Add(new OSDString((string)reader["profileImage"].ToString ()));
-                                    data.Add(new OSDString((string)reader["profileFirstImage"].ToString ()));
+                                    data.Add(new OSDString((string)reader["profileImage"].ToString()));
+                                    data.Add(new OSDString((string)reader["profileFirstImage"].ToString()));
                                 }
                             }
                         }
@@ -864,18 +871,19 @@ namespace OpenSim.Data.PGSQL
             }
             return data;
         }
-        
+
         #region User Preferences
+
         public bool GetUserPreferences(ref UserPreferences pref, ref string result)
         {
             string query = string.Empty;
-            
+
             query += "SELECT imviaemail,visible,email FROM ";
             query += "usersettings WHERE ";
             query += "useruuid = :Id";
-            
+
             OSDArray data = new OSDArray();
-            
+
             try
             {
                 using (NpgsqlConnection dbcon = new NpgsqlConnection(ConnectionString))
@@ -884,10 +892,10 @@ namespace OpenSim.Data.PGSQL
                     using (NpgsqlCommand cmd = new NpgsqlCommand(query, dbcon))
                     {
                         cmd.Parameters.AddWithValue("Id", pref.UserId.ToString());
-                        
+
                         using (NpgsqlDataReader reader = cmd.ExecuteReader())
                         {
-                            if(reader.HasRows)
+                            if (reader.HasRows)
                             {
                                 reader.Read();
                                 bool.TryParse((string)reader["imviaemail"], out pref.IMViaEmail);
@@ -900,7 +908,7 @@ namespace OpenSim.Data.PGSQL
                                 {
                                     query = "INSERT INTO usersettings VALUES ";
                                     query += "(:Id,'false','false', '')";
-                                    
+
                                     put.ExecuteNonQuery();
                                 }
                             }
@@ -917,15 +925,15 @@ namespace OpenSim.Data.PGSQL
             return true;
         }
 
-        public bool UpdateUserPreferences(ref UserPreferences pref,  ref string result)
-        {           
+        public bool UpdateUserPreferences(ref UserPreferences pref, ref string result)
+        {
             string query = string.Empty;
-            
+
             query += "UPDATE usersettings SET ";
             query += "imviaemail=:ImViaEmail, ";
             query += "visible=:Visible,";
             query += "WHERE useruuid=:uuid";
-            
+
             try
             {
                 using (NpgsqlConnection dbcon = new NpgsqlConnection(ConnectionString))
@@ -933,10 +941,10 @@ namespace OpenSim.Data.PGSQL
                     dbcon.Open();
                     using (NpgsqlCommand cmd = new NpgsqlCommand(query, dbcon))
                     {
-                        cmd.Parameters.AddWithValue("ImViaEmail", pref.IMViaEmail.ToString().ToLower ());
-                        cmd.Parameters.AddWithValue("Visible", pref.Visible.ToString().ToLower ());
+                        cmd.Parameters.AddWithValue("ImViaEmail", pref.IMViaEmail.ToString().ToLower());
+                        cmd.Parameters.AddWithValue("Visible", pref.Visible.ToString().ToLower());
                         cmd.Parameters.AddWithValue("uuid", pref.UserId.ToString());
-                        
+
                         cmd.ExecuteNonQuery();
                     }
                 }
@@ -950,17 +958,19 @@ namespace OpenSim.Data.PGSQL
             }
             return true;
         }
+
         #endregion User Preferences
-        
+
         #region Integration
+
         public bool GetUserAppData(ref UserAppData props, ref string result)
         {
             string query = string.Empty;
-            
+
             query += "SELECT * FROM userdata WHERE ";
             query += "\"UserId\" = :Id AND ";
             query += "\"TagId\" = :TagId";
-            
+
             try
             {
                 using (NpgsqlConnection dbcon = new NpgsqlConnection(ConnectionString))
@@ -969,11 +979,11 @@ namespace OpenSim.Data.PGSQL
                     using (NpgsqlCommand cmd = new NpgsqlCommand(query, dbcon))
                     {
                         cmd.Parameters.AddWithValue("Id", props.UserId.ToString());
-                        cmd.Parameters.AddWithValue (":TagId", props.TagId.ToString());
-                        
+                        cmd.Parameters.AddWithValue(":TagId", props.TagId.ToString());
+
                         using (NpgsqlDataReader reader = cmd.ExecuteReader(CommandBehavior.SingleRow))
                         {
-                            if(reader.HasRows)
+                            if (reader.HasRows)
                             {
                                 reader.Read();
                                 props.DataKey = (string)reader["DataKey"];
@@ -985,15 +995,15 @@ namespace OpenSim.Data.PGSQL
                                 query += ":UserId,";
                                 query += ":TagId,";
                                 query += ":DataKey,";
-                                query +=  ":DataVal) ";
-                                
+                                query += ":DataVal) ";
+
                                 using (NpgsqlCommand put = new NpgsqlCommand(query, dbcon))
                                 {
                                     put.Parameters.AddWithValue("Id", props.UserId.ToString());
                                     put.Parameters.AddWithValue("TagId", props.TagId.ToString());
                                     put.Parameters.AddWithValue("DataKey", props.DataKey.ToString());
                                     put.Parameters.AddWithValue("DataVal", props.DataVal.ToString());
-                                    
+
                                     put.ExecuteNonQuery();
                                 }
                             }
@@ -1012,16 +1022,16 @@ namespace OpenSim.Data.PGSQL
         }
 
         public bool SetUserAppData(UserAppData props, ref string result)
-        {         
+        {
             string query = string.Empty;
-            
+
             query += "UPDATE userdata SET ";
             query += "\"TagId\" = :TagId, ";
             query += "\"DataKey\" = :DataKey, ";
             query += "\"DataVal\" = :DataVal WHERE ";
             query += "\"UserId\" = :UserId AND ";
             query += "\"TagId\" = :TagId";
-            
+
             try
             {
                 using (NpgsqlConnection dbcon = new NpgsqlConnection(ConnectionString))
@@ -1030,10 +1040,10 @@ namespace OpenSim.Data.PGSQL
                     using (NpgsqlCommand cmd = new NpgsqlCommand(query, dbcon))
                     {
                         cmd.Parameters.AddWithValue("UserId", props.UserId.ToString());
-                        cmd.Parameters.AddWithValue("TagId", props.TagId.ToString ());
-                        cmd.Parameters.AddWithValue("DataKey", props.DataKey.ToString ());
-                        cmd.Parameters.AddWithValue("DataVal", props.DataKey.ToString ());
-                        
+                        cmd.Parameters.AddWithValue("TagId", props.TagId.ToString());
+                        cmd.Parameters.AddWithValue("DataKey", props.DataKey.ToString());
+                        cmd.Parameters.AddWithValue("DataVal", props.DataKey.ToString());
+
                         cmd.ExecuteNonQuery();
                     }
                 }
@@ -1046,7 +1056,7 @@ namespace OpenSim.Data.PGSQL
             }
             return true;
         }
+
         #endregion Integration
     }
 }
-

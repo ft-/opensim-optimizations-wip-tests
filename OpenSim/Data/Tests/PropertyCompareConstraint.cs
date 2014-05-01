@@ -25,6 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using NUnit.Framework;
+using NUnit.Framework.Constraints;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Tests.Common;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -32,11 +37,6 @@ using System.Drawing;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using NUnit.Framework;
-using NUnit.Framework.Constraints;
-using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Tests.Common;
 
 namespace OpenSim.Data.Tests
 {
@@ -52,8 +52,10 @@ namespace OpenSim.Data.Tests
     public class PropertyCompareConstraint<T> : NUnit.Framework.Constraints.Constraint
     {
         private readonly object _expected;
+
         //the reason everywhere uses propertyNames.Reverse().ToArray() is because the stack is backwards of the order we want to display the properties in.
         private string failingPropertyName = string.Empty;
+
         private object failingExpected;
         private object failingActual;
 
@@ -103,8 +105,8 @@ namespace OpenSim.Data.Tests
 
             if (actual.GetType() == typeof(Color))
             {
-                Color actualColor = (Color) actual;
-                Color expectedColor = (Color) expected;
+                Color actualColor = (Color)actual;
+                Color expectedColor = (Color)expected;
                 if (actualColor.R != expectedColor.R)
                 {
                     propertyNames.Push("R");
@@ -231,7 +233,8 @@ namespace OpenSim.Data.Tests
 
         //These notes assume the lambda: (x=>x.Parent.Value)
         //ignores should really contain like a fully dotted version of the property name, but I'm starting with small steps
-        readonly List<string> ignores = new List<string>();
+        private readonly List<string> ignores = new List<string>();
+
         public PropertyCompareConstraint<T> IgnoreProperty(Expression<Func<T, object>> func)
         {
             Expression express = func.Body;
@@ -281,7 +284,6 @@ namespace OpenSim.Data.Tests
 
             Assert.That(constraint.Matches(actual), Is.False);
         }
-
 
         [Test]
         public void IntShouldIgnore()
@@ -371,7 +373,6 @@ namespace OpenSim.Data.Tests
             var constraint = Constraints.PropertyCompareConstraint(expected);
             Assert.That(constraint.Matches(actual), Is.True);
         }
-
 
         [Test]
         public void ShouldFailToCompareListsThatAreDifferent()
