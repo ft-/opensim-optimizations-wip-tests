@@ -25,27 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
-using System.Threading;
-using System.Timers;
-using Timer=System.Timers.Timer;
-using Nini.Config;
 using NUnit.Framework;
 using OpenMetaverse;
-using OpenMetaverse.Assets;
 using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.CoreModules.Avatar.Inventory.Archiver;
-using OpenSim.Region.CoreModules.World.Serialiser;
-using OpenSim.Region.CoreModules.ServiceConnectorsOut.Simulation;
+using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
 using OpenSim.Tests.Common;
-using OpenSim.Tests.Common.Mock;
 
 namespace OpenSim.Region.Framework.Tests
 {
@@ -56,8 +42,8 @@ namespace OpenSim.Region.Framework.Tests
         public void TestAddTaskInventoryItem()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
-            
+            //            log4net.Config.XmlConfigurator.Configure();
+
             Scene scene = new SceneHelpers().SetupScene();
             UserAccount user1 = UserAccountHelpers.CreateUserWithInventory(scene);
             SceneObjectGroup sog1 = SceneHelpers.CreateSceneObject(1, user1.PrincipalID);
@@ -79,8 +65,8 @@ namespace OpenSim.Region.Framework.Tests
         public void TestRezObjectFromInventoryItem()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
-            
+            //            log4net.Config.XmlConfigurator.Configure();
+
             Scene scene = new SceneHelpers().SetupScene();
             UserAccount user1 = UserAccountHelpers.CreateUserWithInventory(scene);
             SceneObjectGroup sog1 = SceneHelpers.CreateSceneObject(1, user1.PrincipalID);
@@ -105,7 +91,7 @@ namespace OpenSim.Region.Framework.Tests
             Assert.That(rezzedObject.AbsolutePosition, Is.EqualTo(rezPos));
 
             // Velocity doesn't get applied, probably because there is no physics in tests (yet)
-//            Assert.That(rezzedObject.Velocity, Is.EqualTo(rezVel));
+            //            Assert.That(rezzedObject.Velocity, Is.EqualTo(rezVel));
             Assert.That(rezzedObject.Velocity, Is.EqualTo(Vector3.Zero));
 
             // Confusingly, this isn't the rezzedObject.Rotation
@@ -122,8 +108,8 @@ namespace OpenSim.Region.Framework.Tests
         public void TestMoveTaskInventoryItem()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
-            
+            //            log4net.Config.XmlConfigurator.Configure();
+
             Scene scene = new SceneHelpers().SetupScene();
             UserAccount user1 = UserAccountHelpers.CreateUserWithInventory(scene);
             SceneObjectGroup sog1 = SceneHelpers.CreateSceneObject(1, user1.PrincipalID);
@@ -132,17 +118,17 @@ namespace OpenSim.Region.Framework.Tests
                 = TaskInventoryHelpers.AddNotecard(
                     scene, sop1, "ncItem", TestHelpers.ParseTail(0x800), TestHelpers.ParseTail(0x900), "Hello World!");
 
-            InventoryFolderBase folder 
+            InventoryFolderBase folder
                 = InventoryArchiveUtils.FindFoldersByPath(scene.InventoryService, user1.PrincipalID, "Objects")[0];
-            
+
             // Perform test
             scene.MoveTaskInventoryItem(user1.PrincipalID, folder.ID, sop1, sopItem1.ItemID);
-                
+
             InventoryItemBase ncUserItem
                 = InventoryArchiveUtils.FindItemByPath(scene.InventoryService, user1.PrincipalID, "Objects/ncItem");
             Assert.That(ncUserItem, Is.Not.Null, "Objects/ncItem was not found");
         }
-        
+
         /// <summary>
         /// Test MoveTaskInventoryItem from a part inventory to a user inventory where the item has no parent folder assigned.
         /// </summary>
@@ -153,8 +139,8 @@ namespace OpenSim.Region.Framework.Tests
         public void TestMoveTaskInventoryItemNoParent()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
-            
+            //            log4net.Config.XmlConfigurator.Configure();
+
             Scene scene = new SceneHelpers().SetupScene();
             UserAccount user1 = UserAccountHelpers.CreateUserWithInventory(scene);
             SceneObjectGroup sog1 = SceneHelpers.CreateSceneObject(1, user1.PrincipalID);
@@ -163,10 +149,10 @@ namespace OpenSim.Region.Framework.Tests
             TaskInventoryItem sopItem1
                 = TaskInventoryHelpers.AddNotecard(
                     scene, sop1, "ncItem", TestHelpers.ParseTail(0x800), TestHelpers.ParseTail(0x900), "Hello World!");
-            
+
             // Perform test
             scene.MoveTaskInventoryItem(user1.PrincipalID, UUID.Zero, sop1, sopItem1.ItemID);
-                
+
             InventoryItemBase ncUserItem
                 = InventoryArchiveUtils.FindItemByPath(scene.InventoryService, user1.PrincipalID, "Notecards/ncItem");
             Assert.That(ncUserItem, Is.Not.Null, "Notecards/ncItem was not found");

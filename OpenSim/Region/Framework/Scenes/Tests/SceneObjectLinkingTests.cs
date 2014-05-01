@@ -25,17 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
+using log4net;
 using NUnit.Framework;
 using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Region.Framework.Scenes;
 using OpenSim.Tests.Common;
 using OpenSim.Tests.Common.Mock;
-using log4net;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.Region.Framework.Scenes.Tests
 {
@@ -59,7 +56,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             SceneObjectGroup sog1 = SceneHelpers.CreateSceneObject(nParts, ownerId, "TestLinkToSelf_", 0x10);
             scene.AddSceneObject(sog1);
             scene.LinkObjects(ownerId, sog1.LocalId, new List<uint>() { sog1.Parts[1].LocalId });
-//            sog1.LinkToGroup(sog1);
+            //            sog1.LinkToGroup(sog1);
 
             Assert.That(sog1.Parts.Length, Is.EqualTo(nParts));
         }
@@ -68,8 +65,8 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         public void TestLinkDelink2SceneObjects()
         {
             TestHelpers.InMethod();
-            
-            bool debugtest = false; 
+
+            bool debugtest = false;
 
             Scene scene = new SceneHelpers().SetupScene();
             SceneObjectGroup grp1 = SceneHelpers.AddSceneObject(scene);
@@ -81,11 +78,11 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             grp2.AbsolutePosition = Vector3.Zero;
 
             // <90,0,0>
-//            grp1.UpdateGroupRotationR(Quaternion.CreateFromEulers(90 * Utils.DEG_TO_RAD, 0, 0));
+            //            grp1.UpdateGroupRotationR(Quaternion.CreateFromEulers(90 * Utils.DEG_TO_RAD, 0, 0));
 
             // <180,0,0>
             grp2.UpdateGroupRotationR(Quaternion.CreateFromEulers(180 * Utils.DEG_TO_RAD, 0, 0));
-            
+
             // Required for linking
             grp1.RootPart.ClearUpdateSchedule();
             grp2.RootPart.ClearUpdateSchedule();
@@ -107,13 +104,13 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             if (debugtest)
             {
                 m_log.Debug("parts: " + grp1.Parts.Length);
-                m_log.Debug("Group1: Pos:"+grp1.AbsolutePosition+", Rot:"+grp1.GroupRotation);
-                m_log.Debug("Group1: Prim1: OffsetPosition:"+ part1.OffsetPosition+", OffsetRotation:"+part1.RotationOffset);
-                m_log.Debug("Group1: Prim2: OffsetPosition:"+part2.OffsetPosition+", OffsetRotation:"+part2.RotationOffset);
+                m_log.Debug("Group1: Pos:" + grp1.AbsolutePosition + ", Rot:" + grp1.GroupRotation);
+                m_log.Debug("Group1: Prim1: OffsetPosition:" + part1.OffsetPosition + ", OffsetRotation:" + part1.RotationOffset);
+                m_log.Debug("Group1: Prim2: OffsetPosition:" + part2.OffsetPosition + ", OffsetRotation:" + part2.RotationOffset);
             }
 
             // root part should have no offset position or rotation
-            Assert.That(part1.OffsetPosition == Vector3.Zero && part1.RotationOffset == Quaternion.Identity, 
+            Assert.That(part1.OffsetPosition == Vector3.Zero && part1.RotationOffset == Quaternion.Identity,
                 "root part should have no offset position or rotation");
 
             // offset position should be root part position - part2.absolute position.
@@ -127,13 +124,13 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             // There's a euler anomoly at 180, 0, 0 so expect 180 to turn into -180.
             part1.RotationOffset.GetEulerAngles(out roll, out pitch, out yaw);
             Vector3 rotEuler1 = new Vector3(roll * Utils.RAD_TO_DEG, pitch * Utils.RAD_TO_DEG, yaw * Utils.RAD_TO_DEG);
-            
+
             if (debugtest)
                 m_log.Debug(rotEuler1);
 
             part2.RotationOffset.GetEulerAngles(out roll, out pitch, out yaw);
             Vector3 rotEuler2 = new Vector3(roll * Utils.RAD_TO_DEG, pitch * Utils.RAD_TO_DEG, yaw * Utils.RAD_TO_DEG);
-             
+
             if (debugtest)
                 m_log.Debug(rotEuler2);
 
@@ -155,7 +152,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         public void TestLinkDelink2groups4SceneObjects()
         {
             TestHelpers.InMethod();
-            
+
             bool debugtest = false;
 
             Scene scene = new SceneHelpers().SetupScene();
@@ -174,13 +171,13 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             grp4.AbsolutePosition = new Vector3(40, 40, 40);
 
             // <90,0,0>
-//            grp1.UpdateGroupRotationR(Quaternion.CreateFromEulers(90 * Utils.DEG_TO_RAD, 0, 0));
+            //            grp1.UpdateGroupRotationR(Quaternion.CreateFromEulers(90 * Utils.DEG_TO_RAD, 0, 0));
 
             // <180,0,0>
             grp2.UpdateGroupRotationR(Quaternion.CreateFromEulers(180 * Utils.DEG_TO_RAD, 0, 0));
 
             // <270,0,0>
-//            grp3.UpdateGroupRotationR(Quaternion.CreateFromEulers(270 * Utils.DEG_TO_RAD, 0, 0));
+            //            grp3.UpdateGroupRotationR(Quaternion.CreateFromEulers(270 * Utils.DEG_TO_RAD, 0, 0));
 
             // <0,90,0>
             grp4.UpdateGroupRotationR(Quaternion.CreateFromEulers(0, 90 * Utils.DEG_TO_RAD, 0));
@@ -196,7 +193,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
 
             // Link grp4 to grp3.
             grp3.LinkToGroup(grp4);
-            
+
             // At this point we should have 4 parts total in two groups.
             Assert.That(grp1.Parts.Length == 2, "Group1 children count should be 2");
             Assert.That(grp2.IsDeleted, "Group 2 was not registered as deleted after link.");
@@ -204,19 +201,19 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             Assert.That(grp3.Parts.Length == 2, "Group3 children count should be 2");
             Assert.That(grp4.IsDeleted, "Group 4 was not registered as deleted after link.");
             Assert.That(grp4.Parts.Length, Is.EqualTo(0), "Group 4 still contained parts after delink.");
-            
+
             if (debugtest)
             {
                 m_log.Debug("--------After Link-------");
                 m_log.Debug("Group1: parts:" + grp1.Parts.Length);
-                m_log.Debug("Group1: Pos:"+grp1.AbsolutePosition+", Rot:"+grp1.GroupRotation);
+                m_log.Debug("Group1: Pos:" + grp1.AbsolutePosition + ", Rot:" + grp1.GroupRotation);
                 m_log.Debug("Group1: Prim1: OffsetPosition:" + part1.OffsetPosition + ", OffsetRotation:" + part1.RotationOffset);
-                m_log.Debug("Group1: Prim2: OffsetPosition:"+part2.OffsetPosition+", OffsetRotation:"+ part2.RotationOffset);
+                m_log.Debug("Group1: Prim2: OffsetPosition:" + part2.OffsetPosition + ", OffsetRotation:" + part2.RotationOffset);
 
                 m_log.Debug("Group3: parts:" + grp3.Parts.Length);
-                m_log.Debug("Group3: Pos:"+grp3.AbsolutePosition+", Rot:"+grp3.GroupRotation);
-                m_log.Debug("Group3: Prim1: OffsetPosition:"+part3.OffsetPosition+", OffsetRotation:"+part3.RotationOffset);
-                m_log.Debug("Group3: Prim2: OffsetPosition:"+part4.OffsetPosition+", OffsetRotation:"+part4.RotationOffset);
+                m_log.Debug("Group3: Pos:" + grp3.AbsolutePosition + ", Rot:" + grp3.GroupRotation);
+                m_log.Debug("Group3: Prim1: OffsetPosition:" + part3.OffsetPosition + ", OffsetRotation:" + part3.RotationOffset);
+                m_log.Debug("Group3: Prim2: OffsetPosition:" + part4.OffsetPosition + ", OffsetRotation:" + part4.RotationOffset);
             }
 
             // Required for linking
@@ -275,13 +272,13 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             Assert.That(part2.AbsolutePosition == Vector3.Zero, "Badness 1");
             Assert.That(part4.OffsetPosition == new Vector3(20, 20, 20), "Badness 2");
             Quaternion compareQuaternion = new Quaternion(0, 0.7071068f, 0, 0.7071068f);
-            Assert.That((part4.RotationOffset.X - compareQuaternion.X < 0.00003) 
-                && (part4.RotationOffset.Y - compareQuaternion.Y < 0.00003) 
-                && (part4.RotationOffset.Z - compareQuaternion.Z < 0.00003) 
+            Assert.That((part4.RotationOffset.X - compareQuaternion.X < 0.00003)
+                && (part4.RotationOffset.Y - compareQuaternion.Y < 0.00003)
+                && (part4.RotationOffset.Z - compareQuaternion.Z < 0.00003)
                 && (part4.RotationOffset.W - compareQuaternion.W < 0.00003),
                 "Badness 3");
         }
-        
+
         /// <summary>
         /// Test that a new scene object which is already linked is correctly persisted to the persistence layer.
         /// </summary>
@@ -290,37 +287,35 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         {
             TestHelpers.InMethod();
             //log4net.Config.XmlConfigurator.Configure();
-            
+
             TestScene scene = new SceneHelpers().SetupScene();
-            
+
             string rootPartName = "rootpart";
             UUID rootPartUuid = new UUID("00000000-0000-0000-0000-000000000001");
             string linkPartName = "linkpart";
             UUID linkPartUuid = new UUID("00000000-0000-0000-0001-000000000000");
 
             SceneObjectPart rootPart
-                = new SceneObjectPart(UUID.Zero, PrimitiveBaseShape.Default, Vector3.Zero, Quaternion.Identity, Vector3.Zero) 
-                    { Name = rootPartName, UUID = rootPartUuid };
+                = new SceneObjectPart(UUID.Zero, PrimitiveBaseShape.Default, Vector3.Zero, Quaternion.Identity, Vector3.Zero) { Name = rootPartName, UUID = rootPartUuid };
             SceneObjectPart linkPart
-                = new SceneObjectPart(UUID.Zero, PrimitiveBaseShape.Default, Vector3.Zero, Quaternion.Identity, Vector3.Zero) 
-                    { Name = linkPartName, UUID = linkPartUuid };
+                = new SceneObjectPart(UUID.Zero, PrimitiveBaseShape.Default, Vector3.Zero, Quaternion.Identity, Vector3.Zero) { Name = linkPartName, UUID = linkPartUuid };
 
             SceneObjectGroup sog = new SceneObjectGroup(rootPart);
             sog.AddPart(linkPart);
             scene.AddNewSceneObject(sog, true);
-            
+
             // In a test, we have to crank the backup handle manually.  Normally this would be done by the timer invoked
             // scene backup thread.
             scene.Backup(true);
-            
+
             List<SceneObjectGroup> storedObjects = scene.SimulationDataService.LoadObjects(scene.RegionInfo.RegionID);
-            
+
             Assert.That(storedObjects.Count, Is.EqualTo(1));
             Assert.That(storedObjects[0].Parts.Length, Is.EqualTo(2));
             Assert.That(storedObjects[0].ContainsPart(rootPartUuid));
             Assert.That(storedObjects[0].ContainsPart(linkPartUuid));
         }
-        
+
         /// <summary>
         /// Test that a delink of a previously linked object is correctly persisted to the database
         /// </summary>
@@ -329,21 +324,19 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         {
             TestHelpers.InMethod();
             //log4net.Config.XmlConfigurator.Configure();
-            
+
             TestScene scene = new SceneHelpers().SetupScene();
-            
+
             string rootPartName = "rootpart";
             UUID rootPartUuid = new UUID("00000000-0000-0000-0000-000000000001");
             string linkPartName = "linkpart";
             UUID linkPartUuid = new UUID("00000000-0000-0000-0001-000000000000");
 
             SceneObjectPart rootPart
-                = new SceneObjectPart(UUID.Zero, PrimitiveBaseShape.Default, Vector3.Zero, Quaternion.Identity, Vector3.Zero) 
-                    { Name = rootPartName, UUID = rootPartUuid };
-            
+                = new SceneObjectPart(UUID.Zero, PrimitiveBaseShape.Default, Vector3.Zero, Quaternion.Identity, Vector3.Zero) { Name = rootPartName, UUID = rootPartUuid };
+
             SceneObjectPart linkPart
-                = new SceneObjectPart(UUID.Zero, PrimitiveBaseShape.Default, Vector3.Zero, Quaternion.Identity, Vector3.Zero) 
-                    { Name = linkPartName, UUID = linkPartUuid };
+                = new SceneObjectPart(UUID.Zero, PrimitiveBaseShape.Default, Vector3.Zero, Quaternion.Identity, Vector3.Zero) { Name = linkPartName, UUID = linkPartUuid };
             SceneObjectGroup linkGroup = new SceneObjectGroup(linkPart);
             scene.AddNewSceneObject(linkGroup, true);
 
@@ -362,7 +355,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             Assert.IsFalse(groupToDelete.GroupContainsForeignPrims);
 
             scene.DeleteSceneObject(groupToDelete, false);
-            
+
             List<SceneObjectGroup> storedObjects = scene.SimulationDataService.LoadObjects(scene.RegionInfo.RegionID);
 
             Assert.AreEqual(1, storedObjects.Count);

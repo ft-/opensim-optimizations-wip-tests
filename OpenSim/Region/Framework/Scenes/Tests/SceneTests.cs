@@ -25,24 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
-using System.Threading;
-using System.Timers;
-using Timer=System.Timers.Timer;
 using Nini.Config;
 using NUnit.Framework;
 using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.CoreModules.World.Serialiser;
-using OpenSim.Region.CoreModules.ServiceConnectorsOut.Simulation;
 using OpenSim.Tests.Common;
-using OpenSim.Tests.Common.Mock;
 
 namespace OpenSim.Region.Framework.Scenes.Tests
 {
@@ -68,7 +54,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             uint sizeX = 512;
             uint sizeY = 512;
 
-            Scene scene 
+            Scene scene
                 = new SceneHelpers().SetupScene("scene", regionUuid, 1000, 1000, sizeX, sizeY, new IniConfigSource());
 
             Assert.AreEqual(sizeX, scene.RegionInfo.RegionSizeX);
@@ -85,7 +71,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
 
             Scene scene = new SceneHelpers().SetupScene();
             scene.Update(1);
-            
+
             Assert.That(scene.Frame, Is.EqualTo(1));
         }
 

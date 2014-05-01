@@ -25,15 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
-using System.Text;
 using NUnit.Framework;
 using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
 using OpenSim.Tests.Common;
-using OpenSim.Tests.Common.Mock;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Framework.Scenes.Tests
 {
@@ -42,7 +39,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
     {
         protected IAssetService m_assetService;
         protected UuidGatherer m_uuidGatherer;
-            
+
         [SetUp]
         public void Init()
         {
@@ -56,9 +53,9 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         public void TestCorruptAsset()
         {
             TestHelpers.InMethod();
-            
+
             UUID corruptAssetUuid = UUID.Parse("00000000-0000-0000-0000-000000000666");
-            AssetBase corruptAsset 
+            AssetBase corruptAsset
                 = AssetHelpers.CreateAsset(corruptAssetUuid, AssetType.Notecard, "CORRUPT ASSET", UUID.Zero);
             m_assetService.Store(corruptAsset);
 
@@ -68,7 +65,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             // We count the uuid as gathered even if the asset itself is corrupt.
             Assert.That(foundAssetUuids.Count, Is.EqualTo(1));
         }
-        
+
         /// <summary>
         /// Test requests made for non-existent assets while we're gathering
         /// </summary>
@@ -76,10 +73,10 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         public void TestMissingAsset()
         {
             TestHelpers.InMethod();
-            
+
             UUID missingAssetUuid = UUID.Parse("00000000-0000-0000-0000-000000000666");
             IDictionary<UUID, sbyte> foundAssetUuids = new Dictionary<UUID, sbyte>();
-            
+
             m_uuidGatherer.GatherAssetUuids(missingAssetUuid, (sbyte)AssetType.Object, foundAssetUuids);
 
             // We count the uuid as gathered even if the asset itself is missing.
@@ -90,7 +87,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         public void TestNotecardAsset()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             UUID ownerId = TestHelpers.ParseTail(0x10);
             UUID soAssetId = TestHelpers.ParseTail(0x20);

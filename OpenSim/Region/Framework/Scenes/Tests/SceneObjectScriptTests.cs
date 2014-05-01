@@ -25,17 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using NUnit.Framework;
 using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Framework.Communications;
 using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
 using OpenSim.Tests.Common;
-using OpenSim.Tests.Common.Mock;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Framework.Scenes.Tests
 {
@@ -46,10 +41,10 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         public void TestAddScript()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             UUID userId = TestHelpers.ParseTail(0x1);
-//            UUID itemId = TestHelpers.ParseTail(0x2);
+            //            UUID itemId = TestHelpers.ParseTail(0x2);
             string itemName = "Test Script Item";
 
             Scene scene = new SceneHelpers().SetupScene();

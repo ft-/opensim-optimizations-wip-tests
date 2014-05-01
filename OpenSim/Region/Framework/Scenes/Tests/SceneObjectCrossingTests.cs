@@ -25,8 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using Nini.Config;
 using NUnit.Framework;
 using OpenMetaverse;
@@ -38,6 +36,7 @@ using OpenSim.Region.CoreModules.World.Land;
 using OpenSim.Region.OptionalModules;
 using OpenSim.Tests.Common;
 using OpenSim.Tests.Common.Mock;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Framework.Scenes.Tests
 {
@@ -66,7 +65,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         public void TestCrossOnSameSimulator()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             UUID userId = TestHelpers.ParseTail(0x1);
             int sceneObjectIdTail = 0x2;
@@ -110,7 +109,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         public void TestCrossOnSameSimulatorWithSittingAvatar()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             UUID userId = TestHelpers.ParseTail(0x1);
             int sceneObjectIdTail = 0x2;
@@ -176,7 +175,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
 
             Vector3 so1PostCrossPos = so1PostCross.AbsolutePosition;
 
-//            Console.WriteLine("CRISSCROSS");
+            //            Console.WriteLine("CRISSCROSS");
 
             // Recross
             sceneB.SceneGraph.UpdatePrimGroupPosition(
@@ -211,7 +210,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         public void TestCrossOnSameSimulatorPrimLimitsOkay()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             UUID userId = TestHelpers.ParseTail(0x1);
             int sceneObjectIdTail = 0x2;

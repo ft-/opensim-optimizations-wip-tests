@@ -25,17 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Threading;
-using Nini.Config;
 using NUnit.Framework;
 using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
 using OpenSim.Tests.Common;
 using OpenSim.Tests.Common.Mock;
 
@@ -47,41 +39,41 @@ namespace OpenSim.Region.Framework.Scenes.Tests
     [TestFixture]
     public class SceneObjectBasicTests : OpenSimTestCase
     {
-//        [TearDown]
-//        public void TearDown()
-//        {
-//            Console.WriteLine("TearDown");
-//            GC.Collect();
-//            Thread.Sleep(3000);
-//        }
+        //        [TearDown]
+        //        public void TearDown()
+        //        {
+        //            Console.WriteLine("TearDown");
+        //            GC.Collect();
+        //            Thread.Sleep(3000);
+        //        }
 
-//        public class GcNotify
-//        {
-//            public static AutoResetEvent gcEvent = new AutoResetEvent(false);
-//            private static bool _initialized = false;
-//
-//            public static void Initialize()
-//            {
-//                if (!_initialized)
-//                {
-//                    _initialized = true;
-//                    new GcNotify();
-//                }
-//            }
-//
-//            private GcNotify(){}
-//
-//            ~GcNotify()
-//            {
-//                if (!Environment.HasShutdownStarted &&
-//                    !AppDomain.CurrentDomain.IsFinalizingForUnload())
-//                {
-//                    Console.WriteLine("GcNotify called");
-//                    gcEvent.Set();
-//                    new GcNotify();
-//                }
-//            }
-//        }
+        //        public class GcNotify
+        //        {
+        //            public static AutoResetEvent gcEvent = new AutoResetEvent(false);
+        //            private static bool _initialized = false;
+        //
+        //            public static void Initialize()
+        //            {
+        //                if (!_initialized)
+        //                {
+        //                    _initialized = true;
+        //                    new GcNotify();
+        //                }
+        //            }
+        //
+        //            private GcNotify(){}
+        //
+        //            ~GcNotify()
+        //            {
+        //                if (!Environment.HasShutdownStarted &&
+        //                    !AppDomain.CurrentDomain.IsFinalizingForUnload())
+        //                {
+        //                    Console.WriteLine("GcNotify called");
+        //                    gcEvent.Set();
+        //                    new GcNotify();
+        //                }
+        //            }
+        //        }
 
         /// <summary>
         /// Test adding an object to a scene.
@@ -101,7 +93,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             Assert.That(scene.AddNewSceneObject(so, false), Is.True);
             SceneObjectGroup retrievedSo = scene.GetSceneObjectGroup(so.UUID);
             SceneObjectPart[] retrievedParts = retrievedSo.Parts;
-            
+
             //m_log.Debug("retrievedPart : {0}", retrievedPart);
             // If the parts have the same UUID then we will consider them as one and the same
             Assert.That(retrievedSo.PrimCount, Is.EqualTo(partsToTestCount));
@@ -128,19 +120,17 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             UUID objUuid = new UUID("00000000-0000-0000-0000-000000000001");
 
             SceneObjectPart part1
-                = new SceneObjectPart(UUID.Zero, PrimitiveBaseShape.Default, Vector3.Zero, Quaternion.Identity, Vector3.Zero) 
-                    { Name = obj1Name, UUID = objUuid };
+                = new SceneObjectPart(UUID.Zero, PrimitiveBaseShape.Default, Vector3.Zero, Quaternion.Identity, Vector3.Zero) { Name = obj1Name, UUID = objUuid };
 
             Assert.That(scene.AddNewSceneObject(new SceneObjectGroup(part1), false), Is.True);
 
             SceneObjectPart part2
-                = new SceneObjectPart(UUID.Zero, PrimitiveBaseShape.Default, Vector3.Zero, Quaternion.Identity, Vector3.Zero) 
-                    { Name = obj2Name, UUID = objUuid };
+                = new SceneObjectPart(UUID.Zero, PrimitiveBaseShape.Default, Vector3.Zero, Quaternion.Identity, Vector3.Zero) { Name = obj2Name, UUID = objUuid };
 
             Assert.That(scene.AddNewSceneObject(new SceneObjectGroup(part2), false), Is.False);
-            
+
             SceneObjectPart retrievedPart = scene.GetSceneObjectPart(objUuid);
-            
+
             //m_log.Debug("retrievedPart : {0}", retrievedPart);
             // If the parts have the same UUID then we will consider them as one and the same
             Assert.That(retrievedPart.Name, Is.EqualTo(obj1Name));
@@ -179,7 +169,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             Assert.That(scene.GetGroupByPrim(so.LocalId), Is.Null);
             Assert.That(scene.GetGroupByPrim(parts[partsToTestCount - 1].LocalId), Is.Null);
         }
-        
+
         /// <summary>
         /// Test deleting an object from a scene.
         /// </summary>
@@ -204,10 +194,10 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             SceneObjectPart retrievedPart = scene.GetSceneObjectPart(so.LocalId);
             Assert.That(retrievedPart, Is.Null);
         }
-        
+
         /// <summary>
         /// Changing a scene object uuid changes the root part uuid.  This is a valid operation if the object is not
-        /// in a scene and is useful if one wants to supply a UUID directly rather than use the one generated by 
+        /// in a scene and is useful if one wants to supply a UUID directly rather than use the one generated by
         /// OpenSim.
         /// </summary>
         [Test]
@@ -217,24 +207,22 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             UUID rootPartUuid = new UUID("00000000-0000-0000-0000-000000000001");
             string childPartName = "childPart";
             UUID childPartUuid = new UUID("00000000-0000-0000-0001-000000000000");
-            
+
             SceneObjectPart rootPart
-                = new SceneObjectPart(UUID.Zero, PrimitiveBaseShape.Default, Vector3.Zero, Quaternion.Identity, Vector3.Zero) 
-                    { Name = rootPartName, UUID = rootPartUuid };
+                = new SceneObjectPart(UUID.Zero, PrimitiveBaseShape.Default, Vector3.Zero, Quaternion.Identity, Vector3.Zero) { Name = rootPartName, UUID = rootPartUuid };
             SceneObjectPart linkPart
-                = new SceneObjectPart(UUID.Zero, PrimitiveBaseShape.Default, Vector3.Zero, Quaternion.Identity, Vector3.Zero) 
-                    { Name = childPartName, UUID = childPartUuid };
+                = new SceneObjectPart(UUID.Zero, PrimitiveBaseShape.Default, Vector3.Zero, Quaternion.Identity, Vector3.Zero) { Name = childPartName, UUID = childPartUuid };
 
             SceneObjectGroup sog = new SceneObjectGroup(rootPart);
             sog.AddPart(linkPart);
-            
+
             Assert.That(sog.UUID, Is.EqualTo(rootPartUuid));
             Assert.That(sog.RootPart.UUID, Is.EqualTo(rootPartUuid));
             Assert.That(sog.Parts.Length, Is.EqualTo(2));
-            
+
             UUID newRootPartUuid = new UUID("00000000-0000-0000-0000-000000000002");
             sog.UUID = newRootPartUuid;
-                        
+
             Assert.That(sog.UUID, Is.EqualTo(newRootPartUuid));
             Assert.That(sog.RootPart.UUID, Is.EqualTo(newRootPartUuid));
             Assert.That(sog.Parts.Length, Is.EqualTo(2));

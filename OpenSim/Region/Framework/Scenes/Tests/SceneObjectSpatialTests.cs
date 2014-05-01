@@ -25,14 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
-using System.Threading;
 using NUnit.Framework;
 using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Region.Framework.Scenes;
 using OpenSim.Tests.Common;
 using OpenSim.Tests.Common.Mock;
 
@@ -44,8 +38,8 @@ namespace OpenSim.Region.Framework.Scenes.Tests
     [TestFixture]
     public class SceneObjectSpatialTests : OpenSimTestCase
     {
-        TestScene m_scene;
-        UUID m_ownerId = TestHelpers.ParseTail(0x1);
+        private TestScene m_scene;
+        private UUID m_ownerId = TestHelpers.ParseTail(0x1);
 
         [SetUp]
         public override void SetUp()

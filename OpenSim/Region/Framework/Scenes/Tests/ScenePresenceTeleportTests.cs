@@ -25,25 +25,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net;
-using System.Text;
-using System.Threading;
 using Nini.Config;
 using NUnit.Framework;
 using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Framework.Servers;
-using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.CoreModules.Framework;
 using OpenSim.Region.CoreModules.Framework.EntityTransfer;
 using OpenSim.Region.CoreModules.ServiceConnectorsOut.Simulation;
 using OpenSim.Region.CoreModules.World.Permissions;
 using OpenSim.Tests.Common;
 using OpenSim.Tests.Common.Mock;
+using System.Collections.Generic;
+using System.Threading;
 
 namespace OpenSim.Region.Framework.Scenes.Tests
 {
@@ -73,7 +66,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         public void TestSameRegion()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             EntityTransferModule etm = new EntityTransferModule();
 
@@ -104,14 +97,14 @@ namespace OpenSim.Region.Framework.Scenes.Tests
 
             // Lookat is sent to the client only - sp.Lookat does not yield the same thing (calculation from camera
             // position instead).
-//            Assert.That(sp.Lookat, Is.EqualTo(teleportLookAt));
+            //            Assert.That(sp.Lookat, Is.EqualTo(teleportLookAt));
         }
 
         [Test]
         public void TestSameSimulatorIsolatedRegionsV1()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             UUID userId = TestHelpers.ParseTail(0x1);
 
@@ -178,14 +171,14 @@ namespace OpenSim.Region.Framework.Scenes.Tests
 
             // Lookat is sent to the client only - sp.Lookat does not yield the same thing (calculation from camera
             // position instead).
-//            Assert.That(sp.Lookat, Is.EqualTo(teleportLookAt));
+            //            Assert.That(sp.Lookat, Is.EqualTo(teleportLookAt));
         }
 
         [Test]
         public void TestSameSimulatorIsolatedRegionsV2()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             UUID userId = TestHelpers.ParseTail(0x1);
 
@@ -239,7 +232,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
 
             // Lookat is sent to the client only - sp.Lookat does not yield the same thing (calculation from camera
             // position instead).
-//            Assert.That(sp.Lookat, Is.EqualTo(teleportLookAt));
+            //            Assert.That(sp.Lookat, Is.EqualTo(teleportLookAt));
         }
 
         /// <summary>
@@ -249,7 +242,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         public void TestSameSimulatorIsolatedRegions_DeniedOnQueryAccess()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             UUID userId = TestHelpers.ParseTail(0x1);
             Vector3 preTeleportPosition = new Vector3(30, 31, 32);
@@ -277,7 +270,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             TestScene sceneA = sh.SetupScene("sceneA", TestHelpers.ParseTail(0x100), 1000, 1000);
             TestScene sceneB = sh.SetupScene("sceneB", TestHelpers.ParseTail(0x200), 1002, 1000);
 
-            SceneHelpers.SetupSceneModules(sceneA, config, etmA );
+            SceneHelpers.SetupSceneModules(sceneA, config, etmA);
 
             // We need to set up the permisions module on scene B so that our later use of agent limit to deny
             // QueryAccess won't succeed anyway because administrators are always allowed in and the default
@@ -303,7 +296,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
                 teleportLookAt,
                 (uint)TeleportFlags.ViaLocation);
 
-//            ((TestClient)sp.ControllingClient).CompleteTeleportClientSide();
+            //            ((TestClient)sp.ControllingClient).CompleteTeleportClientSide();
 
             Assert.That(sceneB.GetScenePresence(userId), Is.Null);
 
@@ -321,9 +314,9 @@ namespace OpenSim.Region.Framework.Scenes.Tests
 
             // Lookat is sent to the client only - sp.Lookat does not yield the same thing (calculation from camera
             // position instead).
-//            Assert.That(sp.Lookat, Is.EqualTo(teleportLookAt));
+            //            Assert.That(sp.Lookat, Is.EqualTo(teleportLookAt));
 
-//            TestHelpers.DisableLogging();
+            //            TestHelpers.DisableLogging();
         }
 
         /// <summary>
@@ -333,7 +326,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         public void TestSameSimulatorIsolatedRegions_DeniedOnCreateAgent()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             UUID userId = TestHelpers.ParseTail(0x1);
             Vector3 preTeleportPosition = new Vector3(30, 31, 32);
@@ -379,7 +372,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
                 teleportLookAt,
                 (uint)TeleportFlags.ViaLocation);
 
-//            ((TestClient)sp.ControllingClient).CompleteTeleportClientSide();
+            //            ((TestClient)sp.ControllingClient).CompleteTeleportClientSide();
 
             Assert.That(sceneB.GetScenePresence(userId), Is.Null);
 
@@ -397,9 +390,9 @@ namespace OpenSim.Region.Framework.Scenes.Tests
 
             // Lookat is sent to the client only - sp.Lookat does not yield the same thing (calculation from camera
             // position instead).
-//            Assert.That(sp.Lookat, Is.EqualTo(teleportLookAt));
+            //            Assert.That(sp.Lookat, Is.EqualTo(teleportLookAt));
 
-//            TestHelpers.DisableLogging();
+            //            TestHelpers.DisableLogging();
         }
 
         /// <summary>
@@ -414,7 +407,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         public void TestSameSimulatorIsolatedRegions_DestinationDidNotProcessViewerConnection()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             UUID userId = TestHelpers.ParseTail(0x1);
             Vector3 preTeleportPosition = new Vector3(30, 31, 32);
@@ -435,14 +428,14 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             // for a callback from the destination scene before removing its avatar data.
             config.Configs["EntityTransfer"].Set("wait_for_callback", false);
 
-//            config.AddConfig("Startup");
-//            config.Configs["Startup"].Set("serverside_object_permissions", true);
+            //            config.AddConfig("Startup");
+            //            config.Configs["Startup"].Set("serverside_object_permissions", true);
 
             SceneHelpers sh = new SceneHelpers();
             TestScene sceneA = sh.SetupScene("sceneA", TestHelpers.ParseTail(0x100), 1000, 1000);
             TestScene sceneB = sh.SetupScene("sceneB", TestHelpers.ParseTail(0x200), 1002, 1000);
 
-            SceneHelpers.SetupSceneModules(sceneA, config, etmA );
+            SceneHelpers.SetupSceneModules(sceneA, config, etmA);
 
             // We need to set up the permisions module on scene B so that our later use of agent limit to deny
             // QueryAccess won't succeed anyway because administrators are always allowed in and the default
@@ -465,7 +458,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
                 teleportLookAt,
                 (uint)TeleportFlags.ViaLocation);
 
-            // FIXME: Not setting up InformClientOfNeighbour on the TestClient means that it does not initiate 
+            // FIXME: Not setting up InformClientOfNeighbour on the TestClient means that it does not initiate
             // communication with the destination region.  But this is a very non-obvious way of doing it - really we
             // should be forced to expicitly set this up.
 
@@ -485,16 +478,16 @@ namespace OpenSim.Region.Framework.Scenes.Tests
 
             // Lookat is sent to the client only - sp.Lookat does not yield the same thing (calculation from camera
             // position instead).
-//            Assert.That(sp.Lookat, Is.EqualTo(teleportLookAt));
+            //            Assert.That(sp.Lookat, Is.EqualTo(teleportLookAt));
 
-//            TestHelpers.DisableLogging();
+            //            TestHelpers.DisableLogging();
         }
 
         [Test]
         public void TestSameSimulatorNeighbouringRegionsV1()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             UUID userId = TestHelpers.ParseTail(0x1);
 
@@ -571,16 +564,16 @@ namespace OpenSim.Region.Framework.Scenes.Tests
 
             // Lookat is sent to the client only - sp.Lookat does not yield the same thing (calculation from camera
             // position instead).
-//            Assert.That(sp.Lookat, Is.EqualTo(teleportLookAt));
+            //            Assert.That(sp.Lookat, Is.EqualTo(teleportLookAt));
 
-//            TestHelpers.DisableLogging();
+            //            TestHelpers.DisableLogging();
         }
 
         [Test]
         public void TestSameSimulatorNeighbouringRegionsV2()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             UUID userId = TestHelpers.ParseTail(0x1);
 
@@ -625,8 +618,8 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             // Both these operations will occur on different threads and will wait for each other.
             // We have to do this via ThreadPool directly since FireAndForget has been switched to sync for the V1
             // test protocol, where we are trying to avoid unpredictable async operations in regression tests.
-            tc.OnTestClientSendRegionTeleport 
-                += (regionHandle, simAccess, regionExternalEndPoint, locationID, flags, capsURL) 
+            tc.OnTestClientSendRegionTeleport
+                += (regionHandle, simAccess, regionExternalEndPoint, locationID, flags, capsURL)
                     => ThreadPool.UnsafeQueueUserWorkItem(o => destinationTestClients[0].CompleteMovement(), null);
 
             sceneA.RequestTeleportLocation(
@@ -655,9 +648,9 @@ namespace OpenSim.Region.Framework.Scenes.Tests
 
             // Lookat is sent to the client only - sp.Lookat does not yield the same thing (calculation from camera
             // position instead).
-//            Assert.That(sp.Lookat, Is.EqualTo(teleportLookAt));
+            //            Assert.That(sp.Lookat, Is.EqualTo(teleportLookAt));
 
-//            TestHelpers.DisableLogging();
+            //            TestHelpers.DisableLogging();
         }
     }
 }

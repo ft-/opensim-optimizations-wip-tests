@@ -25,15 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
 using NUnit.Framework;
 using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Region.Framework.Scenes;
 using OpenSim.Tests.Common;
-using OpenSim.Tests.Common.Mock;
 
 namespace OpenSim.Region.Framework.Scenes.Tests
 {
@@ -46,7 +40,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         public void TestUndoRedoResizeSceneObject()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             Vector3 firstSize = new Vector3(2, 3, 4);
             Vector3 secondSize = new Vector3(5, 6, 7);
@@ -110,8 +104,8 @@ namespace OpenSim.Region.Framework.Scenes.Tests
 
             Vector3 firstSize = new Vector3(2, 3, 4);
             Vector3 secondSize = new Vector3(5, 6, 7);
-//            Vector3 thirdSize = new Vector3(8, 9, 10);
-//            Vector3 fourthSize = new Vector3(11, 12, 13);
+            //            Vector3 thirdSize = new Vector3(8, 9, 10);
+            //            Vector3 fourthSize = new Vector3(11, 12, 13);
 
             Scene scene = new SceneHelpers().SetupScene();
             scene.MaxUndoCount = 20;

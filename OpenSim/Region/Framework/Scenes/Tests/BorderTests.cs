@@ -25,14 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using NUnit.Framework;
 using OpenMetaverse;
-using OpenSim.Region.Framework.Scenes;
 using OpenSim.Tests.Common;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Framework.Scenes.Tests
 {
@@ -43,7 +39,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         public void TestCross()
         {
             TestHelpers.InMethod();
-            
+
             List<Border> testborders = new List<Border>();
 
             Border NorthBorder = new Border();
@@ -66,27 +62,27 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             WestBorder.CrossDirection = Cardinals.W;
             testborders.Add(WestBorder);
 
-            Vector3 position = new Vector3(200,200,21);
-            
+            Vector3 position = new Vector3(200, 200, 21);
+
             foreach (Border b in testborders)
                 Assert.That(!b.TestCross(position));
 
-            position = new Vector3(200,280,21);
+            position = new Vector3(200, 280, 21);
             Assert.That(NorthBorder.TestCross(position));
 
             // Test automatic border crossing
             // by setting the border crossing aabb to be the whole region
-            position = new Vector3(25,25,21); // safely within one 256m region
+            position = new Vector3(25, 25, 21); // safely within one 256m region
 
-            // The Z value of the BorderLine is reversed, making all positions within the region 
+            // The Z value of the BorderLine is reversed, making all positions within the region
             // trigger bordercross
 
-            SouthBorder.BorderLine = new Vector3(0,256,256); // automatic border cross in the region
+            SouthBorder.BorderLine = new Vector3(0, 256, 256); // automatic border cross in the region
             Assert.That(SouthBorder.TestCross(position));
 
             NorthBorder.BorderLine = new Vector3(0, 256, 0); // automatic border cross in the region
             Assert.That(NorthBorder.TestCross(position));
-            
+
             EastBorder.BorderLine = new Vector3(0, 256, 0); // automatic border cross in the region
             Assert.That(EastBorder.TestCross(position));
 
@@ -98,7 +94,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         public void TestCrossSquare512()
         {
             TestHelpers.InMethod();
-            
+
             List<Border> testborders = new List<Border>();
 
             Border NorthBorder = new Border();
@@ -121,23 +117,21 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             WestBorder.CrossDirection = Cardinals.W;
             testborders.Add(WestBorder);
 
-            Vector3 position = new Vector3(450,220,21);
+            Vector3 position = new Vector3(450, 220, 21);
 
             foreach (Border b in testborders)
             {
                 Assert.That(!b.TestCross(position));
-
             }
 
             //Trigger east border
-            position = new Vector3(513,220,21);
+            position = new Vector3(513, 220, 21);
             foreach (Border b in testborders)
             {
                 if (b.CrossDirection == Cardinals.E)
                     Assert.That(b.TestCross(position));
                 else
                     Assert.That(!b.TestCross(position));
-
             }
 
             //Trigger west border
@@ -148,7 +142,6 @@ namespace OpenSim.Region.Framework.Scenes.Tests
                     Assert.That(b.TestCross(position));
                 else
                     Assert.That(!b.TestCross(position));
-
             }
 
             //Trigger north border
@@ -159,7 +152,6 @@ namespace OpenSim.Region.Framework.Scenes.Tests
                     Assert.That(b.TestCross(position));
                 else
                     Assert.That(!b.TestCross(position));
-
             }
 
             //Trigger south border
@@ -170,7 +162,6 @@ namespace OpenSim.Region.Framework.Scenes.Tests
                     Assert.That(b.TestCross(position));
                 else
                     Assert.That(!b.TestCross(position));
-
             }
         }
 
@@ -178,7 +169,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         public void TestCrossRectangle512x256()
         {
             TestHelpers.InMethod();
-            
+
             List<Border> testborders = new List<Border>();
 
             Border NorthBorder = new Border();
@@ -206,7 +197,6 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             foreach (Border b in testborders)
             {
                 Assert.That(!b.TestCross(position));
-
             }
 
             //Trigger east border
@@ -217,7 +207,6 @@ namespace OpenSim.Region.Framework.Scenes.Tests
                     Assert.That(b.TestCross(position));
                 else
                     Assert.That(!b.TestCross(position));
-
             }
 
             //Trigger west border
@@ -228,7 +217,6 @@ namespace OpenSim.Region.Framework.Scenes.Tests
                     Assert.That(b.TestCross(position));
                 else
                     Assert.That(!b.TestCross(position));
-
             }
 
             //Trigger north border
@@ -239,7 +227,6 @@ namespace OpenSim.Region.Framework.Scenes.Tests
                     Assert.That(b.TestCross(position));
                 else
                     Assert.That(!b.TestCross(position));
-
             }
 
             //Trigger south border
@@ -250,7 +237,6 @@ namespace OpenSim.Region.Framework.Scenes.Tests
                     Assert.That(b.TestCross(position));
                 else
                     Assert.That(!b.TestCross(position));
-                
             }
         }
 
@@ -258,7 +244,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         public void TestCrossOdd512x512w256hole()
         {
             TestHelpers.InMethod();
-            
+
             List<Border> testborders = new List<Border>();
             //   512____
             //      |  |
@@ -295,8 +281,6 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             EastBorder2.CrossDirection = Cardinals.E;
             testborders.Add(EastBorder2);
 
-
-
             Border WestBorder = new Border();
             WestBorder.BorderLine = new Vector3(0, 512, 0);
             WestBorder.CrossDirection = Cardinals.W;
@@ -307,7 +291,6 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             foreach (Border b in testborders)
             {
                 Assert.That(!b.TestCross(position));
-
             }
 
             position = new Vector3(220, 450, 21);
@@ -315,7 +298,6 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             foreach (Border b in testborders)
             {
                 Assert.That(!b.TestCross(position));
-
             }
 
             bool result = false;
@@ -334,7 +316,6 @@ namespace OpenSim.Region.Framework.Scenes.Tests
 
             Assert.That(result);
             Assert.That(bordersTriggered == 2);
-
         }
     }
 }

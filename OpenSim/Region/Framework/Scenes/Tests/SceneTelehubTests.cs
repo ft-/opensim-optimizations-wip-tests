@@ -22,17 +22,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using Nini.Config;
 using NUnit.Framework;
 using OpenMetaverse;
-using OpenSim.Framework;
 using OpenSim.Region.CoreModules.World.Estate;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Services.Interfaces;
 using OpenSim.Tests.Common;
-using OpenSim.Tests.Common.Mock;
 
 namespace OpenSim.Region.Framework.Scenes.Tests
 {
@@ -53,7 +47,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         public void TestNoTelehubSpawnPoints()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             EstateManagementModule emm = new EstateManagementModule();
 
@@ -71,7 +65,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             // Must still be possible to successfully log in
             UUID loggingInUserId = TestHelpers.ParseTail(0x2);
 
-            UserAccount ua 
+            UserAccount ua
                 = UserAccountHelpers.CreateUserWithInventory(scene, "Test", "User", loggingInUserId, "password");
 
             SceneHelpers.AddScenePresence(scene, ua);
@@ -86,7 +80,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         public void TestNoTelehubSceneObject()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             EstateManagementModule emm = new EstateManagementModule();
 
@@ -108,7 +102,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             // Must still be possible to successfully log in
             UUID loggingInUserId = TestHelpers.ParseTail(0x2);
 
-            UserAccount ua 
+            UserAccount ua
                 = UserAccountHelpers.CreateUserWithInventory(scene, "Test", "User", loggingInUserId, "password");
 
             SceneHelpers.AddScenePresence(scene, ua);

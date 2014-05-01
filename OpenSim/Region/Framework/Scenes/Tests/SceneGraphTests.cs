@@ -25,17 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.IO;
-using System.Reflection;
-using System.Text;
 using NUnit.Framework;
 using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Region.Framework.Scenes;
 using OpenSim.Tests.Common;
-using OpenSim.Tests.Common.Mock;
 
 namespace OpenSim.Region.Framework.Scenes.Tests
 {
@@ -46,7 +39,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
         public void TestDuplicateObject()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             Scene scene = new SceneHelpers().SetupScene();
 
@@ -57,29 +50,27 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             UUID part2Id = new UUID("00000000-0000-0000-0000-000000000002");
 
             SceneObjectPart part1
-                = new SceneObjectPart(ownerId, PrimitiveBaseShape.Default, Vector3.Zero, Quaternion.Identity, Vector3.Zero) 
-                    { Name = part1Name, UUID = part1Id };
+                = new SceneObjectPart(ownerId, PrimitiveBaseShape.Default, Vector3.Zero, Quaternion.Identity, Vector3.Zero) { Name = part1Name, UUID = part1Id };
             SceneObjectGroup so = new SceneObjectGroup(part1);
-            SceneObjectPart part2 
-                = new SceneObjectPart(ownerId, PrimitiveBaseShape.Default, Vector3.Zero, Quaternion.Identity, Vector3.Zero) 
-                    { Name = part2Name, UUID = part2Id }; 
+            SceneObjectPart part2
+                = new SceneObjectPart(ownerId, PrimitiveBaseShape.Default, Vector3.Zero, Quaternion.Identity, Vector3.Zero) { Name = part2Name, UUID = part2Id };
             so.AddPart(part2);
 
             scene.AddNewSceneObject(so, false);
-            
-            SceneObjectGroup dupeSo 
+
+            SceneObjectGroup dupeSo
                 = scene.SceneGraph.DuplicateObject(
                     part1.LocalId, new Vector3(10, 0, 0), 0, ownerId, UUID.Zero, Quaternion.Identity);
             Assert.That(dupeSo.Parts.Length, Is.EqualTo(2));
-            
+
             SceneObjectPart dupePart1 = dupeSo.GetLinkNumPart(1);
             SceneObjectPart dupePart2 = dupeSo.GetLinkNumPart(2);
             Assert.That(dupePart1.LocalId, Is.Not.EqualTo(part1.LocalId));
             Assert.That(dupePart2.LocalId, Is.Not.EqualTo(part2.LocalId));
-            
+
             Assert.That(dupePart1.Flags, Is.EqualTo(part1.Flags));
             Assert.That(dupePart2.Flags, Is.EqualTo(part2.Flags));
-            
+
             /*
             Assert.That(part1.PhysActor, Is.Not.Null);
             Assert.That(part2.PhysActor, Is.Not.Null);
@@ -87,7 +78,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             Assert.That(dupePart2.PhysActor, Is.Not.Null);
             */
 
-//            TestHelpers.DisableLogging();
+            //            TestHelpers.DisableLogging();
         }
     }
 }

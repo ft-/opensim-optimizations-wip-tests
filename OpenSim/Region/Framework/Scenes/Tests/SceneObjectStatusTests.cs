@@ -25,16 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using NUnit.Framework;
 using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Region.Framework.Scenes;
 using OpenSim.Tests.Common;
 using OpenSim.Tests.Common.Mock;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.Framework.Scenes.Tests
 {
@@ -73,7 +68,7 @@ namespace OpenSim.Region.Framework.Scenes.Tests
             m_so1.ScriptSetTemporaryStatus(false);
 
             Assert.That(m_so1.RootPart.Flags, Is.EqualTo(PrimFlags.None));
-            Assert.That(m_so1.Backup, Is.True);          
+            Assert.That(m_so1.Backup, Is.True);
         }
 
         [Test]
@@ -88,12 +83,12 @@ namespace OpenSim.Region.Framework.Scenes.Tests
 
             m_so1.ScriptSetPhantomStatus(true);
 
-//            Console.WriteLine("so.RootPart.Flags [{0}]", so.RootPart.Flags);
+            //            Console.WriteLine("so.RootPart.Flags [{0}]", so.RootPart.Flags);
             Assert.That(rootPart.Flags, Is.EqualTo(PrimFlags.Phantom));
 
             m_so1.ScriptSetPhantomStatus(false);
 
-            Assert.That(rootPart.Flags, Is.EqualTo(PrimFlags.None));            
+            Assert.That(rootPart.Flags, Is.EqualTo(PrimFlags.None));
         }
 
         [Test]
@@ -108,12 +103,12 @@ namespace OpenSim.Region.Framework.Scenes.Tests
 
             m_so1.ScriptSetVolumeDetect(true);
 
-//            Console.WriteLine("so.RootPart.Flags [{0}]", so.RootPart.Flags);
+            //            Console.WriteLine("so.RootPart.Flags [{0}]", so.RootPart.Flags);
             Assert.That(rootPart.Flags, Is.EqualTo(PrimFlags.Phantom));
 
             m_so1.ScriptSetVolumeDetect(false);
 
-            Assert.That(rootPart.Flags, Is.EqualTo(PrimFlags.None));            
+            Assert.That(rootPart.Flags, Is.EqualTo(PrimFlags.None));
         }
 
         [Test]
@@ -152,9 +147,9 @@ namespace OpenSim.Region.Framework.Scenes.Tests
 
             m_so1.ScriptSetVolumeDetect(false);
 
-            Assert.That(rootPart.Flags, Is.EqualTo(PrimFlags.Physics));            
+            Assert.That(rootPart.Flags, Is.EqualTo(PrimFlags.Physics));
         }
-        
+
         [Test]
         public void TestSetPhysicsLinkset()
         {
