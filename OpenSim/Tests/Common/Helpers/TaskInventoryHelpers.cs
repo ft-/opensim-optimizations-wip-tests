@@ -25,12 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using OpenMetaverse;
 using OpenMetaverse.Assets;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.Interfaces;
 
 namespace OpenSim.Tests.Common
 {
@@ -78,12 +76,17 @@ namespace OpenSim.Tests.Common
                 = AssetHelpers.CreateAsset(assetID, AssetType.Notecard, nc.AssetData, UUID.Zero);
             scene.AssetService.Store(ncAsset);
 
-            TaskInventoryItem ncItem 
-                = new TaskInventoryItem 
-                    { Name = itemName, AssetID = assetID, ItemID = itemID,
-                      Type = (int)AssetType.Notecard, InvType = (int)InventoryType.Notecard };
-            part.Inventory.AddInventoryItem(ncItem, true); 
-            
+            TaskInventoryItem ncItem
+                = new TaskInventoryItem
+                    {
+                        Name = itemName,
+                        AssetID = assetID,
+                        ItemID = itemID,
+                        Type = (int)AssetType.Notecard,
+                        InvType = (int)InventoryType.Notecard
+                    };
+            part.Inventory.AddInventoryItem(ncItem, true);
+
             return ncItem;
         }
 
@@ -128,11 +131,16 @@ namespace OpenSim.Tests.Common
                 = AssetHelpers.CreateAsset(assetUuid, AssetType.LSLText, ast.AssetData, UUID.Zero);
             scene.AssetService.Store(asset);
             TaskInventoryItem item
-                = new TaskInventoryItem 
-                    { Name = scriptName, AssetID = assetUuid, ItemID = itemUuid,
-                      Type = (int)AssetType.LSLText, InvType = (int)InventoryType.LSL };
+                = new TaskInventoryItem
+                    {
+                        Name = scriptName,
+                        AssetID = assetUuid,
+                        ItemID = itemUuid,
+                        Type = (int)AssetType.LSLText,
+                        InvType = (int)InventoryType.LSL
+                    };
             part.Inventory.AddInventoryItem(item, true);
-            
+
             return item;
         }
 
@@ -157,12 +165,14 @@ namespace OpenSim.Tests.Common
             scene.AssetService.Store(taskSceneObjectAsset);
             TaskInventoryItem taskSceneObjectItem
                 = new TaskInventoryItem
-                    { Name = itemName,
-                      AssetID = taskSceneObjectAsset.FullID,
-                      ItemID = id,
-                      OwnerID = userId,
-                      Type = (int)AssetType.Object,
-                      InvType = (int)InventoryType.Object };
+                    {
+                        Name = itemName,
+                        AssetID = taskSceneObjectAsset.FullID,
+                        ItemID = id,
+                        OwnerID = userId,
+                        Type = (int)AssetType.Object,
+                        InvType = (int)InventoryType.Object
+                    };
             sop.Inventory.AddInventoryItem(taskSceneObjectItem, true);
 
             return taskSceneObjectItem;

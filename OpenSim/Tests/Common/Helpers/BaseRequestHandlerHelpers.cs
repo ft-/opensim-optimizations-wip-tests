@@ -25,14 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
 using NUnit.Framework;
-using OpenSim.Framework;
-using OpenSim.Framework.Servers;
 using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Tests.Common.Mock;
+using System;
 
 namespace OpenSim.Tests.Common
 {
@@ -60,7 +55,7 @@ namespace OpenSim.Tests.Common
             Assert.AreEqual(m_emptyStringArray, handler.SplitParams(null), "Failed on null.");
             Assert.AreEqual(m_emptyStringArray, handler.SplitParams(""), "Failed on empty path.");
             Assert.AreEqual(m_emptyStringArray, handler.SplitParams("corruptUrl"), "Failed on corrupt url.");
- 
+
             Assert.AreEqual(m_emptyStringArray, handler.SplitParams(assetsPath), "Failed on empty params.");
             Assert.AreEqual(m_emptyStringArray, handler.SplitParams(assetsPath + "/"), "Failed on single slash.");
 
@@ -70,7 +65,6 @@ namespace OpenSim.Tests.Common
             Assert.AreEqual(new string[] { "e", "f" }, handler.SplitParams(assetsPath + "/e/f/"), "Failed on trailing slash.");
         }
 
-        public static byte[] EmptyByteArray = new byte[] {};
-
+        public static byte[] EmptyByteArray = new byte[] { };
     }
 }

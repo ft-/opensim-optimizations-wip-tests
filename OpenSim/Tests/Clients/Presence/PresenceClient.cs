@@ -25,19 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Reflection;
-
-using OpenMetaverse;
 using log4net;
 using log4net.Appender;
 using log4net.Layout;
-
-using OpenSim.Framework;
-using OpenSim.Services.Interfaces;
+using OpenMetaverse;
 using OpenSim.Services.Connectors;
+using OpenSim.Services.Interfaces;
+using System.Reflection;
 
 namespace OpenSim.Tests.Clients.PresenceClient
 {
@@ -46,7 +40,7 @@ namespace OpenSim.Tests.Clients.PresenceClient
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
-        
+
         public static void Main(string[] args)
         {
             ConsoleAppender consoleAppender = new ConsoleAppender();
@@ -73,7 +67,7 @@ namespace OpenSim.Tests.Clients.PresenceClient
             if (pinfo == null)
                 m_log.InfoFormat("[PRESENCE CLIENT]: Unable to retrieve presence for {0}", user1);
             else
-                m_log.InfoFormat("[PRESENCE CLIENT]: Presence retrieved correctly: userID={0}; regionID={1}", 
+                m_log.InfoFormat("[PRESENCE CLIENT]: Presence retrieved correctly: userID={0}; regionID={1}",
                     pinfo.UserID, pinfo.RegionID);
 
             System.Console.WriteLine("\n");
@@ -108,8 +102,6 @@ namespace OpenSim.Tests.Clients.PresenceClient
                 m_log.InfoFormat("[PRESENCE CLIENT]: Report agent succeeded, but this is wrong");
             else
                 m_log.InfoFormat("[PRESENCE CLIENT]: failed to report agent, as it should because user is not logged in");
-
         }
-
     }
 }

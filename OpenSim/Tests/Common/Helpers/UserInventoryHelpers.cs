@@ -25,13 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.CoreModules.Avatar.Inventory.Archiver;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
 
 namespace OpenSim.Tests.Common
 {
@@ -101,7 +101,7 @@ namespace OpenSim.Tests.Common
             Scene scene, string itemName, UUID itemId, InventoryType itemType, AssetBase asset, UUID userId)
         {
             return AddInventoryItem(
-                scene, itemName, itemId, itemType, asset, userId, 
+                scene, itemName, itemId, itemType, asset, userId,
                 scene.InventoryService.GetFolderForType(userId, (AssetType)asset.Type).Name);
         }
 
@@ -207,7 +207,7 @@ namespace OpenSim.Tests.Common
         /// </param>
         /// <param name="useExistingFolders">
         /// If true, then folders in the path which already the same name are
-        /// used.  This applies to the terminal folder as well.  
+        /// used.  This applies to the terminal folder as well.
         /// If false, then all folders in the path are created, even if there is already a folder at a particular
         /// level with the same name.
         /// </param>
@@ -232,7 +232,7 @@ namespace OpenSim.Tests.Common
         /// </param>
         /// <param name="useExistingFolders">
         /// If true, then folders in the path which already the same name are
-        /// used.  This applies to the terminal folder as well.  
+        /// used.  This applies to the terminal folder as well.
         /// If false, then all folders in the path are created, even if there is already a folder at a particular
         /// level with the same name.
         /// </param>
@@ -255,7 +255,7 @@ namespace OpenSim.Tests.Common
         /// Create inventory folders starting from a given parent folder
         /// </summary>
         /// <remarks>
-        /// If any stem of the path names folders that already exist then these are not recreated.  This includes the 
+        /// If any stem of the path names folders that already exist then these are not recreated.  This includes the
         /// final folder.
         /// TODO: May need to make it an option to create duplicate folders.
         /// </remarks>
@@ -267,7 +267,7 @@ namespace OpenSim.Tests.Common
         /// </param>
         /// <param name="useExistingFolders">
         /// If true, then folders in the path which already the same name are
-        /// used.  This applies to the terminal folder as well.  
+        /// used.  This applies to the terminal folder as well.
         /// If false, then all folders in the path are created, even if there is already a folder at a particular
         /// level with the same name.
         /// </param>
@@ -286,7 +286,7 @@ namespace OpenSim.Tests.Common
 
             if (folder == null)
             {
-//                Console.WriteLine("Creating folder {0} at {1}", components[0], parentFolder.Name);
+                //                Console.WriteLine("Creating folder {0} at {1}", components[0], parentFolder.Name);
 
                 UUID folderIdForCreate;
 
@@ -295,16 +295,16 @@ namespace OpenSim.Tests.Common
                 else
                     folderIdForCreate = folderId;
 
-                folder 
+                folder
                     = new InventoryFolderBase(
                         folderIdForCreate, components[0], parentFolder.Owner, (short)AssetType.Unknown, parentFolder.ID, 0);
-                
+
                 inventoryService.AddFolder(folder);
             }
-//            else
-//            {
-//                Console.WriteLine("Found existing folder {0}", folder.Name);
-//            }
+            //            else
+            //            {
+            //                Console.WriteLine("Found existing folder {0}", folder.Name);
+            //            }
 
             if (components.Length > 1)
                 return CreateInventoryFolder(inventoryService, folderId, folder, components[1], useExistingFolders);

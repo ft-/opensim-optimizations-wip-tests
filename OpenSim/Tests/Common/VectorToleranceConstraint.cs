@@ -25,10 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using OpenMetaverse;
-using NUnit.Framework;
 using NUnit.Framework.Constraints;
+using OpenMetaverse;
+using System;
 
 namespace OpenSim.Tests.Common
 {
@@ -37,7 +36,8 @@ namespace OpenSim.Tests.Common
         private Vector3 _baseValue;
         private Vector3 _valueToBeTested;
 
-        public VectorToleranceConstraint(Vector3 baseValue, double tolerance) : base(tolerance)
+        public VectorToleranceConstraint(Vector3 baseValue, double tolerance)
+            : base(tolerance)
         {
             _baseValue = baseValue;
         }
@@ -55,12 +55,12 @@ namespace OpenSim.Tests.Common
             {
                 throw new ArgumentException("Constraint cannot be used upon null values.");
             }
-            if (valueToBeTested.GetType() != typeof (Vector3))
+            if (valueToBeTested.GetType() != typeof(Vector3))
             {
                 throw new ArgumentException("Constraint cannot be used upon non vector values.");
             }
 
-            _valueToBeTested = (Vector3) valueToBeTested;
+            _valueToBeTested = (Vector3)valueToBeTested;
 
             return (IsWithinDoubleConstraint(_valueToBeTested.X, _baseValue.X) &&
                     IsWithinDoubleConstraint(_valueToBeTested.Y, _baseValue.Y) &&

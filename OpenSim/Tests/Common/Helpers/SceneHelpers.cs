@@ -25,32 +25,27 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Net;
-using System.Collections.Generic;
 using Nini.Config;
 using OpenMetaverse;
 using OpenSim.Data.Null;
 using OpenSim.Framework;
-using OpenSim.Framework.Communications;
 using OpenSim.Framework.Console;
-using OpenSim.Framework.Servers;
-using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Region.Physics.Manager;
-using OpenSim.Region.Framework;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Region.CoreModules.Avatar.Gods;
 using OpenSim.Region.CoreModules.Asset;
+using OpenSim.Region.CoreModules.Avatar.Gods;
 using OpenSim.Region.CoreModules.ServiceConnectorsOut.Asset;
 using OpenSim.Region.CoreModules.ServiceConnectorsOut.Authentication;
-using OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory;
 using OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid;
-using OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts;
+using OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory;
 using OpenSim.Region.CoreModules.ServiceConnectorsOut.Presence;
+using OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
+using OpenSim.Region.Physics.Manager;
 using OpenSim.Services.Interfaces;
 using OpenSim.Tests.Common.Mock;
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
+using System;
+using System.Collections.Generic;
+using System.Net;
 
 namespace OpenSim.Tests.Common
 {
@@ -78,18 +73,21 @@ namespace OpenSim.Tests.Common
 
         private CoreAssetCache m_cache;
 
-        public SceneHelpers() : this(null) {}
+        public SceneHelpers()
+            : this(null)
+        {
+        }
 
         public SceneHelpers(CoreAssetCache cache)
         {
             SceneManager = new SceneManager();
 
-            m_assetService          = StartAssetService(cache);
+            m_assetService = StartAssetService(cache);
             m_authenticationService = StartAuthenticationService();
-            m_inventoryService      = StartInventoryService();
-            m_gridService           = StartGridService();
-            m_userAccountService    = StartUserAccountService();
-            m_presenceService       = StartPresenceService();
+            m_inventoryService = StartInventoryService();
+            m_gridService = StartGridService();
+            m_userAccountService = StartUserAccountService();
+            m_presenceService = StartPresenceService();
 
             m_inventoryService.PostInitialise();
             m_assetService.PostInitialise();
@@ -98,7 +96,7 @@ namespace OpenSim.Tests.Common
 
             m_cache = cache;
 
-            SimDataService 
+            SimDataService
                 = OpenSim.Server.Base.ServerUtils.LoadPlugin<ISimulationDataService>("OpenSim.Tests.Common.dll", null);
         }
 
@@ -142,7 +140,7 @@ namespace OpenSim.Tests.Common
 
             // We must set up a console otherwise setup of some modules may fail
             MainConsole.Instance = new MockConsole();
-            
+
             RegionInfo regInfo = new RegionInfo(x, y, new IPEndPoint(IPAddress.Loopback, 9000), "127.0.0.1");
             regInfo.RegionName = name;
             regInfo.RegionID = id;
@@ -190,7 +188,7 @@ namespace OpenSim.Tests.Common
             m_presenceService.AddRegion(testScene);
             m_presenceService.RegionLoaded(testScene);
             testScene.AddRegionModule(m_presenceService.Name, m_presenceService);
-            
+
             testScene.RegionInfo.EstateSettings.EstateOwner = UUID.Random();
             testScene.SetModuleInterfaces();
 
@@ -199,7 +197,7 @@ namespace OpenSim.Tests.Common
 
             PhysicsPluginManager physicsPluginManager = new PhysicsPluginManager();
             physicsPluginManager.LoadPluginsFromAssembly("Physics/OpenSim.Region.Physics.BasicPhysicsPlugin.dll");
-            Vector3 regionExtent = new Vector3( regInfo.RegionSizeX, regInfo.RegionSizeY, regInfo.RegionSizeZ);
+            Vector3 regionExtent = new Vector3(regInfo.RegionSizeX, regInfo.RegionSizeY, regInfo.RegionSizeZ);
             testScene.PhysicsScene
                 = physicsPluginManager.GetPhysicsScene("basicphysics", "ZeroMesher", new IniConfigSource(), "test", regionExtent);
 
@@ -215,10 +213,10 @@ namespace OpenSim.Tests.Common
         private static LocalAssetServicesConnector StartAssetService(CoreAssetCache cache)
         {
             IConfigSource config = new IniConfigSource();
-            config.AddConfig("Modules");            
-            config.Configs["Modules"].Set("AssetServices", "LocalAssetServicesConnector");            
+            config.AddConfig("Modules");
+            config.Configs["Modules"].Set("AssetServices", "LocalAssetServicesConnector");
             config.AddConfig("AssetService");
-            config.Configs["AssetService"].Set("LocalServiceModule", "OpenSim.Services.AssetService.dll:AssetService");            
+            config.Configs["AssetService"].Set("LocalServiceModule", "OpenSim.Services.AssetService.dll:AssetService");
             config.Configs["AssetService"].Set("StorageProvider", "OpenSim.Tests.Common.dll");
 
             LocalAssetServicesConnector assetService = new LocalAssetServicesConnector();
@@ -233,7 +231,7 @@ namespace OpenSim.Tests.Common
 
                 cache.Initialise(cacheConfig);
             }
-            
+
             return assetService;
         }
 
@@ -255,7 +253,7 @@ namespace OpenSim.Tests.Common
 
         private static LocalInventoryServicesConnector StartInventoryService()
         {
-            IConfigSource config = new IniConfigSource();            
+            IConfigSource config = new IniConfigSource();
             config.AddConfig("Modules");
             config.AddConfig("InventoryService");
             config.Configs["Modules"].Set("InventoryServices", "LocalInventoryServicesConnector");
@@ -264,8 +262,8 @@ namespace OpenSim.Tests.Common
 
             LocalInventoryServicesConnector inventoryService = new LocalInventoryServicesConnector();
             inventoryService.Initialise(config);
-            
-            return inventoryService;           
+
+            return inventoryService;
         }
 
         private static LocalGridServicesConnector StartGridService()
@@ -280,7 +278,7 @@ namespace OpenSim.Tests.Common
 
             LocalGridServicesConnector gridService = new LocalGridServicesConnector();
             gridService.Initialise(config);
-            
+
             return gridService;
         }
 
@@ -301,7 +299,7 @@ namespace OpenSim.Tests.Common
 
             LocalUserAccountServicesConnector userAccountService = new LocalUserAccountServicesConnector();
             userAccountService.Initialise(config);
-            
+
             return userAccountService;
         }
 
@@ -326,7 +324,7 @@ namespace OpenSim.Tests.Common
 
             LocalPresenceServicesConnector presenceService = new LocalPresenceServicesConnector();
             presenceService.Initialise(config);
-            
+
             return presenceService;
         }
 
@@ -369,8 +367,8 @@ namespace OpenSim.Tests.Common
         /// </summary>
         /// <remarks>
         /// If called directly, then all the modules must be shared modules.
-        /// 
-        /// We are emulating here the normal calls made to setup region modules 
+        ///
+        /// We are emulating here the normal calls made to setup region modules
         /// (Initialise(), PostInitialise(), AddRegion, RegionLoaded()).
         /// TODO: Need to reuse normal runtime module code.
         /// </remarks>
@@ -383,7 +381,7 @@ namespace OpenSim.Tests.Common
             foreach (object module in modules)
             {
                 IRegionModuleBase m = (IRegionModuleBase)module;
-//                Console.WriteLine("MODULE {0}", m.Name);
+                //                Console.WriteLine("MODULE {0}", m.Name);
                 m.Initialise(config);
                 newModules.Add(m);
             }
@@ -636,7 +634,7 @@ namespace OpenSim.Tests.Common
 
             return so;
         }
-        
+
         /// <summary>
         /// Create a scene object part.
         /// </summary>
@@ -645,10 +643,9 @@ namespace OpenSim.Tests.Common
         /// <param name="ownerId"></param>
         /// <returns></returns>
         public static SceneObjectPart CreateSceneObjectPart(string name, UUID id, UUID ownerId)
-        {            
+        {
             return new SceneObjectPart(
-                ownerId, PrimitiveBaseShape.Default, Vector3.Zero, Quaternion.Identity, Vector3.Zero) 
-                    { Name = name, UUID = id, Scale = new Vector3(1, 1, 1) };            
+                ownerId, PrimitiveBaseShape.Default, Vector3.Zero, Quaternion.Identity, Vector3.Zero) { Name = name, UUID = id, Scale = new Vector3(1, 1, 1) };
         }
 
         /// <summary>
@@ -663,10 +660,10 @@ namespace OpenSim.Tests.Common
         /// <param name="ownerId"></param>
         /// <returns></returns>
         public static SceneObjectGroup CreateSceneObject(int parts, UUID ownerId)
-        {            
+        {
             return CreateSceneObject(parts, ownerId, 0x1);
         }
-        
+
         /// <summary>
         /// Create a scene object but do not add it to the scene.
         /// </summary>
@@ -678,10 +675,10 @@ namespace OpenSim.Tests.Common
         /// </param>
         /// <returns></returns>
         public static SceneObjectGroup CreateSceneObject(int parts, UUID ownerId, int uuidTail)
-        {            
+        {
             return CreateSceneObject(parts, ownerId, "", uuidTail);
-        }          
-        
+        }
+
         /// <summary>
         /// Create a scene object but do not add it to the scene.
         /// </summary>
@@ -699,22 +696,22 @@ namespace OpenSim.Tests.Common
         /// </param>
         /// <returns></returns>
         public static SceneObjectGroup CreateSceneObject(int parts, UUID ownerId, string partNamePrefix, int uuidTail)
-        {            
+        {
             string rawSogId = string.Format("00000000-0000-0000-0000-{0:X12}", uuidTail);
-            
-            SceneObjectGroup sog 
+
+            SceneObjectGroup sog
                 = new SceneObjectGroup(
                     CreateSceneObjectPart(string.Format("{0}Part1", partNamePrefix), new UUID(rawSogId), ownerId));
-            
+
             if (parts > 1)
                 for (int i = 2; i <= parts; i++)
                     sog.AddPart(
                         CreateSceneObjectPart(
-                            string.Format("{0}Part{1}", partNamePrefix, i), 
+                            string.Format("{0}Part{1}", partNamePrefix, i),
                             new UUID(string.Format("00000000-0000-0000-0000-{0:X12}", uuidTail + i - 1)),
                             ownerId));
-            
+
             return sog;
-        }        
+        }
     }
 }

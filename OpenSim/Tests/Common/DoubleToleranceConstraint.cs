@@ -25,9 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using NUnit.Framework;
 using NUnit.Framework.Constraints;
+using System;
 
 namespace OpenSim.Tests.Common
 {
@@ -36,7 +35,8 @@ namespace OpenSim.Tests.Common
         private double _baseValue;
         private double _valueToBeTested;
 
-        public DoubleToleranceConstraint(double baseValue, double tolerance) : base(tolerance)
+        public DoubleToleranceConstraint(double baseValue, double tolerance)
+            : base(tolerance)
         {
             _baseValue = baseValue;
         }
@@ -66,7 +66,7 @@ namespace OpenSim.Tests.Common
 
         public override void WriteDescriptionTo(MessageWriter writer)
         {
-            writer.WriteExpectedValue(string.Format("A value {0} within tolerance of plus or minus {1}",_baseValue,_tolerance));
+            writer.WriteExpectedValue(string.Format("A value {0} within tolerance of plus or minus {1}", _baseValue, _tolerance));
         }
 
         public override void WriteActualValueTo(MessageWriter writer)

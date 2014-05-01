@@ -25,30 +25,23 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Net;
-using System.Reflection;
-using System.Threading;
-using log4net;
 using Nini.Config;
-using Mono.Addins;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
-using OpenSim.Framework;
-using OpenSim.Framework.Servers;
-using OpenSim.Region.ClientStack.Linden;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Collections.Generic;
+using System.Net;
 
 namespace OpenSim.Tests.Common
 {
     public class TestEventQueueGetModule : IEventQueue, INonSharedRegionModule
     {
-        public class Event 
+        public class Event
         {
             public string Name { get; set; }
+
             public object[] Args { get; set; }
 
             public Event(string name, object[] args)
@@ -60,19 +53,27 @@ namespace OpenSim.Tests.Common
 
         public Dictionary<UUID, List<Event>> Events { get; set; }
 
-        public void Initialise(IConfigSource source) {}
+        public void Initialise(IConfigSource source)
+        {
+        }
 
-        public void Close() {}
+        public void Close()
+        {
+        }
 
-        public void AddRegion(Scene scene) 
+        public void AddRegion(Scene scene)
         {
             Events = new Dictionary<UUID, List<Event>>();
             scene.RegisterModuleInterface<IEventQueue>(this);
         }
 
-        public void RemoveRegion (Scene scene) {}
+        public void RemoveRegion(Scene scene)
+        {
+        }
 
-        public void RegionLoaded (Scene scene) {}
+        public void RegionLoaded(Scene scene)
+        {
+        }
 
         public string Name { get { return "TestEventQueueGetModule"; } }
 
@@ -114,67 +115,67 @@ namespace OpenSim.Tests.Common
             AddEvent(avatarID, "DisableSimulator", handle);
         }
 
-        public void EnableSimulator (ulong handle, IPEndPoint endPoint, UUID avatarID, int regionSizeX, int regionSizeY)
+        public void EnableSimulator(ulong handle, IPEndPoint endPoint, UUID avatarID, int regionSizeX, int regionSizeY)
         {
             AddEvent(avatarID, "EnableSimulator", handle);
         }
 
-        public void EstablishAgentCommunication (UUID avatarID, IPEndPoint endPoint, string capsPath,
+        public void EstablishAgentCommunication(UUID avatarID, IPEndPoint endPoint, string capsPath,
                                 ulong regionHandle, int regionSizeX, int regionSizeY)
         {
             AddEvent(avatarID, "EstablishAgentCommunication", endPoint, capsPath);
         }
 
-        public void TeleportFinishEvent (ulong regionHandle, byte simAccess, IPEndPoint regionExternalEndPoint,
+        public void TeleportFinishEvent(ulong regionHandle, byte simAccess, IPEndPoint regionExternalEndPoint,
                     uint locationID, uint flags, string capsURL, UUID agentID, int regionSizeX, int regionSizeY)
         {
             AddEvent(agentID, "TeleportFinishEvent", regionHandle, simAccess, regionExternalEndPoint, locationID, flags, capsURL);
         }
 
-        public void CrossRegion (ulong handle, Vector3 pos, Vector3 lookAt, IPEndPoint newRegionExternalEndPoint,
+        public void CrossRegion(ulong handle, Vector3 pos, Vector3 lookAt, IPEndPoint newRegionExternalEndPoint,
                                     string capsURL, UUID avatarID, UUID sessionID, int regionSizeX, int regionSizeY)
         {
             AddEvent(avatarID, "CrossRegion", handle, pos, lookAt, newRegionExternalEndPoint, capsURL, sessionID);
         }
 
         public void ChatterboxInvitation(
-            UUID sessionID, string sessionName, UUID fromAgent, string message, UUID toAgent, string fromName, 
-            byte dialog, uint timeStamp, bool offline, int parentEstateID, Vector3 position, uint ttl, 
+            UUID sessionID, string sessionName, UUID fromAgent, string message, UUID toAgent, string fromName,
+            byte dialog, uint timeStamp, bool offline, int parentEstateID, Vector3 position, uint ttl,
             UUID transactionID, bool fromGroup, byte[] binaryBucket)
         {
             AddEvent(
-                toAgent, "ChatterboxInvitation", sessionID, sessionName, fromAgent, message, toAgent, fromName, dialog, 
+                toAgent, "ChatterboxInvitation", sessionID, sessionName, fromAgent, message, toAgent, fromName, dialog,
                 timeStamp, offline, parentEstateID, position, ttl, transactionID, fromGroup, binaryBucket);
         }
 
-        public void ChatterBoxSessionAgentListUpdates (UUID sessionID, UUID fromAgent, UUID toAgent, bool canVoiceChat, bool isModerator, bool textMute)
+        public void ChatterBoxSessionAgentListUpdates(UUID sessionID, UUID fromAgent, UUID toAgent, bool canVoiceChat, bool isModerator, bool textMute)
         {
             AddEvent(toAgent, "ChatterBoxSessionAgentListUpdates", sessionID, fromAgent, canVoiceChat, isModerator, textMute);
         }
 
-        public void ParcelProperties (OpenMetaverse.Messages.Linden.ParcelPropertiesMessage parcelPropertiesMessage, UUID avatarID)
+        public void ParcelProperties(OpenMetaverse.Messages.Linden.ParcelPropertiesMessage parcelPropertiesMessage, UUID avatarID)
         {
             AddEvent(avatarID, "ParcelProperties", parcelPropertiesMessage);
         }
 
-        public void GroupMembership (OpenMetaverse.Packets.AgentGroupDataUpdatePacket groupUpdate, UUID avatarID)
+        public void GroupMembership(OpenMetaverse.Packets.AgentGroupDataUpdatePacket groupUpdate, UUID avatarID)
         {
             AddEvent(avatarID, "GroupMembership", groupUpdate);
         }
 
-        public OSD ScriptRunningEvent (UUID objectID, UUID itemID, bool running, bool mono)
+        public OSD ScriptRunningEvent(UUID objectID, UUID itemID, bool running, bool mono)
         {
             Console.WriteLine("ONE");
-            throw new System.NotImplementedException ();
+            throw new System.NotImplementedException();
         }
 
         public OSD BuildEvent(string eventName, OSD eventBody)
         {
             Console.WriteLine("TWO");
-            throw new System.NotImplementedException ();
+            throw new System.NotImplementedException();
         }
 
-        public void partPhysicsProperties (uint localID, byte physhapetype, float density, float friction, float bounce, float gravmod, UUID avatarID)
+        public void partPhysicsProperties(uint localID, byte physhapetype, float density, float friction, float bounce, float gravmod, UUID avatarID)
         {
             AddEvent(avatarID, "partPhysicsProperties", localID, physhapetype, density, friction, bounce, gravmod);
         }

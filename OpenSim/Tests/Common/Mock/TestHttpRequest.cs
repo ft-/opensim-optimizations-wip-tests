@@ -25,98 +25,120 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using HttpServer;
+using HttpServer.FormDecoders;
 using System;
 using System.Collections.Specialized;
 using System.IO;
-using HttpServer;
-using HttpServer.FormDecoders;
 
 namespace OpenSim.Tests.Common
 {
-    public class TestHttpRequest: IHttpRequest
+    public class TestHttpRequest : IHttpRequest
     {
         private string _uriPath;
-        public bool BodyIsComplete 
-        { 
-            get { return true; } 
+
+        public bool BodyIsComplete
+        {
+            get { return true; }
         }
-        public string[] AcceptTypes 
-        { 
-            get {return _acceptTypes; }
+
+        public string[] AcceptTypes
+        {
+            get { return _acceptTypes; }
         }
+
         private string[] _acceptTypes;
-        public Stream Body 
-        { 
-            get { return _body; } 
-            set { _body = value;} 
+
+        public Stream Body
+        {
+            get { return _body; }
+            set { _body = value; }
         }
+
         private Stream _body;
-        public ConnectionType Connection 
-        { 
+
+        public ConnectionType Connection
+        {
             get { return _connection; }
             set { _connection = value; }
         }
+
         private ConnectionType _connection;
-        public int ContentLength 
-        { 
+
+        public int ContentLength
+        {
             get { return _contentLength; }
             set { _contentLength = value; }
         }
+
         private int _contentLength;
-        public NameValueCollection Headers 
-        { 
+
+        public NameValueCollection Headers
+        {
             get { return _headers; }
         }
+
         private NameValueCollection _headers = new NameValueCollection();
 
         public string HttpVersion { get; set; }
 
-        public string Method 
-        { 
+        public string Method
+        {
             get { return _method; }
             set { _method = value; }
         }
+
         private string _method = null;
-        public HttpInput QueryString 
-        { 
-            get { return _queryString;  }
-        }
-        private HttpInput _queryString = null;
-        public Uri Uri 
-        { 
-            get { return _uri; }
-            set { _uri = value; } 
-        }
-        private Uri _uri = null;
-        public string[] UriParts 
-        { 
-            get { return _uri.Segments; }
-        }
-        public HttpParam Param 
-        { 
-            get { return null; } 
-        }
-        public HttpForm Form 
-        { 
-            get { return null; } 
-        }
-        public bool IsAjax 
-        { 
-            get { return false; } 
-        }
-        public RequestCookies Cookies 
-        { 
-            get { return null; } 
+
+        public HttpInput QueryString
+        {
+            get { return _queryString; }
         }
 
-        public TestHttpRequest() 
+        private HttpInput _queryString = null;
+
+        public Uri Uri
+        {
+            get { return _uri; }
+            set { _uri = value; }
+        }
+
+        private Uri _uri = null;
+
+        public string[] UriParts
+        {
+            get { return _uri.Segments; }
+        }
+
+        public HttpParam Param
+        {
+            get { return null; }
+        }
+
+        public HttpForm Form
+        {
+            get { return null; }
+        }
+
+        public bool IsAjax
+        {
+            get { return false; }
+        }
+
+        public RequestCookies Cookies
+        {
+            get { return null; }
+        }
+
+        public TestHttpRequest()
         {
             HttpVersion = "HTTP/1.1";
         }
 
-        public TestHttpRequest(string contentEncoding, string contentType, string userAgent, 
+        public TestHttpRequest(string contentEncoding, string contentType, string userAgent,
                                string remoteAddr, string remotePort, string[] acceptTypes,
-                               ConnectionType connectionType, int contentLength, Uri uri) : base()
+                               ConnectionType connectionType, int contentLength, Uri uri)
+            : base()
         {
             _headers["content-encoding"] = contentEncoding;
             _headers["content-type"] = contentType;
@@ -130,17 +152,27 @@ namespace OpenSim.Tests.Common
             _uri = uri;
         }
 
-        public void DecodeBody(FormDecoderProvider providers) {}
-        public void SetCookies(RequestCookies cookies) {}
+        public void DecodeBody(FormDecoderProvider providers)
+        {
+        }
+
+        public void SetCookies(RequestCookies cookies)
+        {
+        }
+
         public void AddHeader(string name, string value)
         {
             _headers.Add(name, value);
         }
-        public int AddToBody(byte[] bytes, int offset, int length) 
+
+        public int AddToBody(byte[] bytes, int offset, int length)
         {
             return 0;
         }
-        public void Clear() {}
+
+        public void Clear()
+        {
+        }
 
         public object Clone()
         {
@@ -153,10 +185,12 @@ namespace OpenSim.Tests.Common
 
             return clone;
         }
+
         public IHttpResponse CreateResponse(IHttpClientContext context)
         {
             return new HttpResponse(context, this);
         }
+
         /// <summary>
         /// Path and query (will be merged with the host header) and put in Uri
         /// </summary>
@@ -167,7 +201,6 @@ namespace OpenSim.Tests.Common
             set
             {
                 _uriPath = value;
-               
             }
         }
     }

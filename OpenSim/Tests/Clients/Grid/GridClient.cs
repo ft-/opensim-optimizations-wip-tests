@@ -25,29 +25,23 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Reflection;
-
-using OpenMetaverse;
-using log4net;
 using log4net.Appender;
 using log4net.Layout;
-
+using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Services.Interfaces;
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 using OpenSim.Services.Connectors;
+using System;
+using System.Collections.Generic;
+using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 
 namespace OpenSim.Tests.Clients.GridClient
 {
     public class GridClient
     {
-//        private static readonly ILog m_log =
-//                LogManager.GetLogger(
-//                MethodBase.GetCurrentMethod().DeclaringType);
-        
+        //        private static readonly ILog m_log =
+        //                LogManager.GetLogger(
+        //                MethodBase.GetCurrentMethod().DeclaringType);
+
         public static void Main(string[] args)
         {
             ConsoleAppender consoleAppender = new ConsoleAppender();
@@ -62,7 +56,7 @@ namespace OpenSim.Tests.Clients.GridClient
             GridRegion r2 = CreateRegion("Test Region 2", 1001, 1000);
             GridRegion r3 = CreateRegion("Test Region 3", 1005, 1000);
 
-            Console.WriteLine("[GRID CLIENT]: *** Registering region 1"); 
+            Console.WriteLine("[GRID CLIENT]: *** Registering region 1");
             string msg = m_Connector.RegisterRegion(UUID.Zero, r1);
             if (msg == String.Empty)
                 Console.WriteLine("[GRID CLIENT]: Successfully registered region 1");
@@ -82,7 +76,6 @@ namespace OpenSim.Tests.Clients.GridClient
                 Console.WriteLine("[GRID CLIENT]: Successfully registered region 3");
             else
                 Console.WriteLine("[GRID CLIENT]: region 3 failed to register");
-
 
             bool success;
             Console.WriteLine("[GRID CLIENT]: *** Deregistering region 3");
@@ -111,7 +104,6 @@ namespace OpenSim.Tests.Clients.GridClient
             }
             else
                 Console.WriteLine("[GRID CLIENT]: GetNeighbours of region 1 returned 0 neighbours");
-
 
             Console.WriteLine("[GRID CLIENT]: *** GetRegionByUUID of region 2 (this should succeed)");
             GridRegion region = m_Connector.GetRegionByUUID(UUID.Zero, r2.RegionID);
@@ -149,9 +141,9 @@ namespace OpenSim.Tests.Clients.GridClient
                 Console.WriteLine("[GRID CLIENT]: GetRegionsByName returned " + regions.Count + " regions");
 
             Console.WriteLine("[GRID CLIENT]: *** GetRegionRange (this should return 2 regions)");
-            regions = m_Connector.GetRegionRange(UUID.Zero, 
+            regions = m_Connector.GetRegionRange(UUID.Zero,
                 (int)Util.RegionToWorldLoc(900), (int)Util.RegionToWorldLoc(1002),
-                (int)Util.RegionToWorldLoc(900), (int)Util.RegionToWorldLoc(1002) );
+                (int)Util.RegionToWorldLoc(900), (int)Util.RegionToWorldLoc(1002));
             if (regions == null)
                 Console.WriteLine("[GRID CLIENT]: GetRegionRange returned null");
             else
@@ -159,7 +151,7 @@ namespace OpenSim.Tests.Clients.GridClient
             Console.WriteLine("[GRID CLIENT]: *** GetRegionRange (this should return 0 regions)");
             regions = m_Connector.GetRegionRange(UUID.Zero,
                 (int)Util.RegionToWorldLoc(900), (int)Util.RegionToWorldLoc(950),
-                (int)Util.RegionToWorldLoc(900), (int)Util.RegionToWorldLoc(950) );
+                (int)Util.RegionToWorldLoc(900), (int)Util.RegionToWorldLoc(950));
             if (regions == null)
                 Console.WriteLine("[GRID CLIENT]: GetRegionRange returned null");
             else
@@ -187,7 +179,6 @@ namespace OpenSim.Tests.Clients.GridClient
                 Console.WriteLine("[GRID CLIENT]: Successfully deregistered region 3");
             else
                 Console.WriteLine("[GRID CLIENT]: region 3 failed to deregister");
-
         }
 
         private static GridRegion CreateRegion(string name, uint xcell, uint ycell)
@@ -198,7 +189,7 @@ namespace OpenSim.Tests.Clients.GridClient
             region.ExternalHostName = "127.0.0.1";
             region.HttpPort = 9000;
             region.InternalEndPoint = new System.Net.IPEndPoint(System.Net.IPAddress.Parse("0.0.0.0"), 9000);
-          
+
             return region;
         }
     }

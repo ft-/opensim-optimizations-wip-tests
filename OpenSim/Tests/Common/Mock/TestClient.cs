@@ -25,18 +25,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using log4net;
+using OpenMetaverse;
+using OpenMetaverse.Packets;
+using OpenSim.Framework;
+using OpenSim.Framework.Client;
+using OpenSim.Region.Framework.Interfaces;
+using OpenSim.Region.Framework.Scenes;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Reflection;
 using System.Threading;
-using log4net;
-using OpenMetaverse;
-using OpenMetaverse.Packets;
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Framework.Client;
 
 namespace OpenSim.Tests.Common.Mock
 {
@@ -44,264 +44,445 @@ namespace OpenSim.Tests.Common.Mock
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        EventWaitHandle wh = new EventWaitHandle (false, EventResetMode.AutoReset, "Crossing");
+        private EventWaitHandle wh = new EventWaitHandle(false, EventResetMode.AutoReset, "Crossing");
 
         private Scene m_scene;
 
         // Properties so that we can get at received data for test purposes
         public List<uint> ReceivedKills { get; private set; }
+
         public List<UUID> ReceivedOfflineNotifications { get; private set; }
+
         public List<UUID> ReceivedOnlineNotifications { get; private set; }
+
         public List<UUID> ReceivedFriendshipTerminations { get; private set; }
 
         public List<ImageDataPacket> SentImageDataPackets { get; private set; }
+
         public List<ImagePacketPacket> SentImagePacketPackets { get; private set; }
+
         public List<ImageNotInDatabasePacket> SentImageNotInDatabasePackets { get; private set; }
 
         // Test client specific events - for use by tests to implement some IClientAPI behaviour.
         public event Action<RegionInfo, Vector3, Vector3> OnReceivedMoveAgentIntoRegion;
+
         public event Action<ulong, IPEndPoint> OnTestClientInformClientOfNeighbour;
+
         public event TestClientOnSendRegionTeleportDelegate OnTestClientSendRegionTeleport;
+
         public event Action<ISceneEntity, PrimUpdateFlags> OnReceivedEntityUpdate;
+
         public event Action<GridInstantMessage> OnReceivedInstantMessage;
+
         public event Action<UUID> OnReceivedSendRebakeAvatarTextures;
 
         public delegate void TestClientOnSendRegionTeleportDelegate(
             ulong regionHandle, byte simAccess, IPEndPoint regionExternalEndPoint,
             uint locationID, uint flags, string capsURL);
 
-// disable warning: public events, part of the public API
+        // disable warning: public events, part of the public API
 #pragma warning disable 67
 
         public event Action<IClientAPI> OnLogout;
+
         public event ObjectPermissions OnObjectPermissions;
 
         public event MoneyTransferRequest OnMoneyTransferRequest;
+
         public event ParcelBuy OnParcelBuy;
+
         public event Action<IClientAPI> OnConnectionClosed;
 
         public event ImprovedInstantMessage OnInstantMessage;
+
         public event ChatMessage OnChatFromClient;
+
         public event TextureRequest OnRequestTexture;
+
         public event RezObject OnRezObject;
+
         public event ModifyTerrain OnModifyTerrain;
+
         public event BakeTerrain OnBakeTerrain;
+
         public event SetAppearance OnSetAppearance;
+
         public event AvatarNowWearing OnAvatarNowWearing;
+
         public event RezSingleAttachmentFromInv OnRezSingleAttachmentFromInv;
+
         public event RezMultipleAttachmentsFromInv OnRezMultipleAttachmentsFromInv;
+
         public event UUIDNameRequest OnDetachAttachmentIntoInv;
+
         public event ObjectAttach OnObjectAttach;
+
         public event ObjectDeselect OnObjectDetach;
+
         public event ObjectDrop OnObjectDrop;
+
         public event StartAnim OnStartAnim;
+
         public event StopAnim OnStopAnim;
+
         public event LinkObjects OnLinkObjects;
+
         public event DelinkObjects OnDelinkObjects;
+
         public event RequestMapBlocks OnRequestMapBlocks;
+
         public event RequestMapName OnMapNameRequest;
+
         public event TeleportLocationRequest OnTeleportLocationRequest;
+
         public event TeleportLandmarkRequest OnTeleportLandmarkRequest;
+
         public event TeleportCancel OnTeleportCancel;
+
         public event DisconnectUser OnDisconnectUser;
+
         public event RequestAvatarProperties OnRequestAvatarProperties;
+
         public event SetAlwaysRun OnSetAlwaysRun;
 
         public event DeRezObject OnDeRezObject;
+
         public event Action<IClientAPI> OnRegionHandShakeReply;
+
         public event GenericCall1 OnRequestWearables;
+
         public event Action<IClientAPI, bool> OnCompleteMovementToRegion;
+
         public event UpdateAgent OnPreAgentUpdate;
+
         public event UpdateAgent OnAgentUpdate;
+
         public event UpdateAgent OnAgentCameraUpdate;
+
         public event AgentRequestSit OnAgentRequestSit;
+
         public event AgentSit OnAgentSit;
+
         public event AvatarPickerRequest OnAvatarPickerRequest;
+
         public event Action<IClientAPI> OnRequestAvatarsData;
+
         public event AddNewPrim OnAddPrim;
+
         public event RequestGodlikePowers OnRequestGodlikePowers;
+
         public event GodKickUser OnGodKickUser;
+
         public event ObjectDuplicate OnObjectDuplicate;
+
         public event GrabObject OnGrabObject;
+
         public event DeGrabObject OnDeGrabObject;
+
         public event MoveObject OnGrabUpdate;
+
         public event SpinStart OnSpinStart;
+
         public event SpinObject OnSpinUpdate;
+
         public event SpinStop OnSpinStop;
+
         public event ViewerEffectEventHandler OnViewerEffect;
 
         public event FetchInventory OnAgentDataUpdateRequest;
+
         public event TeleportLocationRequest OnSetStartLocationRequest;
 
         public event UpdateShape OnUpdatePrimShape;
+
         public event ObjectExtraParams OnUpdateExtraParams;
+
         public event RequestObjectPropertiesFamily OnRequestObjectPropertiesFamily;
+
         public event ObjectSelect OnObjectSelect;
+
         public event ObjectRequest OnObjectRequest;
+
         public event GenericCall7 OnObjectDescription;
+
         public event GenericCall7 OnObjectName;
+
         public event GenericCall7 OnObjectClickAction;
+
         public event GenericCall7 OnObjectMaterial;
+
         public event UpdatePrimFlags OnUpdatePrimFlags;
+
         public event UpdatePrimTexture OnUpdatePrimTexture;
+
         public event UpdateVector OnUpdatePrimGroupPosition;
+
         public event UpdateVector OnUpdatePrimSinglePosition;
+
         public event UpdatePrimRotation OnUpdatePrimGroupRotation;
+
         public event UpdatePrimSingleRotation OnUpdatePrimSingleRotation;
+
         public event UpdatePrimSingleRotationPosition OnUpdatePrimSingleRotationPosition;
+
         public event UpdatePrimGroupRotation OnUpdatePrimGroupMouseRotation;
+
         public event UpdateVector OnUpdatePrimScale;
+
         public event UpdateVector OnUpdatePrimGroupScale;
+
         public event StatusChange OnChildAgentStatus;
+
         public event GenericCall2 OnStopMovement;
+
         public event Action<UUID> OnRemoveAvatar;
 
         public event CreateNewInventoryItem OnCreateNewInventoryItem;
+
         public event LinkInventoryItem OnLinkInventoryItem;
+
         public event CreateInventoryFolder OnCreateNewInventoryFolder;
+
         public event UpdateInventoryFolder OnUpdateInventoryFolder;
+
         public event MoveInventoryFolder OnMoveInventoryFolder;
+
         public event RemoveInventoryFolder OnRemoveInventoryFolder;
+
         public event RemoveInventoryItem OnRemoveInventoryItem;
+
         public event FetchInventoryDescendents OnFetchInventoryDescendents;
+
         public event PurgeInventoryDescendents OnPurgeInventoryDescendents;
+
         public event FetchInventory OnFetchInventory;
+
         public event RequestTaskInventory OnRequestTaskInventory;
+
         public event UpdateInventoryItem OnUpdateInventoryItem;
+
         public event CopyInventoryItem OnCopyInventoryItem;
+
         public event MoveInventoryItem OnMoveInventoryItem;
+
         public event UDPAssetUploadRequest OnAssetUploadRequest;
+
         public event RequestTerrain OnRequestTerrain;
+
         public event RequestTerrain OnUploadTerrain;
+
         public event XferReceive OnXferReceive;
+
         public event RequestXfer OnRequestXfer;
+
         public event ConfirmXfer OnConfirmXfer;
+
         public event AbortXfer OnAbortXfer;
+
         public event RezScript OnRezScript;
+
         public event UpdateTaskInventory OnUpdateTaskInventory;
+
         public event MoveTaskInventory OnMoveTaskItem;
+
         public event RemoveTaskInventory OnRemoveTaskItem;
+
         public event RequestAsset OnRequestAsset;
+
         public event GenericMessage OnGenericMessage;
+
         public event UUIDNameRequest OnNameFromUUIDRequest;
+
         public event UUIDNameRequest OnUUIDGroupNameRequest;
 
         public event ParcelPropertiesRequest OnParcelPropertiesRequest;
+
         public event ParcelDivideRequest OnParcelDivideRequest;
+
         public event ParcelJoinRequest OnParcelJoinRequest;
+
         public event ParcelPropertiesUpdateRequest OnParcelPropertiesUpdateRequest;
+
         public event ParcelAbandonRequest OnParcelAbandonRequest;
+
         public event ParcelGodForceOwner OnParcelGodForceOwner;
+
         public event ParcelReclaim OnParcelReclaim;
+
         public event ParcelReturnObjectsRequest OnParcelReturnObjectsRequest;
+
         public event ParcelAccessListRequest OnParcelAccessListRequest;
+
         public event ParcelAccessListUpdateRequest OnParcelAccessListUpdateRequest;
+
         public event ParcelSelectObjects OnParcelSelectObjects;
+
         public event ParcelObjectOwnerRequest OnParcelObjectOwnerRequest;
+
         public event ParcelDeedToGroup OnParcelDeedToGroup;
+
         public event ObjectDeselect OnObjectDeselect;
+
         public event RegionInfoRequest OnRegionInfoRequest;
+
         public event EstateCovenantRequest OnEstateCovenantRequest;
+
         public event EstateChangeInfo OnEstateChangeInfo;
+
         public event EstateManageTelehub OnEstateManageTelehub;
+
         public event CachedTextureRequest OnCachedTextureRequest;
 
         public event ObjectDuplicateOnRay OnObjectDuplicateOnRay;
 
         public event FriendActionDelegate OnApproveFriendRequest;
+
         public event FriendActionDelegate OnDenyFriendRequest;
+
         public event FriendshipTermination OnTerminateFriendship;
+
         public event GrantUserFriendRights OnGrantUserRights;
 
         public event EconomyDataRequest OnEconomyDataRequest;
+
         public event MoneyBalanceRequest OnMoneyBalanceRequest;
+
         public event UpdateAvatarProperties OnUpdateAvatarProperties;
 
         public event ObjectIncludeInSearch OnObjectIncludeInSearch;
+
         public event UUIDNameRequest OnTeleportHomeRequest;
 
         public event ScriptAnswer OnScriptAnswer;
+
         public event RequestPayPrice OnRequestPayPrice;
+
         public event ObjectSaleInfo OnObjectSaleInfo;
+
         public event ObjectBuy OnObjectBuy;
+
         public event BuyObjectInventory OnBuyObjectInventory;
+
         public event AgentSit OnUndo;
+
         public event AgentSit OnRedo;
+
         public event LandUndo OnLandUndo;
 
         public event ForceReleaseControls OnForceReleaseControls;
 
         public event GodLandStatRequest OnLandStatRequest;
+
         public event RequestObjectPropertiesFamily OnObjectGroupRequest;
 
         public event DetailedEstateDataRequest OnDetailedEstateDataRequest;
+
         public event SetEstateFlagsRequest OnSetEstateFlagsRequest;
+
         public event SetEstateTerrainBaseTexture OnSetEstateTerrainBaseTexture;
+
         public event SetEstateTerrainDetailTexture OnSetEstateTerrainDetailTexture;
+
         public event SetEstateTerrainTextureHeights OnSetEstateTerrainTextureHeights;
+
         public event CommitEstateTerrainTextureRequest OnCommitEstateTerrainTextureRequest;
+
         public event SetRegionTerrainSettings OnSetRegionTerrainSettings;
+
         public event EstateRestartSimRequest OnEstateRestartSimRequest;
+
         public event EstateChangeCovenantRequest OnEstateChangeCovenantRequest;
+
         public event UpdateEstateAccessDeltaRequest OnUpdateEstateAccessDeltaRequest;
+
         public event SimulatorBlueBoxMessageRequest OnSimulatorBlueBoxMessageRequest;
+
         public event EstateBlueBoxMessageRequest OnEstateBlueBoxMessageRequest;
+
         public event EstateDebugRegionRequest OnEstateDebugRegionRequest;
+
         public event EstateTeleportOneUserHomeRequest OnEstateTeleportOneUserHomeRequest;
+
         public event EstateTeleportAllUsersHomeRequest OnEstateTeleportAllUsersHomeRequest;
+
         public event ScriptReset OnScriptReset;
+
         public event GetScriptRunning OnGetScriptRunning;
+
         public event SetScriptRunning OnSetScriptRunning;
+
         public event Action<Vector3, bool, bool> OnAutoPilotGo;
 
         public event TerrainUnacked OnUnackedTerrain;
 
         public event RegionHandleRequest OnRegionHandleRequest;
+
         public event ParcelInfoRequest OnParcelInfoRequest;
 
         public event ActivateGesture OnActivateGesture;
+
         public event DeactivateGesture OnDeactivateGesture;
+
         public event ObjectOwner OnObjectOwner;
 
         public event DirPlacesQuery OnDirPlacesQuery;
+
         public event DirFindQuery OnDirFindQuery;
+
         public event DirLandQuery OnDirLandQuery;
+
         public event DirPopularQuery OnDirPopularQuery;
+
         public event DirClassifiedQuery OnDirClassifiedQuery;
+
         public event EventInfoRequest OnEventInfoRequest;
+
         public event ParcelSetOtherCleanTime OnParcelSetOtherCleanTime;
 
         public event MapItemRequest OnMapItemRequest;
 
         public event OfferCallingCard OnOfferCallingCard;
+
         public event AcceptCallingCard OnAcceptCallingCard;
+
         public event DeclineCallingCard OnDeclineCallingCard;
 
         public event SoundTrigger OnSoundTrigger;
 
         public event StartLure OnStartLure;
+
         public event TeleportLureRequest OnTeleportLureRequest;
+
         public event NetworkStats OnNetworkStatsUpdate;
 
         public event ClassifiedInfoRequest OnClassifiedInfoRequest;
+
         public event ClassifiedInfoUpdate OnClassifiedInfoUpdate;
+
         public event ClassifiedDelete OnClassifiedDelete;
+
         public event ClassifiedDelete OnClassifiedGodDelete;
 
         public event EventNotificationAddRequest OnEventNotificationAddRequest;
+
         public event EventNotificationRemoveRequest OnEventNotificationRemoveRequest;
+
         public event EventGodDelete OnEventGodDelete;
 
         public event ParcelDwellRequest OnParcelDwellRequest;
 
         public event UserInfoRequest OnUserInfoRequest;
+
         public event UpdateUserInfo OnUpdateUserInfo;
 
         public event RetrieveInstantMessages OnRetrieveInstantMessages;
 
         public event PickDelete OnPickDelete;
+
         public event PickGodDelete OnPickGodDelete;
+
         public event PickInfoUpdate OnPickInfoUpdate;
+
         public event AvatarNotesUpdate OnAvatarNotesUpdate;
 
         public event MuteListRequest OnMuteListRequest;
@@ -309,25 +490,43 @@ namespace OpenSim.Tests.Common.Mock
         public event AvatarInterestUpdate OnAvatarInterestUpdate;
 
         public event PlacesQuery OnPlacesQuery;
-        
+
         public event FindAgentUpdate OnFindAgent;
+
         public event TrackAgentUpdate OnTrackAgent;
+
         public event NewUserReport OnUserReport;
+
         public event SaveStateHandler OnSaveState;
+
         public event GroupAccountSummaryRequest OnGroupAccountSummaryRequest;
+
         public event GroupAccountDetailsRequest OnGroupAccountDetailsRequest;
+
         public event GroupAccountTransactionsRequest OnGroupAccountTransactionsRequest;
+
         public event FreezeUserUpdate OnParcelFreezeUser;
+
         public event EjectUserUpdate OnParcelEjectUser;
+
         public event ParcelBuyPass OnParcelBuyPass;
+
         public event ParcelGodMark OnParcelGodMark;
+
         public event GroupActiveProposalsRequest OnGroupActiveProposalsRequest;
+
         public event GroupVoteHistoryRequest OnGroupVoteHistoryRequest;
+
         public event SimWideDeletesDelegate OnSimWideDeletes;
+
         public event SendPostcard OnSendPostcard;
+
         public event MuteListEntryUpdate OnUpdateMuteListEntry;
+
         public event MuteListEntryRemove OnRemoveMuteListEntry;
+
         public event GodlikeMessage onGodlikeMessage;
+
         public event GodUpdateRegionInfoUpdate OnGodUpdateRegionInfoUpdate;
 
 #pragma warning restore 67
@@ -365,12 +564,14 @@ namespace OpenSim.Tests.Common.Mock
         {
             get { return m_firstName; }
         }
+
         private string m_firstName;
 
         public virtual string LastName
         {
             get { return m_lastName; }
         }
+
         private string m_lastName;
 
         public virtual String Name
@@ -509,7 +710,6 @@ namespace OpenSim.Tests.Common.Mock
 
         public void SendCachedTextureResponse(ISceneEntity avatar, int serial, List<CachedTextureResponseArg> cachedTextures)
         {
-
         }
 
         public virtual void Kick(string message)
@@ -560,12 +760,10 @@ namespace OpenSim.Tests.Common.Mock
 
         public void SendGenericMessage(string method, UUID invoice, List<string> message)
         {
-
         }
 
         public void SendGenericMessage(string method, UUID invoice, List<byte[]> message)
         {
-
         }
 
         public virtual void SendLayerData(float[] map)
@@ -575,13 +773,18 @@ namespace OpenSim.Tests.Common.Mock
         public virtual void SendLayerData(int px, int py, float[] map)
         {
         }
+
         public virtual void SendLayerData(int px, int py, float[] map, bool track)
         {
         }
 
-        public virtual void SendWindData(Vector2[] windSpeeds) { }
+        public virtual void SendWindData(Vector2[] windSpeeds)
+        {
+        }
 
-        public virtual void SendCloudData(float[] cloudCover) { }
+        public virtual void SendCloudData(float[] cloudCover)
+        {
+        }
 
         public virtual void MoveAgentIntoRegion(RegionInfo regInfo, Vector3 pos, Vector3 look)
         {
@@ -593,7 +796,7 @@ namespace OpenSim.Tests.Common.Mock
         {
             AgentCircuitData agentData = new AgentCircuitData();
             agentData.AgentID = AgentId;
-            agentData.SessionID = SessionId; 
+            agentData.SessionID = SessionId;
             agentData.SecureSessionID = UUID.Zero;
             agentData.circuitcode = m_circuitCode;
             agentData.child = false;
@@ -633,7 +836,7 @@ namespace OpenSim.Tests.Common.Mock
         public virtual void SendTeleportFailed(string reason)
         {
             m_log.DebugFormat(
-                "[TEST CLIENT]: Teleport failed for {0} {1} on {2} with reason {3}", 
+                "[TEST CLIENT]: Teleport failed for {0} {1} on {2} with reason {3}",
                 m_firstName, m_lastName, m_scene.Name, reason);
         }
 
@@ -701,7 +904,7 @@ namespace OpenSim.Tests.Common.Mock
         public virtual void SendInventoryFolderDetails(UUID ownerID, UUID folderID,
                                                        List<InventoryItemBase> items,
                                                        List<InventoryFolderBase> folders,
-                                                       int version, 
+                                                       int version,
                                                        bool fetchFolders,
                                                        bool fetchItems)
         {
@@ -737,7 +940,6 @@ namespace OpenSim.Tests.Common.Mock
 
         public virtual void SendAbortXferPacket(ulong xferID)
         {
-
         }
 
         public virtual void SendEconomyData(float EnergyEfficiency, int ObjectCapacity, int ObjectCount, int PriceEnergyUnit,
@@ -766,7 +968,6 @@ namespace OpenSim.Tests.Common.Mock
 
         public void SendAttachedSoundGainChange(UUID objectID, float gain)
         {
-
         }
 
         public void SendAlertMessage(string message)
@@ -793,7 +994,7 @@ namespace OpenSim.Tests.Common.Mock
                 OnRegionHandShakeReply(this);
             }
         }
-        
+
         public void SendAssetUploadCompleteMessage(sbyte AssetType, bool Success, UUID AssetFullID)
         {
         }
@@ -877,12 +1078,10 @@ namespace OpenSim.Tests.Common.Mock
 
         public void SendAdminResponse(UUID Token, uint AdminLevel)
         {
-
         }
 
         public void SendGroupMembership(GroupMembershipData[] GroupMembership)
         {
-
         }
 
         public void SendSunPos(Vector3 sunPos, Vector3 sunVel, ulong time, uint dlen, uint ylen, float phase)
@@ -950,8 +1149,8 @@ namespace OpenSim.Tests.Common.Mock
 
         public void SendBlueBoxMessage(UUID FromAvatarID, String FromAvatarName, String Message)
         {
-
         }
+
         public void SendLogoutPacket()
         {
         }
@@ -972,6 +1171,7 @@ namespace OpenSim.Tests.Common.Mock
         public void SendScriptQuestion(UUID objectID, string taskName, string ownerName, UUID itemID, int question)
         {
         }
+
         public void SendHealth(float health)
         {
         }
@@ -1051,22 +1251,21 @@ namespace OpenSim.Tests.Common.Mock
 
         public void SendTexture(AssetBase TextureAsset)
         {
-
         }
 
-        public void SendSetFollowCamProperties (UUID objectID, SortedDictionary<int, float> parameters)
+        public void SendSetFollowCamProperties(UUID objectID, SortedDictionary<int, float> parameters)
         {
         }
 
-        public void SendClearFollowCamProperties (UUID objectID)
+        public void SendClearFollowCamProperties(UUID objectID)
         {
         }
 
-        public void SendRegionHandle (UUID regoinID, ulong handle)
+        public void SendRegionHandle(UUID regoinID, ulong handle)
         {
         }
 
-        public void SendParcelInfo (RegionInfo info, LandData land, UUID parcelID, uint x, uint y)
+        public void SendParcelInfo(RegionInfo info, LandData land, UUID parcelID, uint x, uint y)
         {
         }
 
@@ -1115,19 +1314,19 @@ namespace OpenSim.Tests.Common.Mock
         {
         }
 
-        public void SendEventInfoReply (EventData info)
+        public void SendEventInfoReply(EventData info)
         {
         }
 
-        public void SendOfferCallingCard (UUID destID, UUID transactionID)
+        public void SendOfferCallingCard(UUID destID, UUID transactionID)
         {
         }
 
-        public void SendAcceptCallingCard (UUID transactionID)
+        public void SendAcceptCallingCard(UUID transactionID)
         {
         }
 
-        public void SendDeclineCallingCard (UUID transactionID)
+        public void SendDeclineCallingCard(UUID transactionID)
         {
         }
 
@@ -1205,8 +1404,8 @@ namespace OpenSim.Tests.Common.Mock
         public void SendMuteListUpdate(string filename)
         {
         }
-        
-        public void SendPickInfoReply(UUID pickID,UUID creatorID, bool topPick, UUID parcelID, string name, string desc, UUID snapshotID, string user, string originalName, string simName, Vector3 posGlobal, int sortOrder, bool enabled)
+
+        public void SendPickInfoReply(UUID pickID, UUID creatorID, bool topPick, UUID parcelID, string name, string desc, UUID snapshotID, string user, string originalName, string simName, Vector3 posGlobal, int sortOrder, bool enabled)
         {
         }
 
@@ -1225,7 +1424,7 @@ namespace OpenSim.Tests.Common.Mock
         {
         }
 
-        public void Disconnect() 
+        public void Disconnect()
         {
         }
 
@@ -1234,20 +1433,20 @@ namespace OpenSim.Tests.Common.Mock
             if (OnReceivedSendRebakeAvatarTextures != null)
                 OnReceivedSendRebakeAvatarTextures(textureID);
         }
-        
+
         public void SendAvatarInterestsReply(UUID avatarID, uint wantMask, string wantText, uint skillsMask, string skillsText, string languages)
         {
         }
-        
-        public void SendGroupAccountingDetails(IClientAPI sender,UUID groupID, UUID transactionID, UUID sessionID, int amt)
+
+        public void SendGroupAccountingDetails(IClientAPI sender, UUID groupID, UUID transactionID, UUID sessionID, int amt)
         {
         }
-        
-        public void SendGroupAccountingSummary(IClientAPI sender,UUID groupID, uint moneyAmt, int totalTier, int usedTier)
+
+        public void SendGroupAccountingSummary(IClientAPI sender, UUID groupID, uint moneyAmt, int totalTier, int usedTier)
         {
         }
-        
-        public void SendGroupTransactionsSummaryDetails(IClientAPI sender,UUID groupID, UUID transactionID, UUID sessionID,int amt)
+
+        public void SendGroupTransactionsSummaryDetails(IClientAPI sender, UUID groupID, UUID transactionID, UUID sessionID, int amt)
         {
         }
 
@@ -1278,6 +1477,5 @@ namespace OpenSim.Tests.Common.Mock
         public void SendPartPhysicsProprieties(ISceneEntity entity)
         {
         }
-
     }
 }

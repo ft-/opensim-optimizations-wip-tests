@@ -25,19 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Reflection;
-
-using OpenMetaverse;
 using log4net;
 using log4net.Appender;
 using log4net.Layout;
-
-using OpenSim.Framework;
-using OpenSim.Services.Interfaces;
+using OpenMetaverse;
 using OpenSim.Services.Connectors;
+using OpenSim.Services.Interfaces;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.Tests.Clients.PresenceClient
 {
@@ -46,7 +41,7 @@ namespace OpenSim.Tests.Clients.PresenceClient
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
-        
+
         public static void Main(string[] args)
         {
             ConsoleAppender consoleAppender = new ConsoleAppender();
@@ -139,6 +134,5 @@ namespace OpenSim.Tests.Clients.PresenceClient
                     m_log.DebugFormat("\t {0} -> {1}", kvp.Key, kvp.Value);
             }
         }
-
     }
 }

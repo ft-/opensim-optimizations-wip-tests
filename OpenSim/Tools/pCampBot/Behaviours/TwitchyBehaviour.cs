@@ -50,6 +50,7 @@ namespace pCampBot
             AbbreviatedName = "tw";
             Name = "Twitchy";
         }
+
         public override void Action()
         {
             Bot.Client.Self.Movement.BodyRotation = new Quaternion(Bot.Client.Self.Movement.BodyRotation.X + direction * TWITCH,

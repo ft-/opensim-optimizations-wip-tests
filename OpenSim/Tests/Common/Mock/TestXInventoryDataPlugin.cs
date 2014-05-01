@@ -25,15 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using OpenMetaverse;
+using OpenSim.Data;
+using OpenSim.Data.Null;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using log4net;
-using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Data;
-using OpenSim.Data.Null;
 
 namespace OpenSim.Tests.Common.Mock
 {
@@ -42,7 +39,9 @@ namespace OpenSim.Tests.Common.Mock
         private Dictionary<UUID, XInventoryFolder> m_allFolders = new Dictionary<UUID, XInventoryFolder>();
         private Dictionary<UUID, XInventoryItem> m_allItems = new Dictionary<UUID, XInventoryItem>();
 
-        public TestXInventoryDataPlugin(string conn, string realm) {}
+        public TestXInventoryDataPlugin(string conn, string realm)
+        {
+        }
 
         public XInventoryItem[] GetItems(string[] fields, string[] vals)
         {
@@ -53,8 +52,8 @@ namespace OpenSim.Tests.Common.Mock
 
         public XInventoryFolder[] GetFolders(string[] fields, string[] vals)
         {
-//            Console.WriteLine(
-//                "Requesting folders, fields {0}, vals {1}", string.Join(",", fields), string.Join(",", vals));
+            //            Console.WriteLine(
+            //                "Requesting folders, fields {0}, vals {1}", string.Join(",", fields), string.Join(",", vals));
 
             List<XInventoryFolder> origFolders
                 = Get<XInventoryFolder>(fields, vals, m_allFolders.Values.ToList());
@@ -66,7 +65,7 @@ namespace OpenSim.Tests.Common.Mock
         {
             m_allFolders[folder.folderID] = folder.Clone();
 
-//            Console.WriteLine("Added folder {0} {1}", folder.folderName, folder.folderID);
+            //            Console.WriteLine("Added folder {0} {1}", folder.folderName, folder.folderID);
 
             return true;
         }
@@ -75,7 +74,7 @@ namespace OpenSim.Tests.Common.Mock
         {
             m_allItems[item.inventoryID] = item.Clone();
 
-//            Console.WriteLine("Added item {0} {1}, creator {2}, owner {3}", item.inventoryName, item.inventoryID, item.creatorID, item.avatarID);
+            //            Console.WriteLine("Added item {0} {1}, creator {2}, owner {3}", item.inventoryName, item.inventoryID, item.creatorID, item.avatarID);
 
             return true;
         }
@@ -106,10 +105,13 @@ namespace OpenSim.Tests.Common.Mock
             return true;
         }
 
-        public bool MoveItem(string id, string newParent) { throw new NotImplementedException(); }
+        public bool MoveItem(string id, string newParent)
+        {
+            throw new NotImplementedException();
+        }
 
-        public bool MoveFolder(string id, string newParent) 
-        { 
+        public bool MoveFolder(string id, string newParent)
+        {
             // Don't use GetFolders() here - it takes a clone!
             XInventoryFolder folder = m_allFolders[new UUID(id)];
 
@@ -118,12 +120,12 @@ namespace OpenSim.Tests.Common.Mock
 
             folder.parentFolderID = new UUID(newParent);
 
-//            XInventoryFolder[] newParentFolders 
-//                = GetFolders(new string[] { "folderID" }, new string[] { folder.parentFolderID.ToString() });
+            //            XInventoryFolder[] newParentFolders
+            //                = GetFolders(new string[] { "folderID" }, new string[] { folder.parentFolderID.ToString() });
 
-//            Console.WriteLine(
-//                "Moved folder {0} {1}, to {2} {3}", 
-//                folder.folderName, folder.folderID, newParentFolders[0].folderName, folder.parentFolderID);
+            //            Console.WriteLine(
+            //                "Moved folder {0} {1}, to {2} {3}",
+            //                folder.folderName, folder.folderID, newParentFolders[0].folderName, folder.parentFolderID);
 
             // TODO: Really need to implement folder version incrementing, though this should be common code anyway,
             // not reimplemented in each db plugin.
@@ -131,7 +133,14 @@ namespace OpenSim.Tests.Common.Mock
             return true;
         }
 
-        public XInventoryItem[] GetActiveGestures(UUID principalID) { throw new NotImplementedException(); }
-        public int GetAssetPermissions(UUID principalID, UUID assetID) { throw new NotImplementedException(); }
+        public XInventoryItem[] GetActiveGestures(UUID principalID)
+        {
+            throw new NotImplementedException();
+        }
+
+        public int GetAssetPermissions(UUID principalID, UUID assetID)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

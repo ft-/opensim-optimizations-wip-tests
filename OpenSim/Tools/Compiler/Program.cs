@@ -273,6 +273,7 @@ namespace OpenSim.Tools.LSL.Compiler
 
             Environment.Exit(0);
         }
+
         private static string ReplaceTypes(string message)
         {
             message = message.Replace(
@@ -293,6 +294,7 @@ namespace OpenSim.Tools.LSL.Compiler
 
             return message;
         }
+
         private class kvpSorter : IComparer<KeyValuePair<int, int>>
         {
             public int Compare(KeyValuePair<int, int> a,

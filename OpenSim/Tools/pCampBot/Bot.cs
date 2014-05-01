@@ -158,6 +158,7 @@ namespace pCampBot
         /// Controls whether bots request textures for the object information they receive
         /// </summary>
         public bool RequestObjectTextures { get; set; }
+
         public List<Simulator> Simulators
         {
             get
@@ -179,7 +180,9 @@ namespace pCampBot
                     return Client.Network.Simulators.Count;
             }
         }
+
         public string StartLocation { get; private set; }
+
         public bool AddBehaviour(IBehaviour behaviour)
         {
             lock (Behaviours)
@@ -540,6 +543,7 @@ namespace pCampBot
             lock (Behaviours)
                 return Behaviours.TryGetValue(abbreviatedName, out behaviour);
         }
+
         //We do our actions here.  This is where one would
         //add additional steps and/or things the bot should do
         private void Action()
@@ -671,6 +675,7 @@ namespace pCampBot
 
             Client = newClient;
         }
+
         private void GetTexture(UUID textureID)
         {
             lock (Manager.AssetsReceived)

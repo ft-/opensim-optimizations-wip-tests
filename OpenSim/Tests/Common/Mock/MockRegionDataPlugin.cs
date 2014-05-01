@@ -25,13 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Reflection;
-using System.Collections.Generic;
-using log4net;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System.Collections.Generic;
 
 namespace OpenSim.Data.Null
 {
@@ -158,15 +156,17 @@ namespace OpenSim.Data.Null
     /// </summary>
     public class NullDataStore : ISimulationDataStore
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        
+        //        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         protected Dictionary<UUID, RegionSettings> m_regionSettings = new Dictionary<UUID, RegionSettings>();
         protected Dictionary<UUID, SceneObjectPart> m_sceneObjectParts = new Dictionary<UUID, SceneObjectPart>();
-        protected Dictionary<UUID, ICollection<TaskInventoryItem>> m_primItems 
+
+        protected Dictionary<UUID, ICollection<TaskInventoryItem>> m_primItems
             = new Dictionary<UUID, ICollection<TaskInventoryItem>>();
+
         protected Dictionary<UUID, TerrainData> m_terrains = new Dictionary<UUID, TerrainData>();
         protected Dictionary<UUID, LandData> m_landData = new Dictionary<UUID, LandData>();
-        
+
         public void Initialise(string dbfile)
         {
             return;
@@ -180,14 +180,14 @@ namespace OpenSim.Data.Null
         {
             m_regionSettings[rs.RegionUUID] = rs;
         }
-        
+
         public RegionLightShareData LoadRegionWindlightSettings(UUID regionUUID)
         {
             //This connector doesn't support the windlight module yet
             //Return default LL windlight settings
             return new RegionLightShareData();
         }
-        
+
         public void RemoveRegionWindlightSettings(UUID regionID)
         {
         }
@@ -198,6 +198,7 @@ namespace OpenSim.Data.Null
         }
 
         #region Environment Settings
+
         public string LoadRegionEnvironmentSettings(UUID regionUUID)
         {
             //This connector doesn't support the Environment module yet
@@ -213,7 +214,8 @@ namespace OpenSim.Data.Null
         {
             //This connector doesn't support the Environment module yet
         }
-        #endregion
+
+        #endregion Environment Settings
 
         public RegionSettings LoadRegionSettings(UUID regionUUID)
         {
@@ -222,7 +224,7 @@ namespace OpenSim.Data.Null
 
             if (rs == null)
                 rs = new RegionSettings();
-            
+
             return rs;
         }
 
@@ -233,10 +235,10 @@ namespace OpenSim.Data.Null
             // Therefore, we need to store parts rather than groups.
             foreach (SceneObjectPart prim in obj.Parts)
             {
-//                m_log.DebugFormat(
-//                    "[MOCK REGION DATA PLUGIN]: Storing part {0} {1} in object {2} {3} in region {4}", 
-//                    prim.Name, prim.UUID, obj.Name, obj.UUID, regionUUID);
-                            
+                //                m_log.DebugFormat(
+                //                    "[MOCK REGION DATA PLUGIN]: Storing part {0} {1} in object {2} {3} in region {4}",
+                //                    prim.Name, prim.UUID, obj.Name, obj.UUID, regionUUID);
+
                 m_sceneObjectParts[prim.UUID] = prim;
             }
         }
@@ -249,9 +251,9 @@ namespace OpenSim.Data.Null
             {
                 if (part.ParentGroup.UUID == obj)
                 {
-//                    m_log.DebugFormat(
-//                        "[MOCK REGION DATA PLUGIN]: Removing part {0} {1} as part of object {2} from {3}", 
-//                        part.Name, part.UUID, obj, regionUUID);
+                    //                    m_log.DebugFormat(
+                    //                        "[MOCK REGION DATA PLUGIN]: Removing part {0} {1} as part of object {2} from {3}",
+                    //                        part.Name, part.UUID, obj, regionUUID);
                     m_sceneObjectParts.Remove(part.UUID);
                 }
             }
@@ -265,14 +267,14 @@ namespace OpenSim.Data.Null
         public List<SceneObjectGroup> LoadObjects(UUID regionUUID)
         {
             Dictionary<UUID, SceneObjectGroup> objects = new Dictionary<UUID, SceneObjectGroup>();
-            
+
             // Create all of the SOGs from the root prims first
             foreach (SceneObjectPart prim in m_sceneObjectParts.Values)
             {
                 if (prim.IsRoot)
                 {
-//                    m_log.DebugFormat(
-//                        "[MOCK REGION DATA PLUGIN]: Loading root part {0} {1} in {2}", prim.Name, prim.UUID, regionUUID);
+                    //                    m_log.DebugFormat(
+                    //                        "[MOCK REGION DATA PLUGIN]: Loading root part {0} {1} in {2}", prim.Name, prim.UUID, regionUUID);
                     objects[prim.UUID] = new SceneObjectGroup(prim);
                 }
             }
@@ -296,16 +298,16 @@ namespace OpenSim.Data.Null
                     }
                     else
                     {
-//                        m_log.WarnFormat(
-//                            "[MOCK REGION DATA PLUGIN]: Database contains an orphan child prim {0} {1} in region {2} pointing to missing parent {3}.  This prim will not be loaded.",
-//                            prim.Name, prim.UUID, regionUUID, prim.ParentUUID);
+                        //                        m_log.WarnFormat(
+                        //                            "[MOCK REGION DATA PLUGIN]: Database contains an orphan child prim {0} {1} in region {2} pointing to missing parent {3}.  This prim will not be loaded.",
+                        //                            prim.Name, prim.UUID, regionUUID, prim.ParentUUID);
                     }
                 }
             }
-            
+
             // TODO: Load items.  This is assymetric - we store items as a separate method but don't retrieve them that
             // way!
-            
+
             return new List<SceneObjectGroup>(objects.Values);
         }
 

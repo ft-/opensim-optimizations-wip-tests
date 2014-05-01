@@ -25,14 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using Nini.Config;
 using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Framework.Servers;
-using OpenSim.Region.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
 
 namespace OpenSim.Tests.Common.Mock
 {
@@ -52,7 +49,7 @@ namespace OpenSim.Tests.Common.Mock
             //Console.WriteLine("TestScene destructor called for {0}", RegionInfo.RegionName);
             Console.WriteLine("TestScene destructor called");
         }
-        
+
         /// <summary>
         /// Temporarily override session authentication for tests (namely teleport).
         /// </summary>
@@ -66,7 +63,7 @@ namespace OpenSim.Tests.Common.Mock
             reason = String.Empty;
             return true;
         }
-            
+
         public AsyncSceneObjectGroupDeleter SceneObjectGroupDeleter
         {
             get { return m_asyncSceneObjectDeleter; }

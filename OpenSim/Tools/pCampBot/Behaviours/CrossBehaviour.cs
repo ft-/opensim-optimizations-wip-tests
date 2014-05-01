@@ -43,6 +43,7 @@ namespace pCampBot
         public const int m_regionCrossingTimeout = 1000 * 60;
         public AutoResetEvent m_regionCrossedMutex = new AutoResetEvent(false);
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public CrossBehaviour()
         {
             AbbreviatedName = "c";

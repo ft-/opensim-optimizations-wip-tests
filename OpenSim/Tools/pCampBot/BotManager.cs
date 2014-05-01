@@ -47,6 +47,7 @@ namespace pCampBot
     public class BotManager
     {
         public const int DefaultLoginDelay = 5000;
+
         /// <summary>
         /// Created bots, whether active or inactive.
         /// </summary>
@@ -58,6 +59,7 @@ namespace pCampBot
         protected CommandConsole m_console;
 
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         /// <summary>
         /// Behaviour switches for bots.
         /// </summary>
@@ -218,6 +220,7 @@ namespace pCampBot
         /// </summary>
         /// <remarks>TODO: This value needs to be configurable by a command line argument.</remarks>
         public int LoginDelay { get; set; }
+
         /// <summary>
         /// The regions that we know about.
         /// </summary>
@@ -227,6 +230,7 @@ namespace pCampBot
         /// Random number generator.
         /// </summary>
         public Random Rng { get; private set; }
+
         public void ConnectBots(int botcount)
         {
             ConnectingBots = true;
@@ -415,6 +419,7 @@ namespace pCampBot
 
             return behaviours;
         }
+
         private string GenerateBotNameFromNumber(int botNumber)
         {
             return string.Format("{0} {1}_{2}", m_firstName, m_lastNameStem, botNumber);

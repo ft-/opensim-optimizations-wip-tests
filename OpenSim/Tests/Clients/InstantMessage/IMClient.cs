@@ -25,19 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Reflection;
-
-using OpenMetaverse;
 using log4net;
 using log4net.Appender;
 using log4net.Layout;
-
 using OpenSim.Framework;
-using OpenSim.Services.Interfaces;
 using OpenSim.Services.Connectors.InstantMessage;
+using System;
+using System.Reflection;
 
 namespace OpenSim.Tests.Clients.InstantMessage
 {
@@ -46,7 +40,7 @@ namespace OpenSim.Tests.Clients.InstantMessage
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
-        
+
         public static void Main(string[] args)
         {
             ConsoleAppender consoleAppender = new ConsoleAppender();
@@ -54,7 +48,7 @@ namespace OpenSim.Tests.Clients.InstantMessage
                 new PatternLayout("%date [%thread] %-5level %logger [%property{NDC}] - %message%newline");
             log4net.Config.BasicConfigurator.Configure(consoleAppender);
 
-            string serverURI = "http://127.0.0.1:8002"; 
+            string serverURI = "http://127.0.0.1:8002";
             GridInstantMessage im = new GridInstantMessage();
             im.fromAgentID = new Guid();
             im.toAgentID = new Guid();
@@ -70,6 +64,5 @@ namespace OpenSim.Tests.Clients.InstantMessage
 
             System.Console.WriteLine("\n");
         }
-
     }
 }

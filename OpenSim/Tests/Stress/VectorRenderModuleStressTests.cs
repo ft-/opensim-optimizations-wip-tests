@@ -25,23 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Threading;
-using log4net.Config;
 using NUnit.Framework;
 using OpenMetaverse;
-using OpenMetaverse.Assets;
 using OpenSim.Framework;
 using OpenSim.Region.CoreModules.Scripting.DynamicTexture;
 using OpenSim.Region.CoreModules.Scripting.VectorRender;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Region.Framework.Scenes.Serialization;
 using OpenSim.Tests.Common;
-using OpenSim.Tests.Common.Mock;
+using System;
+using System.Collections.Generic;
+using System.Threading;
 
 namespace OpenSim.Tests.Stress
 {
@@ -49,7 +42,9 @@ namespace OpenSim.Tests.Stress
     public class VectorRenderModuleStressTests : OpenSimTestCase
     {
         public Scene Scene { get; private set; }
+
         public DynamicTextureModule Dtm { get; private set; }
+
         public VectorRenderModule Vrm { get; private set; }
 
         private void SetupScene(bool reuseTextures)
@@ -88,10 +83,12 @@ namespace OpenSim.Tests.Stress
             drawers.ForEach(d => Console.WriteLine("Drawer {0} drew {1} textures", d.Number, d.Pass + 1));
         }
 
-        class Drawer
+        private class Drawer
         {
             public int Number { get; private set; }
+
             public int Pass { get; private set; }
+
             public bool Ready { get; set; }
 
             private VectorRenderModuleStressTests m_tests;
@@ -106,7 +103,7 @@ namespace OpenSim.Tests.Stress
             public void Draw()
             {
                 SceneObjectGroup so = SceneHelpers.AddSceneObject(m_tests.Scene);
-                
+
                 while (Ready)
                 {
                     UUID originalTextureID = so.RootPart.Shape.Textures.GetFace(0).TextureID;
@@ -121,7 +118,7 @@ namespace OpenSim.Tests.Stress
                         string.Format("PenColour BLACK; MoveTo 40,220; FontSize 32; Text {0};", text),
                         "",
                         0);
-    
+
                     Assert.That(originalTextureID, Is.Not.EqualTo(so.RootPart.Shape.Textures.GetFace(0).TextureID));
 
                     Pass++;

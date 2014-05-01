@@ -49,6 +49,7 @@ namespace pCampBot
     {
         public const string ConfigFileName = "pCampBot.ini";
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         [STAThread]
         public static void Main(string[] args)
         {

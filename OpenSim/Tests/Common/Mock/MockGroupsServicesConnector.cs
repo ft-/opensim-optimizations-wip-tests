@@ -25,10 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
@@ -39,6 +35,9 @@ using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OpenSim.Tests.Common.Mock
 {
@@ -47,7 +46,7 @@ namespace OpenSim.Tests.Common.Mock
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        IXGroupData m_data = new NullXGroupData(null, null);
+        private IXGroupData m_data = new NullXGroupData(null, null);
 
         public string Name
         {
@@ -85,8 +84,8 @@ namespace OpenSim.Tests.Common.Mock
         {
         }
 
-        public UUID CreateGroup(UUID requestingAgentID, string name, string charter, bool showInList, UUID insigniaID, 
-                                int membershipFee, bool openEnrollment, bool allowPublish, 
+        public UUID CreateGroup(UUID requestingAgentID, string name, string charter, bool showInList, UUID insigniaID,
+                                int membershipFee, bool openEnrollment, bool allowPublish,
                                 bool maturePublish, UUID founderID)
         {
             XGroup group = new XGroup()
@@ -118,13 +117,13 @@ namespace OpenSim.Tests.Common.Mock
             }
         }
 
-        public void UpdateGroup(UUID requestingAgentID, UUID groupID, string charter, bool showInList, 
-                                UUID insigniaID, int membershipFee, bool openEnrollment, 
+        public void UpdateGroup(UUID requestingAgentID, UUID groupID, string charter, bool showInList,
+                                UUID insigniaID, int membershipFee, bool openEnrollment,
                                 bool allowPublish, bool maturePublish)
         {
         }
 
-        public void AddGroupRole(UUID requestingAgentID, UUID groupID, UUID roleID, string name, string description, 
+        public void AddGroupRole(UUID requestingAgentID, UUID groupID, UUID roleID, string name, string description,
                                  string title, ulong powers)
         {
         }
@@ -133,7 +132,7 @@ namespace OpenSim.Tests.Common.Mock
         {
         }
 
-        public void UpdateGroupRole(UUID requestingAgentID, UUID groupID, UUID roleID, string name, string description, 
+        public void UpdateGroupRole(UUID requestingAgentID, UUID groupID, UUID roleID, string name, string description,
                                     string title, ulong powers)
         {
         }
@@ -142,9 +141,8 @@ namespace OpenSim.Tests.Common.Mock
         {
             XGroup group = m_data.GetGroup(groupID);
 
-
             if (group == null)
-                m_log.DebugFormat("[MOCK GROUPS SERVICES CONNECTOR]: No group found with ID {0}", groupID);               
+                m_log.DebugFormat("[MOCK GROUPS SERVICES CONNECTOR]: No group found with ID {0}", groupID);
 
             return group;
         }
@@ -152,7 +150,7 @@ namespace OpenSim.Tests.Common.Mock
         public GroupRecord GetGroupRecord(UUID requestingAgentID, UUID groupID, string groupName)
         {
             m_log.DebugFormat(
-                "[MOCK GROUPS SERVICES CONNECTOR]: Processing GetGroupRecord() for groupID {0}, name {1}", 
+                "[MOCK GROUPS SERVICES CONNECTOR]: Processing GetGroupRecord() for groupID {0}, name {1}",
                 groupID, groupName);
 
             XGroup xg = GetXGroup(groupID, groupName);
@@ -194,7 +192,7 @@ namespace OpenSim.Tests.Common.Mock
         public void SetAgentGroupInfo(UUID requestingAgentID, UUID agentID, UUID groupID, bool acceptNotices, bool listInProfile)
         {
             m_log.DebugFormat(
-                "[MOCK GROUPS SERVICES CONNECTOR]: SetAgentGroupInfo, requestingAgentID {0}, agentID {1}, groupID {2}, acceptNotices {3}, listInProfile {4}", 
+                "[MOCK GROUPS SERVICES CONNECTOR]: SetAgentGroupInfo, requestingAgentID {0}, agentID {1}, groupID {2}, acceptNotices {3}, listInProfile {4}",
                 requestingAgentID, agentID, groupID, acceptNotices, listInProfile);
 
             XGroup group = GetXGroup(groupID, null);
@@ -228,7 +226,7 @@ namespace OpenSim.Tests.Common.Mock
         public void AddAgentToGroup(UUID requestingAgentID, UUID agentID, UUID groupID, UUID roleID)
         {
             m_log.DebugFormat(
-                "[MOCK GROUPS SERVICES CONNECTOR]: AddAgentToGroup, requestingAgentID {0}, agentID {1}, groupID {2}, roleID {3}", 
+                "[MOCK GROUPS SERVICES CONNECTOR]: AddAgentToGroup, requestingAgentID {0}, agentID {1}, groupID {2}, roleID {3}",
                 requestingAgentID, agentID, groupID, roleID);
 
             XGroup group = GetXGroup(groupID, null);
@@ -326,7 +324,7 @@ namespace OpenSim.Tests.Common.Mock
         {
             return null;
         }
-        
+
         public GroupNoticeInfo GetGroupNotice(UUID requestingAgentID, UUID noticeID)
         {
             m_log.DebugFormat(
@@ -356,14 +354,14 @@ namespace OpenSim.Tests.Common.Mock
                     return gni;
                 }
             }
-           
+
             return null;
         }
-        
+
         public void AddGroupNotice(UUID requestingAgentID, UUID groupID, UUID noticeID, string fromName, string subject, string message, byte[] binaryBucket)
         {
             m_log.DebugFormat(
-                "[MOCK GROUPS SERVICES CONNECTOR]: AddGroupNotice, requestingAgentID {0}, groupID {1}, noticeID {2}, fromName {3}, subject {4}, message {5}, binaryBucket.Length {6}", 
+                "[MOCK GROUPS SERVICES CONNECTOR]: AddGroupNotice, requestingAgentID {0}, groupID {1}, noticeID {2}, fromName {3}, subject {4}, message {5}, binaryBucket.Length {6}",
                 requestingAgentID, groupID, noticeID, fromName, subject, message, binaryBucket.Length);
 
             XGroup group = GetXGroup(groupID, null);

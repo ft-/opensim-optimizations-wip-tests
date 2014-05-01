@@ -25,38 +25,36 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using HttpServer;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using HttpServer;
-using OpenSim.Framework;
 
 namespace OpenSim.Tests.Common
 {
-    public class TestHttpClientContext: IHttpClientContext
+    public class TestHttpClientContext : IHttpClientContext
     {
         /// <summary>
         /// Bodies of responses from the server.
         /// </summary>
         public string ResponseBody
-        { 
+        {
             get { return Encoding.UTF8.GetString(m_responseStream.ToArray()); }
         }
 
         public Byte[] ResponseBodyBytes
         {
-            get{ return m_responseStream.ToArray(); }
+            get { return m_responseStream.ToArray(); }
         }
 
         private MemoryStream m_responseStream = new MemoryStream();
 
         public bool IsSecured { get; set; }
 
-        public bool Secured 
-        { 
+        public bool Secured
+        {
             get { return IsSecured; }
             set { IsSecured = value; }
         }
@@ -66,35 +64,53 @@ namespace OpenSim.Tests.Common
             Secured = secured;
         }
 
-        public void Disconnect(SocketError error) 
+        public void Disconnect(SocketError error)
         {
-//            Console.WriteLine("TestHttpClientContext.Disconnect Received disconnect with status {0}", error);
+            //            Console.WriteLine("TestHttpClientContext.Disconnect Received disconnect with status {0}", error);
         }
 
-        public void Respond(string httpVersion, HttpStatusCode statusCode, string reason, string body) {Console.WriteLine("x");}
-        public void Respond(string httpVersion, HttpStatusCode statusCode, string reason) {Console.WriteLine("xx");}
-        public void Respond(string body) { Console.WriteLine("xxx");}
+        public void Respond(string httpVersion, HttpStatusCode statusCode, string reason, string body)
+        {
+            Console.WriteLine("x");
+        }
 
-        public void Send(byte[] buffer) 
+        public void Respond(string httpVersion, HttpStatusCode statusCode, string reason)
+        {
+            Console.WriteLine("xx");
+        }
+
+        public void Respond(string body)
+        {
+            Console.WriteLine("xxx");
+        }
+
+        public void Send(byte[] buffer)
         {
             // Getting header data here
-//            Console.WriteLine("xxxx: Got {0}", Encoding.UTF8.GetString(buffer));
+            //            Console.WriteLine("xxxx: Got {0}", Encoding.UTF8.GetString(buffer));
         }
 
-        public void Send(byte[] buffer, int offset, int size) 
+        public void Send(byte[] buffer, int offset, int size)
         {
-//            Util.PrintCallStack();
-//
-//            Console.WriteLine(
-//                "TestHttpClientContext.Send(byte[], int, int) got offset={0}, size={1}, buffer={2}", 
-//                offset, size, Encoding.UTF8.GetString(buffer));
+            //            Util.PrintCallStack();
+            //
+            //            Console.WriteLine(
+            //                "TestHttpClientContext.Send(byte[], int, int) got offset={0}, size={1}, buffer={2}",
+            //                offset, size, Encoding.UTF8.GetString(buffer));
 
             m_responseStream.Write(buffer, offset, size);
         }
 
-        public void Respond(string httpVersion, HttpStatusCode statusCode, string reason, string body, string contentType) {Console.WriteLine("xxxxxx");}
-        public void Close() { }
-        public bool EndWhenDone { get { return false;} set { return;}}
+        public void Respond(string httpVersion, HttpStatusCode statusCode, string reason, string body, string contentType)
+        {
+            Console.WriteLine("xxxxxx");
+        }
+
+        public void Close()
+        {
+        }
+
+        public bool EndWhenDone { get { return false; } set { return; } }
 
         public HTTPNetworkContext GiveMeTheNetworkStreamIKnowWhatImDoing()
         {
@@ -102,6 +118,7 @@ namespace OpenSim.Tests.Common
         }
 
         public event EventHandler<DisconnectedEventArgs> Disconnected = delegate { };
+
         /// <summary>
         /// A request have been received in the context.
         /// </summary>

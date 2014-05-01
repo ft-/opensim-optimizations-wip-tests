@@ -25,25 +25,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net;
-using System.Reflection;
-using System.Text;
-using System.Threading;
 using log4net;
-using Nini.Config;
-using NUnit.Framework;
-using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Framework.Servers;
-using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Region.CoreModules.Framework;
-using OpenSim.Tests.Common;
 using OpenSim.Tests.Common.Mock;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Threading;
 
 namespace OpenSim.Tests.Common
 {
@@ -57,7 +45,7 @@ namespace OpenSim.Tests.Common
         /// </summary>
         /// <param name='tc'></param>
         /// <param name='neighbourTcs'>
-        /// A list that will be populated with any TestClients set up in response to 
+        /// A list that will be populated with any TestClients set up in response to
         /// being informed about a destination region.
         /// </param>
         public static void SetupInformClientOfNeighbourTriggersNeighbourClientCreate(
@@ -72,7 +60,7 @@ namespace OpenSim.Tests.Common
                 Util.RegionHandleToRegionLoc(neighbourHandle, out x, out y);
 
                 m_log.DebugFormat(
-                    "[TEST CLIENT]: Processing inform client of neighbour located at {0},{1} at {2}", 
+                    "[TEST CLIENT]: Processing inform client of neighbour located at {0},{1} at {2}",
                     x, y, neighbourExternalEndPoint);
 
                 AgentCircuitData newAgent = tc.RequestClientInfo();
@@ -92,20 +80,20 @@ namespace OpenSim.Tests.Common
         /// </summary>
         /// <param name='tc'></param>
         /// <param name='neighbourTcs'>
-        /// A list that will be populated with any TestClients set up in response to 
+        /// A list that will be populated with any TestClients set up in response to
         /// being informed about a destination region.
         /// </param>
         public static void SetupSendRegionTeleportTriggersDestinationClientCreateAndCompleteMovement(
             TestClient client, List<TestClient> destinationClients)
         {
-            client.OnTestClientSendRegionTeleport 
+            client.OnTestClientSendRegionTeleport
                 += (regionHandle, simAccess, regionExternalEndPoint, locationID, flags, capsURL) =>
             {
                 uint x, y;
                 Util.RegionHandleToRegionLoc(regionHandle, out x, out y);
 
                 m_log.DebugFormat(
-                    "[TEST CLIENT]: Processing send region teleport for destination at {0},{1} at {2}", 
+                    "[TEST CLIENT]: Processing send region teleport for destination at {0},{1} at {2}",
                     x, y, regionExternalEndPoint);
 
                 AgentCircuitData newAgent = client.RequestClientInfo();

@@ -25,7 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using NUnit.Framework;
 using OpenSim.Framework.Servers;
 
@@ -37,7 +36,7 @@ namespace OpenSim.Tests.Common
         [SetUp]
         public virtual void SetUp()
         {
-//            TestHelpers.InMethod();
+            //            TestHelpers.InMethod();
             // Disable logging for each test so that one where logging is enabled doesn't cause all subsequent tests
             // to have logging on if it failed with an exception.
             TestHelpers.DisableLogging();
@@ -47,7 +46,7 @@ namespace OpenSim.Tests.Common
             if (MainServer.Instance != null)
             {
                 MainServer.RemoveHttpServer(MainServer.Instance.Port);
-//                MainServer.Instance = null;
+                //                MainServer.Instance = null;
             }
         }
     }
