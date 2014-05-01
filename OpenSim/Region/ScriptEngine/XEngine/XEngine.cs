@@ -1733,6 +1733,7 @@ namespace OpenSim.Region.ScriptEngine.XEngine
                         catch (Exception)
                         {
                         }
+                        m_AssemblyLineMaps.Remove(m_Assemblies[assetID]);
                         m_Assemblies.Remove(assetID);
                     }
                 }
