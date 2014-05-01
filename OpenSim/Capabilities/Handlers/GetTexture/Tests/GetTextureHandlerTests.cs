@@ -25,19 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Net;
-using log4net;
-using log4net.Config;
 using NUnit.Framework;
-using OpenMetaverse;
-using OpenSim.Capabilities.Handlers;
-using OpenSim.Framework;
-using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Tests.Common;
 using OpenSim.Tests.Common.Mock;
+using System;
 
 namespace OpenSim.Capabilities.Handlers.GetTexture.Tests
 {

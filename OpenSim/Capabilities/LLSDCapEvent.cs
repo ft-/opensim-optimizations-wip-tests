@@ -32,6 +32,7 @@ namespace OpenSim.Framework.Capabilities
     {
         public OSDArray events = new OSDArray();
         public int id = 0;
+
         public LLSDCapEvent()
         {
         }

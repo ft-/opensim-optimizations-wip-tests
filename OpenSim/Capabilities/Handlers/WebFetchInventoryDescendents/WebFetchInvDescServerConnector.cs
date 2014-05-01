@@ -39,6 +39,7 @@ namespace OpenSim.Capabilities.Handlers
         private string m_ConfigName = "CapsService";
         private IInventoryService m_InventoryService;
         private ILibraryService m_LibraryService;
+
         public WebFetchInvDescServerConnector(IConfigSource config, IHttpServer server, string configName) :
             base(config, server, configName)
         {

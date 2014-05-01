@@ -46,6 +46,7 @@ namespace OpenSim.Framework.Capabilities
     {
         private UUID m_agentID;
         private CapsHandlers m_capsHandlers;
+
         /// <summary>
         /// This is the uuid portion of every CAPS path.  It is used to make capability urls private to the requester.
         /// </summary>
@@ -55,6 +56,7 @@ namespace OpenSim.Framework.Capabilities
         private IHttpServer m_httpListener;
         private string m_httpListenerHostName;
         private uint m_httpListenPort;
+
         private Dictionary<string, PollServiceEventArgs> m_pollServiceHandlers
             = new Dictionary<string, PollServiceEventArgs>();
 
@@ -92,6 +94,7 @@ namespace OpenSim.Framework.Capabilities
         }
 
         public string CapsObjectPath { get { return m_capsObjectPath; } }
+
         public Dictionary<string, string> ExternalCapsHandlers
         {
             get { return m_externalCapsHandlers; }
@@ -116,6 +119,7 @@ namespace OpenSim.Framework.Capabilities
         {
             get { return m_regionName; }
         }
+
         public bool SSLCaps
         {
             get { return m_httpListener.UseSSL; }
@@ -125,6 +129,7 @@ namespace OpenSim.Framework.Capabilities
         {
             get { return m_httpListener.SSLCommonName; }
         }
+
         /// <summary>
         /// Remove all CAPS service handlers.
         /// </summary>
@@ -237,6 +242,7 @@ namespace OpenSim.Framework.Capabilities
             //            RegisterHandler(
             //                capName, String.Format("{0}://{1}:{2}{3}", protocol, hostName, port, pollServiceHandler.Url));
         }
+
         public bool TryGetPollHandler(string name, out PollServiceEventArgs pollHandler)
         {
             return m_pollServiceHandlers.TryGetValue(name, out pollHandler);

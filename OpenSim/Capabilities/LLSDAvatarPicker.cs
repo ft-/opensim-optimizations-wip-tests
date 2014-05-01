@@ -44,6 +44,7 @@ namespace OpenSim.Framework.Capabilities
         public string display_name;
         public UUID id;
         public bool is_display_name_default;
+
         //'display_name_next_update':d"1970-01-01T00:00:00Z"
         public string legacy_first_name;
 

@@ -131,6 +131,7 @@ namespace OpenSim.Capabilities.Handlers
         }
 
         public event Action<UUID, byte[]> OnUpLoad;
+
         /// <summary>
         /// Handle raw uploaded baked texture data.
         /// </summary>

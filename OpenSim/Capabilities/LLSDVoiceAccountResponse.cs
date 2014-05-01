@@ -35,6 +35,7 @@ namespace OpenSim.Framework.Capabilities
         public string username;
         public string voice_account_server_name;
         public string voice_sip_uri_hostname;
+
         public LLSDVoiceAccountResponse()
         {
         }

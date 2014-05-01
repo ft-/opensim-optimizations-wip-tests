@@ -37,6 +37,7 @@ namespace OpenSim.Framework.Capabilities
         public int Left = 0;
         public int Right = 0;
         public int Top = 0;
+
         public OSDMapLayer()
         {
         }

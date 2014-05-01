@@ -43,6 +43,7 @@ namespace OpenSim.Framework.Capabilities
         /// The task inventory item that was updated
         /// </summary>
         public UUID new_asset;
+
         /// <summary>
         /// State of the upload.  So far have only even seen this set to "complete"
         /// </summary>
