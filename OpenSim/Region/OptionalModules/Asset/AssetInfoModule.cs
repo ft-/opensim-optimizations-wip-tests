@@ -70,6 +70,7 @@ namespace OpenSim.Region.OptionalModules.Asset
         {
             //            m_log.DebugFormat("[ASSET INFO MODULE]: POST INITIALIZED MODULE");
         }
+
         public void RegionLoaded(Scene scene)
         {
             //            m_log.DebugFormat("[ASSET INFO MODULE]: REGION {0} LOADED", scene.RegionInfo.RegionName);
@@ -96,6 +97,7 @@ namespace OpenSim.Region.OptionalModules.Asset
         {
             //            m_log.DebugFormat("[ASSET INFO MODULE]: REGION {0} REMOVED", scene.RegionInfo.RegionName);
         }
+
         private void HandleDumpAsset(string module, string[] args)
         {
             if (args.Length < 3)

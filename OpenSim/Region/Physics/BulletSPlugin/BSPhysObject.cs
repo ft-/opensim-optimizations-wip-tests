@@ -332,6 +332,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                 PhysicalActors.Dispose();
             });
         }
+
         // zero means locked. one means free.
         // All axis are free
         public void EnableActor(bool enableActor, string actorName, CreateActor creator)
@@ -384,6 +385,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         // Set the raw mass but also update physical mass properties (inertia, ...)
         // 'inWorld' true if the object has already been added to the dynamic world.
         public abstract void UpdatePhysicalMassProperties(float mass, bool inWorld);
+
         // Update the physical location and motion of the object. Called with data from Bullet.
         public abstract void UpdateProperties(EntityProperties entprop);
 
@@ -391,7 +393,9 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
         // Stop all physical motion.
         public abstract void ZeroMotion(bool inTaintTime);
-         // zero means locked. one means free.
+
+        // zero means locked. one means free.
+
         #region Collisions
 
         // On a collision, check the collider and remember if the last collider was moving
@@ -491,6 +495,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
         // Requested number of milliseconds between collision events. Zero means disabled.
         protected int SubscribedEventsMs { get; set; }
+
         public virtual bool Collide(uint collidingWith, BSPhysObject collidee,
                         OMV.Vector3 contactPoint, OMV.Vector3 contactNormal, float pentrationDepth)
         {
@@ -625,6 +630,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                     CurrentCollisionFlags = PhysScene.PE.RemoveFromCollisionFlags(PhysBody, CollisionFlags.BS_SUBSCRIBE_COLLISION_EVENTS);
             });
         }
+
         #endregion Collisions
 
         #region Per Simulation Step actions

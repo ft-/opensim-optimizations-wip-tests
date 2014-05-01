@@ -61,8 +61,10 @@ namespace OpenSim.Region.CoreModules.World.Land
                 new Dictionary<UUID, PrimCounts>();
 
         private Scene m_Scene;
+
         private Dictionary<UUID, int> m_SimwideCounts =
                 new Dictionary<UUID, int>();
+
         /// <value>
         /// For now, a simple simwide taint to get this up. Later parcel based
         /// taint to allow recounting a parcel if only ownership has changed
@@ -167,7 +169,6 @@ namespace OpenSim.Region.CoreModules.World.Land
                         m_TaintLock.DowngradeFromWriterLock(ref lc);
                     }
                 }
-
 
                 ParcelCounts counts;
                 if (m_ParcelCounts.TryGetValue(parcelID, out counts))
@@ -391,7 +392,7 @@ namespace OpenSim.Region.CoreModules.World.Land
             try
             {
                 if (m_Tainted)
-                { 
+                {
                     LockCookie lc = m_TaintLock.UpgradeToWriterLock(-1);
                     try
                     {
@@ -426,6 +427,7 @@ namespace OpenSim.Region.CoreModules.World.Land
         public void Initialise(IConfigSource source)
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -433,6 +435,7 @@ namespace OpenSim.Region.CoreModules.World.Land
         public void RemoveRegion(Scene scene)
         {
         }
+
         public void TaintPrimCount(ILandObject land)
         {
             m_Tainted = true;
@@ -522,10 +525,10 @@ namespace OpenSim.Region.CoreModules.World.Land
             // Don't bother to update tainted counts
             if (!m_Tainted)
                 RemoveObject(obj);
-                //                else
-                //                    m_log.DebugFormat(
-                //                        "[PRIM COUNT MODULE]: Ignoring OnObjectBeingRemovedFromScene() for {0} on {1} since count is tainted",
-                //                        obj.Name, m_Scene.RegionInfo.RegionName);
+            //                else
+            //                    m_log.DebugFormat(
+            //                        "[PRIM COUNT MODULE]: Ignoring OnObjectBeingRemovedFromScene() for {0} on {1} since count is tainted",
+            //                        obj.Name, m_Scene.RegionInfo.RegionName);
         }
 
         private void OnParcelPrimCountAdd(SceneObjectGroup obj)
@@ -544,11 +547,12 @@ namespace OpenSim.Region.CoreModules.World.Land
                     m_TaintLock.ReleaseWriterLock();
                 }
             }
-                //                else
-                //                    m_log.DebugFormat(
-                //                        "[PRIM COUNT MODULE]: Ignoring OnParcelPrimCountAdd() for {0} on {1} since count is tainted",
-                //                        obj.Name, m_Scene.RegionInfo.RegionName);
+            //                else
+            //                    m_log.DebugFormat(
+            //                        "[PRIM COUNT MODULE]: Ignoring OnParcelPrimCountAdd() for {0} on {1} since count is tainted",
+            //                        obj.Name, m_Scene.RegionInfo.RegionName);
         }
+
         private void OnParcelPrimCountTainted()
         {
             //            m_log.DebugFormat(
@@ -556,6 +560,7 @@ namespace OpenSim.Region.CoreModules.World.Land
 
             m_Tainted = true;
         }
+
         // NOTE: This method MUST be called while holding the taint lock!
         private void Recount()
         {
@@ -640,6 +645,7 @@ namespace OpenSim.Region.CoreModules.World.Land
                 return m_Parent.GetOwnerCount(m_ParcelID);
             }
         }
+
         public int Selected
         {
             get
@@ -663,6 +669,7 @@ namespace OpenSim.Region.CoreModules.World.Land
                 return m_Parent.GetTotalCount(m_ParcelID);
             }
         }
+
         public IUserPrimCounts Users
         {
             get

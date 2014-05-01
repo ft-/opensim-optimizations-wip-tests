@@ -57,6 +57,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         internal TaskInventoryItem m_item;
         internal bool m_MODFunctionsEnabled = false;
         internal IScriptEngine m_ScriptEngine;
+
         public Scene World
         {
             get { return m_ScriptEngine.World; }
@@ -89,6 +90,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             }
             return lease;
         }
+
         public LSL_Float modInvokeF(string fname, params object[] parms)
         {
             //            m_log.DebugFormat(
@@ -301,6 +303,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             IWorldComm wComm = m_ScriptEngine.World.RequestModuleInterface<IWorldComm>();
             wComm.DeliverMessage(ChatTypeEnum.Shout, ScriptBaseClass.DEBUG_CHANNEL, m_host.Name, m_host.UUID, message);
         }
+
         /// <summary>
         /// </summary>
         protected object ConvertFromLSL(object lslparm, Type type, string fname)

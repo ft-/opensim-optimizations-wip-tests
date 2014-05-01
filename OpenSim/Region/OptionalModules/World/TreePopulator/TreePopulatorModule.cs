@@ -230,6 +230,7 @@ namespace OpenSim.Region.OptionalModules.World.TreePopulator
             public Vector3 m_initial_scale;
             public Vector3 m_maximum_scale;
             public string m_name;
+
             [XmlIgnore]
             public Boolean m_planted;
 
@@ -240,6 +241,7 @@ namespace OpenSim.Region.OptionalModules.World.TreePopulator
             public Tree m_tree_type;
             public float m_treeline_high;
             public float m_treeline_low;
+
             [XmlIgnore]
             public List<UUID> m_trees;
 
@@ -322,7 +324,9 @@ namespace OpenSim.Region.OptionalModules.World.TreePopulator
                     this.m_rate.ToString());
             }
         }
-         // msec between updates
+
+        // msec between updates
+
         #region ICommandableModule Members
 
         public ICommander CommandInterface
@@ -380,6 +384,7 @@ namespace OpenSim.Region.OptionalModules.World.TreePopulator
 
             m_log.Debug("[TREES]: Initialised tree module");
         }
+
         public void RegionLoaded(Scene scene)
         {
             ReloadCopse();
@@ -393,6 +398,7 @@ namespace OpenSim.Region.OptionalModules.World.TreePopulator
         public void RemoveRegion(Scene scene)
         {
         }
+
         #endregion Region Module interface
 
         //--------------------------------------------------------------
@@ -642,6 +648,7 @@ namespace OpenSim.Region.OptionalModules.World.TreePopulator
             m_commander.RegisterCommand("remove", treeRemoveCommand);
             m_commander.RegisterCommand("statistics", treeStatisticsCommand);
         }
+
         #endregion ICommandableModule Members
 
         #region IVegetationModule Members
@@ -725,6 +732,7 @@ namespace OpenSim.Region.OptionalModules.World.TreePopulator
                 throw new ApplicationException("Unexpected failure in Tree serialization", ex);
             }
         }
+
         private void ReloadCopse()
         {
             m_copse = new List<Copse>();

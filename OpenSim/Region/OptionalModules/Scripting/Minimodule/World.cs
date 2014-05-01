@@ -40,6 +40,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
         private readonly Scene m_internalScene;
         private readonly ObjectAccessor m_objs;
         private readonly ISecurityCredential m_security;
+
         public World(Scene internalScene, ISecurityCredential securityCredential)
         {
             m_security = securityCredential;
@@ -79,6 +80,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
         }
 
         private event OnNewUserDelegate _OnNewUser;
+
         private void EventManager_OnNewPresence(ScenePresence presence)
         {
             if (_OnNewUser != null)
@@ -122,10 +124,12 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
         }
 
         private event OnChatDelegate _OnChat;
+
         public IWorldAudio Audio
         {
             get { return this; }
         }
+
         private void EventManager_OnChatFromClient(object sender, OSChatMessage chat)
         {
             if (_OnChat != null)
@@ -173,6 +177,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             }
             // Skip if other
         }
+
         #endregion OnChat
 
         #endregion Events
@@ -214,6 +219,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
                 return m_parcels.ToArray();
             }
         }
+
         public IHeightmap Terrain
         {
             get { return m_heights; }

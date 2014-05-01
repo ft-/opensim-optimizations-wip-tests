@@ -52,6 +52,7 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
         {
             return GC.GetTotalMemory(false);
         }
+
         #endregion Implementation of IMonitor
     }
 }

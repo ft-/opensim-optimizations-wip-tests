@@ -83,6 +83,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
         private bool m_debugEnabled = false;
         private IGroupsServicesConnector m_groupData;
         private bool m_groupNoticesEnabled = true;
+
         // Configuration settings
         private bool m_groupsEnabled = false;
 
@@ -90,6 +91,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
         private int m_levelGroupCreate = 0;
         private IMessageTransferModule m_msgTransferModule;
         private List<Scene> m_sceneList = new List<Scene>();
+
         #region Region Module interfaceBase Members
 
         public string Name
@@ -156,6 +158,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
                 m_levelGroupCreate = groupsConfig.GetInt("LevelGroupCreate", 0);
             }
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_groupsEnabled)
@@ -242,6 +245,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
 
             MainConsole.Instance.OutputFormat("{0} verbose logging set to {1}", Name, m_debugEnabled);
         }
+
         #endregion Region Module interfaceBase Members
 
         #region ISharedRegionModule Members
@@ -619,6 +623,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
             }
         }
         */
+
         #endregion EventHandlers
 
         #region IGroupsModule Members
@@ -873,6 +878,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
         {
             return m_groupData.GetGroupRecord(UUID.Zero, UUID.Zero, name);
         }
+
         /// <summary>
         /// Get the title of the agent's current role.
         /// </summary>
@@ -1098,6 +1104,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
 
             return titles;
         }
+
         /// <summary>
         /// Change the current Active Group Role for Agent
         /// </summary>
@@ -1247,6 +1254,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
             // Note: Permissions checking for modification rights is handled by the Groups Server/Service
             m_groupData.UpdateGroup(GetRequestingAgentID(remoteClient), groupID, charter, showInList, insigniaID, membershipFee, openEnrollment, allowPublish, maturePublish);
         }
+
         #endregion IGroupsModule Members
 
         #region Client/Update Tools
@@ -1475,6 +1483,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
                 }
             }
         }
+
         #endregion Client/Update Tools
 
         #region IM Backed Processes
@@ -1502,6 +1511,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
                 m_msgTransferModule.SendInstantMessage(msg, delegate(bool success) { if (m_debugEnabled) m_log.DebugFormat("[GROUPS]: Message Sent: {0}", success ? "Succeeded" : "Failed"); });
             }
         }
+
         #endregion IM Backed Processes
 
         private UUID GetRequestingAgentID(IClientAPI client)

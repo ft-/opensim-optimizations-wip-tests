@@ -40,6 +40,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
     {
         protected EstateManagementModule m_module;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public EstateManagementCommands(EstateManagementModule module)
         {
             m_module = module;
@@ -76,6 +77,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
             m_module.Scene.AddCommand(
                 "Estates", m_module, "estate show", "estate show", "Shows all estates on the simulator.", ShowEstatesCommand);
         }
+
         #region CommandHandlers
 
         protected void consoleSetTerrainHeights(string module, string[] args)
@@ -204,6 +206,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
                 }
             }
         }
+
         protected void ShowEstatesCommand(string module, string[] cmd)
         {
             StringBuilder report = new StringBuilder();

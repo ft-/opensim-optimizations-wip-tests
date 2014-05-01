@@ -45,12 +45,14 @@ namespace OpenSim.Region.CoreModules.Asset
                 MethodBase.GetCurrentMethod().DeclaringType);
 
         private ICache m_Cache;
+
         // Instrumentation
         private uint m_DebugRate;
 
         private bool m_Enabled;
         private ulong m_Hits;
         private ulong m_Requests;
+
         public string Name
         {
             get { return "GlynnTuckerAssetCache"; }
@@ -60,6 +62,7 @@ namespace OpenSim.Region.CoreModules.Asset
         {
             get { return null; }
         }
+
         public void AddRegion(Scene scene)
         {
             if (m_Enabled)
@@ -133,6 +136,7 @@ namespace OpenSim.Region.CoreModules.Asset
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -140,6 +144,7 @@ namespace OpenSim.Region.CoreModules.Asset
         public void RemoveRegion(Scene scene)
         {
         }
+
         private void Debug(Object asset)
         {
             // Temporary instrumentation to measure the hit/miss rate

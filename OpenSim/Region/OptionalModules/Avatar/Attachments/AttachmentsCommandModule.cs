@@ -72,6 +72,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Attachments
         {
             //            m_log.DebugFormat("[ATTACHMENTS COMMAND MODULE]: POST INITIALIZED MODULE");
         }
+
         public void RegionLoaded(Scene scene)
         {
             //            m_log.DebugFormat("[ATTACHMENTS COMMAND MODULE]: REGION {0} LOADED", scene.RegionInfo.RegionName);
@@ -94,6 +95,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Attachments
             lock (m_scenes)
                 m_scenes.Remove(scene);
         }
+
         protected void HandleShowAttachmentsCommand(string module, string[] cmd)
         {
             if (cmd.Length != 2 && cmd.Length < 4)

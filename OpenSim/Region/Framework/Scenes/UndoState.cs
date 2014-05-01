@@ -34,6 +34,7 @@ namespace OpenSim.Region.Framework.Scenes
     {
         public ITerrainChannel m_terrainChannel;
         public ITerrainModule m_terrainModule;
+
         public LandUndoState(ITerrainModule terrainModule, ITerrainChannel terrainChannel)
         {
             m_terrainModule = terrainModule;
@@ -63,6 +64,7 @@ namespace OpenSim.Region.Framework.Scenes
         public Vector3 Position = Vector3.Zero;
         public Quaternion Rotation = Quaternion.Identity;
         public Vector3 Scale = Vector3.Zero;
+
         /// <summary>
         /// Constructor.
         /// </summary>

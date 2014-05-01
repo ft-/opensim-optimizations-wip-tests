@@ -131,6 +131,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
         public void PostInitialise()
         {
         }
+
         // -----------------------------------------------------------------
         /// <summary>
         /// Called when all modules have been added for a region. This is
@@ -166,6 +167,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
             // need to remove all references to the scene in the subscription
             // list to enable full garbage collection of the scene object
         }
+
         #endregion Region Module interface
 
         #region Commands

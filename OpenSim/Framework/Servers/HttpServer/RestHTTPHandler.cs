@@ -50,6 +50,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         {
             get { return m_dhttpMethod; }
         }
+
         public override Hashtable Handle(string path, Hashtable request)
         {
             string param = GetParam(path);

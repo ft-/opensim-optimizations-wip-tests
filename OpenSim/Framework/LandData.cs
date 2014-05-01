@@ -61,6 +61,7 @@ namespace OpenSim.Framework
         private int _claimPrice = 0; //Unemplemented
         private string _description = String.Empty;
         private float _dwell = 0;
+
         private uint _flags = (uint)ParcelFlags.AllowFly | (uint)ParcelFlags.AllowLandmark |
                                 (uint)ParcelFlags.AllowAPrimitiveEntry |
                                 (uint)ParcelFlags.AllowDeedToGroup | (uint)ParcelFlags.AllowTerraform |
@@ -90,6 +91,7 @@ namespace OpenSim.Framework
         private float _passHours = 0;
         private int _passPrice = 0;
         private int _salePrice = 0;
+
         //Unemeplemented. Parcels price.
         private int _simwideArea = 0;
 
@@ -98,6 +100,7 @@ namespace OpenSim.Framework
         private ParcelStatus _status = ParcelStatus.Leased;
         private Vector3 _userLocation = new Vector3();
         private Vector3 _userLookAt = new Vector3();
+
         public LandData()
         {
             _globalID = UUID.Random();
@@ -543,6 +546,7 @@ namespace OpenSim.Framework
                 _obscureMusic = value;
             }
         }
+
         /// <summary>
         /// Autoreturn number of minutes to return SceneObjectGroup that are owned by someone who doesn't own
         /// the parcel and isn't set to the same 'group' as the parcel.
@@ -696,6 +700,7 @@ namespace OpenSim.Framework
                 _status = value;
             }
         }
+
         /// <summary>
         /// When teleporting is restricted to a certain point, this is the location
         /// that the user will be redirected to
@@ -727,6 +732,7 @@ namespace OpenSim.Framework
                 _userLookAt = value;
             }
         }
+
         /// <summary>
         /// Restore a LandData object from the serialized xml representation.
         /// </summary>

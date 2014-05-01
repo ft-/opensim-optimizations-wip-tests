@@ -25,22 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using Nini.Config;
 using log4net;
-using System;
-using System.Reflection;
-using System.IO;
-using System.Net;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Xml;
-using System.Xml.Serialization;
-using System.Collections.Generic;
-using OpenSim.Server.Base;
-using OpenSim.Services.Interfaces;
+using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Framework.Servers.HttpServer;
-using OpenMetaverse;
+using OpenSim.Server.Base;
+using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Xml;
 
 namespace OpenSim.Server.Handlers.Presence
 {
@@ -51,7 +46,7 @@ namespace OpenSim.Server.Handlers.Presence
         private IPresenceService m_PresenceService;
 
         public PresenceServerPostHandler(IPresenceService service) :
-                base("POST", "/presence")
+            base("POST", "/presence")
         {
             m_PresenceService = service;
         }
@@ -80,14 +75,19 @@ namespace OpenSim.Server.Handlers.Presence
                 {
                     case "login":
                         return LoginAgent(request);
+
                     case "logout":
                         return LogoutAgent(request);
+
                     case "logoutregion":
                         return LogoutRegionAgents(request);
+
                     case "report":
                         return Report(request);
+
                     case "getagent":
                         return GetAgent(request);
+
                     case "getagents":
                         return GetAgents(request);
                 }
@@ -99,10 +99,9 @@ namespace OpenSim.Server.Handlers.Presence
             }
 
             return FailureResult();
-
         }
 
-        byte[] LoginAgent(Dictionary<string, object> request)
+        private byte[] LoginAgent(Dictionary<string, object> request)
         {
             string user = String.Empty;
             UUID session = UUID.Zero;
@@ -126,7 +125,7 @@ namespace OpenSim.Server.Handlers.Presence
             return FailureResult();
         }
 
-        byte[] LogoutAgent(Dictionary<string, object> request)
+        private byte[] LogoutAgent(Dictionary<string, object> request)
         {
             UUID session = UUID.Zero;
 
@@ -142,7 +141,7 @@ namespace OpenSim.Server.Handlers.Presence
             return FailureResult();
         }
 
-        byte[] LogoutRegionAgents(Dictionary<string, object> request)
+        private byte[] LogoutRegionAgents(Dictionary<string, object> request)
         {
             UUID region = UUID.Zero;
 
@@ -157,8 +156,8 @@ namespace OpenSim.Server.Handlers.Presence
 
             return FailureResult();
         }
-        
-        byte[] Report(Dictionary<string, object> request)
+
+        private byte[] Report(Dictionary<string, object> request)
         {
             UUID session = UUID.Zero;
             UUID region = UUID.Zero;
@@ -180,7 +179,7 @@ namespace OpenSim.Server.Handlers.Presence
             return FailureResult();
         }
 
-        byte[] GetAgent(Dictionary<string, object> request)
+        private byte[] GetAgent(Dictionary<string, object> request)
         {
             UUID session = UUID.Zero;
 
@@ -204,9 +203,8 @@ namespace OpenSim.Server.Handlers.Presence
             return Util.UTF8NoBomEncoding.GetBytes(xmlString);
         }
 
-        byte[] GetAgents(Dictionary<string, object> request)
+        private byte[] GetAgents(Dictionary<string, object> request)
         {
-
             string[] userIDs;
 
             if (!request.ContainsKey("uuids"))
@@ -240,7 +238,7 @@ namespace OpenSim.Server.Handlers.Presence
             }
 
             string xmlString = ServerUtils.BuildXmlResponse(result);
-            
+
             //m_log.DebugFormat("[GRID HANDLER]: resp string: {0}", xmlString);
             return Util.UTF8NoBomEncoding.GetBytes(xmlString);
         }
@@ -299,6 +297,5 @@ namespace OpenSim.Server.Handlers.Presence
 
             return ms.ToArray();
         }
-
     }
 }

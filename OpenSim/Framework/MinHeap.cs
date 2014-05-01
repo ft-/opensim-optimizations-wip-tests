@@ -390,6 +390,7 @@ namespace OpenSim.Framework
         {
             internal Handle handle;
             internal T value;
+
             internal HeapItem(T value, Handle handle)
             {
                 this.value = value;
@@ -414,6 +415,7 @@ namespace OpenSim.Framework
         {
             internal MinHeap<T> heap = null;
             internal int index = -1;
+
             internal void Clear()
             {
                 this.index = -1;

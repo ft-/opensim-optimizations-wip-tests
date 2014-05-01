@@ -1329,7 +1329,9 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
 
         // LSL CONSTANTS
         public static readonly LSLInteger TRUE = new LSLInteger(1);
- // Same value as ATTACH_LPEC, see https://jira.secondlife.com/browse/SVC-580
+
+        // Same value as ATTACH_LPEC, see https://jira.secondlife.com/browse/SVC-580
+
         #region osMessageAttachments constants
 
         /// <summary>
@@ -1381,12 +1383,13 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
         public const int OS_ATTACH_MSG_SCRIPT_CREATOR = 4;
 
         #endregion osMessageAttachments constants
+
         public static readonly rotation ZERO_ROTATION = new rotation(0.0, 0.0, 0.0, 1.0);
 
         // parcel allows passes to be purchased
-            // parcel restricts llPushObject
-                   // parcel allows scripts owned by group
-     // parcel allows with the same group to enter
+        // parcel restricts llPushObject
+        // parcel allows scripts owned by group
+        // parcel allows with the same group to enter
         // Can not be public const?
         public static readonly vector ZERO_VECTOR = new vector(0.0, 0.0, 0.0);
     }

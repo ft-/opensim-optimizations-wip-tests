@@ -100,6 +100,7 @@ namespace OpenSim.Framework
         /// The UUID of the users avatar (not the agent!)
         /// </summary>
         private UUID UUID;
+
         public virtual string AgentIP
         {
             get { return agentIP; }
@@ -177,6 +178,7 @@ namespace OpenSim.Framework
             get { return sessionID; }
             set { sessionID = value; }
         }
+
         /* 2008-08-28-tyre: Not really useful
                 public virtual float PositionX
                 {

@@ -47,6 +47,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
         protected bool m_InInfoUpdate = false;
         protected List<Scene> m_Scenes = new List<Scene>();
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public bool InInfoUpdate
         {
             get { return m_InInfoUpdate; }
@@ -67,6 +68,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
         {
             get { return m_Scenes; }
         }
+
         public void AddRegion(Scene scene)
         {
             lock (m_Scenes)
@@ -99,6 +101,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             IEstateModule em = scene.RequestModuleInterface<IEstateModule>();
@@ -115,6 +118,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
             lock (m_Scenes)
                 m_Scenes.Remove(scene);
         }
+
         private Scene FindScene(UUID RegionID)
         {
             foreach (Scene s in Scenes)

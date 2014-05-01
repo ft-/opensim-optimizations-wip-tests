@@ -64,6 +64,7 @@ namespace OpenSim.Framework.Console
         private int m_cursorYPosition = -1;
         private bool m_echo = true;
         private List<string> m_history = new List<string>();
+
         public LocalConsole(string defaultPrompt)
             : base(defaultPrompt)
         {
@@ -310,6 +311,7 @@ namespace OpenSim.Framework.Console
             // it is important to do Abs, hash values can be negative
             return Colors[(Math.Abs(input.ToUpper().GetHashCode()) % Colors.Length)];
         }
+
         private void AddToHistory(string text)
         {
             while (m_history.Count >= 100)
@@ -435,6 +437,7 @@ namespace OpenSim.Framework.Console
 
             return top;
         }
+
         private void Show()
         {
             lock (m_commandLine)
@@ -468,6 +471,7 @@ namespace OpenSim.Framework.Console
                 SetCursorLeft(new_x);
             }
         }
+
         private void WriteColorText(ConsoleColor color, string sender)
         {
             try

@@ -43,6 +43,7 @@ namespace OpenSim.Services.AssetService
         protected IAssetService m_ChainedAssetService;
         protected IXAssetDataPlugin m_Database;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public XAssetServiceBase(IConfigSource config, string configName)
             : base(config)
         {

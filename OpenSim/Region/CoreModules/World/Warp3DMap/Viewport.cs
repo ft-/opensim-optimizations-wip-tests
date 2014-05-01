@@ -45,6 +45,7 @@ namespace OpenSim.Region.CoreModules.World.Warp3DMap
         public int Width;
         private const float DEG_TO_RAD = (float)Math.PI / 180f;
         private static readonly Vector3 UP_DIRECTION = Vector3.UnitZ;
+
         public Viewport(Vector3 position, Vector3 lookDirection, float fieldOfView, float farPlaneDist, float nearPlaneDist, int width, int height)
         {
             // Perspective projection mode

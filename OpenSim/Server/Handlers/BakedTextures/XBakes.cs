@@ -43,6 +43,7 @@ namespace OpenSim.Server.Handlers.BakedTextures
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
+
         private System.Text.UTF8Encoding utf8encoding =
                 new System.Text.UTF8Encoding();
 

@@ -25,9 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using Nini.Config;
 using NUnit.Framework;
 using OpenMetaverse;
 using OpenSim.Framework;
@@ -48,7 +45,7 @@ namespace OpenSim.Region.CoreModules.Avatar.AvatarFactory
         public void TestSetAppearance()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             UUID userId = TestHelpers.ParseTail(0x1);
             UUID bakedTextureID = TestHelpers.ParseTail(0x2);
@@ -56,7 +53,7 @@ namespace OpenSim.Region.CoreModules.Avatar.AvatarFactory
             // We need an asset cache because otherwise the LocalAssetServiceConnector will short-circuit directly
             // to the AssetService, which will then store temporary and local assets permanently
             CoreAssetCache assetCache = new CoreAssetCache();
-            
+
             AvatarFactoryModule afm = new AvatarFactoryModule();
             TestScene scene = new SceneHelpers(assetCache).SetupScene();
             SceneHelpers.SetupSceneModules(scene, afm);
@@ -64,7 +61,7 @@ namespace OpenSim.Region.CoreModules.Avatar.AvatarFactory
 
             // TODO: Use the actual BunchOfCaps functionality once we slot in the CapabilitiesModules
             AssetBase bakedTextureAsset;
-            bakedTextureAsset 
+            bakedTextureAsset
                 = new AssetBase(
                     bakedTextureID, "Test Baked Texture", (sbyte)AssetType.Texture, userId.ToString());
             bakedTextureAsset.Data = new byte[] { 2 }; // Not necessary to have a genuine JPEG2000 asset here yet
@@ -86,7 +83,7 @@ namespace OpenSim.Region.CoreModules.Avatar.AvatarFactory
             // This is the alpha texture
             eyesFace.TextureID = bakedTextureID;
             afm.SetAppearance(sp, bakedTextureEntry, visualParams, null);
-    
+
             Assert.That(rebakeRequestsReceived, Is.EqualTo(0));
 
             AssetBase eyesBake = scene.AssetService.Get(bakedTextureID.ToString());
@@ -99,14 +96,14 @@ namespace OpenSim.Region.CoreModules.Avatar.AvatarFactory
         /// Test appearance setting where the baked texture UUID are library alpha textures.
         /// </summary>
         /// <remarks>
-        /// For a mesh avatar, it appears these 'baked textures' are used.  So these should not trigger a request to 
+        /// For a mesh avatar, it appears these 'baked textures' are used.  So these should not trigger a request to
         /// rebake.
         /// </remarks>
         [Test]
         public void TestSetAppearanceAlphaBakedTextures()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             UUID userId = TestHelpers.ParseTail(0x1);
             UUID alphaTextureID = new UUID("3a367d1c-bef1-6d43-7595-e88c1e3aadb3");
@@ -114,14 +111,14 @@ namespace OpenSim.Region.CoreModules.Avatar.AvatarFactory
             // We need an asset cache because otherwise the LocalAssetServiceConnector will short-circuit directly
             // to the AssetService, which will then store temporary and local assets permanently
             CoreAssetCache assetCache = new CoreAssetCache();
-            
+
             AvatarFactoryModule afm = new AvatarFactoryModule();
             TestScene scene = new SceneHelpers(assetCache).SetupScene();
             SceneHelpers.SetupSceneModules(scene, afm);
             ScenePresence sp = SceneHelpers.AddScenePresence(scene, userId);
 
             AssetBase libraryAsset;
-            libraryAsset 
+            libraryAsset
                 = new AssetBase(
                     alphaTextureID, "Default Alpha Layer Texture", (sbyte)AssetType.Texture, userId.ToString());
             libraryAsset.Data = new byte[] { 2 }; // Not necessary to have a genuine JPEG2000 asset here yet
@@ -143,7 +140,7 @@ namespace OpenSim.Region.CoreModules.Avatar.AvatarFactory
             // This is the alpha texture
             eyesFace.TextureID = alphaTextureID;
             afm.SetAppearance(sp, bakedTextureEntry, visualParams, null);
-    
+
             Assert.That(rebakeRequestsReceived, Is.EqualTo(0));
         }
 
@@ -151,7 +148,7 @@ namespace OpenSim.Region.CoreModules.Avatar.AvatarFactory
         public void TestSaveBakedTextures()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             UUID userId = TestHelpers.ParseTail(0x1);
             UUID eyesTextureId = TestHelpers.ParseTail(0x2);
@@ -159,7 +156,7 @@ namespace OpenSim.Region.CoreModules.Avatar.AvatarFactory
             // We need an asset cache because otherwise the LocalAssetServiceConnector will short-circuit directly
             // to the AssetService, which will then store temporary and local assets permanently
             CoreAssetCache assetCache = new CoreAssetCache();
-            
+
             AvatarFactoryModule afm = new AvatarFactoryModule();
             TestScene scene = new SceneHelpers(assetCache).SetupScene();
             SceneHelpers.SetupSceneModules(scene, afm);
@@ -184,7 +181,7 @@ namespace OpenSim.Region.CoreModules.Avatar.AvatarFactory
 
             afm.SetAppearance(sp, bakedTextureEntry, visualParams, null);
             afm.SaveBakedTextures(userId);
-//            Dictionary<BakeType, Primitive.TextureEntryFace> bakedTextures = afm.GetBakedTextureFaces(userId);
+            //            Dictionary<BakeType, Primitive.TextureEntryFace> bakedTextures = afm.GetBakedTextureFaces(userId);
 
             // We should also inpsect the asset data store layer directly, but this is difficult to get at right now.
             assetCache.Clear();

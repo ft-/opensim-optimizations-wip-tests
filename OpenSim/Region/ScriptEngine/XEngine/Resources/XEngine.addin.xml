@@ -1,6 +1,6 @@
 <Addin id="OpenSim.Region.ScriptEngine.XEngine" version="0.2">
     <Runtime>
-        <Import assembly="OpenSim.Region.ScriptEngine.XEngine.dll"/>
+        <Import assembly="OpenSim.Region.ScriptEngine.XEngine.dll" />
     </Runtime>
 
     <Dependencies>

@@ -39,6 +39,7 @@ namespace OpenSim.Framework
         UUID OwnerID { get; set; }
 
         UUID UUID { get; }
+
         ISceneObject CloneForNewScene();
 
         void ExtraFromXmlString(string xmlstr);

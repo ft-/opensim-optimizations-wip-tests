@@ -59,6 +59,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         public virtual float TargetValueDecayTimeScale { get; set; }
 
         public virtual float TimeScale { get; set; }
+
         public virtual bool ErrorIsZero()
         {
             return ErrorIsZero(LastError);
@@ -68,6 +69,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         {
             return (err >= -ErrorZeroThreshold && err <= ErrorZeroThreshold);
         }
+
         public void SetCurrent(float current)
         {
             CurrentValue = current;
@@ -193,6 +195,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         public virtual void Zero()
         {
         }
+
         protected void MDetailLog(string msg, params Object[] parms)
         {
             if (PhysicsScene != null)
@@ -266,8 +269,10 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
         // Larger makes more overshoot, smaller means converge quicker. Range of 0.1 to 10.
         public Vector3 proportionFactor { get; set; }
+
         // Running integration of the error
         private Vector3 RunningIntegration { get; set; }
+
         // Advance the PID computation on this error.
         public override Vector3 StepError(float timeStep, Vector3 error)
         {
@@ -340,6 +345,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         public virtual float TargetValueDecayTimeScale { get; set; }
 
         public virtual float TimeScale { get; set; }
+
         public virtual bool ErrorIsZero()
         {
             return ErrorIsZero(LastError);
@@ -349,6 +355,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         {
             return (err == Vector3.Zero || err.ApproxEquals(Vector3.Zero, ErrorZeroThreshold));
         }
+
         // The user sets all the parameters and calls this which outputs values until error is zero.
         public override void GenerateTestOutput(float timeStep)
         {

@@ -82,6 +82,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Instance
         private bool m_InSelfDelete;
         private int m_LastControlLevel;
         private int m_MaxScriptQueue;
+
         // The following is for setting a minimum delay between events
         private double m_minEventDelay;
 
@@ -95,6 +96,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Instance
         private StateSource m_stateSource;
         private bool m_Suspended;
         private bool m_TimerQueued;
+
         public ScriptInstance(
             IScriptEngine engine, SceneObjectPart part, TaskInventoryItem item,
             int startParam, bool postOnRez,
@@ -154,6 +156,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Instance
         public UUID ItemID { get; private set; }
 
         public Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>> LineMap { get; set; }
+
         public uint LocalID { get { return Part.LocalId; } }
 
         public long MeasurementPeriodExecutionTime { get; private set; }
@@ -231,7 +234,9 @@ namespace OpenSim.Region.ScriptEngine.Shared.Instance
                 }
             }
         }
+
         public DateTime TimeStarted { get; private set; }
+
         public void ApiResetScript()
         {
             // bool running = Running;
@@ -265,6 +270,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Instance
             m_TimerQueued = false;
             EventQueue.Clear();
         }
+
         public void DestroyScriptInstance()
         {
             ReleaseControls();
@@ -793,6 +799,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Instance
 
             return true;
         }
+
         /// <summary>
         /// Post an event to this script instance.
         /// </summary>

@@ -50,7 +50,8 @@ namespace OpenSim.Region.DataSnapshot
         private string m_listener_port = "9000";
         private List<IDataSnapshotProvider> m_providers = null;
         private Dictionary<Scene, bool> m_scenes = null;
-         //TODO: Set default port over 9000
+        //TODO: Set default port over 9000
+
         #endregion Class Members
 
         public SnapshotStore(string directory, Dictionary<String, String> gridinfo, string port, string hostname)
@@ -246,6 +247,7 @@ namespace OpenSim.Region.DataSnapshot
             return Path.Combine(m_directory, Path.ChangeExtension(Sanitize(scene.RegionInfo.RegionName), "xml"));
             //return (m_snapsDir + Path.DirectorySeparatorChar + scene.RegionInfo.RegionName + ".xml");
         }
+
         private XmlNode GetGridSnapshotData(XmlDocument factory)
         {
             XmlNode griddata = factory.CreateNode(XmlNodeType.Element, "grid", "");
@@ -316,6 +318,7 @@ namespace OpenSim.Region.DataSnapshot
             m_log.Debug("[DATASNAPSHOT]: Generated region node");
             return docElement;
         }
+
         #endregion Helpers
 
         #region Manage internal collections
@@ -339,6 +342,7 @@ namespace OpenSim.Region.DataSnapshot
         {
             m_scenes.Remove(deadScene);
         }
+
         #endregion Manage internal collections
     }
 }

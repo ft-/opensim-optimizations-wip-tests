@@ -82,6 +82,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
         /// a callback fails to arrive within a set time then the user is pulled back into the source region.
         /// </summary>
         public bool EnableWaitForAgentArrivedAtDestination { get; set; }
+
         /// <summary>
         /// Gets the current agent transfer state.
         /// </summary>
@@ -299,6 +300,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
 
             return transitionOkay;
         }
+
         internal bool WaitForAgentArrivedAtDestination(UUID id)
         {
             if (!m_mod.WaitForAgentArrivedAtDestination)

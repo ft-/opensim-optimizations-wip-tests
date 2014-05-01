@@ -49,6 +49,7 @@ namespace OpenSim.Region.OptionalModules.WebSocketEchoModule
         public string Name { get { return "WebSocketEchoModule"; } }
 
         public Type ReplaceableInterface { get { return null; } }
+
         public void AddRegion(Scene scene)
         {
             //            m_log.DebugFormat("[WebSocketEchoModule]: REGION {0} ADDED", scene.RegionInfo.RegionName);
@@ -128,6 +129,7 @@ namespace OpenSim.Region.OptionalModules.WebSocketEchoModule
             handler.NoDelay_TCP_Nagle = true;
             handler.HandshakeAndUpgrade();
         }
+
         // Remove the references to our handler
         private void HandlerOnOnClose(object sender, CloseEventArgs closedata)
         {
@@ -151,6 +153,7 @@ namespace OpenSim.Region.OptionalModules.WebSocketEchoModule
         {
             m_log.Info("[WebSocketEchoModule]: Got a pong..  ping time: " + pongdata.PingResponseMS);
         }
+
         private void HandlerOnOnText(object sender, WebsocketTextEventArgs text)
         {
             WebSocketHttpServerHandler obj = sender as WebSocketHttpServerHandler;

@@ -46,6 +46,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.CodeTools
     public class Compiler : ICompiler
     {
         public bool in_startup = true;
+
         /// <summary>
         /// This contains number of lines WE use for header when compiling script. User will get error in line x-LinesToRemoveOnError when error occurs.
         /// </summary>
@@ -109,6 +110,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.CodeTools
             js = 3,
             yp = 4
         }
+
         public static KeyValuePair<int, int> FindErrorPosition(int line,
                 int col, Dictionary<KeyValuePair<int, int>,
                 KeyValuePair<int, int>> positionMap)
@@ -816,6 +818,7 @@ namespace SecondLife
                 }
             }
         }
+
         private string ReplaceTypes(string message)
         {
             message = message.Replace(

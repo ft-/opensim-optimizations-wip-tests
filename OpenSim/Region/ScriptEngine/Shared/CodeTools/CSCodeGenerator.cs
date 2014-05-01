@@ -41,16 +41,19 @@ namespace OpenSim.Region.ScriptEngine.Shared.CodeTools
         private int m_braceCount;
         private IScriptModuleComms m_comms = null;
         private int m_CSharpCol;
+
         // for indentation
         private int m_CSharpLine;
 
         private int m_indentWidth = 4;
         private bool m_insertCoopTerminationChecks;
         private Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>> m_positionMap;
-          // for indentation
-       // the current line of generated C# code
-                // the current column of generated C# code
+
+        // for indentation
+        // the current line of generated C# code
+        // the current column of generated C# code
         private List<string> m_warnings = new List<string>();
+
         /// <summary>
         /// Keep a record of the previous node when we do the parsing.
         /// </summary>
@@ -93,6 +96,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.CodeTools
         {
             get { return m_positionMap; }
         }
+
         /// <summary>
         /// Generate the code from the AST we have.
         /// </summary>

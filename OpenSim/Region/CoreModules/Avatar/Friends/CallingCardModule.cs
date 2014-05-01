@@ -46,6 +46,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
         protected bool m_Enabled = true;
         protected List<Scene> m_Scenes = new List<Scene>();
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public string Name
         {
             get { return "XCallingCardModule"; }
@@ -99,6 +100,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
             if (ccConfig != null)
                 m_Enabled = ccConfig.GetBoolean("Enabled", true);
         }
+
         public void PostInitialise()
         {
         }
@@ -123,6 +125,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
 
             scene.UnregisterModuleInterface<ICallingCardModule>(this);
         }
+
         private UUID CreateCallingCard(UUID userID, UUID creatorID, UUID folderID, bool isGod)
         {
             IUserAccountService userv = m_Scenes[0].UserAccountService;

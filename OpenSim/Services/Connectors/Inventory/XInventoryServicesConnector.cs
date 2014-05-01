@@ -45,6 +45,7 @@ namespace OpenSim.Services.Connectors
 
         private object m_Lock = new object();
         private string m_ServerURI = String.Empty;
+
         public XInventoryServicesConnector()
         {
         }
@@ -543,6 +544,7 @@ namespace OpenSim.Services.Connectors
 
             return true;
         }
+
         // Helpers
         //
         private Dictionary<string, object> MakeRequest(string method,

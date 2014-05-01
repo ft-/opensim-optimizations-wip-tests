@@ -50,11 +50,13 @@ namespace OpenSim.Region.CoreModules.Avatar.Chat
 
         private static readonly ILog m_log =
             LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         static private Vector3 CenterOfRegion = new Vector3(128, 128, 30);
         private bool m_enabled = true;
         private int m_saydistance = 20;
         private int m_shoutdistance = 100;
         private int m_whisperdistance = 10;
+
         #region ISharedRegionModule Members
 
         public virtual string Name
@@ -106,6 +108,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Chat
             m_saydistance = config.Configs["Chat"].GetInt("say_distance", m_saydistance);
             m_shoutdistance = config.Configs["Chat"].GetInt("shout_distance", m_shoutdistance);
         }
+
         public virtual void PostInitialise()
         {
         }
@@ -130,6 +133,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Chat
             scene.EventManager.OnChatFromWorld -= OnChatFromWorld;
             scene.EventManager.OnChatBroadcast -= OnChatBroadcast;
         }
+
         #endregion ISharedRegionModule Members
 
         public virtual void OnChatBroadcast(Object sender, OSChatMessage c)
@@ -305,6 +309,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Chat
 
             return c;
         }
+
         /// <summary>
         /// Try to send a message to the given presence
         /// </summary>

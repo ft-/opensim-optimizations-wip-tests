@@ -147,6 +147,7 @@ namespace OpenSim.Services.Interfaces
         /// <param name="userID"></param>
         /// <returns>null if no root folder was found</returns>
         InventoryFolderBase GetRootFolder(UUID userID);
+
         /// <summary>
         /// Does the given user have an inventory structure?
         /// </summary>
@@ -176,6 +177,7 @@ namespace OpenSim.Services.Interfaces
         /// <param name="folder"></param>
         /// <returns>true if the folder was successfully updated</returns>
         bool UpdateFolder(InventoryFolderBase folder);
+
         /// <summary>
         /// Update an item in the user's inventory
         /// </summary>

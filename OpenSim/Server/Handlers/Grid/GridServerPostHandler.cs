@@ -569,6 +569,7 @@ namespace OpenSim.Server.Handlers.Grid
             else
                 return FailureResult(result);
         }
+
         #endregion Method-specific handlers
 
         #region Misc
@@ -637,6 +638,7 @@ namespace OpenSim.Server.Handlers.Grid
 
             return DocToBytes(doc);
         }
+
         #endregion Misc
     }
 }

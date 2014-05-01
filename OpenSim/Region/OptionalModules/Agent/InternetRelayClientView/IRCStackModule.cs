@@ -47,6 +47,7 @@ namespace OpenSim.Region.OptionalModules.Agent.InternetRelayClientView
 
         private int m_Port;
         private IRCServer m_server;
+
         #region Implementation of INonSharedRegionModule
 
         public string Name
@@ -81,6 +82,7 @@ namespace OpenSim.Region.OptionalModules.Agent.InternetRelayClientView
                 m_Port = source.Configs["IRCd"].GetInt("Port", 6666);
             }
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -88,6 +90,7 @@ namespace OpenSim.Region.OptionalModules.Agent.InternetRelayClientView
         public void RemoveRegion(Scene scene)
         {
         }
+
         #endregion Implementation of INonSharedRegionModule
 
         private void m_server_OnNewIRCClient(IRCClientView user)

@@ -59,6 +59,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// An empty array if the user has no friends or friends have not been cached.
         /// </returns>
         FriendInfo[] GetFriendsFromCache(UUID userID);
+
         /// <summary>
         /// Get permissions granted by a friend.
         /// </summary>
@@ -90,6 +91,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="client"></param>
         /// <param name="exFriendID"></param>
         void RemoveFriendship(IClientAPI client, UUID exFriendID);
+
         bool SendFriendsOnlineIfNeeded(IClientAPI client);
     }
 }

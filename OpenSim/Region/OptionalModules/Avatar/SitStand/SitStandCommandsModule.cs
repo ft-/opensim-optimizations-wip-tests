@@ -71,6 +71,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.SitStand
         {
             //            m_log.DebugFormat("[ANIMATIONS COMMAND MODULE]: POST INITIALIZED MODULE");
         }
+
         public void RegionLoaded(Scene scene)
         {
             //            m_log.DebugFormat("[ANIMATIONS COMMAND MODULE]: REGION {0} LOADED", scene.RegionInfo.RegionName);
@@ -97,6 +98,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.SitStand
         {
             //            m_log.DebugFormat("[ATTACHMENTS COMMAND MODULE]: REGION {0} REMOVED", scene.RegionInfo.RegionName);
         }
+
         private List<ScenePresence> GetScenePresences(string[] cmdParams)
         {
             bool useRegex = false;

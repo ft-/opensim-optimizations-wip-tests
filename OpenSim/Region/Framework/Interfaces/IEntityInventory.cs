@@ -261,6 +261,7 @@ namespace OpenSim.Region.Framework.Interfaces
         ///
         /// <param name="linkNum">Link number for the part</param>
         void ResetObjectID();
+
         /// <summary>
         /// Restore a whole collection of items to the entity's inventory at once.
         /// We assume that the items already have all their fields correctly filled out.
@@ -271,6 +272,7 @@ namespace OpenSim.Region.Framework.Interfaces
         void RestoreInventoryItems(ICollection<TaskInventoryItem> items);
 
         void ResumeScripts();
+
         /// <summary>
         /// Number of running scripts in this inventory.
         /// </summary></returns>
@@ -294,6 +296,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// Stop all the scripts in this entity.
         /// </summary>
         void StopScriptInstances();
+
         /// <summary>
         /// Try to get the script running status.
         /// </summary>
@@ -306,6 +309,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name='itemId'></param>
         /// <param name='running'></param>
         bool TryGetScriptInstanceRunning(UUID itemId, out bool running);
+
         /// <summary>
         /// Update an existing inventory item.
         /// </summary>

@@ -52,6 +52,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
         /// Is this module enabled?
         /// </value>
         private bool m_enabled = false;
+
         #region Region Module interface
 
         private IMessageTransferModule m_TransferModule = null;
@@ -98,6 +99,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
 
             m_enabled = true;
         }
+
         public void PostInitialise()
         {
         }
@@ -143,6 +145,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
                 clientIM.OnInstantMessage += OnInstantMessage;
             }
         }
+
         #endregion Region Module interface
 
         public void OnInstantMessage(IClientAPI client, GridInstantMessage im)

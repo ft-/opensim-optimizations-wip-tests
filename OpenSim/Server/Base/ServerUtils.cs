@@ -362,6 +362,7 @@ namespace OpenSim.Server.Base
 
             return ret;
         }
+
         private static void BuildXmlData(XmlElement parent, Dictionary<string, object> data)
         {
             foreach (KeyValuePair<string, object> kvp in data)
@@ -391,6 +392,7 @@ namespace OpenSim.Server.Base
                 parent.AppendChild(elem);
             }
         }
+
         private static Dictionary<string, object> ParseElement(XmlNode element)
         {
             Dictionary<string, object> ret = new Dictionary<string, object>();
@@ -444,6 +446,7 @@ namespace OpenSim.Server.Base
             get;
             private set;
         }
+
         // Temporarily masking the errors reported on start
         // This is caused by a non-managed dll in the ./bin dir
         // when the registry is initialized. The dll belongs to
@@ -529,6 +532,7 @@ namespace OpenSim.Server.Base
                     break;
             }
         }
+
         private void UnloadPlugin(IRobustConnector connector)
         {
             m_log.InfoFormat("[SERVER UTILS]: Unloading {0}", connector.ConfigName);

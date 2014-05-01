@@ -68,6 +68,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Concierge
         private string m_welcomes = null;
         private string m_whoami = "conferencier";
         private string m_xmlRpcPassword = String.Empty;
+
         #region ISharedRegionModule Members
 
         public override string Name
@@ -173,6 +174,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Concierge
                 }
             }
         }
+
         public override void PostInitialise()
         {
         }
@@ -210,6 +212,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Concierge
             }
             m_log.InfoFormat("[Concierge]: removed {0}", scene.RegionInfo.RegionName);
         }
+
         #endregion ISharedRegionModule Members
 
         #region ISimChat Members
@@ -333,6 +336,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Concierge
             if (m_replacingChatModule)
                 client.OnChatFromClient += OnChatFromClient;
         }
+
         public XmlRpcResponse XmlRpcUpdateWelcomeMethod(XmlRpcRequest request, IPEndPoint remoteClient)
         {
             m_log.Info("[Concierge]: processing UpdateWelcome request");
@@ -597,6 +601,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Concierge
             public HttpWebRequest Poster;
             public Timer Timer;
             public string Uri;
+
             public BrokerState(string uri, string payload, HttpWebRequest poster)
             {
                 Uri = uri;

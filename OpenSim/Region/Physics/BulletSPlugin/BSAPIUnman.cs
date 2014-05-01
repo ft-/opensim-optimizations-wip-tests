@@ -1940,6 +1940,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
             [DllImport("BulletSim", CallingConvention = CallingConvention.Cdecl), SuppressUnmanagedCodeSecurity]
             public static extern void Shutdown2(IntPtr sim);
+
             [DllImport("BulletSim", CallingConvention = CallingConvention.Cdecl), SuppressUnmanagedCodeSecurity]
             public static extern bool SliderMotor2(IntPtr constrain, int forceVel, int linAng, float val);
 
@@ -1972,6 +1973,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
             [DllImport("BulletSim", CallingConvention = CallingConvention.Cdecl), SuppressUnmanagedCodeSecurity]
             public static extern bool UpdateParameter2(IntPtr world, uint localID, String parm, float value);
+
             // =====================================================================================
             // btCollisionWorld entries
             [DllImport("BulletSim", CallingConvention = CallingConvention.Cdecl), SuppressUnmanagedCodeSecurity]
@@ -1979,6 +1981,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
             [DllImport("BulletSim", CallingConvention = CallingConvention.Cdecl), SuppressUnmanagedCodeSecurity]
             public static extern bool UseFrameOffset2(IntPtr constrain, float enable);
+
             /* Haven't defined the type 'Transform'
         [DllImport("BulletSim", CallingConvention = CallingConvention.Cdecl), SuppressUnmanagedCodeSecurity]
         public static extern Transform GetWorldTransform2(IntPtr obj);
@@ -2001,6 +2004,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         [DllImport("BulletSim", CallingConvention = CallingConvention.Cdecl), SuppressUnmanagedCodeSecurity]
         public static extern Transform GetCenterOfMassTransform2(IntPtr obj);
              */
+
             [DllImport("BulletSim", CallingConvention = CallingConvention.Cdecl), SuppressUnmanagedCodeSecurity]
             public static extern bool WantsSleeping2(IntPtr obj);
         }
@@ -2040,6 +2044,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             {
                 ptr = xx;
             }
+
             // Used for log messages for a unique display of the memory/object allocated to this instance
             public override string AddrString
             {
@@ -2102,6 +2107,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                 ptr = xx;
             }
         }
+
         /*
     public override IntPtr GetBroadphaseHandle(BulletBody obj)
     {

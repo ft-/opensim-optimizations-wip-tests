@@ -60,6 +60,7 @@ namespace OpenSim.Framework.Client
         public Vector3 position;
         public UUID regionID;
     }
+
     // Porting Guide from old IM
     // SendIM(...)
     //      Loses FromAgentSession - this should be added by implementers manually.

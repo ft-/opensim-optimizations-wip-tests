@@ -45,6 +45,7 @@ namespace OpenSim.Region.Physics.Meshing
         private int m_vertexCount = 0;
         private Dictionary<Vertex, int> m_vertices;
         private IntPtr m_verticesPtr = IntPtr.Zero;
+
         public Mesh()
         {
             m_vertices = new Dictionary<Vertex, int>();
@@ -149,6 +150,7 @@ namespace OpenSim.Region.Physics.Meshing
 
             return result;
         }
+
         public void DumpRaw(String path, String name, String title)
         {
             if (path == null)
@@ -272,6 +274,7 @@ namespace OpenSim.Region.Physics.Meshing
             vertices = m_verticesPtr;
             vertexCount = m_vertexCount;
         }
+
         public void releasePinned()
         {
             if (m_pinnedVertexes.IsAllocated)
@@ -298,6 +301,7 @@ namespace OpenSim.Region.Physics.Meshing
             m_triangles = null;
             m_vertices = null;
         }
+
         // Do a linear transformation of  mesh.
         public void TransformLinear(float[,] matrix, float[] offset)
         {
@@ -317,6 +321,7 @@ namespace OpenSim.Region.Physics.Meshing
                 v.Z = z + offset[2];
             }
         }
+
         public void TrimExcess()
         {
             m_triangles.TrimExcess();

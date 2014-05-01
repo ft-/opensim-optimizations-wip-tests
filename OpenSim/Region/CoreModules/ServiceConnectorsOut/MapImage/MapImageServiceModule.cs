@@ -64,11 +64,13 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.MapImage
         private int m_refreshtime = 0;
         private System.Timers.Timer m_refreshTimer;
         private Dictionary<UUID, Scene> m_scenes = new Dictionary<UUID, Scene>();
+
         #region ISharedRegionModule
 
         public string Name { get { return "MapImageServiceModule"; } }
 
         public Type ReplaceableInterface { get { return null; } }
+
         ///<summary>
         ///
         ///</summary>
@@ -158,6 +160,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.MapImage
         public void RegionLoaded(Scene scene)
         {
         }
+
         ///<summary>
         ///
         ///</summary>

@@ -82,6 +82,7 @@ namespace OpenSim.Services.Interfaces
     {
         public UUID RegionID;
         public string UserID;
+
         public PresenceInfo()
         {
         }

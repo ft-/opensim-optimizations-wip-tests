@@ -1,21 +1,21 @@
 ﻿/* The MIT License
- * 
+ *
  * Copyright (c) 2010 Intel Corporation.
  * All rights reserved.
  *
- * Based on the convexdecomposition library from 
+ * Based on the convexdecomposition library from
  * <http://codesuppository.googlecode.com> by John W. Ratcliff and Stan Melax.
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -25,9 +25,7 @@
  * THE SOFTWARE.
  */
 
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
 {
@@ -215,6 +213,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
         {
             return p1.x * p2.y * p3.z + p2.x * p3.y * p1.z + p3.x * p1.y * p2.z - p1.x * p3.y * p2.z - p2.x * p1.y * p3.z - p3.x * p2.y * p1.z;
         }
+
         private static float tetVolume(float3 p0, float3 p1, float3 p2, float3 p3)
         {
             float3 a = p1 - p0;

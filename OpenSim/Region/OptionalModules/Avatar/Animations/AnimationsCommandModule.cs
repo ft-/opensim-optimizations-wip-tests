@@ -72,6 +72,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Animations
         {
             //            m_log.DebugFormat("[ANIMATIONS COMMAND MODULE]: POST INITIALIZED MODULE");
         }
+
         public void RegionLoaded(Scene scene)
         {
             //            m_log.DebugFormat("[ANIMATIONS COMMAND MODULE]: REGION {0} LOADED", scene.RegionInfo.RegionName);
@@ -96,6 +97,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Animations
             lock (m_scenes)
                 m_scenes.Remove(scene);
         }
+
         protected void HandleShowAnimationsCommand(string module, string[] cmd)
         {
             if (cmd.Length != 2 && cmd.Length < 4)

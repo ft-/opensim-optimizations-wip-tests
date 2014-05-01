@@ -52,6 +52,7 @@ namespace OpenSim.Framework.Console
         public event OnOutputDelegate OnOutput;
 
         public ICommands Commands { get; private set; }
+
         /// <summary>
         /// Display a command prompt on the console and wait for user input
         /// </summary>

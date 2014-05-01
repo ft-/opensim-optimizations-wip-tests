@@ -112,6 +112,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// </remarks>
         /// <param name="sp"></param>
         void RezAttachments(IScenePresence sp);
+
         /// <summary>
         /// Rez multiple attachments from a user's inventory
         /// </summary>
@@ -127,6 +128,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="AttachmentPt"></param>
         /// <returns>The scene object that was attached.  Null if the scene object could not be found</returns>
         SceneObjectGroup RezSingleAttachmentFromInventory(IScenePresence sp, UUID itemID, uint AttachmentPt);
+
         /// <summary>
         /// Update the position of an attachment.
         /// </summary>

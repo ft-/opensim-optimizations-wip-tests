@@ -45,6 +45,7 @@ namespace OpenSim.Services.ProfilesService
 
         private IAuthenticationService authService;
         private IUserAccountService userAccounts;
+
         public UserProfilesService(IConfigSource config, string configName) :
             base(config, configName)
         {
@@ -101,6 +102,7 @@ namespace OpenSim.Services.ProfilesService
             result = "success";
             return true;
         }
+
         #endregion Classifieds
 
         #region Picks
@@ -128,6 +130,7 @@ namespace OpenSim.Services.ProfilesService
         {
             return ProfilesData.UpdatePicksRecord(pick);
         }
+
         #endregion Picks
 
         #region Notes
@@ -238,6 +241,7 @@ namespace OpenSim.Services.ProfilesService
             }
             return ProfilesData.UpdateUserPreferences(ref pref, ref result);
         }
+
         #endregion User Preferences
 
         #region Utility

@@ -121,6 +121,7 @@ namespace OpenSim.Framework.AssetLoader.Filesystem
                 m_log.ErrorFormat("[ASSETS]: file: [{0}] not found !", path);
             }
         }
+
         /// <summary>
         /// Use the asset set information at path to load assets
         /// </summary>

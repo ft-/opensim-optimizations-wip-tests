@@ -49,6 +49,7 @@ namespace OpenSim.Region.CoreModules.Hypergrid
 
         // Remember the map area that each client has been exposed to in this region
         private Dictionary<UUID, List<MapBlockData>> m_SeenMapBlocks = new Dictionary<UUID, List<MapBlockData>>();
+
         private IUserManagement m_UserManagement;
 
         #region INonSharedRegionModule Members
@@ -85,6 +86,7 @@ namespace OpenSim.Region.CoreModules.Hypergrid
                 }
             }
         }
+
         public override void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -106,6 +108,7 @@ namespace OpenSim.Region.CoreModules.Hypergrid
 
             scene.EventManager.OnClientClosed -= EventManager_OnClientClosed;
         }
+
         #endregion INonSharedRegionModule Members
 
         protected override List<MapBlockData> GetAndSendBlocks(IClientAPI remoteClient, int minX, int minY, int maxX, int maxY, uint flag)
@@ -152,6 +155,7 @@ namespace OpenSim.Region.CoreModules.Hypergrid
                 }
             }
         }
+
         private void OnSimulatorFeaturesRequest(UUID agentID, ref OSDMap features)
         {
             if (m_UserManagement != null && !string.IsNullOrEmpty(m_MapImageServerURL) && !m_UserManagement.IsLocalGridUser(agentID))
@@ -173,6 +177,7 @@ namespace OpenSim.Region.CoreModules.Hypergrid
         public int maxY;
         public int minX;
         public int minY;
+
         public MapArea(int mix, int miy, int max, int may)
         {
             minX = mix;

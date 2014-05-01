@@ -72,6 +72,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         /// true.
         /// </remarks>
         string ContentType { get; set; }
+
         bool KeepAlive { get; set; }
 
         /// <summary>
@@ -90,6 +91,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         Stream OutputStream { get; }
 
         string ProtocolVersion { get; set; }
+
         /// <summary>
         /// Set a redirct location.
         /// </summary>
@@ -111,6 +113,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         /// HTTP status description.
         /// </summary>
         string StatusDescription { get; set; }
+
         /// <summary>
         /// Add a header field and content to the response.
         /// </summary>

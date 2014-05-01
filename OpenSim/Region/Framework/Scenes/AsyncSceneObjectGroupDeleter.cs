@@ -49,6 +49,7 @@ namespace OpenSim.Region.Framework.Scenes
 
         private static readonly ILog m_log
             = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         private readonly Queue<DeleteToInventoryHolder> m_inventoryDeletes = new Queue<DeleteToInventoryHolder>();
         private Timer m_inventoryTicker = new Timer(2000);
         private Scene m_scene;

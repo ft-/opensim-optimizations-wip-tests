@@ -76,6 +76,7 @@ namespace OpenSim.Region.Framework.Scenes.Animation
         /// Array of Rotation Keyframes in order from earliest to latest
         /// </summary>
         public binBVHJointKey[] rotationkeys;
+
         public void WriteBytesToStream(BinaryWriter iostream, float InPoint, float OutPoint)
         {
             iostream.Write(BinBVHUtil.WriteNullTerminatedString(Name));
@@ -105,6 +106,7 @@ namespace OpenSim.Region.Framework.Scenes.Animation
 
         // Time in seconds for this keyframe.
         public float time;
+
         public float W;
 
         public void WriteBytesToStream(BinaryWriter iostream, float InPoint, float OutPoint, float min, float max)
@@ -175,6 +177,7 @@ namespace OpenSim.Region.Framework.Scenes.Animation
 
             return uival;
         }
+
         public static byte[] WriteNullTerminatedString(string str)
         {
             byte[] output = new byte[str.Length + 1];
@@ -271,6 +274,7 @@ namespace OpenSim.Region.Framework.Scenes.Animation
         /// Don't use this, use the rotationkeys.Length on each joint
         /// </summary>
         private int rotationkeys;
+
         public BinBVHAnimation()
         {
             rotationkeys = 0;
@@ -389,6 +393,7 @@ namespace OpenSim.Region.Framework.Scenes.Animation
             iostream.Close();
             return outputbytes;
         }
+
         /// <summary>
         /// Variable length strings seem to be null terminated in the animation asset..    but..
         /// use with caution, home grown.

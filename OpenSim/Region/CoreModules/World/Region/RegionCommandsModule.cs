@@ -44,6 +44,7 @@ namespace OpenSim.Region.CoreModules.World.Objects.Commands
     {
         private ICommandConsole m_console;
         private Scene m_scene;
+
         public string Name { get { return "Region Commands Module"; } }
 
         public Type ReplaceableInterface { get { return null; } }
@@ -75,6 +76,7 @@ namespace OpenSim.Region.CoreModules.World.Objects.Commands
         {
             //            m_log.DebugFormat("[REGION COMMANDS MODULE]: POST INITIALIZED MODULE");
         }
+
         public void RegionLoaded(Scene scene)
         {
             //            m_log.DebugFormat("[REGION COMMANDS MODULE]: REGION {0} LOADED", scene.RegionInfo.RegionName);
@@ -84,6 +86,7 @@ namespace OpenSim.Region.CoreModules.World.Objects.Commands
         {
             //            m_log.DebugFormat("[REGION COMMANDS MODULE]: REGION {0} REMOVED", scene.RegionInfo.RegionName);
         }
+
         private void HandleShowScene(string module, string[] cmd)
         {
             if (!(MainConsole.Instance.ConsoleScene == null || MainConsole.Instance.ConsoleScene == m_scene))

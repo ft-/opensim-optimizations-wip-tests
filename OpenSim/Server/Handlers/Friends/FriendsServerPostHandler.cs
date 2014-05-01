@@ -197,6 +197,7 @@ namespace OpenSim.Server.Handlers.Friends
             else
                 return FailureResult();
         }
+
         #endregion Method-specific handlers
 
         #region Misc
@@ -278,6 +279,7 @@ namespace OpenSim.Server.Handlers.Friends
 
             return DocToBytes(doc);
         }
+
         #endregion Misc
     }
 }

@@ -74,9 +74,11 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
         // private bool _stopped;
         private OMV.Vector3 _size;
+
         private bool _throttleUpdates;
         private bool _usePID;
         private BSActorAvatarMove m_moveActor;
+
         public BSCharacter(uint localID, String avName, BSScene parent_scene, OMV.Vector3 pos, OMV.Vector3 size, bool isFlying)
             : base(parent_scene, localID, avName, "BSCharacter")
         {

@@ -41,8 +41,10 @@ namespace OpenSim.Framework
         public bool HttpUsesSSL = false;
         public bool isSandbox;
         public bool secureInventoryServer = false;
+
         // "Out of band" managemnt https
         public bool ssl_listener = false;
+
         public NetworkServersInfo()
         {
         }

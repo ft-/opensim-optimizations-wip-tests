@@ -47,6 +47,7 @@ namespace OpenSim.Region.Framework.Interfaces
         string Name { get; }
 
         void AddArgument(string name, string helptext, string type);
+
         void Run(object[] args);
 
         string ShortHelp();

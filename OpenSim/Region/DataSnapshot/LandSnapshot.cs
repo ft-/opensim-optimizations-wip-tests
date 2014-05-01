@@ -140,6 +140,7 @@ namespace OpenSim.Region.DataSnapshot.Providers
             //Brought back from the dead for staleness checks.
             m_scene.EventManager.OnNewClient += OnNewClient;
         }
+
         public XmlNode RequestSnapshotData(XmlDocument nodeFactory)
         {
             ILandChannel landChannel = m_scene.LandChannel;
@@ -310,6 +311,7 @@ namespace OpenSim.Region.DataSnapshot.Providers
             this.Stale = false;
             return parent;
         }
+
         #endregion IDataSnapshotProvider members
 
         #region Helper functions
@@ -345,6 +347,7 @@ namespace OpenSim.Region.DataSnapshot.Providers
             else
                 return "false";
         }
+
         private string GetShowInSearch(LandData parcel)
         {
             if ((parcel.Flags & (uint)ParcelFlags.ShowDirectory) == (uint)ParcelFlags.ShowDirectory)
@@ -380,6 +383,7 @@ namespace OpenSim.Region.DataSnapshot.Providers
         {
             this.Stale = true;
         }
+
         #endregion Change detection hooks
 
         // this is needed for non-convex parcels (example: rectangular parcel, and in the exact center

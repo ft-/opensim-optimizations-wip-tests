@@ -39,6 +39,7 @@ public class Triangle
     private float cx;
     private float cy;
     private float radius_square;
+
     public Triangle(Vertex _v1, Vertex _v2, Vertex _v3)
     {
         v1 = _v1;
@@ -100,6 +101,7 @@ public class Triangle
         else
             return false;
     }
+
     public override String ToString()
     {
         NumberFormatInfo nfi = new NumberFormatInfo();
@@ -232,6 +234,7 @@ public class Vertex : IComparable<Vertex>
         get { return vector.Z; }
         set { vector.Z = value; }
     }
+
     public static Vertex FromAngle(double angle)
     {
         return new Vertex((float)Math.Cos(angle), (float)Math.Sin(angle), 0.0f);
@@ -403,11 +406,13 @@ public class Vertex : IComparable<Vertex>
             return new Vertex(0f, 0f, 0f);
         }
     }
+
     // disable warning: mono compiler moans about overloading
     // operators hiding base operator but should not according to C#
     // language spec
 #pragma warning disable 0108
 #pragma warning restore 0108
+
     public String ToRaw()
     {
         // Why this stuff with the number formatter?

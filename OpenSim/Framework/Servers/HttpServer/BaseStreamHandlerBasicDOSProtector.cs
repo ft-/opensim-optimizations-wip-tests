@@ -39,6 +39,7 @@ namespace OpenSim.Framework.Servers.HttpServer
     {
         private readonly BasicDOSProtector _dosProtector;
         private readonly BasicDosProtectorOptions _options;
+
         protected BaseStreamHandlerBasicDOSProtector(string httpMethod, string path, BasicDosProtectorOptions options)
             : this(httpMethod, path, null, null, options)
         {

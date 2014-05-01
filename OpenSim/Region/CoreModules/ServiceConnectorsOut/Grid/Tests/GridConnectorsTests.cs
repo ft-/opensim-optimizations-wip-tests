@@ -25,28 +25,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using System.Threading;
-using log4net.Config;
 using Nini.Config;
 using NUnit.Framework;
 using OpenMetaverse;
-
 using OpenSim.Framework;
-using OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid;
 using OpenSim.Region.Framework.Scenes;
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 using OpenSim.Tests.Common;
+using System.Collections.Generic;
+using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid.Tests
 {
     [TestFixture]
     public class GridConnectorsTests : OpenSimTestCase
     {
-        LocalGridServicesConnector m_LocalConnector;
+        private LocalGridServicesConnector m_LocalConnector;
 
         [SetUp]
         public override void SetUp()
@@ -74,7 +67,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid.Tests
         public void TestRegisterRegion()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             // Create 4 regions
             GridRegion r1 = new GridRegion();
@@ -88,7 +81,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid.Tests
             Scene s = new Scene(new RegionInfo());
             s.RegionInfo.RegionID = r1.RegionID;
             m_LocalConnector.AddRegion(s);
-            
+
             GridRegion r2 = new GridRegion();
             r2.RegionName = "Test Region 2";
             r2.RegionID = new UUID(2);

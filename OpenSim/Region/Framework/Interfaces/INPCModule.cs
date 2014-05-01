@@ -150,6 +150,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// True if the agent is an NPC in the given scene. False otherwise.
         /// </returns>
         bool IsNPC(UUID agentID, Scene scene);
+
         /// <summary>
         /// Move an NPC to a target over time.
         /// </summary>
@@ -208,6 +209,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// </returns>
         bool SetNPCAppearance(UUID agentID, AvatarAppearance appearance,
                 Scene scene);
+
         /// <summary>
         /// Get the NPC to shout something.
         /// </summary>
@@ -248,6 +250,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// or the agent was not an NPC.
         /// </returns>
         bool StopMoveToTarget(UUID agentID, Scene scene);
+
         /// <summary>
         /// Get the NPC to touch an object.
         /// </summary>

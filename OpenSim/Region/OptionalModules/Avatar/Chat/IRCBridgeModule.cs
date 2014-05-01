@@ -50,6 +50,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
         internal static List<RegionState> m_regions = new List<RegionState>();
         internal RegionState m_region = null;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         #region INonSharedRegionModule Members
 
         public string Name
@@ -61,6 +62,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
         {
             get { return null; }
         }
+
         public void AddRegion(Scene scene)
         {
             if (Enabled)
@@ -116,6 +118,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
 
             m_log.InfoFormat("[IRC-Bridge]: Module is enabled");
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -138,6 +141,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
                 lock (m_regions) m_regions.Remove(m_region);
             }
         }
+
         #endregion INonSharedRegionModule Members
 
         public static XmlRpcResponse XmlRpcAdminMethod(XmlRpcRequest request, IPEndPoint remoteClient)

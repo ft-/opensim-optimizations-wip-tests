@@ -55,7 +55,9 @@ namespace OpenSim.Region.CoreModules
 
         //private Random m_rndnums = new Random(Environment.TickCount);
         private Scene m_scene = null;
+
         private IConfig m_windConfig;
+
         // Simplified windSpeeds based on the fact that the client protocal tracks at a resolution of 16m
         private Vector2[] windSpeeds = new Vector2[16 * 16];
 
@@ -174,6 +176,7 @@ namespace OpenSim.Region.CoreModules
                 m_log.InfoFormat("[WIND] Enabled with an update rate of {0} frames.", m_frameUpdateRate);
             }
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -198,6 +201,7 @@ namespace OpenSim.Region.CoreModules
             m_scene.EventManager.OnFrame -= WindUpdate;
             m_scene.EventManager.OnMakeRootAgent -= OnAgentEnteredRegion;
         }
+
         #endregion INonSharedRegionModule Methods
 
         #region Console Commands
@@ -338,6 +342,7 @@ namespace OpenSim.Region.CoreModules
                 return;
             }
         }
+
         #endregion Console Commands
 
         #region IWindModule Methods
@@ -400,6 +405,7 @@ namespace OpenSim.Region.CoreModules
                 return new Vector3(0.0f, 0.0f, 0.0f);
             }
         }
+
         #endregion IWindModule Methods
 
         public void OnAgentEnteredRegion(ScenePresence avatar)
@@ -435,6 +441,7 @@ namespace OpenSim.Region.CoreModules
 
             SendWindAllClients();
         }
+
         private void GenWindPos()
         {
             if (m_activeWindPlugin != null)

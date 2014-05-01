@@ -40,6 +40,7 @@ namespace OpenSim.Region.Framework.Scenes.Animation
         public static Dictionary<UUID, string> AnimsNames = new Dictionary<UUID, string>();
         public static Dictionary<UUID, string> AnimStateNames = new Dictionary<UUID, string>();
         public static Dictionary<string, UUID> AnimsUUID = new Dictionary<string, UUID>();
+
         static DefaultAvatarAnimations()
         {
             LoadAnimations(DefaultAnimationsPath);

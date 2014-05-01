@@ -42,6 +42,7 @@ namespace OpenSim.Framework
         public UUID TextureID { get; set; }
 
         public uint TextureIndex { get; set; }
+
         public static WearableCacheItem[] FromOSD(OSD pInput, IImprovedAssetCache dataCache)
         {
             List<WearableCacheItem> ret = new List<WearableCacheItem>();
@@ -100,6 +101,7 @@ namespace OpenSim.Framework
                 retitems[i] = new WearableCacheItem() { CacheId = UUID.Zero, TextureID = UUID.Zero, TextureIndex = i + 1 };
             return retitems;
         }
+
         public static WearableCacheItem SearchTextureCacheId(UUID pCacheId, WearableCacheItem[] pcacheItems)
         {
             for (int i = 0; i < pcacheItems.Length; i++)

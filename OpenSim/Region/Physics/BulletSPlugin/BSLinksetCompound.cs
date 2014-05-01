@@ -153,6 +153,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             if (LinksetRoot.PhysBody.HasPhysicalBody)
                 m_physicsScene.PE.SetRestitution(LinksetRoot.PhysBody, restitution);
         }
+
         // 'physicalUpdate' is true if these changes came directly from the physics engine. Don't need to rebuild then.
         // Called at taint-time.
         public override void UpdateProperties(UpdatedProperties whichUpdated, BSPrimLinkable updated)
@@ -424,6 +425,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                 });
             }
         }
-    // Attempt to have Bullet track the coords of root compound shape
+
+        // Attempt to have Bullet track the coords of root compound shape
     }
 }

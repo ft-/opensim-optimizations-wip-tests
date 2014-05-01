@@ -107,6 +107,7 @@ namespace OpenSim.Region.Physics.OdePlugin
         Start = 1,
         End = 2
     }
+
     public class OdeScene : PhysicsScene
     {
         /// <summary>
@@ -215,6 +216,7 @@ namespace OpenSim.Region.Physics.OdePlugin
         public float bodyPIDD = 35f;
         public float bodyPIDG = 25;
         public bool forceSimplePrimMeshing = false;
+
         /// <summary>
         /// Maps a unique geometry id (a memory location) to a physics actor name.
         /// </summary>
@@ -242,6 +244,7 @@ namespace OpenSim.Region.Physics.OdePlugin
         public bool physics_logging_append_existing_logfile = false;
         public int physics_logging_interval = 0;
         public IntPtr space;
+
         //private int cStartStop = 0;
         //private string cDictKey = "";
         //private IntPtr tmpSpace;
@@ -250,6 +253,7 @@ namespace OpenSim.Region.Physics.OdePlugin
 
         public d.TriArrayCallback triArrayCallback;
         public d.TriCallback triCallback;
+
         //        private float step_time = 0.0f;
         //Ckrinke: Comment out until used. We declare it, initialize it, but do not use it
         //Ckrinke        private int ms = 0;
@@ -257,6 +261,7 @@ namespace OpenSim.Region.Physics.OdePlugin
 
         public Vector2 WorldExtents = new Vector2((int)Constants.RegionSize, (int)Constants.RegionSize);
         public d.Vector3 xyz = new d.Vector3(128.1640f, 128.3079f, 25.7600f);
+
         /// <summary>
         /// Provide a sync object so that only one thread calls d.Collide() at a time across all OdeScene instances.
         /// </summary>
@@ -293,6 +298,7 @@ namespace OpenSim.Region.Physics.OdePlugin
         private const uint m_regionHeight = Constants.RegionSize;
         private const uint m_regionWidth = Constants.RegionSize;
         private const float m_SkipFramesAtms = 0.40f;
+
         /// <summary>
         /// Prims in the physics scene that are subject to physics, not just collisions.
         /// </summary>
@@ -329,6 +335,7 @@ namespace OpenSim.Region.Physics.OdePlugin
         private readonly List<PhysicsJoint> activeJoints = new List<PhysicsJoint>();
 
         private readonly IntPtr contactgroup;
+
         /// <summary>
         /// Defects list to remove characters that no longer have finite positions due to some other bug.
         /// </summary>
@@ -351,6 +358,7 @@ namespace OpenSim.Region.Physics.OdePlugin
         private readonly Dictionary<uint, PhysicsActor> m_collisionEventActorsChanges = new Dictionary<uint, PhysicsActor>();
 
         private readonly ILog m_log;
+
         // Drop frames gracefully at a 400 ms lag
         private readonly PhysicsActor PANull = new NullPhysicsActor();
 
@@ -577,6 +585,7 @@ namespace OpenSim.Region.Physics.OdePlugin
         /// Is stats collecting enabled for this ODE scene?
         /// </summary>
         public bool CollectStats { get; set; }
+
         /// <summary>
         /// true = old compatibility mode with leaning capsule; false = new corrected mode
         /// </summary>
@@ -584,6 +593,7 @@ namespace OpenSim.Region.Physics.OdePlugin
         /// Even when set to false, the capsule still tilts but this is done in a different way.
         /// </remarks>
         public bool IsAvCapsuleTilted { get; private set; }
+
 #if USE_DRAWSTUFF
         public void startvisualization(object o)
         {
@@ -3377,6 +3387,7 @@ namespace OpenSim.Region.Physics.OdePlugin
                 //m_log.Debug("near: A collision was detected between {1} and {2}", 0, name1, name2);
             }
         }
+
         //        public override void UnCombine(PhysicsScene pScene)
         //        {
         //            IntPtr localGround = IntPtr.Zero;
@@ -4186,6 +4197,7 @@ namespace OpenSim.Region.Physics.OdePlugin
 
             return 1;
         }
+
         #endregion
         #region Add/Remove Entities
         #endregion

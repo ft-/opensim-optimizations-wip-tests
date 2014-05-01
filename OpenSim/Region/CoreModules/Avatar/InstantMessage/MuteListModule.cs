@@ -46,6 +46,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
         private bool enabled = true;
         private string m_RestURL = String.Empty;
         private List<Scene> m_SceneList = new List<Scene>();
+
         public string Name
         {
             get { return "MuteListModule"; }
@@ -97,6 +98,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
                 return;
             }
         }
+
         public void PostInitialise()
         {
             if (!enabled)
@@ -119,6 +121,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
                 m_SceneList.Remove(scene);
             }
         }
+
         private void OnMuteListRequest(IClientAPI client, uint crc)
         {
             m_log.DebugFormat("[MUTE LIST] Got mute list request for crc {0}", crc);

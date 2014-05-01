@@ -43,6 +43,7 @@ namespace OpenSim.Region.CoreModules.World.Vegetation
         protected static readonly PCode[] creationCapabilities = new PCode[] { PCode.Grass, PCode.NewTree, PCode.Tree };
         protected Scene m_scene;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public PCode[] CreationCapabilities { get { return creationCapabilities; } }
 
         public string Name { get { return "Vegetation Module"; } }
@@ -102,6 +103,7 @@ namespace OpenSim.Region.CoreModules.World.Vegetation
         public void Initialise(IConfigSource source)
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -110,6 +112,7 @@ namespace OpenSim.Region.CoreModules.World.Vegetation
         {
             m_scene.UnregisterModuleInterface<IVegetationModule>(this);
         }
+
         protected void AdaptTree(ref PrimitiveBaseShape tree)
         {
             // Tree size has to be adapted depending on its type

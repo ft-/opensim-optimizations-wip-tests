@@ -46,6 +46,7 @@ namespace OpenSim.Framework.Serialization.External
 
         private static Dictionary<string, Action<LandData, XmlTextReader>> m_ldProcessors
             = new Dictionary<string, Action<LandData, XmlTextReader>>();
+
         static LandDataSerializer()
         {
             // LandData processors
@@ -183,6 +184,7 @@ namespace OpenSim.Framework.Serialization.External
 
             xtr.Read();
         }
+
         /// <summary>
         /// Serialize land data
         /// </summary>

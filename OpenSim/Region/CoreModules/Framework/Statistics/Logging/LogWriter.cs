@@ -104,9 +104,11 @@ namespace OpenSim.Region.CoreModules.Framework.Statistics.Logging
         }
 
         public bool Enabled { get; private set; }
-            // 5 minutes
+
+        // 5 minutes
 
         public String LogFileHeader { get; set; }
+
         public void Close()
         {
             Enabled = false;
@@ -122,6 +124,7 @@ namespace OpenSim.Region.CoreModules.Framework.Statistics.Logging
         {
             this.Close();
         }
+
         public void Flush()
         {
             if (!Enabled) return;
@@ -136,6 +139,7 @@ namespace OpenSim.Region.CoreModules.Framework.Statistics.Logging
             if (!Enabled) return;
             Write(String.Format(line, args));
         }
+
         public void Write(string line)
         {
             if (!Enabled) return;

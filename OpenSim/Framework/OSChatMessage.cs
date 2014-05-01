@@ -53,6 +53,7 @@ namespace OpenSim.Framework
         protected object m_senderObject;
         protected UUID m_toID;
         protected ChatTypeEnum m_type;
+
         public OSChatMessage()
         {
             m_position = new Vector3();
@@ -112,6 +113,7 @@ namespace OpenSim.Framework
             get { return m_type; }
             set { m_type = value; }
         }
+
         #region IEventArgs Members
 
         /// TODO: Sender and SenderObject should just be Sender and of
@@ -158,6 +160,7 @@ namespace OpenSim.Framework
             get { return m_toID; }
             set { m_toID = value; }
         }
+
         public override string ToString()
         {
             return m_message;

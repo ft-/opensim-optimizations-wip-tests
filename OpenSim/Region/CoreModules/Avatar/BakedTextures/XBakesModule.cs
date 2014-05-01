@@ -52,6 +52,7 @@ namespace OpenSim.Region.CoreModules.Avatar.BakedTextures
         private static XmlSerializer m_serializer = new XmlSerializer(typeof(AssetBase));
         private UTF8Encoding enc = new UTF8Encoding();
         private string m_URL = String.Empty;
+
         public string Name
         {
             get { return "XBakes.Module"; }
@@ -132,6 +133,7 @@ namespace OpenSim.Region.CoreModules.Avatar.BakedTextures
 
             m_URL = config.GetString("URL", String.Empty);
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -139,6 +141,7 @@ namespace OpenSim.Region.CoreModules.Avatar.BakedTextures
         public void RemoveRegion(Scene scene)
         {
         }
+
         public void Store(UUID agentId, WearableCacheItem[] data)
         {
             if (m_URL == String.Empty)

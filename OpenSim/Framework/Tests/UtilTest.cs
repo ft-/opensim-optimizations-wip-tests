@@ -25,10 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using NUnit.Framework;
 using OpenMetaverse;
 using OpenSim.Tests.Common;
+using System;
 
 namespace OpenSim.Framework.Tests
 {
@@ -207,7 +207,7 @@ namespace OpenSim.Framework.Tests
                                   "application/vnd.ll.outfitfolder",
                                   "application/vnd.ll.myoutfitsfolder"
                     };
-            for (int i=0;i<assettypes.Length;i++)
+            for (int i = 0; i < assettypes.Length; i++)
             {
                 Assert.That(SLUtil.SLAssetTypeToContentType(assettypes[i]) == contenttypes[i], "Expecting {0} but got {1}", contenttypes[i], SLUtil.SLAssetTypeToContentType(assettypes[i]));
             }
@@ -223,7 +223,7 @@ namespace OpenSim.Framework.Tests
                             String.Format("Incorrect AssetType mapped from Content-Type {0}", contenttypes[i]));
             }
 
-            int[] inventorytypes = new int[] {-1,0,1,2,3,6,7,8,9,10,15,17,18,20};
+            int[] inventorytypes = new int[] { -1, 0, 1, 2, 3, 6, 7, 8, 9, 10, 15, 17, 18, 20 };
             string[] invcontenttypes = new string[]
                                            {
                                                "application/octet-stream",
@@ -241,8 +241,8 @@ namespace OpenSim.Framework.Tests
                                                "application/vnd.ll.clothing",
                                                "application/vnd.ll.gesture"
                                            };
-        
-            for (int i=0;i<inventorytypes.Length;i++)
+
+            for (int i = 0; i < inventorytypes.Length; i++)
             {
                 Assert.AreEqual(invcontenttypes[i], SLUtil.SLInvTypeToContentType(inventorytypes[i]),
                     String.Format("Incorrect Content-Type mapped from InventoryType {0}", inventorytypes[i]));
@@ -294,11 +294,11 @@ namespace OpenSim.Framework.Tests
 
             //Region handle is for location 255000,256000.
             ulong regionHandle1 = 1095216660736000;
-            uint  x1 = 100;
-            uint  y1 = 200;
-            uint  z1 = 22;
+            uint x1 = 100;
+            uint y1 = 200;
+            uint z1 = 22;
             ulong regionHandle2;
-            uint  x2, y2, z2;
+            uint x2, y2, z2;
             UUID fakeParcelID1, uuid;
 
             ulong bigInt64 = Util.BytesToUInt64Big(hexBytes8);
@@ -351,14 +351,13 @@ namespace OpenSim.Framework.Tests
             Assert.AreEqual(z1, z2,
                     "Z coordinate decoded from FakeParcelID with X/Y/Z failed.");
 
-
             x1 = 64;
             y1 = 192;
             fakeParcelID1 = Util.BuildFakeParcelID(regionHandle1, x1, y1);
             Util.FakeParcelIDToGlobalPosition(fakeParcelID1, out x2, out y2);
-            Assert.AreEqual(255000+x1, x2,
+            Assert.AreEqual(255000 + x1, x2,
                     "Global X coordinate decoded from regionHandle failed.");
-            Assert.AreEqual(256000+y1, y2,
+            Assert.AreEqual(256000 + y1, y2,
                     "Global Y coordinate decoded from regionHandle failed.");
 
             uuid = new UUID("00dd0700-00d1-0700-3800-000032000000");

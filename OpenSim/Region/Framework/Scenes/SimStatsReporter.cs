@@ -49,6 +49,7 @@ namespace OpenSim.Region.Framework.Scenes
 
         private static readonly log4net.ILog m_log
             = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
         private IEstateModule estateModule;
 
         private SendStatResult handlerSendStatResult;
@@ -198,6 +199,7 @@ namespace OpenSim.Region.Framework.Scenes
         public event SendStatResult OnSendStatsResult;
 
         public event YourStatsAreWrong OnStatsIncorrect;
+
         /// <summary>
         /// These are the IDs of stats sent in the StatsPacket to the viewer.
         /// </summary>
@@ -260,6 +262,7 @@ namespace OpenSim.Region.Framework.Scenes
         {
             get { return lastReportedSimFPS; }
         }
+
         public float[] LastReportedSimStats
         {
             get { return lastReportedSimStats; }
@@ -274,6 +277,7 @@ namespace OpenSim.Region.Framework.Scenes
         /// The threshold at which we log a slow frame.
         /// </summary>
         public int SlowFramesStatReportThreshold { get; private set; }
+
         public void addAgentMS(int ms)
         {
             m_agentMS += ms;
@@ -648,6 +652,7 @@ namespace OpenSim.Region.Framework.Scenes
                     m_scene.RegionInfo.RegionName), e);
             }
         }
+
         # region methods called from Scene
         #endregion
     }

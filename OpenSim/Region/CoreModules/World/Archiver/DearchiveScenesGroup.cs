@@ -44,6 +44,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
     {
         protected RegionInfo m_curRegion;
         protected int? m_curX = null;
+
         // These variables are used while reading the archive control file
         protected int? m_curY = null;
 
@@ -222,6 +223,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
             /// </summary>
             public Scene Scene { get; set; }
         }
+
         // The following methods are used while reading the archive control file
     }
 }

@@ -44,6 +44,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
         protected XEstateModule m_EstateModule;
         protected Object m_RequestLock = new Object();
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public EstateRequestHandler(XEstateModule fmodule)
             : base("POST", "/estate")
         {
@@ -254,6 +255,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
 
             return SuccessResult();
         }
+
         private byte[] UpdateCovenant(Dictionary<string, object> request)
         {
             UUID CovenantID = UUID.Zero;

@@ -53,6 +53,7 @@ namespace OpenSim.Framework.Monitoring
         public static HashSet<string> SubCommands = new HashSet<string> { ListSubCommand };
 
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public static void CheckChecks()
         {
             lock (RegisteredChecks)
@@ -207,6 +208,7 @@ namespace OpenSim.Framework.Monitoring
                     + "THIS FACILITY IS EXPERIMENTAL",
                 HandleShowchecksCommand);
         }
+
         public static bool TryGetCheckParents(
             Check check,
             out SortedDictionary<string, SortedDictionary<string, Check>> category,
@@ -229,6 +231,7 @@ namespace OpenSim.Framework.Monitoring
 
             return false;
         }
+
         private static void OutputAllChecksToConsole(ICommandConsole con)
         {
             foreach (var category in RegisteredChecks.Values)

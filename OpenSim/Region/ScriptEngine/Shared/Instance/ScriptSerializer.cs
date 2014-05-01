@@ -386,6 +386,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Instance
 
             return xmldoc.InnerXml;
         }
+
         private static void DumpList(XmlDocument doc, XmlNode parent,
                 LSL_Types.list l)
         {

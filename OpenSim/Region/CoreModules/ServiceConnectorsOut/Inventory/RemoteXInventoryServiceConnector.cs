@@ -80,6 +80,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
         /// Scene used by this module.  This currently needs to be publicly settable for HGInventoryBroker.
         /// </summary>
         public Scene Scene { get; set; }
+
         public IUserManagement UserManager
         {
             get
@@ -97,6 +98,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
                 return m_UserManager;
             }
         }
+
         protected void Init(IConfigSource source)
         {
             m_RemoteConnector = new XInventoryServicesConnector(source);
@@ -141,6 +143,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -154,6 +157,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
             if (!m_Enabled)
                 return;
         }
+
         #endregion ISharedRegionModule
 
         #region IInventoryService
@@ -270,6 +274,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
         {
             return m_RemoteConnector.GetRootFolder(userID);
         }
+
         public bool HasInventoryForUser(UUID userID)
         {
             return false;
@@ -306,6 +311,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
 
             return m_RemoteConnector.UpdateFolder(folder);
         }
+
         public bool UpdateItem(InventoryItemBase item)
         {
             if (item == null)
@@ -313,6 +319,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
 
             return m_RemoteConnector.UpdateItem(item);
         }
+
         #endregion IInventoryService
     }
 }

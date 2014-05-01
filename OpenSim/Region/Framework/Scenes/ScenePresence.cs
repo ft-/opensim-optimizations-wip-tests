@@ -69,6 +69,7 @@ namespace OpenSim.Region.Framework.Scenes
         public UUID itemID;
         public UUID objectID;
     }
+
     public class ScenePresence : EntityBase, IScenePresence
     {
         /// <summary>
@@ -90,6 +91,7 @@ namespace OpenSim.Region.Framework.Scenes
 
         public Vector4 CollisionPlane = Vector4.UnitW;
         public UUID currentParcelUUID = UUID.Zero;
+
         //        private SceneObjectGroup proxyObjectGroup;
         //private SceneObjectPart proxyObjectPart = null;
         public Vector3 lastKnownAllowedPosition;
@@ -105,6 +107,7 @@ namespace OpenSim.Region.Framework.Scenes
         private const float FLY_ROLL_RESET_RADIANS_PER_UPDATE = 0.02f;
         private const int LAND_VELOCITYMAG_MAX = 12;
         private const int NumMovementsBetweenRayCast = 5;
+
         //        private static readonly byte[] DEFAULT_TEXTURE = AvatarAppearance.GetDefaultTexture().GetBytes();
         private static readonly Array DIR_CONTROL_FLAGS = Enum.GetValues(typeof(Dir_ControlFlags));
 
@@ -769,6 +772,7 @@ namespace OpenSim.Region.Framework.Scenes
             if (m_scene != null)
                 m_scene.EventManager.TriggerScenePresenceUpdated(this);
         }
+
         #region For teleports and crossings callbacks
 
         /// <summary>
@@ -800,6 +804,7 @@ namespace OpenSim.Region.Framework.Scenes
         public bool DoNotCloseAfterTeleport { get; set; }
 
         #endregion For teleports and crossings callbacks
+
         #region Properties
 
         /// <summary>
@@ -1061,6 +1066,7 @@ namespace OpenSim.Region.Framework.Scenes
         /// Physical scene representation of this Avatar.
         /// </summary>
         public PhysicsActor PhysicsActor { get; private set; }
+
         public ulong RegionHandle
         {
             get { return m_rootRegionHandle; }
@@ -1143,6 +1149,7 @@ namespace OpenSim.Region.Framework.Scenes
             get { return m_userLevel; }
             private set { m_userLevel = value; }
         }
+
         #region Client Camera
 
         /// <summary>
@@ -1152,6 +1159,7 @@ namespace OpenSim.Region.Framework.Scenes
 
         private bool m_doingCamRayCast = false;
         private Vector4 m_lastCameraCollisionPlane = new Vector4(0f, 0f, 0f, 1);
+
         // Use these three vectors to figure out what the agent is looking at
         // Convert it to a Matrix and/or Quaternion
         //
@@ -1165,6 +1173,7 @@ namespace OpenSim.Region.Framework.Scenes
         {
             get { return Util.Axes2Rot(CameraAtAxis, CameraLeftAxis, CameraUpAxis); }
         }
+
         public Vector3 CameraUpAxis { get; set; }
 
         public Vector3 Lookat
@@ -1181,6 +1190,7 @@ namespace OpenSim.Region.Framework.Scenes
         }
 
         #endregion Client Camera
+
         /// <summary>
         /// Current velocity of the avatar.
         /// </summary>
@@ -1239,6 +1249,7 @@ namespace OpenSim.Region.Framework.Scenes
                     }
                 }
         */
+
         public string Viewer
         {
             get { return Util.GetViewerName(m_scene.AuthenticateHandler.GetAgentCircuitData(ControllingClient.CircuitCode)); }
@@ -1304,6 +1315,7 @@ namespace OpenSim.Region.Framework.Scenes
 
             return Rotation;
         }
+
         #endregion Properties
 
         #region Constructor(s)
@@ -1420,6 +1432,7 @@ namespace OpenSim.Region.Framework.Scenes
                 }
             }
         }
+
         private void SetDirectionVectors()
         {
             Dir_Vectors[0] = Vector3.UnitX; //FORWARD
@@ -1434,6 +1447,7 @@ namespace OpenSim.Region.Framework.Scenes
             Dir_Vectors[9] = new Vector3(0f, -0.5f, 0f);  //RIGHT_NUDGE
             Dir_Vectors[10] = new Vector3(0f, 0f, -0.5f); //DOWN_Nudge
         }
+
         #endregion Constructor(s)
 
         #region Status Methods
@@ -2046,6 +2060,7 @@ namespace OpenSim.Region.Framework.Scenes
 
             return true;
         }
+
         #endregion Status Methods
 
         #region Event Handlers
@@ -3539,6 +3554,7 @@ namespace OpenSim.Region.Framework.Scenes
 
             return true;
         }
+
         /// <summary>
         /// Callback for the Camera view block check.  Gets called with the results of the camera view block test
         /// hitYN is true when there's something in the way.
@@ -3548,6 +3564,7 @@ namespace OpenSim.Region.Framework.Scenes
         /// <param name="localid"></param>
         /// <param name="distance"></param>
         ///
+
         #endregion Event Handlers
 
         #region Overridden Methods
@@ -3835,11 +3852,13 @@ namespace OpenSim.Region.Framework.Scenes
                 m_scene.StatsReporter.AddAgentUpdates(1);
             }
         }
+
         public void SetSendCoarseLocationMethod(SendCoarseLocationsMethod d)
         {
             if (d != null)
                 m_sendCoarseLocationsMethod = d;
         }
+
         /// <summary>
         /// Do everything required once a client completes its movement into a region and becomes
         /// a root agent.
@@ -3886,6 +3905,7 @@ namespace OpenSim.Region.Framework.Scenes
                 SendAppearanceToAllOtherAgents();
             }
         }
+
         #endregion Update Client(s)
 
         #region Significant Movement Method
@@ -4131,7 +4151,9 @@ namespace OpenSim.Region.Framework.Scenes
 
             return ret;
         }
+
         #endregion Border Crossing Methods
+
         #region Child Agent Updates
 
         private static Vector3 marker = new Vector3(-1f, -1f, -1f);
@@ -4221,6 +4243,7 @@ namespace OpenSim.Region.Framework.Scenes
 
             CopyFrom(cAgentData);
         }
+
         /// <summary>
         /// This updates important decision making data about a child agent
         /// The main purpose is to figure out what objects to send to a child agent that's in a neighboring region
@@ -4261,6 +4284,7 @@ namespace OpenSim.Region.Framework.Scenes
             RegionHandle = cAgentData.RegionHandle;
             //m_velocity = cAgentData.Velocity;
         }
+
         private void CopyFrom(AgentData cAgent)
         {
             lock (m_originRegionIDAccessLock)
@@ -4339,6 +4363,7 @@ namespace OpenSim.Region.Framework.Scenes
             if (Scene.AttachmentsModule != null)
                 Scene.AttachmentsModule.CopyAttachments(cAgent, this);
         }
+
         #endregion Child Agent Updates
 
         public void UnRegisterControlEventsToScript(uint Obj_localID, UUID Script_item_UUID)
@@ -4379,6 +4404,7 @@ namespace OpenSim.Region.Framework.Scenes
                 TriggerScenePresenceUpdated();
             }
         }
+
         /// <summary>
         /// This is currently just being done for information.
         /// </summary>
@@ -4761,6 +4787,7 @@ namespace OpenSim.Region.Framework.Scenes
             if (ControllingClient != null)
                 ControllingClient.SendAgentAlertMessage("Physics is having a problem with your avatar.  You may not be able to move until you relog.", true);
         }
+
         private void Reprioritize(object sender, ElapsedEventArgs e)
         {
             ControllingClient.ReprioritizeUpdates();

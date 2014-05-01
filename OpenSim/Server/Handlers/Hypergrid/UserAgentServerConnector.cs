@@ -105,6 +105,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
         {
             get { return m_HomeUsersService; }
         }
+
         public XmlRpcResponse AgentIsComingHome(XmlRpcRequest request, IPEndPoint remoteClient)
         {
             Hashtable requestData = (Hashtable)request.Params[0];
@@ -158,6 +159,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
             response.Value = hash;
             return response;
         }
+
         [Obsolete]
         public XmlRpcResponse GetOnlineFriends(XmlRpcRequest request, IPEndPoint remoteClient)
         {

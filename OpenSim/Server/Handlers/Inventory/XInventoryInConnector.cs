@@ -654,6 +654,7 @@ namespace OpenSim.Server.Handlers.Asset
 
         private string m_ConfigName = "InventoryService";
         private IInventoryService m_InventoryService;
+
         public XInventoryInConnector(IConfigSource config, IHttpServer server, string configName) :
             base(config, server, configName)
         {

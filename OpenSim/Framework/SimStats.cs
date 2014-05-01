@@ -89,10 +89,12 @@ namespace OpenSim.Framework
         {
             get { return m_regionX; }
         }
+
         public uint RegionY
         {
             get { return m_regionY; }
         }
+
         public SimStatsPacket.StatBlock[] StatsBlock
         {
             get { return m_statsBlock; }

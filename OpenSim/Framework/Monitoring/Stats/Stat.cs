@@ -172,6 +172,7 @@ namespace OpenSim.Framework.Monitoring
         public string ShortName { get; private set; }
 
         public StatType StatType { get; private set; }
+
         public virtual string UnitName { get; private set; }
 
         public virtual double Value
@@ -194,6 +195,7 @@ namespace OpenSim.Framework.Monitoring
         }
 
         public StatVerbosity Verbosity { get; private set; }
+
         // Compute the averages over time and return same.
         // Return 'true' if averages were actually computed. 'false' if no average info.
         public bool ComputeMeasuresOfInterest(out double lastChangeOverTime, out double averageChangeOverTime)
@@ -304,6 +306,7 @@ namespace OpenSim.Framework.Monitoring
 
             return ret;
         }
+
         protected void AppendMeasuresOfInterest(StringBuilder sb)
         {
             double lastChangeOverTime = 0;

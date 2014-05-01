@@ -48,6 +48,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts
 
         private UserAccountCache m_Cache;
         private bool m_Enabled = false;
+
         public string Name
         {
             get { return "RemoteUserAccountServicesConnector"; }
@@ -57,6 +58,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts
         {
             get { return null; }
         }
+
         public void AddRegion(Scene scene)
         {
             if (!m_Enabled)
@@ -101,6 +103,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts
             if (!m_Enabled)
                 return;
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -112,6 +115,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts
             if (!m_Enabled)
                 return;
         }
+
         #region Overwritten methods from IUserAccountService
 
         public override UserAccount GetUserAccount(UUID scopeID, UUID userID)

@@ -712,6 +712,7 @@ namespace OpenSim.Services.Connectors
 
             return string.Format("Error communicating with the grid service at {0}", uri);
         }
+
         #endregion IGridService
     }
 }

@@ -53,6 +53,7 @@ namespace OpenSim.Framework
         private LazyThreadSafetyMode mode;
         private object monitor;
         private T value;
+
         public Lazy()
             : this(LazyThreadSafetyMode.ExecutionAndPublication)
         {

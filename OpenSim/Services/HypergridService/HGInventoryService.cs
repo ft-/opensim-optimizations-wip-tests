@@ -55,6 +55,7 @@ namespace OpenSim.Services.HypergridService
         private UserAccountCache m_Cache;
         private string m_HomeURL;
         private IUserAccountService m_UserAccountService;
+
         public HGInventoryService(IConfigSource config, string configName)
             : base(config, configName)
         {

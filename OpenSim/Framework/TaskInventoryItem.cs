@@ -69,6 +69,7 @@ namespace OpenSim.Framework
         private UUID _permsGranter;
         private int _permsMask;
         private int _type = 0;
+
         public TaskInventoryItem()
         {
             ScriptRunning = true;
@@ -128,6 +129,7 @@ namespace OpenSim.Framework
                 _creatorID = value;
             }
         }
+
         /// <summary>
         /// Used by the DB layer to retrieve / store the entire user identification.
         /// The identification can either be a simple UUID or a string of the form
@@ -331,6 +333,7 @@ namespace OpenSim.Framework
                 _oldID = value;
             }
         }
+
         public bool OwnerChanged
         {
             get
@@ -357,6 +360,7 @@ namespace OpenSim.Framework
                 _ownerID = value;
             }
         }
+
         public UUID ParentID
         {
             get
@@ -424,6 +428,7 @@ namespace OpenSim.Framework
                 _type = value;
             }
         }
+
         // See ICloneable
 
         #region ICloneable Members

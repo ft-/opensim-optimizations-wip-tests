@@ -55,6 +55,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts
         /// to a local UserAccountService when setting up an estate manager.
         /// </summary>
         public IUserAccountService UserAccountService { get; private set; }
+
         #region ISharedRegionModule
 
         public string Name
@@ -66,6 +67,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts
         {
             get { return null; }
         }
+
         public void AddRegion(Scene scene)
         {
             if (!m_Enabled)
@@ -127,6 +129,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts
             if (!m_Enabled)
                 return;
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -140,6 +143,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts
             if (!m_Enabled)
                 return;
         }
+
         #endregion ISharedRegionModule
 
         #region IUserAccountService
@@ -195,6 +199,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts
                 m_Cache.Cache(data.PrincipalID, data);
             return ret;
         }
+
         #endregion IUserAccountService
     }
 }

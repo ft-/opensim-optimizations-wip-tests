@@ -51,6 +51,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
 
         private bool m_Enabled = false;
         private string m_serverUrl = String.Empty;
+
         #region ISharedRegionModule
 
         public SimianAuthenticationServiceConnector()
@@ -77,6 +78,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
         public void RegionLoaded(Scene scene)
         {
         }
+
         public void RemoveRegion(Scene scene)
         {
             if (m_Enabled) { scene.UnregisterModuleInterface<IAuthenticationService>(this); }

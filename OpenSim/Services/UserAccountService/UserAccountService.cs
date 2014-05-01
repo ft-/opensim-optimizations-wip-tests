@@ -53,6 +53,7 @@ namespace OpenSim.Services.UserAccountService
         /// Should we create default entries (minimum body parts/clothing, avatar wearable entries) for a new avatar?
         /// </summary>
         private bool m_CreateDefaultAvatarEntries;
+
         public UserAccountService(IConfigSource config)
             : base(config)
         {
@@ -305,6 +306,7 @@ namespace OpenSim.Services.UserAccountService
 
             return u;
         }
+
         #endregion IUserAccountService
 
         #region Console commands
@@ -456,6 +458,7 @@ namespace OpenSim.Services.UserAccountService
             foreach (KeyValuePair<string, Object> kvp in ua.ServiceURLs)
                 MainConsole.Instance.OutputFormat("{0}: {1}", kvp.Key, kvp.Value);
         }
+
         #endregion Console commands
 
         /// <summary>

@@ -191,6 +191,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api.Plugins
 
             public UUID itemID;
             public uint localID;
+
             //public DateTime next;
             public long next;
 

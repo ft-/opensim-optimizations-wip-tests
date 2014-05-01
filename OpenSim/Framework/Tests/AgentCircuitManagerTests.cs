@@ -1,4 +1,8 @@
-﻿/*
+﻿using NUnit.Framework;
+using OpenMetaverse;
+using System;
+
+/*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
  *
@@ -24,10 +28,8 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 using System.Collections.Generic;
-using OpenMetaverse;
-using NUnit.Framework;
-using System;
 
 namespace OpenSim.Framework.Tests
 {
@@ -48,16 +50,15 @@ namespace OpenSim.Framework.Tests
         [SetUp]
         public void setup()
         {
-
             AgentId1 = UUID.Random();
             AgentId2 = UUID.Random();
-            circuitcode1 = (uint) rnd.Next((int)uint.MinValue, int.MaxValue);
-            circuitcode2 = (uint) rnd.Next((int)uint.MinValue, int.MaxValue);
+            circuitcode1 = (uint)rnd.Next((int)uint.MinValue, int.MaxValue);
+            circuitcode2 = (uint)rnd.Next((int)uint.MinValue, int.MaxValue);
             SessionId1 = UUID.Random();
             SessionId2 = UUID.Random();
             UUID BaseFolder = UUID.Random();
             string CapsPath = "http://www.opensimulator.org/Caps/Foo";
-            Dictionary<ulong,string> ChildrenCapsPaths = new Dictionary<ulong, string>();
+            Dictionary<ulong, string> ChildrenCapsPaths = new Dictionary<ulong, string>();
             ChildrenCapsPaths.Add(ulong.MaxValue, "http://www.opensimulator.org/Caps/Foo2");
             string firstname = "CoolAvatarTest";
             string lastname = "test";
@@ -104,7 +105,7 @@ namespace OpenSim.Framework.Tests
         public void AddAgentCircuitTest()
         {
             AgentCircuitManager agentCircuitManager = new AgentCircuitManager();
-            agentCircuitManager.AddNewCircuit(circuitcode1,m_agentCircuitData1);
+            agentCircuitManager.AddNewCircuit(circuitcode1, m_agentCircuitData1);
             agentCircuitManager.AddNewCircuit(circuitcode2, m_agentCircuitData2);
             AgentCircuitData agent = agentCircuitManager.GetAgentCircuitData(circuitcode1);
 
@@ -136,7 +137,6 @@ namespace OpenSim.Framework.Tests
 
             AgentCircuitData agent = agentCircuitManager.GetAgentCircuitData(circuitcode2);
             Assert.That(agent == null);
-
         }
 
         /// <summary>
@@ -157,7 +157,6 @@ namespace OpenSim.Framework.Tests
             Assert.That(agent != null);
             Assert.That(agent2 == null);
             Assert.That(result);
-
         }
 
         /// <summary>
@@ -176,14 +175,13 @@ namespace OpenSim.Framework.Tests
             AuthenticateResponse resp = agentCircuitManager.AuthenticateSession(SessionId1, AgentId1, circuitcode1);
             Assert.That(resp.Authorised);
 
-
             //should not be authorized
             resp = agentCircuitManager.AuthenticateSession(SessionId1, UUID.Random(), circuitcode1);
             Assert.That(!resp.Authorised);
 
             resp = agentCircuitManager.AuthenticateSession(UUID.Random(), AgentId1, circuitcode1);
             Assert.That(!resp.Authorised);
-            
+
             resp = agentCircuitManager.AuthenticateSession(SessionId1, AgentId1, circuitcode2);
             Assert.That(!resp.Authorised);
 

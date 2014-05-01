@@ -51,6 +51,7 @@ namespace OpenSim.Region.CoreModules.World
         private bool m_ready = false;
         private Random m_rndnums = new Random(Environment.TickCount);
         private Scene m_scene = null;
+
         public string Name
         {
             get { return "CloudModule"; }
@@ -118,6 +119,7 @@ namespace OpenSim.Region.CoreModules.World
                 m_frameUpdateRate = cloudConfig.GetInt("cloud_update_rate", 1000);
             }
         }
+
         public void PostInitialise()
         {
         }
@@ -139,6 +141,7 @@ namespace OpenSim.Region.CoreModules.World
 
             m_scene = null;
         }
+
         private void CloudUpdate()
         {
             if (((m_frame++ % m_frameUpdateRate) != 0) || !m_ready || (m_cloudDensity == 0))

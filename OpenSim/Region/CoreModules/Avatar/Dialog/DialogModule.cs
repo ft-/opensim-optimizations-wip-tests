@@ -43,6 +43,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Dialog
     {
         protected Scene m_scene;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public string Name { get { return "Dialog Module"; } }
 
         public Type ReplaceableInterface { get { return null; } }
@@ -101,6 +102,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Dialog
         public void Initialise(IConfigSource source)
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (scene != m_scene)
@@ -125,6 +127,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Dialog
 
             m_scene.UnregisterModuleInterface<IDialogModule>(this);
         }
+
         public void SendAlertToUser(IClientAPI client, string message)
         {
             SendAlertToUser(client, message, false);
@@ -195,6 +198,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Dialog
                 client.SendAlertMessage(message);
             });
         }
+
         public void SendNotificationToUsersInRegion(UUID fromAvatarID,
                 string fromAvatarName, string message)
         {
@@ -246,6 +250,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Dialog
                         ownerID, groupOwned, message, url);
             }
         }
+
         private string CombineParams(string[] commandParams, int pos)
         {
             string result = string.Empty;

@@ -99,6 +99,7 @@ namespace OpenSim.Framework.Communications
         UserProfileData GetUserProfile(Uri uri);
 
         Uri GetUserUri(UserProfileData userProfile);
+
         /// <summary>
         /// Logs off a user on the user server
         /// </summary>
@@ -151,6 +152,7 @@ namespace OpenSim.Framework.Communications
         ///                    via a call to GetUserProfile().</param>
         /// <returns>true if the update could be applied, false if it could not be applied.</returns>
         bool UpdateUserProfile(UserProfileData data);
+
         // This probably shouldn't be here, it belongs to IAuthentication
         // But since Scenes only have IUserService references, I'm placing it here for now.
         bool VerifySession(UUID userID, UUID sessionID);

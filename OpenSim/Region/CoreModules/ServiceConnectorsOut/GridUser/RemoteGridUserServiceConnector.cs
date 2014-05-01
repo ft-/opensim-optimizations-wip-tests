@@ -45,7 +45,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
         private const int KEEPTIME = 30;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-         // 30 secs
+        // 30 secs
         private ExpiringCache<string, GridUserInfo> m_Infos = new ExpiringCache<string, GridUserInfo>();
 
         #region ISharedRegionModule
@@ -63,6 +63,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
         {
             get { return null; }
         }
+
         public void AddRegion(Scene scene)
         {
             if (!m_Enabled)
@@ -100,6 +101,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -113,6 +115,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
 
             m_ActivityDetector.RemoveRegion(scene);
         }
+
         #endregion ISharedRegionModule
 
         #region IGridUserService
@@ -184,6 +187,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
 
             return false;
         }
+
         #endregion IGridUserService
     }
 }

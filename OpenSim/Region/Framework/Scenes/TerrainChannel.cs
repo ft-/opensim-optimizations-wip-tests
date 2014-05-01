@@ -45,6 +45,7 @@ namespace OpenSim.Region.Framework.Scenes
         protected TerrainData m_terrainData;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private static string LogHeader = "[TERRAIN CHANNEL]";
+
         // Default, not-often-used builder
         public TerrainChannel()
         {
@@ -99,9 +100,10 @@ namespace OpenSim.Region.Framework.Scenes
 
         public int Width { get { return m_terrainData.SizeX; } }  // X dimension
 
- // Y dimension
+        // Y dimension
 
-         // Y dimension
+        // Y dimension
+
         #region ITerrainChannel Members
 
         // ITerrainChannel.this[x,y]
@@ -180,6 +182,7 @@ namespace OpenSim.Region.Framework.Scenes
         {
             return this.Copy();
         }
+
         // ITerrainChannel.Merge
         public void Merge(ITerrainChannel newTerrain, Vector3 displacement, float radianRotation, Vector2 rotationDisplacement)
         {
@@ -275,6 +278,7 @@ namespace OpenSim.Region.Framework.Scenes
         {
             return m_terrainData.IsTaintedAt(x, y);
         }
+
         #endregion ITerrainChannel Members
 
         public TerrainChannel Copy()
@@ -392,6 +396,7 @@ namespace OpenSim.Region.Framework.Scenes
                 writer.WriteEndElement();
             }
         }
+
         private class TerrainChannelXMLPackage
         {
             public float CompressionFactor;
@@ -400,6 +405,7 @@ namespace OpenSim.Region.Framework.Scenes
             public int SizeY;
             public int SizeZ;
             public int Version;
+
             public TerrainChannelXMLPackage(int pX, int pY, int pZ, float pCompressionFactor, int[] pMap)
             {
                 Version = 1;

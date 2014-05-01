@@ -146,21 +146,25 @@ namespace OpenSim.Region.CoreModules.Scripting.HttpRequest
         {
             get { return _finished; }
         }
+
         public UUID ItemID
         {
             get { return _itemID; }
             set { _itemID = value; }
         }
+
         public uint LocalID
         {
             get { return _localID; }
             set { _localID = value; }
         }
+
         public UUID ReqID
         {
             get { return _reqID; }
             set { _reqID = value; }
         }
+
         public void Process()
         {
             SendRequest();
@@ -545,6 +549,7 @@ namespace OpenSim.Region.CoreModules.Scripting.HttpRequest
         * finished.  I thought about setting up a queue for this, but
         * it will need some refactoring and this works 'enough' right now
         */
+
         #endregion IHttpRequestModule Members
 
         #region ISharedRegionModule Members
@@ -577,6 +582,7 @@ namespace OpenSim.Region.CoreModules.Scripting.HttpRequest
 
             m_pendingRequests = new Dictionary<UUID, HttpRequestClass>();
         }
+
         public void PostInitialise()
         {
         }
@@ -591,6 +597,7 @@ namespace OpenSim.Region.CoreModules.Scripting.HttpRequest
             if (scene == m_scene)
                 m_scene = null;
         }
+
         #endregion ISharedRegionModule Members
     }
 }

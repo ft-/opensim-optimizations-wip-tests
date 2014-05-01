@@ -43,6 +43,7 @@ namespace OpenSim.Framework
         public byte WaterHeight;
         public ushort X;
         public ushort Y;
+
         public MapBlockData()
         {
         }

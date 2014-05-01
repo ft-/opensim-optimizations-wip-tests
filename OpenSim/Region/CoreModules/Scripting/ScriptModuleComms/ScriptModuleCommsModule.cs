@@ -54,7 +54,8 @@ namespace OpenSim.Region.CoreModules.Scripting.ScriptModuleComms
         #region ScriptInvocation
 
         private Dictionary<string, ScriptInvocationData> m_scriptInvocation = new Dictionary<string, ScriptInvocationData>();
-		private ReaderWriterLock m_ScriptInvocationRwLock = new ReaderWriterLock();
+        private ReaderWriterLock m_ScriptInvocationRwLock = new ReaderWriterLock();
+
         protected class ScriptInvocationData
         {
             public ScriptInvocationData(string fname, Delegate fn, Type[] callsig, Type returnsig)
@@ -70,8 +71,10 @@ namespace OpenSim.Region.CoreModules.Scripting.ScriptModuleComms
             public Type ReturnType { get; private set; }
 
             public Delegate ScriptInvocationDelegate { get; private set; }
+
             public Type[] TypeSignature { get; private set; }
         }
+
         #endregion ScriptInvocation
 
         private IScriptModule m_scriptModule = null;
@@ -102,6 +105,7 @@ namespace OpenSim.Region.CoreModules.Scripting.ScriptModuleComms
         public void Initialise(IConfigSource config)
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             m_scriptModule = scene.RequestModuleInterface<IScriptModule>();
@@ -113,6 +117,7 @@ namespace OpenSim.Region.CoreModules.Scripting.ScriptModuleComms
         public void RemoveRegion(Scene scene)
         {
         }
+
         #endregion RegionModuleInterface
 
         #region ScriptModuleComms
@@ -292,6 +297,7 @@ namespace OpenSim.Region.CoreModules.Scripting.ScriptModuleComms
 
             c(script, id, module, command, k);
         }
+
         /// <summary>
         /// Operation to for a region module to register a constant to be used
         /// by the script engine
@@ -442,6 +448,7 @@ namespace OpenSim.Region.CoreModules.Scripting.ScriptModuleComms
 
             return target.GetMethod(meth, getMethodFlags);
         }
+
         #endregion ScriptModuleComms
     }
 }

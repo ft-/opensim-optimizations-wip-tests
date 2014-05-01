@@ -45,6 +45,7 @@ namespace OpenSim.Region.Framework.Scenes
     {
         protected string m_assetServerURL;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public HGUuidGatherer(IAssetService assetService, string assetServerURL)
             : base(assetService)
         {
@@ -394,6 +395,7 @@ namespace OpenSim.Region.Framework.Scenes
                 GatherAssetUuids(texture.MaterialID, (sbyte)OpenSimAssetType.Material, assetUuids);
             }
         }
+
         /// <summary>
         /// Get the asset uuid associated with a gesture
         /// </summary>

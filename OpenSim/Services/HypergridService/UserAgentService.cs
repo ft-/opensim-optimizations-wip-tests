@@ -621,6 +621,7 @@ namespace OpenSim.Services.HypergridService
                 }
             }
         }
+
         private TravelingAgentInfo CreateTravelInfo(AgentCircuitData agentCircuit, GridRegion region, bool fromLogin, out TravelingAgentInfo existing)
         {
             HGTravelingData hgt = m_Database.Get(agentCircuit.SessionID);
@@ -648,6 +649,7 @@ namespace OpenSim.Services.HypergridService
 
             return travel;
         }
+
         #region Misc
 
         private bool IsException(string dest, int level, Dictionary<int, List<string>> exceptions)
@@ -698,13 +700,14 @@ namespace OpenSim.Services.HypergridService
     {
         public string ClientIPAddress = string.Empty;
         public string GridExternalName = string.Empty;
+
         // as seen from this user agent service
         public string MyIpAddress = string.Empty;
 
         public string ServiceToken = string.Empty;
         public UUID SessionID;
         public UUID UserID;
- // the user agent service's external IP, as seen from the next gatekeeper
+        // the user agent service's external IP, as seen from the next gatekeeper
 
         public TravelingAgentInfo(HGTravelingData t)
         {

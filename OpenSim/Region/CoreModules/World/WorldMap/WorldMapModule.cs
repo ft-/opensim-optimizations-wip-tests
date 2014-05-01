@@ -86,6 +86,7 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
         private Dictionary<UUID, MapRequestState> m_openRequests = new Dictionary<UUID, MapRequestState>();
         private List<UUID> m_rootAgents = new List<UUID>();
         private IServiceThrottleModule m_ServiceThrottle;
+
         // 10 minutes
         private byte[] myMapImageJPEG;
 
@@ -146,6 +147,7 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
             blacklistTimeout
                 = Util.GetConfigVarFromSections<int>(config, "BlacklistTimeout", configSections, 10 * 60) * 1000;
         }
+
         public virtual void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -166,6 +168,7 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
                 m_scene = null;
             }
         }
+
         #endregion INonSharedRegionModule Members
 
         private delegate OSDMap RequestMapItemsDelegate(UUID id, uint flags,
@@ -1160,6 +1163,7 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
                                                               HandleRemoteMapItemRequest);
             MainServer.Instance.RemoveHTTPHandler("", regionimage);
         }
+
         #region EventHandlers
 
         /// <summary>
@@ -1185,6 +1189,7 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
             client.OnRequestMapBlocks += RequestMapBlocks;
             client.OnMapItemRequest += HandleMapItemRequest;
         }
+
         #endregion EventHandlers
 
         // From msdn

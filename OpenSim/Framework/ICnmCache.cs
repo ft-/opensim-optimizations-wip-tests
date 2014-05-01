@@ -187,6 +187,7 @@ namespace OpenSim.Framework
         /// <seealso cref="SyncRoot"/>
         /// <seealso cref="CnmSynchronizedCache{TKey,TValue}"/>
         bool IsSynchronized { get; }
+
         /// <summary>
         /// Gets a value indicating whether elements stored to <see cref="ICnmCache{TKey,TValue}"/> have limited inactivity time.
         /// </summary>

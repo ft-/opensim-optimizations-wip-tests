@@ -69,6 +69,7 @@ namespace OpenSim.Framework
         /// synchronization object should only be locked for larger
         /// transactions</summary>
         public object SyncRoot { get { return m_syncRoot; } }
+
         /// <summary>
         /// Adds a key/value pair to the collection. This will throw an
         /// exception if the key is already present in the collection
@@ -106,6 +107,7 @@ namespace OpenSim.Framework
                 return !containedKey;
             }
         }
+
         /// <summary>
         /// Clears all key/value pairs from the collection
         /// </summary>
@@ -155,6 +157,7 @@ namespace OpenSim.Framework
                 return removed;
             }
         }
+
         /// <summary>
         /// Gets the value associated with the specified key
         /// </summary>
@@ -169,6 +172,7 @@ namespace OpenSim.Framework
             lock (m_syncRoot)
                 return m_dict.TryGetValue(key, out value);
         }
+
         private void CreateArray()
         {
             // Rebuild the array from the dictionary. This method must be

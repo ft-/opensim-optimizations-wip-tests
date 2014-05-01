@@ -222,6 +222,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
     {
         public float[] mMax = new float[3];
         public float[] mMin = new float[3];
+
         public Rect3d()
         {
         }
@@ -257,6 +258,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
             mMin[1] = bmin[1];
             mMin[2] = bmin[2];
         }
+
         public void SetMin(float x, float y, float z)
         {
             mMin[0] = x;

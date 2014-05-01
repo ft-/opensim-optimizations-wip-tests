@@ -46,6 +46,7 @@ namespace OpenSim.Region.Framework.Interfaces
     {
         public UUID RegionID;
         public string UserID;
+
         public PresenceInfo(string userID, UUID regionID)
         {
             UserID = userID;

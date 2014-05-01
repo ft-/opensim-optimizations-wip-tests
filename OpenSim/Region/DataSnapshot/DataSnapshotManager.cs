@@ -72,10 +72,12 @@ namespace OpenSim.Region.DataSnapshot
 
         //Information from config
         private bool m_enabled = false;
+
         private string m_exposure_level = "minimum";
         private Dictionary<string, string> m_gridinfo = new Dictionary<string, string>();
         private int m_lastUpdate = 0;
         private int m_maxStales = 500;
+
         //Update timers
         private int m_period = 20;
 
@@ -85,11 +87,13 @@ namespace OpenSim.Region.DataSnapshot
         private UUID m_Secret = UUID.Random();
         private bool m_servicesNotified = false;
         private string m_snapsDir = "DataSnapshot";
+
         //Program objects
         private SnapshotStore m_snapStore = null;
 
         // in seconds
         private int m_stales = 0;
+
         #endregion Class members
 
         #region Properties
@@ -224,6 +228,7 @@ namespace OpenSim.Region.DataSnapshot
                 }
             }
         }
+
         public void PostInitialise()
         {
         }
@@ -267,6 +272,7 @@ namespace OpenSim.Region.DataSnapshot
 
             m_snapStore.RemoveScene(restartedScene);
         }
+
         #endregion Region Module interface
 
         #region Associated helper functions
@@ -456,6 +462,7 @@ namespace OpenSim.Region.DataSnapshot
                 }
             }
         }
+
         #endregion Latency-based update functions
     }
 }

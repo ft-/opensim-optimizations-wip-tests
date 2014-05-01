@@ -57,6 +57,7 @@ namespace OpenSim.Region.OptionalModules.Agent.InternetRelayClientView.Server
         }
 
         public event OnNewIRCUserDelegate OnNewIRCClient;
+
         public void Stop()
         {
             m_running = false;

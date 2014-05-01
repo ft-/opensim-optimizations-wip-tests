@@ -505,6 +505,7 @@ namespace OpenSim.Services.LLLoginService
             response["success"] = true;
             return response;
         }
+
         protected GridRegion FindDestination(
             UserAccount account, UUID scopeID, GridUserInfo pinfo, UUID sessionID, string startLocation,
             GridRegion home, out GridRegion gatekeeper,
@@ -844,6 +845,7 @@ namespace OpenSim.Services.LLLoginService
 
             return null;
         }
+
         private bool LaunchAgentDirectly(ISimulationService simConnector, GridRegion region, AgentCircuitData aCircuit, TeleportFlags flags, out string reason)
         {
             return simConnector.CreateAgent(null, region, aCircuit, (uint)flags, out reason);
@@ -903,6 +905,7 @@ namespace OpenSim.Services.LLLoginService
                 m_log.WarnFormat("[LLLogin SERVICE]: Unable to parse GatekeeperURL {0}", url);
             }
         }
+
         private void SetServiceURLs(AgentCircuitData aCircuit, UserAccount account)
         {
             aCircuit.ServiceURLs = new Dictionary<string, object>();
@@ -951,6 +954,7 @@ namespace OpenSim.Services.LLLoginService
                     m_UserAccountService.StoreUserAccount(account);
             }
         }
+
         #region Console Commands
 
         private void HandleLoginCommand(string module, string[] cmd)

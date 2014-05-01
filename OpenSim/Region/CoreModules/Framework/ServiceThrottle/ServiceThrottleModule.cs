@@ -50,6 +50,7 @@ namespace OpenSim.Region.CoreModules.Framework
         private Dictionary<string, List<string>> m_Pending = new Dictionary<string, List<string>>();
         private Queue<Action> m_RequestQueue = new Queue<Action>();
         private System.Timers.Timer m_timer = new System.Timers.Timer();
+
         #region ISharedRegionModule
 
         public string Name
@@ -95,6 +96,7 @@ namespace OpenSim.Region.CoreModules.Framework
             //    true,
             //    false);
         }
+
         public void PostInitialise()
         {
         }
@@ -111,6 +113,7 @@ namespace OpenSim.Region.CoreModules.Framework
                 scene.EventManager.OnNewClient -= OnNewClient;
             }
         }
+
         #endregion ISharedRegionModule
 
         #region Events
@@ -153,6 +156,7 @@ namespace OpenSim.Region.CoreModules.Framework
         {
             client.OnRegionHandleRequest += OnRegionHandleRequest;
         }
+
         #endregion Events
 
         #region IServiceThrottleModule
@@ -241,6 +245,7 @@ namespace OpenSim.Region.CoreModules.Framework
                 }
             return false;
         }
+
         #endregion Misc
     }
 }

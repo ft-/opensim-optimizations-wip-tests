@@ -39,6 +39,7 @@ namespace OpenSim.Region.CoreModules.World.Wind.Plugins
         private Random m_rndnums = new Random(Environment.TickCount);
         private float m_strength = 1.0f;
         private Vector2[] m_windSpeeds = new Vector2[16 * 16];
+
         #region IPlugin Members
 
         public string Name
@@ -50,6 +51,7 @@ namespace OpenSim.Region.CoreModules.World.Wind.Plugins
         {
             get { return "1.0.0.0"; }
         }
+
         public void Initialise()
         {
         }
@@ -160,6 +162,7 @@ namespace OpenSim.Region.CoreModules.World.Wind.Plugins
                 }
             }
         }
+
         #endregion IWindModelPlugin Members
     }
 }

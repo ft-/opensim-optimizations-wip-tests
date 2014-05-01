@@ -107,6 +107,7 @@ namespace OpenSim.Region.Physics.BasicPhysicsPlugin
         public override void Initialise(IMesher meshmerizer, IConfigSource config)
         {
         }
+
         public override void RemoveAvatar(PhysicsActor actor)
         {
             BasicActor act = (BasicActor)actor;
@@ -120,6 +121,7 @@ namespace OpenSim.Region.Physics.BasicPhysicsPlugin
             if (_prims.Contains(prim))
                 _prims.Remove(prim);
         }
+
         public override void SetTerrain(float[] heightMap)
         {
             _heightMap = heightMap;

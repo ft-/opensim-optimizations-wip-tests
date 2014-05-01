@@ -56,7 +56,9 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
         public event BulkPresenceData OnBulkPresenceData;
 
         public event PresenceChange OnPresenceChange;
+
 #pragma warning restore 0067
+
         public string Name
         {
             get { return "PresenceModule"; }
@@ -97,6 +99,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
         public void Initialise(IConfigSource config)
         {
         }
+
         public void OnNewClient(IClientAPI client)
         {
             client.AddGenericPacketHandler("requestonlinenotification", OnRequestOnlineNotification);
@@ -146,6 +149,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
         {
             m_Scenes.Remove(scene);
         }
+
         public void RequestBulkPresenceData(UUID[] users)
         {
         }

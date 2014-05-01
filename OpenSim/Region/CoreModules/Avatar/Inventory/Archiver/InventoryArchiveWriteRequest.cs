@@ -48,6 +48,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver
     {
         protected TarArchiveWriter m_archiveWriter;
         protected UuidGatherer m_assetGatherer;
+
         /// <value>
         /// Used to collect the uuids of the assets that we need to save into the archive
         /// </value>
@@ -124,6 +125,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver
         /// Determine whether this archive will save assets.  Default is true.
         /// </summary>
         public bool SaveAssets { get; set; }
+
         /// <summary>
         /// Create the archive name for a particular folder.
         /// </summary>
@@ -472,6 +474,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver
             if (SaveAssets && itemAssetType != AssetType.Link && itemAssetType != AssetType.LinkFolder)
                 m_assetGatherer.GatherAssetUuids(inventoryItem.AssetID, (sbyte)inventoryItem.AssetType, m_assetUuids);
         }
+
         /// <summary>
         /// Save information for the users that we've collected.
         /// </summary>

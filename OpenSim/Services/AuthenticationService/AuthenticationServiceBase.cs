@@ -50,6 +50,7 @@ namespace OpenSim.Services.AuthenticationService
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
+
         public AuthenticationServiceBase(IConfigSource config)
             : base(config)
         {
@@ -171,6 +172,7 @@ namespace OpenSim.Services.AuthenticationService
         {
             return m_Database.CheckToken(principalID, token, lifetime);
         }
+
         protected string GetToken(UUID principalID, int lifetime)
         {
             UUID token = UUID.Random();

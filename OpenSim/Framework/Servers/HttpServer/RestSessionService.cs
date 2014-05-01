@@ -154,6 +154,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         private string aid;
         private TRequest request_body;
         private string sid;
+
         public string AvatarID
         {
             get { return aid; }

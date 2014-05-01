@@ -51,6 +51,7 @@ namespace OpenSim.Server.Handlers
             get;
             private set;
         }
+
         #region Classifieds
 
         /// <summary>
@@ -151,6 +152,7 @@ namespace OpenSim.Server.Handlers
             response.Error.Message = string.Format("{0}", result);
             return false;
         }
+
         #endregion Classifieds
 
         #region Picks
@@ -242,6 +244,7 @@ namespace OpenSim.Server.Handlers
 
             return false;
         }
+
         #endregion Picks
 
         #region Notes

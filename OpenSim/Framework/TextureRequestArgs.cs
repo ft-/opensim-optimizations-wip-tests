@@ -38,6 +38,7 @@ namespace OpenSim.Framework
         private float m_priority;
         private uint m_requestsequence;
         private int m_requestType;
+
         /// <summary>
         ///
         /// </summary>
@@ -61,6 +62,7 @@ namespace OpenSim.Framework
             get { return m_priority; }
             set { m_priority = value; }
         }
+
         /// <summary>
         ///
         /// </summary>
@@ -75,6 +77,7 @@ namespace OpenSim.Framework
             get { return m_requestsequence; }
             set { m_requestsequence = value; }
         }
+
         public int RequestType
         {
             get { return m_requestType; }

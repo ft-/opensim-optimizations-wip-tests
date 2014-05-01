@@ -77,6 +77,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Friends
         {
             //            m_log.DebugFormat("[FRIENDS COMMAND MODULE]: POST INITIALIZED MODULE");
         }
+
         public void RegionLoaded(Scene scene)
         {
             //            m_log.DebugFormat("[APPEARANCE INFO MODULE]: REGION {0} LOADED", scene.RegionInfo.RegionName);
@@ -103,6 +104,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Friends
         {
             //            m_log.DebugFormat("[FRIENDS COMMAND MODULE]: REGION {0} REMOVED", scene.RegionInfo.RegionName);
         }
+
         protected void HandleFriendsShowCommand(string module, string[] cmd)
         {
             Dictionary<string, object> options = new Dictionary<string, object>();

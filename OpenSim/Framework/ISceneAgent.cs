@@ -69,6 +69,7 @@ namespace OpenSim.Framework
         /// What type of presence is this?  User, NPC, etc.
         /// </summary>
         PresenceType PresenceType { get; }
+
         /// <summary>
         /// Send initial scene data to the client controlling this agent
         /// </summary>

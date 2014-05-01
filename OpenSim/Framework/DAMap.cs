@@ -203,6 +203,7 @@ namespace OpenSim.Framework
         {
             return null;
         }
+
         /// <summary>
         /// Retrieve a Dynamic Attribute store
         /// </summary>

@@ -44,6 +44,7 @@ namespace OpenSim.Framework.Servers
     public abstract class BaseOpenSimServer : ServerBase
     {
         protected BaseHttpServer m_httpServer;
+
         /// <summary>
         /// Random uuid for private data
         /// </summary>
@@ -56,6 +57,7 @@ namespace OpenSim.Framework.Servers
         /// server.
         /// </summary>
         private Timer m_periodicDiagnosticsTimer = new Timer(60 * 60 * 1000);
+
         public BaseOpenSimServer()
             : base()
         {
@@ -70,6 +72,7 @@ namespace OpenSim.Framework.Servers
         {
             get { return m_httpServer; }
         }
+
         public string osSecret
         {
             // Secret uuid for the simulator

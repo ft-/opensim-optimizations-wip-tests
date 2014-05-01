@@ -52,6 +52,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Profile
         // Module vars
         //
         private List<Scene> m_Scenes = new List<Scene>();
+
         #region ISharedRegionModule
 
         public string Name
@@ -93,6 +94,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Profile
             m_log.DebugFormat("[PROFILE MODULE]: Basic Profile Module enabled");
             m_Enabled = true;
         }
+
         public void PostInitialise()
         {
         }
@@ -113,6 +115,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Profile
                 m_Scenes.Remove(scene);
             }
         }
+
         #endregion ISharedRegionModule
 
         public void RequestAvatarProperties(IClientAPI remoteClient, UUID avatarID)

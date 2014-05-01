@@ -286,6 +286,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
         {
             return (float)Math.Sqrt(x * x + y * y + z * z);
         }
+
         // Given a point and a line (defined by two points), compute the closest point
         // in the line.  (The line is treated as infinitely long.)
         public void NearestPointInLine(float3 point, float3 line0, float3 line1)
@@ -433,6 +434,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
         {
             return (x * p.y) - (p.x * y);
         }
+
         public override string ToString()
         {
             return String.Format("<{0}, {1}, {2}>", x, y, z);

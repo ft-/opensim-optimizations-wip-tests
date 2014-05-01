@@ -81,7 +81,7 @@ namespace OpenSim.Region.CoreModules.Asset
         private TimeSpan m_FileExpirationCleanupTimer = TimeSpan.FromHours(0.166);
         private ulong m_HitRateDisplay = 100;
         private int m_LogLevel = 0;
-         // How often to display hit statistics, given in requests
+        // How often to display hit statistics, given in requests
 #if WAIT_ON_INPROGRESS_REQUESTS
         private Dictionary<string, ManualResetEvent> m_CurrentlyWriting = new Dictionary<string, ManualResetEvent>();
         private int m_WaitOnInprogressTimeout = 3000;
@@ -107,6 +107,7 @@ namespace OpenSim.Region.CoreModules.Asset
         {
             get { return null; }
         }
+
         public void AddRegion(Scene scene)
         {
             if (m_Enabled)
@@ -308,6 +309,7 @@ namespace OpenSim.Region.CoreModules.Asset
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (m_Enabled && m_AssetService == null)
@@ -322,6 +324,7 @@ namespace OpenSim.Region.CoreModules.Asset
                 m_Scenes.Remove(scene);
             }
         }
+
         ////////////////////////////////////////////////////////////
         // IImprovedAssetCache
         //
@@ -757,6 +760,7 @@ namespace OpenSim.Region.CoreModules.Asset
         {
             m_MemoryCache.AddOrUpdate(key, asset, m_MemoryExpiration);
         }
+
         /// <summary>
         /// Writes a file to the file cache, creating any nessesary
         /// tier directories along the way
@@ -847,6 +851,7 @@ namespace OpenSim.Region.CoreModules.Asset
                 }
             }
         }
+
         #region Console Commands
 
         private void HandleConsoleCommand(string module, string[] cmdparams)
@@ -1038,6 +1043,7 @@ namespace OpenSim.Region.CoreModules.Asset
             AssetBase asset = Get(id);
             return asset.Metadata;
         }
+
         public string Store(AssetBase asset)
         {
             if (asset.FullID == UUID.Zero)
@@ -1057,6 +1063,7 @@ namespace OpenSim.Region.CoreModules.Asset
             Cache(asset);
             return true;
         }
+
         #endregion IAssetService Members
     }
 }

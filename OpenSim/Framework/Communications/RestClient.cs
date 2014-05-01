@@ -111,6 +111,7 @@ namespace OpenSim.Framework.Communications
         /// The base Uri of the web-service e.g. http://www.google.com
         /// </summary>
         private string _url;
+
         /// <summary>
         /// This flag will help block the main synchroneous method, in case we run in synchroneous mode
         /// </summary>
@@ -121,7 +122,8 @@ namespace OpenSim.Framework.Communications
         /// </summary>
         //private const int DefaultTimeout = 10*1000; // 10 seconds timeout
 
- // Read blocks of 4 KB.
+        // Read blocks of 4 KB.
+
         #endregion member variables
 
         #region constructors
@@ -141,6 +143,7 @@ namespace OpenSim.Framework.Communications
             _response = null;
             _lock = new object();
         }
+
         #endregion constructors
 
         /// <summary>
@@ -204,6 +207,7 @@ namespace OpenSim.Framework.Communications
             else
                 _pathElements.Add(element);
         }
+
         /// <summary>
         /// Perform a synchronous request
         /// </summary>
@@ -389,6 +393,7 @@ namespace OpenSim.Framework.Communications
         }
 
         #endregion Async communications with server
+
         #region Async Invocation
 
         public IAsyncResult BeginRequest(AsyncCallback callback, object state)

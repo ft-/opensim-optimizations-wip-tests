@@ -51,6 +51,7 @@ namespace OpenSim.Framework
 
         bool ObjectGiveMoney(UUID objectID, UUID fromID, UUID toID,
                 int amount);
+
         bool UploadCovered(UUID agentID, int amount);
     }
 }

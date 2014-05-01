@@ -108,6 +108,7 @@ namespace OpenSim.Region.Framework.Scenes
         {
             return size * size - ((x - rx) * (x - rx) + (y - ry) * (y - ry));
         }
+
         private static double Interpolate(double x, double y, double z)
         {
             return (x * (1.0 - z)) + (y * z);

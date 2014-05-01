@@ -65,6 +65,7 @@ namespace OpenSim
         /// Text Console Logger
         /// </summary>
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         private static bool _IsHandlingException = false;
 
         //could move our main function into OpenSimMain and kill this class
@@ -337,7 +338,7 @@ namespace OpenSim
             }
         }
 
-         // Make sure we don't go recursive on ourself
+        // Make sure we don't go recursive on ourself
 
         /// <summary>
         /// Global exception handler -- all unhandlet exceptions end up here :)

@@ -79,6 +79,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         /// are prevented from running non-thread safe code (e.g. read/write of lists) concurrently.
         /// </remarks>
         private static ReaderWriterLock staticLock = new ReaderWriterLock();
+
         public AsyncCommandManager(IScriptEngine _ScriptEngine)
         {
             m_ScriptEngine = _ScriptEngine;
@@ -232,6 +233,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 }
             }
         }
+
         public XmlRequest XmlRequestPlugin
         {
             get
@@ -247,6 +249,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 }
             }
         }
+
         public static void CreateFromData(IScriptEngine engine, uint localID,
                 UUID itemID, UUID hostID, Object[] data)
         {

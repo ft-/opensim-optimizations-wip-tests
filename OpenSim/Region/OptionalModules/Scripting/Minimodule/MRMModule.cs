@@ -58,6 +58,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
         private bool m_Enabled;
         private bool m_Hidden;
         private Scene m_scene;
+
         /// <summary>
         /// Create an AppDomain that contains policy restricting code to execute
         /// with only the permissions granted by a named permission set
@@ -225,6 +226,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
                 }
             }
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -232,6 +234,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
         public void RemoveRegion(Scene scene)
         {
         }
+
         #endregion INonSharedRegionModule
 
         /// <summary>

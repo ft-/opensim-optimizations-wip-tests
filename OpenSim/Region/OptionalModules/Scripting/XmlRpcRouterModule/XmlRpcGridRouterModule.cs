@@ -98,6 +98,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.XmlRpcGridRouterModule
                 m_Enabled = true;
             }
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -109,6 +110,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.XmlRpcGridRouterModule
 
             scene.UnregisterModuleInterface<IXmlRpcRouter>(this);
         }
+
         #endregion INonSharedRegionModule
 
         public void ObjectRemoved(UUID objectID)
@@ -155,6 +157,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.XmlRpcGridRouterModule
 
             RemoveChannel(itemID);
         }
+
         private bool RemoveChannel(UUID itemID)
         {
             if (!m_Channels.ContainsKey(itemID))

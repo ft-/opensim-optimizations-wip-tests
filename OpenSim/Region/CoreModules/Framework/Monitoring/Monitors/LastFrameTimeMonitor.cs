@@ -60,6 +60,7 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
         {
             return Environment.TickCount - m_scene.MonitorLastFrameTick;
         }
+
         #endregion Implementation of IMonitor
     }
 }

@@ -47,6 +47,7 @@ namespace OpenSim.Region.CoreModules.Framework.DynamicAttributes.DAExampleModule
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private readonly bool ENABLED = false;   // enable for testing
+
         public string Name { get { return "DAExample Module"; } }
 
         public Type ReplaceableInterface { get { return null; } }
@@ -71,6 +72,7 @@ namespace OpenSim.Region.CoreModules.Framework.DynamicAttributes.DAExampleModule
         public void Initialise(IConfigSource source)
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -82,6 +84,7 @@ namespace OpenSim.Region.CoreModules.Framework.DynamicAttributes.DAExampleModule
                 m_scene.EventManager.OnSceneGroupMove -= OnSceneGroupMove;
             }
         }
+
         protected bool OnSceneGroupMove(UUID groupId, Vector3 delta)
         {
             OSDMap attrs = null;

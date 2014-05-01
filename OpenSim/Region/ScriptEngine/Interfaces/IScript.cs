@@ -44,6 +44,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
         Dictionary<string, Object> GetVars();
 
         void InitApi(string name, IScriptApi data);
+
         void ResetVars();
 
         void SetVars(Dictionary<string, Object> vars);

@@ -39,6 +39,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         private int m_jumpFrames = 0;
 
         private float m_jumpVelocity = 0f;
+
         // The amount the step up is applying. Used to smooth stair walking.
         private float m_lastStepUp;
 
@@ -47,6 +48,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         // Set to true if we think we're going up stairs.
         //    This state is remembered because collisions will turn on and off as we go up stairs.
         private int m_walkingUpStairs;
+
         public BSActorAvatarMove(BSScene physicsScene, BSPhysObject pObj, string actorName)
             : base(physicsScene, pObj, actorName)
         {

@@ -117,6 +117,7 @@ namespace OpenSim.Region.Framework.Interfaces
         void TriggerSound(
                 UUID soundId, UUID ownerID, UUID objectID, UUID parentID,
                 double gain, Vector3 position, UInt64 handle, float radius);
+
         /// <summary>
         /// Trigger a sound to be played to all agents within an axis-aligned
         /// bounding box.

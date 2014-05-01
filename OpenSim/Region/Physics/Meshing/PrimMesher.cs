@@ -116,6 +116,7 @@ namespace PrimMesher
         {
             return (float)Math.Sqrt(this.X * this.X + this.Y * this.Y + this.Z * this.Z);
         }
+
         public Coord Normalize()
         {
             const float MAG_THRESHOLD = 0.0000001f;
@@ -166,6 +167,7 @@ namespace PrimMesher
 
         public int v2;
         public int v3;
+
         public Face(int v1, int v2, int v3)
         {
             primFace = 0;
@@ -235,6 +237,7 @@ namespace PrimMesher
 
         /// <summary>Z value</summary>
         public float Z;
+
         public Quat(float x, float y, float z, float w)
         {
             X = x;
@@ -297,11 +300,13 @@ namespace PrimMesher
 
             return this;
         }
+
         public override string ToString()
         {
             return "< X: " + this.X.ToString() + ", Y: " + this.Y.ToString() + ", Z: " + this.Z.ToString() + ", W: " + this.W.ToString() + ">";
         }
     }
+
     public struct UVCoord
     {
         public float U;
@@ -320,6 +325,7 @@ namespace PrimMesher
             return this;
         }
     }
+
     public struct ViewerFace
     {
         public int coordIndex1;
@@ -336,6 +342,7 @@ namespace PrimMesher
         public Coord v1;
         public Coord v2;
         public Coord v3;
+
         public ViewerFace(int primFaceNumber)
         {
             this.primFaceNumber = primFaceNumber;
@@ -424,6 +431,7 @@ namespace PrimMesher
         public float dimpleBegin = 0.0f;
         public float dimpleEnd = 1.0f;
         public float holeSizeX = 1.0f;
+
         // called pathScaleX in pbs
         public float holeSizeY = 0.25f;
 
@@ -637,6 +645,7 @@ namespace PrimMesher
         public string errorMessage = "";
         public List<Face> faces;
         public float holeSizeX = 1.0f;
+
         // called pathScaleX in pbs
         public float holeSizeY = 0.25f;
 
@@ -668,6 +677,7 @@ namespace PrimMesher
         private int profileOuterFaceNumber = -1;
         private float profileStart = 0.0f;
         private int sides = 4;
+
         /// <summary>
         /// Constructs a PrimMesh object and creates the profile for extrusion.
         /// </summary>
@@ -1416,6 +1426,7 @@ namespace PrimMesher
 
             return s;
         }
+
         /// <summary>
         /// Scales the mesh
         /// </summary>
@@ -1476,6 +1487,7 @@ namespace PrimMesher
         {
             return SurfaceNormal(this.coords[face.v1], this.coords[face.v2], this.coords[face.v3]);
         }
+
 #if VERTEX_INDEXER
         public VertexIndexer GetVertexIndexer()
         {
@@ -1508,6 +1520,7 @@ namespace PrimMesher
         public int numHollowVerts = 0;
         public int numOuterVerts = 0;
         public int numPrimFaces = 0;
+
         // use these for making individual meshes for each prim face
         public List<int> outerCoordIndices = null;
 
@@ -1515,6 +1528,7 @@ namespace PrimMesher
         public List<float> us;
         public List<Coord> vertexNormals;
         private const float twoPi = 2.0f * (float)Math.PI;
+
         public Profile()
         {
             this.coords = new List<Coord>();
@@ -2072,6 +2086,7 @@ namespace PrimMesher
             foreach (Coord c in this.coords)
                 this.faceUVs.Add(new UVCoord(1.0f - (0.5f + c.X), 1.0f - (0.5f - c.Y)));
         }
+
         public void Scale(float x, float y)
         {
             int i;
@@ -2092,6 +2107,7 @@ namespace PrimMesher
     {
         internal List<Angle> angles;
         internal List<Coord> normals;
+
         private static Angle[] angles24 =
         {
             new Angle(0.0f, 1.0f, 0.0f),
@@ -2156,6 +2172,7 @@ namespace PrimMesher
         };
 
         private float iX, iY; // intersection point
+
         internal void makeAngles(int sides, float startAngle, float stopAngle)
         {
             angles = new List<Angle>();

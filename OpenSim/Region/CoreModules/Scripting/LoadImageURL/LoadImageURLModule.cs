@@ -50,6 +50,7 @@ namespace OpenSim.Region.CoreModules.Scripting.LoadImageURL
         private string m_proxyurl = "";
         private Scene m_scene;
         private IDynamicTextureManager m_textureManager;
+
         #region IDynamicTextureRender Members
 
         public bool AsyncConvertData(UUID id, string bodyData, string extraParams)
@@ -94,10 +95,12 @@ namespace OpenSim.Region.CoreModules.Scripting.LoadImageURL
         {
             return m_name;
         }
+
         public bool SupportsAsynchronous()
         {
             return true;
         }
+
         #endregion IDynamicTextureRender Members
 
         #region ISharedRegionModule Members
@@ -131,6 +134,7 @@ namespace OpenSim.Region.CoreModules.Scripting.LoadImageURL
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (m_textureManager == null && m_scene == scene)
@@ -146,6 +150,7 @@ namespace OpenSim.Region.CoreModules.Scripting.LoadImageURL
         public void RemoveRegion(Scene scene)
         {
         }
+
         #endregion ISharedRegionModule Members
 
         private void HttpRequestReturn(IAsyncResult result)
@@ -266,6 +271,7 @@ namespace OpenSim.Region.CoreModules.Scripting.LoadImageURL
             TimeSpan t = (DateTime.UtcNow - new DateTime(1970, 1, 1));
             state.TimeOfRequest = (int)t.TotalSeconds;
         }
+
         #region Nested type: RequestState
 
         public class RequestState

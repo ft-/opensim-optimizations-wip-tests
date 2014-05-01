@@ -101,6 +101,7 @@ namespace OpenSim.Region.CoreModules.World.Serialiser
 
             //            LoadCommanderCommands();
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -112,6 +113,7 @@ namespace OpenSim.Region.CoreModules.World.Serialiser
                 m_regions.Remove(scene);
             }
         }
+
         #endregion ISharedRegionModule Members
 
         #region IRegionSerialiser Members
@@ -155,6 +157,7 @@ namespace OpenSim.Region.CoreModules.World.Serialiser
         {
             SceneXmlLoader.SavePrimsToXml(scene, fileName);
         }
+
         public void SavePrimsToXml2(Scene scene, string fileName)
         {
             SceneXmlLoader.SavePrimsToXml2(scene, fileName);
@@ -164,6 +167,7 @@ namespace OpenSim.Region.CoreModules.World.Serialiser
         {
             SceneXmlLoader.SavePrimsToXml2(scene, stream, min, max);
         }
+
         public List<string> SerialiseRegion(Scene scene, string saveDir)
         {
             List<string> results = new List<string>();
@@ -202,6 +206,7 @@ namespace OpenSim.Region.CoreModules.World.Serialiser
         {
             return SceneXmlLoader.SaveGroupToXml2(grp, options);
         }
+
         #endregion IRegionSerialiser Members
 
         //        private void EventManager_OnPluginConsole(string[] args)
@@ -237,6 +242,7 @@ namespace OpenSim.Region.CoreModules.World.Serialiser
                 }
             }
         }
+
         //        private void LoadCommanderCommands()
         //        {
         //            Command serialiseSceneCommand = new Command("save", CommandIntentions.COMMAND_NON_HAZARDOUS, InterfaceSaveRegion, "Saves the named region into the exports directory.");

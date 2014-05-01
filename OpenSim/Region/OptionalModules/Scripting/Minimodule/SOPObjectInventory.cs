@@ -135,6 +135,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule.Object
 
             return result;
         }
+
         #endregion IDictionary<UUID, IInventoryItem> implementation
 
         #region IEnumerable<KeyValuePair<UUID, IInventoryItem>> implementation
@@ -200,6 +201,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule.Object
         {
             return Remove(item.Key);
         }
+
         #endregion ICollection<KeyValuePair<UUID, IInventoryItem>> implementation
 
         #region Explicit implementations

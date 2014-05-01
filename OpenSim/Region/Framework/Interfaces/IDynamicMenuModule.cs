@@ -46,6 +46,7 @@ namespace OpenSim.Region.Framework.Interfaces
         Normal = 0,
         God = 3
     }
+
     public interface IDynamicMenuModule
     {
         void AddMenuItem(UUID agentID, string title, InsertLocation location, UserMode mode, CustomMenuHandler handler);

@@ -74,6 +74,7 @@ namespace OpenSim.Framework.Servers
                 }
             }
         }
+
         /// <summary>
         /// Set the main HTTP server instance.
         /// </summary>

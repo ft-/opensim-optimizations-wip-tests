@@ -41,6 +41,7 @@ namespace OpenSim.Region.CoreModules.World.Land
         private IConfigSource m_Config;
         private bool m_Enabled = false;
         private Scene m_scene;
+
         public string Name
         {
             get { return "DefaultDwellModule"; }
@@ -50,6 +51,7 @@ namespace OpenSim.Region.CoreModules.World.Land
         {
             get { return typeof(IDwellModule); }
         }
+
         public void AddRegion(Scene scene)
         {
             if (!m_Enabled)
@@ -82,6 +84,7 @@ namespace OpenSim.Region.CoreModules.World.Land
             }
             m_Enabled = (DwellConfig.GetString("DwellModule", "DefaultDwellModule") == "DefaultDwellModule");
         }
+
         public void OnNewClient(IClientAPI client)
         {
             client.OnParcelDwellRequest += ClientOnParcelDwellRequest;
@@ -94,6 +97,7 @@ namespace OpenSim.Region.CoreModules.World.Land
         public void RemoveRegion(Scene scene)
         {
         }
+
         private void ClientOnParcelDwellRequest(int localID, IClientAPI client)
         {
             ILandObject parcel = m_scene.LandChannel.GetLandObject(localID);

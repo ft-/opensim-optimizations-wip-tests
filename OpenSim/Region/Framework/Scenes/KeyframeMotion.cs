@@ -120,6 +120,7 @@ namespace OpenSim.Region.Framework.Scenes
             Loop = 2,
             PingPong = 3
         };
+
         public DataFormat Data
         {
             get { return m_data; }
@@ -688,6 +689,7 @@ namespace OpenSim.Region.Framework.Scenes
         private Dictionary<KeyframeMotion, object> m_motions = new Dictionary<KeyframeMotion, object>();
         private Timer m_timer;
         private object m_timerLock = new object();
+
         public KeyframeTimer(Scene scene)
         {
             m_timer = new Timer();
@@ -700,6 +702,7 @@ namespace OpenSim.Region.Framework.Scenes
         {
             get { return m_tickDuration; }
         }
+
         public static void Add(KeyframeMotion motion)
         {
             KeyframeTimer timer;

@@ -43,6 +43,7 @@ namespace OpenSim.Framework
         /// We lock this for operations both on this dictionary and on m_agentCircuitsByUUID
         /// </remarks>
         private Dictionary<uint, AgentCircuitData> m_agentCircuits = new Dictionary<uint, AgentCircuitData>();
+
         private ReaderWriterLock m_AgentCircuitsLock = new ReaderWriterLock();
 
         /// <summary>
@@ -122,6 +123,7 @@ namespace OpenSim.Framework
 
             return user;
         }
+
         public bool GetAgentChildStatus(uint circuitcode)
         {
             m_AgentCircuitsLock.AcquireReaderLock(-1);
@@ -224,6 +226,7 @@ namespace OpenSim.Framework
                 m_AgentCircuitsLock.ReleaseWriterLock();
             }
         }
+
         /// <summary>
         /// Sometimes the circuitcode may not be known before setting up the connection
         /// </summary>

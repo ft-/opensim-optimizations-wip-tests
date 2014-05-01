@@ -25,10 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using NUnit.Framework;
 using OpenMetaverse;
 using OpenSim.Tests.Common;
+using System;
 
 namespace OpenSim.Framework.Tests
 {
@@ -37,23 +37,25 @@ namespace OpenSim.Framework.Tests
     {
         private Cache cache;
         private UUID cacheItemUUID;
+
         [SetUp]
         public void Build()
         {
             cache = new Cache();
-            cache = new Cache(CacheMedium.Memory,CacheStrategy.Aggressive,CacheFlags.AllowUpdate);
+            cache = new Cache(CacheMedium.Memory, CacheStrategy.Aggressive, CacheFlags.AllowUpdate);
             cacheItemUUID = UUID.Random();
-            MemoryCacheItem cachedItem = new MemoryCacheItem(cacheItemUUID.ToString(),DateTime.Now + TimeSpan.FromDays(1));
+            MemoryCacheItem cachedItem = new MemoryCacheItem(cacheItemUUID.ToString(), DateTime.Now + TimeSpan.FromDays(1));
             byte[] foo = new byte[1];
             foo[0] = 255;
             cachedItem.Store(foo);
             cache.Store(cacheItemUUID.ToString(), cachedItem);
         }
+
         [Test]
         public void TestRetreive()
         {
             CacheItemBase citem = (CacheItemBase)cache.Get(cacheItemUUID.ToString());
-            byte[] data = (byte[]) citem.Retrieve();
+            byte[] data = (byte[])citem.Retrieve();
             Assert.That(data.Length == 1, "Cached Item should have one byte element");
             Assert.That(data[0] == 255, "Cached Item element should be 255");
         }
@@ -70,7 +72,6 @@ namespace OpenSim.Framework.Tests
             Assert.That(citem == null, "Item should not be in Cache");
         }
 
-        
         [Test]
         public void ExpireItemManually()
         {
@@ -96,7 +97,7 @@ namespace OpenSim.Framework.Tests
             cachedItem.Store(foo);
             cache.Store(cacheItemUUID.ToString(), cachedItem);
             cache.Clear();
-  
+
             object citem = cache.Get(cacheItemUUID.ToString());
             Assert.That(citem == null, "Item should not be in Cache because we manually invalidated it");
         }
@@ -117,9 +118,6 @@ namespace OpenSim.Framework.Tests
             Assert.That(!cb2.Equals(cb1), "cb2 should not equal cb1, their uuids are NOT the same");
             Assert.That(cb1.IsLocked() == false, "CacheItemBase default is false");
             Assert.That(cb1.Retrieve() == null, "Virtual Retrieve method should return null");
-
-
         }
-
     }
 }

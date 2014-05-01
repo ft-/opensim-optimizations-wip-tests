@@ -43,6 +43,7 @@ namespace OpenSim.Region.Framework.Scenes.Animation
         private OpenSim.Framework.Animation m_defaultAnimation = new OpenSim.Framework.Animation();
         private OpenSim.Framework.Animation m_implicitDefaultAnimation = new OpenSim.Framework.Animation();
         private ReaderWriterLock m_AnimationsLock = new ReaderWriterLock();
+
         public AnimationSet()
         {
             ResetDefaultAnimation();
@@ -63,6 +64,7 @@ namespace OpenSim.Region.Framework.Scenes.Animation
         {
             get { return m_implicitDefaultAnimation; }
         }
+
         public bool Add(UUID animID, int sequenceNum, UUID objectID)
         {
             m_AnimationsLock.AcquireWriterLock(-1);
@@ -214,6 +216,7 @@ namespace OpenSim.Region.Framework.Scenes.Animation
             }
             return false;
         }
+
         /// <summary>
         /// Remove the specified animation
         /// </summary>
@@ -252,6 +255,7 @@ namespace OpenSim.Region.Framework.Scenes.Animation
             }
             return false;
         }
+
         /// <summary>
         /// The default animation is reserved for "main" animations
         /// that are mutually exclusive, e.g. flying and sitting.

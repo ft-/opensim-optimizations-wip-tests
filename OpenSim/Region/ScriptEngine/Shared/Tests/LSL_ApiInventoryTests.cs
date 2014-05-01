@@ -25,26 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
-using log4net;
 using Nini.Config;
 using NUnit.Framework;
 using OpenMetaverse;
-using OpenMetaverse.Assets;
-using OpenMetaverse.StructuredData;
 using OpenSim.Framework;
-using OpenSim.Region.CoreModules.Avatar.AvatarFactory;
-using OpenSim.Region.OptionalModules.World.NPC;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Region.ScriptEngine.Shared;
 using OpenSim.Region.ScriptEngine.Shared.Api;
-using OpenSim.Region.ScriptEngine.Shared.Instance;
-using OpenSim.Services.Interfaces;
 using OpenSim.Tests.Common;
-using OpenSim.Tests.Common.Mock;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.ScriptEngine.Shared.Tests
 {
@@ -81,7 +69,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Tests
         public void TestLlGiveInventoryO2OSameOwner()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             UUID userId = TestHelpers.ParseTail(0x1);
             string inventoryItemName = "item1";
@@ -118,7 +106,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Tests
         public void TestLlGiveInventoryO2ODifferentOwners()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             UUID user1Id = TestHelpers.ParseTail(0x1);
             UUID user2Id = TestHelpers.ParseTail(0x2);
@@ -160,7 +148,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Tests
                 // Item has copy permissions so original should stay intact.
                 List<TaskInventoryItem> originalItems = so1.RootPart.Inventory.GetInventoryItems();
                 Assert.That(originalItems.Count, Is.EqualTo(1));
-    
+
                 // Should now have copied.
                 List<TaskInventoryItem> copiedItems = so2.RootPart.Inventory.GetInventoryItems(inventoryItemName);
                 Assert.That(copiedItems.Count, Is.EqualTo(1));

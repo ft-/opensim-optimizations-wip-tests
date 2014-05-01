@@ -81,6 +81,7 @@ namespace OpenSim.Region.CoreModules.World.Media.Moap
         public string Name { get { return "MoapModule"; } }
 
         public Type ReplaceableInterface { get { return null; } }
+
         public void AddRegion(Scene scene)
         {
             if (!m_isEnabled)
@@ -146,6 +147,7 @@ namespace OpenSim.Region.CoreModules.World.Media.Moap
             //            else
             //                m_log.Debug("[MOAP]: Initialised module.")l
         }
+
         public void OnDeregisterCaps(UUID agentID, Caps caps)
         {
             lock (m_omCapUsers)
@@ -210,6 +212,7 @@ namespace OpenSim.Region.CoreModules.World.Media.Moap
         public void RemoveRegion(Scene scene)
         {
         }
+
         /// <summary>
         /// Set the media entry on the face of the given part.
         /// </summary>
@@ -581,6 +584,7 @@ namespace OpenSim.Region.CoreModules.World.Media.Moap
                 copy.Shape.Media = dupeMedia;
             }
         }
+
         /// <summary>
         /// Set the media flags on the texture face of the given part.
         /// </summary>
@@ -597,6 +601,7 @@ namespace OpenSim.Region.CoreModules.World.Media.Moap
             teFace.MediaFlags = flag;
             part.Shape.Textures = te;
         }
+
         /// <summary>
         /// Update the media url of the given part
         /// </summary>

@@ -81,6 +81,7 @@ namespace OpenSim.Framework.Serialization.Tests
     <SpawnPoint>1,-2,0.33</SpawnPoint>
   </Telehub>
 </RegionSettings>";
+
         [SetUp]
         public void Setup()
         {

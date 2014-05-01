@@ -39,6 +39,7 @@ namespace OpenSim.Region.Framework.Interfaces
 
         void HandleItemUpdateFromTransaction(IClientAPI remoteClient, UUID transactionID,
                                              InventoryItemBase item);
+
         void HandleTaskItemUpdateFromTransaction(
             IClientAPI remoteClient, SceneObjectPart part, UUID transactionID, TaskInventoryItem item);
 

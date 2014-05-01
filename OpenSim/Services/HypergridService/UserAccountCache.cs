@@ -15,6 +15,7 @@ namespace OpenSim.Services.HypergridService
         private static UserAccountCache m_Singleton;
         private IUserAccountService m_UserAccountService;
         private ExpiringCache<UUID, UserAccount> m_UUIDCache;
+
         private UserAccountCache(IUserAccountService u)
         {
             m_UUIDCache = new ExpiringCache<UUID, UserAccount>();
@@ -28,6 +29,7 @@ namespace OpenSim.Services.HypergridService
 
             return m_Singleton;
         }
+
         public void Cache(UUID userID, UserAccount account)
         {
             // Cache even null accounts

@@ -49,6 +49,7 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
         protected Scene m_Scene;
         protected IUserManagement m_UserManagement;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public bool CoalesceMultipleObjectsToInventory { get; set; }
 
         protected IUserManagement UserManagementModule
@@ -60,6 +61,7 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
                 return m_UserManagement;
             }
         }
+
         #region INonSharedRegionModule
 
         public virtual string Name
@@ -71,6 +73,7 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
         {
             get { return null; }
         }
+
         public virtual void AddRegion(Scene scene)
         {
             if (!m_Enabled)
@@ -136,10 +139,12 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
             else
                 CoalesceMultipleObjectsToInventory = true;
         }
+
         protected virtual void OnNewClient(IClientAPI client)
         {
             client.OnCreateNewInventoryItem += CreateNewInventoryItem;
         }
+
         #endregion INonSharedRegionModule
 
         #region Inventory Access
@@ -963,6 +968,7 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
                                 pos.X, pos.Y, pos.Z,
                                 presence.RegionHandle);
         }
+
         /// <summary>
         /// Do post-rez processing when the object comes from an item.
         /// </summary>
@@ -1096,6 +1102,7 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
 
             return true;
         }
+
         #endregion Inventory Access
 
         #region Misc
@@ -1129,6 +1136,7 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
 
             return asset;
         }
+
         #endregion Misc
     }
 }

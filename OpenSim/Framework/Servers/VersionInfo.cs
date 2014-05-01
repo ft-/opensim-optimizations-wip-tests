@@ -30,6 +30,7 @@ namespace OpenSim
     public class VersionInfo
     {
         public const int VERSIONINFO_VERSION_LENGTH = 27;
+
         /// <value>
         /// This is the external interface version.  It is separate from the OpenSimulator project version.
         ///
@@ -48,6 +49,7 @@ namespace OpenSim
 
         private const Flavour VERSION_FLAVOUR = Flavour.Dev;
         private const string VERSION_NUMBER = "0.8.0";
+
         public enum Flavour
         {
             Unknown,

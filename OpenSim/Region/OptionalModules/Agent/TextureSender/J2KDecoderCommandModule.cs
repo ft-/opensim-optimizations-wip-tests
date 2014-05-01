@@ -72,6 +72,7 @@ namespace OpenSim.Region.OptionalModules.Agent.TextureSender
         {
             //            m_log.DebugFormat("[J2K DECODER COMMAND MODULE]: POST INITIALIZED MODULE");
         }
+
         public void RegionLoaded(Scene scene)
         {
             //            m_log.DebugFormat("[J2K DECODER COMMAND MODULE]: REGION {0} LOADED", scene.RegionInfo.RegionName);
@@ -93,6 +94,7 @@ namespace OpenSim.Region.OptionalModules.Agent.TextureSender
         {
             //            m_log.DebugFormat("[J2K DECODER COMMAND MODULE]: REGION {0} REMOVED", scene.RegionInfo.RegionName);
         }
+
         private void HandleDecode(string module, string[] args)
         {
             if (args.Length < 3)

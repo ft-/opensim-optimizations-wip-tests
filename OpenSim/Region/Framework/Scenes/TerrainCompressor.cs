@@ -47,11 +47,13 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         private const int STRIDE = 264;
         private const int ZERO_CODE = 0x0;
         private const int ZERO_EOB = 0x2;
+
         //private static readonly float[] CosineTable32 = new float[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
         private static readonly int[] CopyMatrix16 = new int[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
 
         private static readonly int[] CopyMatrix32 = new int[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
         private static readonly float[] CosineTable16 = new float[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
+
         private static readonly float[] DequantizeTable16 =
             new float[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
 
@@ -61,11 +63,13 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
 #pragma warning disable 414
+
         private static readonly float[] QuantizeTable16 =
             new float[Constants.TerrainPatchSize * Constants.TerrainPatchSize];
 
         private static string LogHeader = "[TERRAIN COMPRESSOR]";
 #pragma warning restore 414
+
         static OpenSimTerrainCompressor()
         {
             // Initialize the decompression tables
@@ -163,6 +167,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
             return layer;
         }
+
         // Unused: left for historical reference.
         public static void CreatePatch(BitPack output, float[] patchData, int x, int y, int pRegionSizeX, int pRegionSizeY)
         {
@@ -747,6 +752,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
             return header;
         }
+
         /*
                 private static void DCTLine16(float[] linein, float[] lineout, int line)
                 {
@@ -835,6 +841,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             }
         }
         */
+
         #region Initialization
 
         private static void BuildCopyMatrix16()
@@ -922,6 +929,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
                 }
             }
         }
+
         #endregion Initialization
     }
 }

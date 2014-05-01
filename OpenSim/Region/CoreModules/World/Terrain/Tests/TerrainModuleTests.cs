@@ -25,9 +25,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using NUnit.Framework;
-using OpenSim.Framework;
 using OpenSim.Region.CoreModules.World.Terrain;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Tests.Common;
@@ -40,13 +38,13 @@ namespace OpenSim.Region.CoreModules.Terrain.Tests
         public void TestTerrainFill()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             //UUID userId = TestHelpers.ParseTail(0x1);
 
             TerrainModule tm = new TerrainModule();
-            Scene scene = new SceneHelpers().SetupScene();            
-            SceneHelpers.SetupSceneModules(scene, tm);             
+            Scene scene = new SceneHelpers().SetupScene();
+            SceneHelpers.SetupSceneModules(scene, tm);
 
             // Fillheight of 30
             {

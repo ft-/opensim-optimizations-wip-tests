@@ -106,6 +106,7 @@ namespace OpenSim.Services.Connectors
             }
             m_ServerURI = serviceURI;
         }
+
         public bool Release(UUID principalID, string token)
         {
             Dictionary<string, object> sendData = new Dictionary<string, object>();

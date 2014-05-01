@@ -41,6 +41,7 @@ namespace OpenSim.Services.ProfilesService
         private static readonly ILog m_log =
             LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
+
         public UserProfilesServiceBase(IConfigSource config, string configName) :
             base(config)
         {

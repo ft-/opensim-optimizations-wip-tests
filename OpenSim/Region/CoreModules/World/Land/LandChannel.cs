@@ -68,6 +68,7 @@ namespace OpenSim.Region.CoreModules.World.Land
 
         private readonly LandManagementModule m_landManagementModule;
         private readonly Scene m_scene;
+
         public LandChannel(Scene scene, LandManagementModule landManagementMod)
         {
             m_scene = scene;
@@ -129,6 +130,7 @@ namespace OpenSim.Region.CoreModules.World.Land
             obj.LandData.Name = "NO LAND";
             return obj;
         }
+
         public bool IsForcefulBansAllowed()
         {
             if (m_landManagementModule != null)
@@ -156,6 +158,7 @@ namespace OpenSim.Region.CoreModules.World.Land
 
             return new List<ILandObject>();
         }
+
         public void ReturnObjectsInParcel(int localID, uint returnType, UUID[] agentIDs, UUID[] taskIDs, IClientAPI remoteClient)
         {
             if (m_landManagementModule != null)
@@ -203,6 +206,7 @@ namespace OpenSim.Region.CoreModules.World.Land
                 m_landManagementModule.UpdateLandObject(localID, data);
             }
         }
+
         #endregion ILandChannel Members
     }
 }

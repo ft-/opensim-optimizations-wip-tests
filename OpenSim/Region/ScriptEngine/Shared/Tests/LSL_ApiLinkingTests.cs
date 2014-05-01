@@ -25,27 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
-using log4net;
 using Nini.Config;
 using NUnit.Framework;
 using OpenMetaverse;
-using OpenMetaverse.Assets;
-using OpenMetaverse.StructuredData;
 using OpenSim.Framework;
-using OpenSim.Region.CoreModules.Avatar.AvatarFactory;
-using OpenSim.Region.OptionalModules.World.NPC;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Region.ScriptEngine.Shared;
 using OpenSim.Region.ScriptEngine.Shared.Api;
-using OpenSim.Region.ScriptEngine.Shared.Instance;
 using OpenSim.Region.ScriptEngine.Shared.ScriptBase;
-using OpenSim.Services.Interfaces;
 using OpenSim.Tests.Common;
-using OpenSim.Tests.Common.Mock;
 
 namespace OpenSim.Region.ScriptEngine.Shared.Tests
 {
@@ -128,7 +115,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Tests
             TaskInventoryItem grp1Item
                 = TaskInventoryHelpers.AddNotecard(
                     m_scene, grp1.RootPart, "ncItem", TestHelpers.ParseTail(0x800), TestHelpers.ParseTail(0x900), "Hello World!");
-            
+
             grp1Item.PermsMask |= ScriptBaseClass.PERMISSION_CHANGE_LINKS;
 
             LSL_Api apiGrp1 = new LSL_Api();
@@ -157,7 +144,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Tests
             TaskInventoryItem grp1Item
                 = TaskInventoryHelpers.AddNotecard(
                     m_scene, grp1.RootPart, "ncItem", TestHelpers.ParseTail(0x800), TestHelpers.ParseTail(0x900), "Hello World!");
-            
+
             grp1Item.PermsMask |= ScriptBaseClass.PERMISSION_CHANGE_LINKS;
 
             LSL_Api apiGrp1 = new LSL_Api();

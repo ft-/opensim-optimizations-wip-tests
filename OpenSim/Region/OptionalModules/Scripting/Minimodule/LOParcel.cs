@@ -34,6 +34,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
     {
         private readonly int m_parcelID;
         private readonly Scene m_scene;
+
         public LOParcel(Scene m_scene, int m_parcelID)
         {
             this.m_scene = m_scene;

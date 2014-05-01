@@ -72,6 +72,7 @@ namespace OpenSim.Framework.Monitoring
                 throw new InvalidOperationException("Cannot set value on a PercentageStat");
             }
         }
+
         public override string ToConsoleString()
         {
             StringBuilder sb = new StringBuilder();

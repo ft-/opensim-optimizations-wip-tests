@@ -25,17 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
-using System.IO;
-using System.Xml;
-using log4net.Config;
 using NUnit.Framework;
 using OpenMetaverse;
+using OpenMetaverse.StructuredData;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Region.Framework.Scenes.Serialization;
 using OpenSim.Tests.Common;
-using OpenMetaverse.StructuredData;
+using System.Collections.Generic;
+using System.IO;
+using System.Xml;
 
 namespace OpenSim.Region.CoreModules.World.Serialiser.Tests
 {
@@ -148,9 +147,9 @@ namespace OpenSim.Region.CoreModules.World.Serialiser.Tests
                         <llsd>
                             <map>
                                 <key>MyNamespace</key>
-                                <map>                                
+                                <map>
                                     <key>MyStore</key>
-                                    <map>   
+                                    <map>
                                         <key>the answer</key>
                                         <integer>42</integer>
                                     </map>
@@ -350,9 +349,9 @@ namespace OpenSim.Region.CoreModules.World.Serialiser.Tests
                     <llsd>
                         <map>
                             <key>MyNamespace</key>
-                            <map>                                
+                            <map>
                                 <key>MyStore</key>
-                                <map>   
+                                <map>
                                     <key>last words</key>
                                     <string>Rosebud</string>
                                 </map>
@@ -398,7 +397,7 @@ namespace OpenSim.Region.CoreModules.World.Serialiser.Tests
         public void TestDeserializeBadFloatsXml()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             SceneObjectGroup so = SceneObjectSerializer.FromOriginalXmlFormat(badFloatsXml);
             SceneObjectPart rootPart = so.RootPart;
@@ -430,9 +429,9 @@ namespace OpenSim.Region.CoreModules.World.Serialiser.Tests
             UUID rpUuid = UUID.Parse("00000000-0000-0000-0000-000000000964");
             UUID rpCreatorId = UUID.Parse("00000000-0000-0000-0000-000000000915");
             PrimitiveBaseShape shape = PrimitiveBaseShape.CreateSphere();
-//            Vector3 groupPosition = new Vector3(10, 20, 30);
-//            Quaternion rotationOffset = new Quaternion(20, 30, 40, 50);
-//            Vector3 offsetPosition = new Vector3(5, 10, 15);
+            //            Vector3 groupPosition = new Vector3(10, 20, 30);
+            //            Quaternion rotationOffset = new Quaternion(20, 30, 40, 50);
+            //            Vector3 offsetPosition = new Vector3(5, 10, 15);
 
             SceneObjectPart rp = new SceneObjectPart();
             rp.UUID = rpUuid;
@@ -460,7 +459,7 @@ namespace OpenSim.Region.CoreModules.World.Serialiser.Tests
             xtr.ReadStartElement("SceneObjectGroup");
             xtr.ReadStartElement("RootPart");
             xtr.ReadStartElement("SceneObjectPart");
-           
+
             UUID uuid = UUID.Zero;
             string name = null;
             UUID creatorId = UUID.Zero;
@@ -470,7 +469,7 @@ namespace OpenSim.Region.CoreModules.World.Serialiser.Tests
             {
                 if (xtr.NodeType != XmlNodeType.Element)
                     continue;
-                
+
                 switch (xtr.Name)
                 {
                     case "UUID":
@@ -482,14 +481,17 @@ namespace OpenSim.Region.CoreModules.World.Serialiser.Tests
                         }
                         catch { } // ignore everything but <UUID><UUID>...</UUID></UUID>
                         break;
+
                     case "Name":
                         name = xtr.ReadElementContentAsString();
                         break;
+
                     case "CreatorID":
                         xtr.ReadStartElement("CreatorID");
                         creatorId = UUID.Parse(xtr.ReadElementString("UUID"));
                         xtr.ReadEndElement();
                         break;
+
                     case "DynAttrs":
                         daMap = new DAMap();
                         daMap.ReadXml(xtr);
@@ -539,9 +541,9 @@ namespace OpenSim.Region.CoreModules.World.Serialiser.Tests
             UUID rpUuid = UUID.Parse("00000000-0000-0000-0000-000000000064");
             UUID rpCreatorId = UUID.Parse("00000000-0000-0000-0000-000000000015");
             PrimitiveBaseShape shape = PrimitiveBaseShape.CreateSphere();
-//            Vector3 groupPosition = new Vector3(10, 20, 30);
-//            Quaternion rotationOffset = new Quaternion(20, 30, 40, 50);
-//            Vector3 offsetPosition = new Vector3(5, 10, 15);
+            //            Vector3 groupPosition = new Vector3(10, 20, 30);
+            //            Quaternion rotationOffset = new Quaternion(20, 30, 40, 50);
+            //            Vector3 offsetPosition = new Vector3(5, 10, 15);
 
             SceneObjectPart rp = new SceneObjectPart();
             rp.UUID = rpUuid;
@@ -570,7 +572,7 @@ namespace OpenSim.Region.CoreModules.World.Serialiser.Tests
             XmlTextReader xtr = new XmlTextReader(new StringReader(xml2));
             xtr.ReadStartElement("SceneObjectGroup");
             xtr.ReadStartElement("SceneObjectPart");
-           
+
             UUID uuid = UUID.Zero;
             string name = null;
             UUID creatorId = UUID.Zero;
@@ -580,7 +582,7 @@ namespace OpenSim.Region.CoreModules.World.Serialiser.Tests
             {
                 if (xtr.NodeType != XmlNodeType.Element)
                     continue;
-                
+
                 switch (xtr.Name)
                 {
                     case "UUID":
@@ -588,14 +590,17 @@ namespace OpenSim.Region.CoreModules.World.Serialiser.Tests
                         uuid = UUID.Parse(xtr.ReadElementString("Guid"));
                         xtr.ReadEndElement();
                         break;
+
                     case "Name":
                         name = xtr.ReadElementContentAsString();
                         break;
+
                     case "CreatorID":
                         xtr.ReadStartElement("CreatorID");
                         creatorId = UUID.Parse(xtr.ReadElementString("Guid"));
                         xtr.ReadEndElement();
                         break;
+
                     case "DynAttrs":
                         daMap = new DAMap();
                         daMap.ReadXml(xtr);

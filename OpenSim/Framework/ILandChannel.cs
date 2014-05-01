@@ -87,6 +87,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="position"></param>
         /// <returns></returns>
         List<ILandObject> ParcelsNearPoint(Vector3 position);
+
         void ReturnObjectsInParcel(int localID, uint returnType, UUID[] agentIDs, UUID[] taskIDs, IClientAPI remoteClient);
 
         void setParcelObjectMaxOverride(overrideParcelMaxPrimCountDelegate overrideDel);

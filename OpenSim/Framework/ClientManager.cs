@@ -49,6 +49,7 @@ namespace OpenSim.Framework
         /// <summary>A dictionary mapping from <seealso cref="IPEndPoint"/>
         /// to <seealso cref="IClientAPI"/> references</summary>
         private Dictionary<IPEndPoint, IClientAPI> m_dict2;
+
         /// <summary>Synchronization object for writing to the collections</summary>
         private object m_syncRoot = new object();
 
@@ -64,6 +65,7 @@ namespace OpenSim.Framework
 
         /// <summary>Number of clients in the collection</summary>
         public int Count { get { return m_dict1.Count; } }
+
         /// <summary>
         /// Add a client reference to the collection if it does not already
         /// exist
@@ -188,6 +190,7 @@ namespace OpenSim.Framework
 
             return false;
         }
+
         /// <summary>
         /// Attempts to fetch a value out of the collection
         /// </summary>

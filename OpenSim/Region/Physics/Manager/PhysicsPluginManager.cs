@@ -62,6 +62,7 @@ namespace OpenSim.Region.Physics.Manager
 
         private Dictionary<string, IMeshingPlugin> _MeshPlugins = new Dictionary<string, IMeshingPlugin>();
         private Dictionary<string, IPhysicsPlugin> _PhysPlugins = new Dictionary<string, IPhysicsPlugin>();
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -238,6 +239,7 @@ namespace OpenSim.Region.Physics.Manager
 
             pluginAssembly = null;
         }
+
         //---
     }
 }

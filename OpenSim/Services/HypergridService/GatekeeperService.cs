@@ -64,6 +64,7 @@ namespace OpenSim.Services.HypergridService
         private static Uri m_Uri;
         private static IUserAccountService m_UserAccountService;
         private static IUserAgentService m_UserAgentService;
+
         public GatekeeperService(IConfigSource config, ISimulationService simService)
         {
             if (!m_Initialized)
@@ -220,6 +221,7 @@ namespace OpenSim.Services.HypergridService
             foreach (string s in parts)
                 exceptions.Add(s.Trim());
         }
+
         #region Login Agent
 
         public bool LoginAgent(GridRegion source, AgentCircuitData aCircuit, GridRegion destination, out string reason)

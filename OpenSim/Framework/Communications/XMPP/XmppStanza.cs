@@ -55,6 +55,7 @@ namespace OpenSim.Framework.Communications.XMPP
         /// </summary>
         [XmlIgnore]
         private static ulong _ctr = 0;
+
         public XmppStanza()
         {
         }

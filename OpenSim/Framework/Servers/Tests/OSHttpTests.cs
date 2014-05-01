@@ -25,23 +25,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Specialized;
-using System.IO;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
 using HttpServer;
-using HttpServer.FormDecoders;
 using NUnit.Framework;
 using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Tests.Common;
+using System;
+using System.Net;
 
 namespace OpenSim.Framework.Servers.Tests
 {
     [TestFixture]
     public class OSHttpTests : OpenSimTestCase
-    {       
+    {
         public OSHttpRequest req0;
         public OSHttpRequest req1;
 
@@ -52,29 +47,28 @@ namespace OpenSim.Framework.Servers.Tests
         [TestFixtureSetUp]
         public void Init()
         {
-            TestHttpRequest threq0 = new TestHttpRequest("utf-8", "text/xml", "OpenSim Test Agent", "192.168.0.1", "4711", 
-                                                       new string[] {"text/xml"}, 
-                                                       ConnectionType.KeepAlive, 4711, 
+            TestHttpRequest threq0 = new TestHttpRequest("utf-8", "text/xml", "OpenSim Test Agent", "192.168.0.1", "4711",
+                                                       new string[] { "text/xml" },
+                                                       ConnectionType.KeepAlive, 4711,
                                                        new Uri("http://127.0.0.1/admin/inventory/Dr+Who/Tardis"));
             threq0.Method = "GET";
             threq0.HttpVersion = HttpHelper.HTTP10;
 
-            TestHttpRequest threq1 = new TestHttpRequest("utf-8", "text/xml", "OpenSim Test Agent", "192.168.0.1", "4711", 
-                                                       new string[] {"text/xml"}, 
-                                                       ConnectionType.KeepAlive, 4711, 
+            TestHttpRequest threq1 = new TestHttpRequest("utf-8", "text/xml", "OpenSim Test Agent", "192.168.0.1", "4711",
+                                                       new string[] { "text/xml" },
+                                                       ConnectionType.KeepAlive, 4711,
                                                        new Uri("http://127.0.0.1/admin/inventory/Dr+Who/Tardis?a=0&b=1&c=2"));
             threq1.Method = "POST";
             threq1.HttpVersion = HttpHelper.HTTP11;
             threq1.Headers["x-wuff"] = "wuffwuff";
             threq1.Headers["www-authenticate"] = "go away";
-            
+
             req0 = new OSHttpRequest(new TestHttpClientContext(false), threq0);
             req1 = new OSHttpRequest(new TestHttpClientContext(false), threq1);
 
             rsp0 = new OSHttpResponse(new TestHttpResponse());
 
             ipEP0 = new IPEndPoint(IPAddress.Parse("192.168.0.1"), 4711);
-
         }
 
         [Test]

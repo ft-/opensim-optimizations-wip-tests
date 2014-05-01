@@ -1101,6 +1101,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.CodeTools
 
         public override int yynum { get { return 3; } }
     }
+
     //%STRING_TYPE+53
     public class STRING_TYPE : TOKEN
     {
@@ -1126,6 +1127,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.CodeTools
 
         public override int yynum { get { return 34; } }
     }
+
     //%STROKE_STROKE+39
     public class STROKE_STROKE : TOKEN
     {
@@ -1151,6 +1153,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.CodeTools
 
         public override int yynum { get { return 36; } }
     }
+
     //%TIMER_EVENT+87
     public class TIMER_EVENT : TOKEN
     {
@@ -1228,6 +1231,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.CodeTools
 
         public override int yynum { get { return 45; } }
     }
+
     //%|LSLTokens
     public class yyLSLTokens : YyLexer
     {
@@ -19800,6 +19804,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.CodeTools
         {
             return new MINUS(yyl);
         }
+
         public static object MONEY_EVENT_factory(Lexer yyl)
         {
             return new MONEY_EVENT(yyl);
@@ -19874,6 +19879,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.CodeTools
         {
             return new RETURN(yyl);
         }
+
         public static object RIGHT_ANGLE_factory(Lexer yyl)
         {
             return new RIGHT_ANGLE(yyl);
@@ -19963,6 +19969,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.CodeTools
         {
             return new STRING_TYPE(yyl);
         }
+
         public static object STROKE_factory(Lexer yyl)
         {
             return new STROKE(yyl);
@@ -19992,6 +19999,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.CodeTools
         {
             return new TOUCH_EVENT(yyl);
         }
+
         public static object TOUCH_START_EVENT_factory(Lexer yyl)
         {
             return new TOUCH_START_EVENT(yyl);
@@ -20006,6 +20014,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.CodeTools
         {
             return new WHILE(yyl);
         }
+
         public override TOKEN OldAction(Lexer yym, ref string yytext, int action, ref bool reject)
         {
             switch (action)

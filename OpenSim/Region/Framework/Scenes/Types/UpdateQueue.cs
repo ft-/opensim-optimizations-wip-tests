@@ -46,6 +46,7 @@ namespace OpenSim.Region.Framework.Scenes.Types
         {
             get { return m_queue.Count; }
         }
+
         public void Clear()
         {
             lock (m_syncObject)

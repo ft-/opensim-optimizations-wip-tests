@@ -145,6 +145,7 @@ namespace OpenSim.Region.DataSnapshot.Providers
             this.Stale = false;
             return estatedata;
         }
+
         #endregion IDataSnapshotProvider Members
     }
 }

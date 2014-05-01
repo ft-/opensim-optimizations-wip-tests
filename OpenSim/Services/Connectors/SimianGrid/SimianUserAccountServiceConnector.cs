@@ -56,6 +56,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
         private ExpiringCache<UUID, UserAccount> m_accountCache = new ExpiringCache<UUID, UserAccount>();
         private bool m_Enabled;
         private string m_serverUrl = String.Empty;
+
         #region ISharedRegionModule
 
         public SimianUserAccountServiceConnector()
@@ -82,6 +83,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
         public void RegionLoaded(Scene scene)
         {
         }
+
         public void RemoveRegion(Scene scene)
         {
             if (m_Enabled) { scene.UnregisterModuleInterface<IUserAccountService>(this); }
@@ -293,6 +295,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
             if (String.IsNullOrEmpty(m_serverUrl))
                 m_log.Info("[SIMIAN ACCOUNT CONNECTOR]: No UserAccountServerURI specified, disabling connector");
         }
+
         /// <summary>
         /// Helper method for the various ways of retrieving a user account
         /// </summary>

@@ -182,6 +182,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
 
             return PlaneTriResult.PTR_BACK;
         }
+
         // assumes that the points are on opposite sides of the plane!
         private static void intersect(float3 p1, float3 p2, float3 split, float4 plane)
         {

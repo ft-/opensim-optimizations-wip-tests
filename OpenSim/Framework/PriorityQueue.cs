@@ -68,6 +68,7 @@ namespace OpenSim.Framework
         private object m_syncRoot = new object();
 
         public delegate bool UpdatePriorityHandler(ref uint priority, ISceneEntity entity);
+
         public object SyncRoot
         {
             get { return this.m_syncRoot; }
@@ -251,6 +252,7 @@ namespace OpenSim.Framework
             value = default(IEntityUpdate);
             return false;
         }
+
         #endregion PublicMethods
 
         #region MinHeapItem
@@ -309,6 +311,7 @@ namespace OpenSim.Framework
                     return this.value;
                 }
             }
+
             public int CompareTo(MinHeapItem other)
             {
                 // I'm assuming that the root part of an SOG is added to the update queue

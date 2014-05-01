@@ -48,8 +48,11 @@ namespace OpenSim.Region.Framework.Interfaces
         bool IsEnabled();
 
         UUID OpenXMLRPCChannel(uint localID, UUID itemID, UUID channelID);
+
         void RemoteDataReply(string channel, string message_id, string sdata, int idata);
+
         void RemoveCompletedRequest(UUID id);
+
         void RemoveCompletedSRDRequest(UUID id);
 
         UUID SendRemoteData(uint localID, UUID itemID, string channel, string dest, int idata, string sdata);
@@ -74,6 +77,7 @@ namespace OpenSim.Region.Framework.Interfaces
         string GetStrVal();
 
         bool IsProcessed();
+
         void SetIntRetval(int resp);
 
         void SetProcessed(bool processed);

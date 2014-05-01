@@ -42,7 +42,9 @@ namespace OpenSim.Framework
         public string HomeURL { get; set; }
 
         public UUID Id { get; set; }
+
         public string LastName { get; set; }
+
         public Dictionary<string, object> ServerURLs { get; set; }
     }
 }

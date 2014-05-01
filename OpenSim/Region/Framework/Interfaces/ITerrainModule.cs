@@ -52,6 +52,7 @@ namespace OpenSim.Region.Framework.Interfaces
         void ModifyTerrain(UUID user, Vector3 pos, byte size, byte action, UUID agentId);
 
         void SaveToFile(string filename);
+
         /// <summary>
         /// Save a terrain to a stream.
         /// </summary>
@@ -66,6 +67,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// Use this if you change terrain data outside of the terrain module (e.g. in osTerrainSetHeight)
         /// </summary>
         void TaintTerrain();
+
         void UndoTerrain(ITerrainChannel channel);
     }
 }

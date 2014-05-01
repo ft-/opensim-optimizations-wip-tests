@@ -58,6 +58,7 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring.Alerts
                 }
             }
         }
+
         #endregion Implementation of IAlert
     }
 }

@@ -52,12 +52,14 @@ namespace OpenSim.Region.Framework.Scenes
         private PhysicsCrash handlerPhysicsCrash = null;
 
         protected internal event PhysicsCrash UnRecoverableError;
+
         #endregion Events
 
         #region Fields
 
         protected internal PhysicsScene _PhyScene;
         protected internal EntityManager Entities = new EntityManager();
+
         /// <summary>
         /// Index the SceneObjectGroup for each part by the root part's UUID.
         /// </summary>
@@ -87,6 +89,7 @@ namespace OpenSim.Region.Framework.Scenes
         protected Dictionary<UUID, ScenePresence> m_scenePresenceMap = new Dictionary<UUID, ScenePresence>();
         protected int m_scriptLPS = 0;
         protected Dictionary<UUID, SceneObjectGroup> m_updateList = new Dictionary<UUID, SceneObjectGroup>();
+
         /// <summary>
         /// Lock to prevent object group update, linking, delinking and duplication operations from running concurrently.
         /// </summary>
@@ -241,6 +244,7 @@ namespace OpenSim.Region.Framework.Scenes
                 presence.Update();
             });
         }
+
         protected internal void UpdateScenePresenceMovement()
         {
             ForEachScenePresence(delegate(ScenePresence presence)
@@ -248,6 +252,7 @@ namespace OpenSim.Region.Framework.Scenes
                 presence.UpdateMovement();
             });
         }
+
         #endregion Update Methods
 
         #region Entity Methods
@@ -477,6 +482,7 @@ namespace OpenSim.Region.Framework.Scenes
 
             return AddSceneObject(sceneObject, attachToBackup, sendClientUpdates);
         }
+
         protected internal void AddToScriptLPS(int number)
         {
             m_scriptLPS += number;
@@ -769,6 +775,7 @@ namespace OpenSim.Region.Framework.Scenes
 
             return true;
         }
+
         #endregion Entity Methods
 
         #region Get Methods
@@ -1204,6 +1211,7 @@ namespace OpenSim.Region.Framework.Scenes
                 m_presenceLock.ReleaseReaderLock();
             }
         }
+
         protected internal bool TryGetAvatarByName(string name, out ScenePresence avatar)
         {
             avatar = null;
@@ -1239,6 +1247,7 @@ namespace OpenSim.Region.Framework.Scenes
             }
             return (avatar != null);
         }
+
         #endregion Get Methods
 
         #region Other Methods
@@ -1334,6 +1343,7 @@ namespace OpenSim.Region.Framework.Scenes
                 handlerPhysicsCrash();
             }
         }
+
         #endregion Other Methods
 
         #region Client Event handlers
@@ -2047,6 +2057,7 @@ namespace OpenSim.Region.Framework.Scenes
                 }
             }
         }
+
         /// <summary>
         ///
         /// </summary>
@@ -2138,6 +2149,7 @@ namespace OpenSim.Region.Framework.Scenes
                 }
             }
         }
+
         /// <summary>
         /// Update the texture entry of the given prim.
         /// </summary>
@@ -2160,6 +2172,7 @@ namespace OpenSim.Region.Framework.Scenes
                 }
             }
         }
+
         /// <summary>
         /// Calculates the distance between two Vector3s
         /// </summary>

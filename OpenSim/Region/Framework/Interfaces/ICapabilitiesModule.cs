@@ -61,7 +61,9 @@ namespace OpenSim.Region.Framework.Interfaces
         /// </summary>
         /// <param name="agentId"></param>
         void RemoveCaps(UUID agentId);
+
         void SetAgentCapsSeeds(AgentCircuitData agent);
+
         void SetChildrenSeed(UUID agentID, Dictionary<ulong, string> seeds);
     }
 }

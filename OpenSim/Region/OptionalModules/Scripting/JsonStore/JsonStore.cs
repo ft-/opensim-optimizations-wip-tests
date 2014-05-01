@@ -48,6 +48,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
 
         private UUID m_objectID;
         private Scene m_scene;
+
         public JsonObjectStore(Scene scene, UUID oid)
             : base()
         {

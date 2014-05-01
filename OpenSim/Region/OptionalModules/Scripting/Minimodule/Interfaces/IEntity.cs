@@ -34,6 +34,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
         UUID GlobalID { get; }
 
         string Name { get; set; }
+
         Vector3 WorldPosition { get; set; }
     }
 }

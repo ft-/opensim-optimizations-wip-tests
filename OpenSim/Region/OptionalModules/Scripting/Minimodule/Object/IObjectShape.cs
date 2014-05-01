@@ -59,6 +59,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule.Object
         Plane = 3,
         Cylinder = 4
     }
+
     public interface IObjectShape
     {
         Double HoleSize { get; set; }

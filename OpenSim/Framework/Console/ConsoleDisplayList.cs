@@ -63,6 +63,7 @@ namespace OpenSim.Framework.Console
         /// Table rows
         /// </summary>
         public List<KeyValuePair<string, string>> Rows { get; private set; }
+
         public void AddRow(object key, object value)
         {
             Rows.Add(new KeyValuePair<string, string>(key.ToString(), value.ToString()));
@@ -84,6 +85,7 @@ namespace OpenSim.Framework.Console
             AddToStringBuilder(sb);
             return sb.ToString();
         }
+
         /// <summary>
         /// Gets the format string for the table.
         /// </summary>

@@ -81,6 +81,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
         // Attributes for each material type
         private static readonly MaterialAttributes[] Attributes;
+
         static BSMaterials()
         {
             // Attribute sets for both the non-physical and physical instances of materials.

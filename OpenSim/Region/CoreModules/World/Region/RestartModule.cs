@@ -62,6 +62,7 @@ namespace OpenSim.Region.CoreModules.World.Region
 
         private static readonly ILog m_log =
             LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public string Name
         {
             get { return "RestartModule"; }
@@ -177,6 +178,7 @@ namespace OpenSim.Region.CoreModules.World.Region
         public void Initialise(IConfigSource config)
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             m_DialogModule = m_Scene.RequestModuleInterface<IDialogModule>();
@@ -185,6 +187,7 @@ namespace OpenSim.Region.CoreModules.World.Region
         public void RemoveRegion(Scene scene)
         {
         }
+
         public void ScheduleRestart(UUID initiator, string message, int[] alerts, bool notice)
         {
             if (m_CountdownTimer != null)
@@ -213,6 +216,7 @@ namespace OpenSim.Region.CoreModules.World.Region
 
             SetTimer(nextInterval);
         }
+
         public void SetTimer(int intervalSeconds)
         {
             if (intervalSeconds > 0)

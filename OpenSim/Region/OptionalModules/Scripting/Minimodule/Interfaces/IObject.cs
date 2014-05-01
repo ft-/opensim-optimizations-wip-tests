@@ -130,6 +130,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
         /// The local region-unique ID for this object.
         /// </summary>
         uint LocalID { get; }
+
         /// <summary>
         /// Returns a list of materials attached to this object. Each may contain unique texture
         /// and other visual information. For primitive based objects, this correlates with
@@ -153,6 +154,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
         /// Returns the UUID of the Owner of the Object.
         /// </summary>
         UUID OwnerId { get; }
+
         IObjectPhysics Physics { get; }
 
         PhysicsMaterial PhysicsMaterial { get; set; }
@@ -161,6 +163,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
         /// Returns the root object of a linkset. If this object is the root, it will return itself.
         /// </summary>
         IObject Root { get; }
+
         /// <summary>
         /// The bounding box of the object. Primitive and Mesh objects alike are scaled to fit within these bounds.
         /// </summary>
@@ -195,6 +198,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
         /// The rotation of the object relative to the Scene
         /// </summary>
         Quaternion WorldRotation { get; set; }
+
         // SetStatus(!ROTATE_X)
 
         // SetStatus(!ROTATE_Y)

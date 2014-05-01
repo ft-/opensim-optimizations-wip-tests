@@ -102,6 +102,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -109,6 +110,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
         public void RemoveRegion(Scene scene)
         {
         }
+
         ///<summary>
         /// Try a variety of methods for finding the simian simulator capability; first check the
         /// configuration itself, then look for a file that contains the cap, then finally look
@@ -147,6 +149,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
         }
 
         #endregion IRegionModule Members
+
         public static OSDMap PostToService(string url, NameValueCollection data)
         {
             data["cap"] = SimulatorCapability;

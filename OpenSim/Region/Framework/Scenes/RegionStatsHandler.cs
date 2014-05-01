@@ -43,6 +43,7 @@ namespace OpenSim.Region.Framework.Scenes
 
         //private string osSecret = String.Empty;
         private OpenSim.Framework.RegionInfo regionInfo;
+
         public RegionStatsHandler(RegionInfo region_info)
             : base("GET", "/" + Util.SHA1Hash(region_info.regionSecret), "RegionStats", "Region Statistics")
         {
@@ -60,6 +61,7 @@ namespace OpenSim.Region.Framework.Scenes
         {
             return Util.UTF8.GetBytes(Report());
         }
+
         private string Report()
         {
             OSDMap args = new OSDMap(30);

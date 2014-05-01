@@ -25,27 +25,23 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.IO;
-using System.Net;
-using System.Text;
-using System.Xml;
-using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Threading;
-using OpenMetaverse;
 using log4net;
 using Mono.Addins;
 using Nini.Config;
-using Nwc.XmlRpc;
+using OpenMetaverse;
 using OpenSim.Framework;
-
 using OpenSim.Framework.Capabilities;
-using OpenSim.Framework.Servers;
 using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Net;
+using System.Reflection;
+using System.Threading;
+using System.Xml;
 using Caps = OpenSim.Framework.Capabilities.Caps;
 
 namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
@@ -53,50 +49,56 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "VivoxVoiceModule")]
     public class VivoxVoiceModule : ISharedRegionModule
     {
-
         // channel distance model values
-        public const int CHAN_DIST_NONE     = 0; // no attenuation
-        public const int CHAN_DIST_INVERSE  = 1; // inverse distance attenuation
-        public const int CHAN_DIST_LINEAR   = 2; // linear attenuation
+        public const int CHAN_DIST_NONE = 0; // no attenuation
+
+        public const int CHAN_DIST_INVERSE = 1; // inverse distance attenuation
+        public const int CHAN_DIST_LINEAR = 2; // linear attenuation
         public const int CHAN_DIST_EXPONENT = 3; // exponential attenuation
-        public const int CHAN_DIST_DEFAULT  = CHAN_DIST_LINEAR;
+        public const int CHAN_DIST_DEFAULT = CHAN_DIST_LINEAR;
 
         // channel type values
-        public static readonly string CHAN_TYPE_POSITIONAL   = "positional";
-        public static readonly string CHAN_TYPE_CHANNEL      = "channel";
-        public static readonly string CHAN_TYPE_DEFAULT      = CHAN_TYPE_POSITIONAL;
+        public static readonly string CHAN_TYPE_POSITIONAL = "positional";
+
+        public static readonly string CHAN_TYPE_CHANNEL = "channel";
+        public static readonly string CHAN_TYPE_DEFAULT = CHAN_TYPE_POSITIONAL;
 
         // channel mode values
-        public static readonly string CHAN_MODE_OPEN         = "open";
-        public static readonly string CHAN_MODE_LECTURE      = "lecture";
+        public static readonly string CHAN_MODE_OPEN = "open";
+
+        public static readonly string CHAN_MODE_LECTURE = "lecture";
         public static readonly string CHAN_MODE_PRESENTATION = "presentation";
-        public static readonly string CHAN_MODE_AUDITORIUM   = "auditorium";
-        public static readonly string CHAN_MODE_DEFAULT      = CHAN_MODE_OPEN;
+        public static readonly string CHAN_MODE_AUDITORIUM = "auditorium";
+        public static readonly string CHAN_MODE_DEFAULT = CHAN_MODE_OPEN;
 
         // unconstrained default values
-        public const double CHAN_ROLL_OFF_DEFAULT            = 2.0;  // rate of attenuation
-        public const double CHAN_ROLL_OFF_MIN                = 1.0;
-        public const double CHAN_ROLL_OFF_MAX                = 4.0;
-        public const int    CHAN_MAX_RANGE_DEFAULT           = 80;   // distance at which channel is silent
-        public const int    CHAN_MAX_RANGE_MIN               = 0;
-        public const int    CHAN_MAX_RANGE_MAX               = 160;
-        public const int    CHAN_CLAMPING_DISTANCE_DEFAULT   = 10;   // distance before attenuation applies
-        public const int    CHAN_CLAMPING_DISTANCE_MIN       = 0;
-        public const int    CHAN_CLAMPING_DISTANCE_MAX       = 160;
+        public const double CHAN_ROLL_OFF_DEFAULT = 2.0;  // rate of attenuation
+
+        public const double CHAN_ROLL_OFF_MIN = 1.0;
+        public const double CHAN_ROLL_OFF_MAX = 4.0;
+        public const int CHAN_MAX_RANGE_DEFAULT = 80;   // distance at which channel is silent
+        public const int CHAN_MAX_RANGE_MIN = 0;
+        public const int CHAN_MAX_RANGE_MAX = 160;
+        public const int CHAN_CLAMPING_DISTANCE_DEFAULT = 10;   // distance before attenuation applies
+        public const int CHAN_CLAMPING_DISTANCE_MIN = 0;
+        public const int CHAN_CLAMPING_DISTANCE_MAX = 160;
 
         // Infrastructure
         private static readonly ILog m_log =
             LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        private static readonly Object vlock  = new Object();
+
+        private static readonly Object vlock = new Object();
 
         // Capability strings
         private static readonly string m_parcelVoiceInfoRequestPath = "0107/";
+
         private static readonly string m_provisionVoiceAccountRequestPath = "0108/";
         //private static readonly string m_chatSessionRequestPath = "0109/";
 
         // Control info, e.g. vivox server, admin user, admin password
-        private static bool   m_pluginEnabled  = false;
-        private static bool   m_adminConnected = false;
+        private static bool m_pluginEnabled = false;
+
+        private static bool m_adminConnected = false;
 
         private static string m_vivoxServer;
         private static string m_vivoxSipUri;
@@ -105,23 +107,22 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
         private static string m_vivoxAdminPassword;
         private static string m_authToken = String.Empty;
 
-        private static int    m_vivoxChannelDistanceModel;
+        private static int m_vivoxChannelDistanceModel;
         private static double m_vivoxChannelRollOff;
-        private static int    m_vivoxChannelMaximumRange;
+        private static int m_vivoxChannelMaximumRange;
         private static string m_vivoxChannelMode;
         private static string m_vivoxChannelType;
-        private static int    m_vivoxChannelClampingDistance;
+        private static int m_vivoxChannelClampingDistance;
 
-        private static Dictionary<string,string> m_parents = new Dictionary<string,string>();
+        private static Dictionary<string, string> m_parents = new Dictionary<string, string>();
         private static bool m_dumpXml;
-        
+
         private IConfig m_config;
 
         private object m_Lock;
 
         public void Initialise(IConfigSource config)
         {
-
             m_config = config.Configs["VivoxVoice"];
 
             if (null == m_config)
@@ -152,34 +153,34 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
                 // Validate against constraints and default if necessary
                 if (m_vivoxChannelRollOff < CHAN_ROLL_OFF_MIN || m_vivoxChannelRollOff > CHAN_ROLL_OFF_MAX)
                 {
-                    m_log.WarnFormat("[VivoxVoice] Invalid value for roll off ({0}), reset to {1}.", 
+                    m_log.WarnFormat("[VivoxVoice] Invalid value for roll off ({0}), reset to {1}.",
                                               m_vivoxChannelRollOff, CHAN_ROLL_OFF_DEFAULT);
                     m_vivoxChannelRollOff = CHAN_ROLL_OFF_DEFAULT;
                 }
 
                 if (m_vivoxChannelMaximumRange < CHAN_MAX_RANGE_MIN || m_vivoxChannelMaximumRange > CHAN_MAX_RANGE_MAX)
                 {
-                    m_log.WarnFormat("[VivoxVoice] Invalid value for maximum range ({0}), reset to {1}.", 
+                    m_log.WarnFormat("[VivoxVoice] Invalid value for maximum range ({0}), reset to {1}.",
                                               m_vivoxChannelMaximumRange, CHAN_MAX_RANGE_DEFAULT);
                     m_vivoxChannelMaximumRange = CHAN_MAX_RANGE_DEFAULT;
                 }
 
-                if (m_vivoxChannelClampingDistance < CHAN_CLAMPING_DISTANCE_MIN || 
+                if (m_vivoxChannelClampingDistance < CHAN_CLAMPING_DISTANCE_MIN ||
                                             m_vivoxChannelClampingDistance > CHAN_CLAMPING_DISTANCE_MAX)
                 {
-                    m_log.WarnFormat("[VivoxVoice] Invalid value for clamping distance ({0}), reset to {1}.", 
+                    m_log.WarnFormat("[VivoxVoice] Invalid value for clamping distance ({0}), reset to {1}.",
                                               m_vivoxChannelClampingDistance, CHAN_CLAMPING_DISTANCE_DEFAULT);
                     m_vivoxChannelClampingDistance = CHAN_CLAMPING_DISTANCE_DEFAULT;
                 }
 
                 switch (m_vivoxChannelMode)
                 {
-                    case "open" : break;
-                    case "lecture" : break;
-                    case "presentation" : break;
-                    case "auditorium" : break;
-                    default :
-                        m_log.WarnFormat("[VivoxVoice] Invalid value for channel mode ({0}), reset to {1}.", 
+                    case "open": break;
+                    case "lecture": break;
+                    case "presentation": break;
+                    case "auditorium": break;
+                    default:
+                        m_log.WarnFormat("[VivoxVoice] Invalid value for channel mode ({0}), reset to {1}.",
                                                   m_vivoxChannelMode, CHAN_MODE_DEFAULT);
                         m_vivoxChannelMode = CHAN_MODE_DEFAULT;
                         break;
@@ -187,10 +188,10 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
 
                 switch (m_vivoxChannelType)
                 {
-                    case "positional" : break;
-                    case "channel" : break;
-                    default :
-                        m_log.WarnFormat("[VivoxVoice] Invalid value for channel type ({0}), reset to {1}.", 
+                    case "positional": break;
+                    case "channel": break;
+                    default:
+                        m_log.WarnFormat("[VivoxVoice] Invalid value for channel type ({0}), reset to {1}.",
                                                   m_vivoxChannelType, CHAN_TYPE_DEFAULT);
                         m_vivoxChannelType = CHAN_TYPE_DEFAULT;
                         break;
@@ -229,21 +230,21 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
 
         public void AddRegion(Scene scene)
         {
-            if (m_pluginEnabled) 
+            if (m_pluginEnabled)
             {
                 lock (vlock)
                 {
                     string channelId;
 
-                    string sceneUUID  = scene.RegionInfo.RegionID.ToString();
-                    string sceneName  = scene.RegionInfo.RegionName;
-                    
+                    string sceneUUID = scene.RegionInfo.RegionID.ToString();
+                    string sceneName = scene.RegionInfo.RegionName;
+
                     // Make sure that all local channels are deleted.
                     // So we have to search for the children, and then do an
                     // iteration over the set of chidren identified.
                     // This assumes that there is just one directory per
                     // region.
-                    
+
                     if (VivoxTryGetDirectory(sceneUUID + "D", out channelId))
                     {
                         m_log.DebugFormat("[VivoxVoice]: region {0}: uuid {1}: located directory id {2}",
@@ -262,7 +263,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
                                 {
                                     if (!IsOK(VivoxDeleteChannel(channelId, id)))
                                         m_log.WarnFormat("[VivoxVoice] Channel delete failed {0}:{1}:{2}", i, channelId, id);
-                                } 
+                                }
                             }
                         }
                     }
@@ -310,15 +311,15 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
 
         public void RemoveRegion(Scene scene)
         {
-            if (m_pluginEnabled) 
+            if (m_pluginEnabled)
             {
                 lock (vlock)
                 {
                     string channelId;
 
-                    string sceneUUID  = scene.RegionInfo.RegionID.ToString();
-                    string sceneName  = scene.RegionInfo.RegionName;
-                    
+                    string sceneUUID = scene.RegionInfo.RegionID.ToString();
+                    string sceneName = scene.RegionInfo.RegionName;
+
                     // Make sure that all local channels are deleted.
                     // So we have to search for the children, and then do an
                     // iteration over the set of chidren identified.
@@ -342,7 +343,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
                                 {
                                     if (!IsOK(VivoxDeleteChannel(channelId, id)))
                                         m_log.WarnFormat("[VivoxVoice] Channel delete failed {0}:{1}:{2}", i, channelId, id);
-                                } 
+                                }
                             }
                         }
                     }
@@ -352,7 +353,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
 
                     // Remove the channel umbrella entry
 
-                    lock (m_parents) 
+                    lock (m_parents)
                     {
                         if (m_parents.ContainsKey(sceneUUID))
                         {
@@ -374,7 +375,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
                 VivoxLogout();
         }
 
-        public Type ReplaceableInterface 
+        public Type ReplaceableInterface
         {
             get { return null; }
         }
@@ -395,11 +396,11 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
         // (login, region crossing). We contribute two capabilities to
         // the set of capabilities handed back to the client:
         // ProvisionVoiceAccountRequest and ParcelVoiceInfoRequest.
-        // 
+        //
         // ProvisionVoiceAccountRequest allows the client to obtain
         // the voice account credentials for the avatar it is
         // controlling (e.g., user name, password, etc).
-        // 
+        //
         // ParcelVoiceInfoRequest is invoked whenever the client
         // changes from one region or parcel to another.
         //
@@ -460,7 +461,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
             try
             {
                 ScenePresence avatar = null;
-                string        avatarName = null;
+                string avatarName = null;
 
                 if (scene == null)
                     throw new Exception("[VivoxVoice][PROVISIONVOICE]: Invalid scene");
@@ -478,11 +479,11 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
                 m_log.DebugFormat("[VivoxVoice][PROVISIONVOICE]: request: {0}, path: {1}, param: {2}",
                                   request, path, param);
 
-                XmlElement    resp;
-                bool          retry = false;
-                string        agentname = "x" + Convert.ToBase64String(agentID.GetBytes());
-                string        password  = new UUID(Guid.NewGuid()).ToString().Replace('-','Z').Substring(0,16);
-                string        code = String.Empty;
+                XmlElement resp;
+                bool retry = false;
+                string agentname = "x" + Convert.ToBase64String(agentID.GetBytes());
+                string password = new UUID(Guid.NewGuid()).ToString().Replace('-', 'Z').Substring(0, 16);
+                string code = String.Empty;
 
                 agentname = agentname.Replace('+', '-').Replace('/', '_');
 
@@ -492,73 +493,73 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
 
                     if (XmlFind(resp, "response.level0.status", out code))
                     {
-                        if (code != "OK") 
+                        if (code != "OK")
                         {
-                            if (XmlFind(resp, "response.level0.body.code", out code)) 
+                            if (XmlFind(resp, "response.level0.body.code", out code))
                             {
                                 // If the request was recognized, then this should be set to something
                                 switch (code)
                                 {
-                                    case "201" : // Account expired
+                                    case "201": // Account expired
                                         m_log.ErrorFormat("[VivoxVoice]: avatar \"{0}\": Get account information failed : expired credentials",
                                                           avatarName);
                                         m_adminConnected = false;
                                         retry = DoAdminLogin();
                                         break;
 
-                                    case "202" : // Missing credentials
+                                    case "202": // Missing credentials
                                         m_log.ErrorFormat("[VivoxVoice]: avatar \"{0}\": Get account information failed : missing credentials",
                                                           avatarName);
                                         break;
 
-                                    case "212" : // Not authorized
+                                    case "212": // Not authorized
                                         m_log.ErrorFormat("[VivoxVoice]: avatar \"{0}\": Get account information failed : not authorized",
                                                           avatarName);
                                         break;
 
-                                    case "300" : // Required parameter missing
+                                    case "300": // Required parameter missing
                                         m_log.ErrorFormat("[VivoxVoice]: avatar \"{0}\": Get account information failed : parameter missing",
                                                           avatarName);
                                         break;
 
-                                    case "403" : // Account does not exist
-                                        resp = VivoxCreateAccount(agentname,password);
+                                    case "403": // Account does not exist
+                                        resp = VivoxCreateAccount(agentname, password);
                                         // Note: This REALLY MUST BE status. Create Account does not return code.
                                         if (XmlFind(resp, "response.level0.status", out code))
                                         {
                                             switch (code)
                                             {
-                                                case "201" : // Account expired
-                                                    m_log.ErrorFormat("[VivoxVoice]: avatar \"{0}\": Create account information failed : expired credentials", 
+                                                case "201": // Account expired
+                                                    m_log.ErrorFormat("[VivoxVoice]: avatar \"{0}\": Create account information failed : expired credentials",
                                                                       avatarName);
                                                     m_adminConnected = false;
                                                     retry = DoAdminLogin();
                                                     break;
-                                                    
-                                                case "202" : // Missing credentials
-                                                    m_log.ErrorFormat("[VivoxVoice]: avatar \"{0}\": Create account information failed : missing credentials", 
+
+                                                case "202": // Missing credentials
+                                                    m_log.ErrorFormat("[VivoxVoice]: avatar \"{0}\": Create account information failed : missing credentials",
                                                                       avatarName);
                                                     break;
-                                                    
-                                                case "212" : // Not authorized
+
+                                                case "212": // Not authorized
                                                     m_log.ErrorFormat("[VivoxVoice]: avatar \"{0}\": Create account information failed : not authorized",
                                                                       avatarName);
                                                     break;
-                                                    
-                                                case "300" : // Required parameter missing
-                                                    m_log.ErrorFormat("[VivoxVoice]: avatar \"{0}\": Create account information failed : parameter missing", 
+
+                                                case "300": // Required parameter missing
+                                                    m_log.ErrorFormat("[VivoxVoice]: avatar \"{0}\": Create account information failed : parameter missing",
                                                                       avatarName);
                                                     break;
-                                                    
-                                                case "400" : // Create failed
+
+                                                case "400": // Create failed
                                                     m_log.ErrorFormat("[VivoxVoice]: avatar \"{0}\": Create account information failed : create failed",
                                                                       avatarName);
                                                     break;
                                             }
                                         }
                                         break;
-                                        
-                                    case "404" : // Failed to retrieve account
+
+                                    case "404": // Failed to retrieve account
                                         m_log.ErrorFormat("[VivoxVoice]: avatar \"{0}\": Get account information failed : retrieve failed");
                                         // [AMW] Sleep and retry for a fixed period? Or just abandon?
                                         break;
@@ -574,7 +575,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
                     m_log.DebugFormat("[VivoxVoice][PROVISIONVOICE]: Get Account Request failed for \"{0}\"", avatarName);
                     throw new Exception("Unable to execute request");
                 }
-          
+
                 // Unconditionally change the password on each request
                 VivoxPassword(agentname, password);
 
@@ -609,10 +610,10 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
                                              UUID agentID, Caps caps)
         {
             ScenePresence avatar = scene.GetScenePresence(agentID);
-            string        avatarName = avatar.Name;
+            string avatarName = avatar.Name;
 
             // - check whether we have a region channel in our cache
-            // - if not: 
+            // - if not:
             //       create it and cache it
             // - send it to the client
             // - send channel_uri: as "sip:regionID@m_sipDomain"
@@ -621,7 +622,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
                 LLSDParcelVoiceInfoResponse parcelVoiceInfo;
                 string channel_uri;
 
-                if (null == scene.LandChannel) 
+                if (null == scene.LandChannel)
                     throw new Exception(String.Format("region \"{0}\": avatar \"{1}\": land data not yet available",
                                                       scene.RegionInfo.RegionName, avatarName));
 
@@ -662,15 +663,15 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
                 parcelVoiceInfo = new LLSDParcelVoiceInfoResponse(scene.RegionInfo.RegionName, land.LocalID, creds);
                 string r = LLSDHelpers.SerialiseLLSDReply(parcelVoiceInfo);
 
-                m_log.DebugFormat("[VivoxVoice][PARCELVOICE]: region \"{0}\": Parcel \"{1}\" ({2}): avatar \"{3}\": {4}", 
+                m_log.DebugFormat("[VivoxVoice][PARCELVOICE]: region \"{0}\": Parcel \"{1}\" ({2}): avatar \"{3}\": {4}",
                                   scene.RegionInfo.RegionName, land.Name, land.LocalID, avatarName, r);
                 return r;
             }
             catch (Exception e)
             {
-                m_log.ErrorFormat("[VivoxVoice][PARCELVOICE]: region \"{0}\": avatar \"{1}\": {2}, retry later", 
+                m_log.ErrorFormat("[VivoxVoice][PARCELVOICE]: region \"{0}\": avatar \"{1}\": {2}, retry later",
                                   scene.RegionInfo.RegionName, avatarName, e.Message);
-                m_log.DebugFormat("[VivoxVoice][PARCELVOICE]: region \"{0}\": avatar \"{1}\": {2} failed", 
+                m_log.DebugFormat("[VivoxVoice][PARCELVOICE]: region \"{0}\": avatar \"{1}\": {2} failed",
                                   scene.RegionInfo.RegionName, avatarName, e.ToString());
 
                 return "<llsd><undef /></llsd>";
@@ -691,7 +692,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
                                          UUID agentID, Caps caps)
         {
             ScenePresence avatar = scene.GetScenePresence(agentID);
-            string        avatarName = avatar.Name;
+            string avatarName = avatar.Name;
 
             m_log.DebugFormat("[VivoxVoice][CHATSESSION]: avatar \"{0}\": request: {1}, path: {2}, param: {3}",
                               avatarName, request, path, param);
@@ -716,17 +717,17 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
             {
                 landName = String.Format("{0}:{1}", scene.RegionInfo.RegionName, land.Name);
                 landUUID = land.GlobalID.ToString();
-                m_log.DebugFormat("[VivoxVoice]: Region:Parcel \"{0}\": parcel id {1}: using channel name {2}", 
+                m_log.DebugFormat("[VivoxVoice]: Region:Parcel \"{0}\": parcel id {1}: using channel name {2}",
                                   landName, land.LocalID, landUUID);
             }
             else
             {
                 landName = String.Format("{0}:{1}", scene.RegionInfo.RegionName, scene.RegionInfo.RegionName);
                 landUUID = scene.RegionInfo.RegionID.ToString();
-                m_log.DebugFormat("[VivoxVoice]: Region:Parcel \"{0}\": parcel id {1}: using channel name {2}", 
+                m_log.DebugFormat("[VivoxVoice]: Region:Parcel \"{0}\": parcel id {1}: using channel name {2}",
                                   landName, land.LocalID, landUUID);
             }
-                    
+
             lock (vlock)
             {
                 // Added by Adam to help debug channel not availible errors.
@@ -737,7 +738,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
                 else
                     throw new Exception("vivox channel uri not available");
 
-                m_log.DebugFormat("[VivoxVoice]: Region:Parcel \"{0}\": parent channel id {1}: retrieved parcel channel_uri {2} ", 
+                m_log.DebugFormat("[VivoxVoice]: Region:Parcel \"{0}\": parent channel id {1}: retrieved parcel channel_uri {2} ",
                                   landName, parentId, channelUri);
             }
 
@@ -808,14 +809,14 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
 
         /// <summary>
         /// Create a channel.
-        /// Once again, there a multitude of options possible. In the simplest case 
+        /// Once again, there a multitude of options possible. In the simplest case
         /// we specify only the name and get a non-persistent cannel in return. Non
         /// persistent means that the channel gets deleted if no-one uses it for
         /// 5 hours. To accomodate future requirements, it may be a good idea to
         /// initially create channels under the umbrella of a parent ID based upon
         /// the region name. That way we have a context for side channels, if those
         /// are required in a later phase.
-        /// 
+        ///
         /// In this case the call handles parent and description as optional values.
         /// </summary>
         private bool VivoxTryCreateChannel(string parent, string channelId, string description, out string channelUri)
@@ -831,13 +832,13 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
                 requrl = String.Format("{0}&chan_desc={1}", requrl, description);
             }
 
-            requrl = String.Format("{0}&chan_type={1}",              requrl, m_vivoxChannelType);
-            requrl = String.Format("{0}&chan_mode={1}",              requrl, m_vivoxChannelMode);
-            requrl = String.Format("{0}&chan_roll_off={1}",          requrl, m_vivoxChannelRollOff);
-            requrl = String.Format("{0}&chan_dist_model={1}",        requrl, m_vivoxChannelDistanceModel);
-            requrl = String.Format("{0}&chan_max_range={1}",         requrl, m_vivoxChannelMaximumRange);
+            requrl = String.Format("{0}&chan_type={1}", requrl, m_vivoxChannelType);
+            requrl = String.Format("{0}&chan_mode={1}", requrl, m_vivoxChannelMode);
+            requrl = String.Format("{0}&chan_roll_off={1}", requrl, m_vivoxChannelRollOff);
+            requrl = String.Format("{0}&chan_dist_model={1}", requrl, m_vivoxChannelDistanceModel);
+            requrl = String.Format("{0}&chan_max_range={1}", requrl, m_vivoxChannelMaximumRange);
             requrl = String.Format("{0}&chan_clamping_distance={1}", requrl, m_vivoxChannelClampingDistance);
-            
+
             XmlElement resp = VivoxCall(requrl, true);
             if (XmlFind(resp, "response.level0.body.chan_uri", out channelUri))
                 return true;
@@ -880,7 +881,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
 
         /// <summary>
         /// Retrieve a channel.
-        /// Once again, there a multitude of options possible. In the simplest case 
+        /// Once again, there a multitude of options possible. In the simplest case
         /// we specify only the name and get a non-persistent cannel in return. Non
         /// persistent means that the channel gets deleted if no-one uses it for
         /// 5 hours. To accomodate future requirements, it may be a good idea to
@@ -889,7 +890,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
         /// are required in a later phase.
         /// In this case the call handles parent and description as optional values.
         /// </summary>
-        private bool VivoxTryGetChannel(string channelParent, string channelName, 
+        private bool VivoxTryGetChannel(string channelParent, string channelName,
                                         out string channelId, out string channelUri)
         {
             string count;
@@ -905,7 +906,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
                 // Found by Adam
                 if (channels == 0)
                 {
-                    for (int j=0;j<100;j++)
+                    for (int j = 0; j < 100; j++)
                     {
                         string tmpId;
                         if (!XmlFind(resp, "response.level0.channel-search.channels.channels.level4.id", j, out tmpId))
@@ -997,7 +998,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
                     string type;
 
                     // skip if not a directory
-                    if (!XmlFind(resp, "response.level0.channel-search.channels.channels.level4.type", i, out type) || 
+                    if (!XmlFind(resp, "response.level0.channel-search.channels.channels.level4.type", i, out type) ||
                         type != "dir")
                         continue;
 
@@ -1035,7 +1036,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
 
         /// <summary>
         /// Delete a channel.
-        /// Once again, there a multitude of options possible. In the simplest case 
+        /// Once again, there a multitude of options possible. In the simplest case
         /// we specify only the name and get a non-persistent cannel in return. Non
         /// persistent means that the channel gets deleted if no-one uses it for
         /// 5 hours. To accomodate future requirements, it may be a good idea to
@@ -1067,7 +1068,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
 
         // private XmlElement VivoxGetChild(string parent, string child)
         // {
-
         //     XmlElement children = VivoxListChildren(parent);
         //     string count;
 
@@ -1087,7 +1087,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
         //                         return VivoxGetChannelById(null, id);
         //                     }
         //                 }
-        //             } 
+        //             }
         //         }
         //     }
 
@@ -1095,17 +1095,16 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
         //     return VivoxGetChannel(null, Guid.NewGuid().ToString());
 
         // }
-   
+
         /// <summary>
         /// This method handles the WEB side of making a request over the
         /// Vivox interface. The returned values are tansferred to a has
         /// table which is returned as the result.
-        /// The outcome of the call can be determined by examining the 
+        /// The outcome of the call can be determined by examining the
         /// status value in the hash table.
         /// </summary>
         private XmlElement VivoxCall(string requrl, bool admin)
         {
-
             XmlDocument doc = null;
 
             // If this is an admin call, and admin is not connected,
@@ -1116,7 +1115,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
             doc = new XmlDocument();
 
             // Let's serialize all calls to Vivox. Most of these are driven by
-            // the clients (CAPs), when the user arrives at the region. We don't 
+            // the clients (CAPs), when the user arrives at the region. We don't
             // want to issue many simultaneous http requests to Vivox, because mono
             // doesn't like that
             lock (m_Lock)
@@ -1145,7 +1144,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
 
             // If we're debugging server responses, dump the whole
             // load now
-            if (m_dumpXml) XmlScanl(doc.DocumentElement,0);
+            if (m_dumpXml) XmlScanl(doc.DocumentElement, 0);
 
             return doc.DocumentElement;
         }
@@ -1162,7 +1161,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
 
         /// <summary>
         /// Login has been factored in this way because it gets called
-        /// from several places in the module, and we want it to work 
+        /// from several places in the module, and we want it to work
         /// the same way each time.
         /// </summary>
         private bool DoAdminLogin()
@@ -1177,15 +1176,15 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
                     XmlElement resp = null;
 
                     resp = VivoxLogin(m_vivoxAdminUser, m_vivoxAdminPassword);
- 
-                    if (XmlFind(resp, "response.level0.body.status", out status)) 
+
+                    if (XmlFind(resp, "response.level0.body.status", out status))
                     {
                         if (status == "Ok")
                         {
                             m_log.Info("[VivoxVoice] Admin connection established");
                             if (XmlFind(resp, "response.level0.body.auth_token", out m_authToken))
                             {
-                                if (m_dumpXml) m_log.DebugFormat("[VivoxVoice] Auth Token <{0}>", 
+                                if (m_dumpXml) m_log.DebugFormat("[VivoxVoice] Auth Token <{0}>",
                                                             m_authToken);
                                 m_adminConnected = true;
                             }
@@ -1204,38 +1203,40 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
 
         /// <summary>
         /// The XmlScan routine is provided to aid in the
-        /// reverse engineering of incompletely 
+        /// reverse engineering of incompletely
         /// documented packets returned by the Vivox
-        /// voice server. It is only called if the 
+        /// voice server. It is only called if the
         /// m_dumpXml switch is set.
         /// </summary>
         private void XmlScanl(XmlElement e, int index)
         {
             if (e.HasChildNodes)
             {
-                m_log.DebugFormat("<{0}>".PadLeft(index+5), e.Name);
+                m_log.DebugFormat("<{0}>".PadLeft(index + 5), e.Name);
                 XmlNodeList children = e.ChildNodes;
                 foreach (XmlNode node in children)
-                   switch (node.NodeType)
-                   {
-                        case XmlNodeType.Element :
-                            XmlScanl((XmlElement)node, index+1);
+                    switch (node.NodeType)
+                    {
+                        case XmlNodeType.Element:
+                            XmlScanl((XmlElement)node, index + 1);
                             break;
-                        case XmlNodeType.Text :
-                            m_log.DebugFormat("\"{0}\"".PadLeft(index+5), node.Value);
+
+                        case XmlNodeType.Text:
+                            m_log.DebugFormat("\"{0}\"".PadLeft(index + 5), node.Value);
                             break;
-                        default :
+
+                        default:
                             break;
-                   }
-                m_log.DebugFormat("</{0}>".PadLeft(index+6), e.Name);
+                    }
+                m_log.DebugFormat("</{0}>".PadLeft(index + 6), e.Name);
             }
             else
             {
-                m_log.DebugFormat("<{0}/>".PadLeft(index+6), e.Name);
+                m_log.DebugFormat("<{0}/>".PadLeft(index + 6), e.Name);
             }
         }
 
-        private static readonly char[] C_POINT = {'.'};
+        private static readonly char[] C_POINT = { '.' };
 
         /// <summary>
         /// The Find method is passed an element whose
@@ -1251,29 +1252,29 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
         private bool XmlFind(XmlElement root, string tag, int nth, out string result)
         {
             if (root == null || tag == null || tag == String.Empty)
-            { 
+            {
                 result = String.Empty;
                 return false;
             }
-            return XmlSearch(root,tag.Split(C_POINT),0, ref nth, out result);
+            return XmlSearch(root, tag.Split(C_POINT), 0, ref nth, out result);
         }
 
         private bool XmlFind(XmlElement root, string tag, out string result)
         {
             int nth = 0;
             if (root == null || tag == null || tag == String.Empty)
-            { 
+            {
                 result = String.Empty;
                 return false;
             }
-            return XmlSearch(root,tag.Split(C_POINT),0, ref nth, out result);
+            return XmlSearch(root, tag.Split(C_POINT), 0, ref nth, out result);
         }
 
         /// <summary>
         /// XmlSearch is initially called by XmlFind, and then
         /// recursively called by itself until the document
         /// supplied to XmlFind is either exhausted or the name hierarchy
-        /// is matched. 
+        /// is matched.
         ///
         /// If the hierarchy is matched, the value is returned in
         /// result, and true returned as the function's
@@ -1287,8 +1288,8 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
                 result = String.Empty;
                 return false;
             }
-                
-            if (tags.Length-index == 1)
+
+            if (tags.Length - index == 1)
             {
                 if (nth == 0)
                 {
@@ -1308,14 +1309,14 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.VivoxVoice
                 XmlNodeList children = e.ChildNodes;
                 foreach (XmlNode node in children)
                 {
-                   switch (node.NodeType)
-                   {
-                        case XmlNodeType.Element :
-                            if (XmlSearch((XmlElement)node, tags, index+1, ref nth, out result))
+                    switch (node.NodeType)
+                    {
+                        case XmlNodeType.Element:
+                            if (XmlSearch((XmlElement)node, tags, index + 1, ref nth, out result))
                                 return true;
                             break;
 
-                        default :
+                        default:
                             break;
                     }
                 }

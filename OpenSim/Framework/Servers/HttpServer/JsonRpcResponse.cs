@@ -125,11 +125,13 @@ namespace OpenSim.Framework.Servers.HttpServer
                 Reply["jsonrpc"] = OSD.FromString(value);
             }
         }
+
         public OSD Result
         {
             get;
             set;
         }
+
         public string Serialize()
         {
             if (Result != null)

@@ -55,6 +55,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
         private SimianActivityDetector m_activityDetector;
         private bool m_Enabled = false;
         private string m_serverUrl = String.Empty;
+
         #region ISharedRegionModule
 
         public SimianPresenceServiceConnector()
@@ -89,6 +90,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
         public void RegionLoaded(Scene scene)
         {
         }
+
         public void RemoveRegion(Scene scene)
         {
             if (m_Enabled)
@@ -258,6 +260,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
             // Not needed for SimianGrid
             return true;
         }
+
         #endregion IPresenceService
 
         #region IGridUserService
@@ -333,6 +336,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
         {
             return UpdateSession(sessionID, regionID, lastPosition, lastLookAt);
         }
+
         #endregion IGridUserService
 
         #region Helpers
@@ -398,6 +402,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
             m_log.WarnFormat("[SIMIAN PRESENCE CONNECTOR]: Failed to retrieve user data for {0}; {1}", userID.ToString(), response["Message"].AsString());
             return null;
         }
+
         private GridUserInfo ResponseToGridUserInfo(OSDMap userResponse)
         {
             if (userResponse != null && userResponse["User"] is OSDMap)
@@ -460,6 +465,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
 
             return success;
         }
+
         #endregion Helpers
     }
 }

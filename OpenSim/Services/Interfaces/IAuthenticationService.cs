@@ -79,6 +79,7 @@ namespace OpenSim.Services.Interfaces
         // re-verifying.
         //
         bool Verify(UUID principalID, string token, int lifetime);
+
         //////////////////////////////////////////////////////
         // Grid
         //
@@ -108,6 +109,7 @@ namespace OpenSim.Services.Interfaces
         public string PasswordSalt { get; set; }
 
         public UUID PrincipalID { get; set; }
+
         public string WebLoginKey { get; set; }
 
         public Dictionary<string, object> ToKeyValuePairs()

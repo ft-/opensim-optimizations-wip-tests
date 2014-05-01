@@ -47,6 +47,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         {
             get { return m_restMethod; }
         }
+
         protected override byte[] ProcessRequest(string path, Stream request, IOSHttpRequest httpRequest, IOSHttpResponse httpResponse)
         {
             Encoding encoding = Encoding.UTF8;

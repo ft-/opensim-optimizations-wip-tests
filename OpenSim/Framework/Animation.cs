@@ -77,6 +77,7 @@ namespace OpenSim.Framework
             get { return animID; }
             set { animID = value; }
         }
+
         /// <summary>
         /// Unique ID of object that is being animated
         /// </summary>
@@ -91,6 +92,7 @@ namespace OpenSim.Framework
             get { return sequenceNum; }
             set { sequenceNum = value; }
         }
+
         public override bool Equals(object obj)
         {
             Animation other = obj as Animation;

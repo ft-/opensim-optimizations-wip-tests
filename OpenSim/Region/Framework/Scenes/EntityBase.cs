@@ -99,11 +99,13 @@ namespace OpenSim.Region.Framework.Scenes
         {
             get { return m_scene; }
         }
+
         public virtual UUID UUID
         {
             get { return m_uuid; }
             set { m_uuid = value; }
         }
+
         /// <summary>
         /// Current velocity of the entity.
         /// </summary>
@@ -112,6 +114,7 @@ namespace OpenSim.Region.Framework.Scenes
             get { return m_velocity; }
             set { m_velocity = value; }
         }
+
         /// <summary>
         /// Copies the entity
         /// </summary>
@@ -138,6 +141,7 @@ namespace OpenSim.Region.Framework.Scenes
         public Vector3 ipoint = new Vector3(0, 0, 0);
         public Vector3 normal = new Vector3(0, 0, 0);
         public SceneObjectPart obj;
+
         public EntityIntersection()
         {
         }

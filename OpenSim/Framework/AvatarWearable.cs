@@ -35,6 +35,7 @@ namespace OpenSim.Framework
     {
         public UUID AssetID;
         public UUID ItemID;
+
         public WearableItem(UUID itemID, UUID assetID)
         {
             ItemID = itemID;
@@ -83,6 +84,7 @@ namespace OpenSim.Framework
 
         protected List<UUID> m_ids = new List<UUID>();
         protected Dictionary<UUID, UUID> m_items = new Dictionary<UUID, UUID>();
+
         public AvatarWearable()
         {
         }
@@ -230,6 +232,7 @@ namespace OpenSim.Framework
                 Add(weardata["item"].AsUUID(), weardata["asset"].AsUUID());
             }
         }
+
         public void Wear(WearableItem item)
         {
             Wear(item.ItemID, item.AssetID);

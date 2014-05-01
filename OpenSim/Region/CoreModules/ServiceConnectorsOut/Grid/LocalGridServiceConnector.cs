@@ -53,6 +53,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
         private bool m_Enabled;
         private IGridService m_GridService;
         private Dictionary<UUID, RegionCache> m_LocalCache = new Dictionary<UUID, RegionCache>();
+
         public LocalGridServicesConnector()
         {
             m_log.DebugFormat("{0} LocalGridServicesConnector no parms.", LogHeader);
@@ -75,6 +76,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
         {
             get { return null; }
         }
+
         public void AddRegion(Scene scene)
         {
             if (!m_Enabled)
@@ -165,6 +167,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
 
             m_Enabled = true;
         }
+
         #endregion ISharedRegionModule
 
         #region IGridService
@@ -266,6 +269,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
         {
             return m_GridService.RegisterRegion(scopeID, regionInfo);
         }
+
         #endregion IGridService
 
         public void HandleShowNeighboursCommand(string module, string[] cmdparams)

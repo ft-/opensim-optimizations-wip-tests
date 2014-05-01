@@ -48,6 +48,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Neighbour
 
         private bool m_Enabled = false;
         private List<Scene> m_Scenes = new List<Scene>();
+
         public LocalNeighbourServicesConnector()
         {
         }
@@ -68,6 +69,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Neighbour
         {
             get { return null; }
         }
+
         public void AddRegion(Scene scene)
         {
             m_Scenes.Add(scene);
@@ -96,6 +98,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Neighbour
                 }
             }
         }
+
         public void PostInitialise()
         {
         }
@@ -104,6 +107,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Neighbour
         {
             m_log.Info("[NEIGHBOUR CONNECTOR]: Local neighbour connector enabled for region " + scene.RegionInfo.RegionName);
         }
+
         public void RemoveRegion(Scene scene)
         {
             // Always remove

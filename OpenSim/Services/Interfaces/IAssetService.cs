@@ -89,6 +89,7 @@ namespace OpenSim.Services.Interfaces
         /// <param name="id"></param>
         /// <returns></returns>
         AssetMetadata GetMetadata(string id);
+
         /// <summary>
         /// Creates a new asset
         /// </summary>

@@ -130,10 +130,12 @@ namespace OpenSim.Framework
         /// A uint mask containing the "I want to do" part of the users profile
         /// </summary>
         private uint m_profileWantDoMask; // Profile window "I want to" mask
+
         /// <summary>
         /// The second component of a users account name
         /// </summary>
         private string m_surname;
+
         /// <summary>
         /// A URI to the users asset server, used for foreigners and large grids.
         /// </summary>
@@ -153,6 +155,7 @@ namespace OpenSim.Framework
         /// The last used Web_login_key
         /// </summary>
         private UUID m_webLoginKey;
+
         public string AboutText
         {
             get { return m_profileAboutText; }
@@ -286,6 +289,7 @@ namespace OpenSim.Framework
                 // m_homeRegionY = (((uint) (value)) >> 8);
             }
         }
+
         /// <summary>
         /// The regionID of the users home region. This is unique;
         /// even if the position of the region changes within the

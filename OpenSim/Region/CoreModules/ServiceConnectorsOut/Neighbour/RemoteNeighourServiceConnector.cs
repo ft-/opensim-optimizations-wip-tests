@@ -60,6 +60,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Neighbour
         {
             get { return null; }
         }
+
         public void AddRegion(Scene scene)
         {
             if (!m_Enabled)
@@ -120,6 +121,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Neighbour
             //    }
             //}
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -135,6 +137,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Neighbour
             if (m_Enabled)
                 m_LocalService.RemoveRegion(scene);
         }
+
         #region INeighbourService
 
         public override GridRegion HelloNeighbour(ulong regionHandle, RegionInfo thisRegion)

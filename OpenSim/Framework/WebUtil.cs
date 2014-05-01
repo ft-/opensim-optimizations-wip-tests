@@ -425,6 +425,7 @@ namespace OpenSim.Framework
         /// Control where OSD requests should be serialized per endpoint.
         /// </summary>
         public static bool SerializeOSDRequestsPerEndpoint { get; set; }
+
         /// <summary>
         /// Takes the value of an Accept header and returns the preferred types
         /// ordered by q value (if it exists).
@@ -568,6 +569,7 @@ namespace OpenSim.Framework
         {
             return ServiceOSDRequest(url, data, "PUT", timeout, true, false);
         }
+
         public static OSDMap ServiceOSDRequest(string url, OSDMap data, string method, int timeout, bool compressed, bool rpc)
         {
             if (SerializeOSDRequestsPerEndpoint)
@@ -582,6 +584,7 @@ namespace OpenSim.Framework
                 return ServiceOSDRequestWorker(url, data, method, timeout, compressed, rpc);
             }
         }
+
         /// <summary>
         /// Since there are no consistencies in the way web requests are
         /// formed, we need to do a little guessing about the result format.
@@ -745,6 +748,7 @@ namespace OpenSim.Framework
 
             return ErrorResponseMap(errorMessage);
         }
+
         #endregion JSONRequest
 
         #region FormRequest
@@ -874,6 +878,7 @@ namespace OpenSim.Framework
 
             return ErrorResponseMap(errorMessage);
         }
+
         #endregion FormRequest
 
         #region Uri
@@ -951,6 +956,7 @@ namespace OpenSim.Framework
 
             return new Uri(uri, fragment1 + fragment2);
         }
+
         #endregion Uri
 
         #region NameValueCollection
@@ -1065,6 +1071,7 @@ namespace OpenSim.Framework
             }
         }
     }
+
     public static class XMLRPCRequester
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);

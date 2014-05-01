@@ -60,6 +60,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
         private InventoryCache m_Cache = new InventoryCache();
         private Dictionary<string, IInventoryService> m_connectors = new Dictionary<string, IInventoryService>();
         private List<Scene> m_Scenes = new List<Scene>();
+
         public string Name
         {
             get { return "HGInventoryBroker"; }
@@ -87,6 +88,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
                 return m_UserManagement;
             }
         }
+
         public void AddRegion(Scene scene)
         {
             if (!m_Enabled)
@@ -172,6 +174,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -187,6 +190,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
 
             m_Scenes.Remove(scene);
         }
+
         #region URL Cache
 
         public string GetInventoryServiceURL(UUID userID)
@@ -285,6 +289,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
                 DropInventoryServiceURL(clientID);
             }
         }
+
         #endregion URL Cache
 
         #region IInventoryService
@@ -511,6 +516,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
 
             return root;
         }
+
         public bool HasInventoryForUser(UUID userID)
         {
             return false;
@@ -585,6 +591,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
 
             return connector.UpdateFolder(folder);
         }
+
         public bool UpdateItem(InventoryItemBase item)
         {
             if (item == null)
@@ -601,6 +608,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
 
             return connector.UpdateItem(item);
         }
+
         #endregion IInventoryService
 
         private IInventoryService GetConnector(string url)

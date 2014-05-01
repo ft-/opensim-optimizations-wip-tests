@@ -84,6 +84,7 @@ namespace OpenSim.Region.CoreModules.World.Sound
                 MaxDistance = config.GetFloat("MaxDistance", 100.0f);
             }
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!Enabled)
@@ -99,6 +100,7 @@ namespace OpenSim.Region.CoreModules.World.Sound
         {
             m_scene.EventManager.OnNewClient -= OnNewClient;
         }
+
         #endregion INonSharedRegionModule
 
         #region Event Handlers
@@ -309,6 +311,7 @@ namespace OpenSim.Region.CoreModules.World.Sound
                         (float)thisSpGain);
             });
         }
+
         public void TriggerSoundLimited(UUID objectID, UUID sound,
                 double volume, Vector3 min, Vector3 max)
         {
@@ -376,6 +379,7 @@ namespace OpenSim.Region.CoreModules.World.Sound
                 m_host.SendFullUpdateToAllClients();
             }
         }
+
         #endregion ISoundModule
     }
 }

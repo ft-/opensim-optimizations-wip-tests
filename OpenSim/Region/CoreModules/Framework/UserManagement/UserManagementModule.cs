@@ -25,11 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Threading;
-
 using log4net;
 using Mono.Addins;
 using Nini.Config;
@@ -42,6 +37,10 @@ using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Connectors.Hypergrid;
 using OpenSim.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Threading;
 
 namespace OpenSim.Region.CoreModules.Framework.UserManagement
 {
@@ -51,11 +50,14 @@ namespace OpenSim.Region.CoreModules.Framework.UserManagement
         protected bool m_Enabled;
         protected List<Scene> m_Scenes = new List<Scene>();
         protected IServiceThrottleModule m_ServiceThrottle;
+
         // The cache
         protected Dictionary<UUID, UserData> m_UserCache = new Dictionary<UUID, UserData>();
+
         private ReaderWriterLock m_UserCacheRwLock = new ReaderWriterLock();
 
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         #region ISharedRegionModule
 
         public bool IsSharedModule
@@ -111,6 +113,7 @@ namespace OpenSim.Region.CoreModules.Framework.UserManagement
                 m_log.DebugFormat("[USER MANAGEMENT MODULE]: {0} is enabled", Name);
             }
         }
+
         public void PostInitialise()
         {
         }
@@ -129,6 +132,7 @@ namespace OpenSim.Region.CoreModules.Framework.UserManagement
                 m_Scenes.Remove(scene);
             }
         }
+
         #endregion ISharedRegionModule
 
         #region Event Handlers
@@ -202,6 +206,7 @@ namespace OpenSim.Region.CoreModules.Framework.UserManagement
             m_log.DebugFormat("[USER MANAGEMENT MODULE]: Caching creators' data from {0} ({1} objects)...", s.RegionInfo.RegionName, s.GetEntities().Length);
             s.ForEachSOG(delegate(SceneObjectGroup sog) { CacheCreators(sog); });
         }
+
         private void HandleConnectionClosed(IClientAPI client)
         {
             client.OnNameFromUUIDRequest -= new UUIDNameRequest(HandleUUIDNameRequest);
@@ -247,6 +252,7 @@ namespace OpenSim.Region.CoreModules.Framework.UserManagement
                 });
             }
         }
+
         #endregion Event Handlers
 
         #region IPeople
@@ -682,6 +688,7 @@ namespace OpenSim.Region.CoreModules.Framework.UserManagement
 
             return names[0] + " " + names[1];
         }
+
         public string GetUserServerURL(UUID userID, string serverType)
         {
             UserData userdata;
@@ -777,6 +784,7 @@ namespace OpenSim.Region.CoreModules.Framework.UserManagement
 
             return userID.ToString();
         }
+
         public bool IsLocalGridUser(UUID uuid)
         {
             UserAccount account = m_Scenes[0].UserAccountService.GetUserAccount(m_Scenes[0].RegionInfo.ScopeID, uuid);
@@ -802,6 +810,7 @@ namespace OpenSim.Region.CoreModules.Framework.UserManagement
             //    "[USER MANAGEMENT MODULE]: Added user {0} {1} {2} {3}",
             //    user.Id, user.FirstName, user.LastName, user.HomeURL);
         }
+
         #endregion IUserManagement
     }
 }

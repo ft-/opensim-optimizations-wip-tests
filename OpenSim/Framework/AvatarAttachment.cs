@@ -35,6 +35,7 @@ namespace OpenSim.Framework
         public UUID AssetID;
         public int AttachPoint;
         public UUID ItemID;
+
         public AvatarAttachment(AvatarAttachment attach)
         {
             AttachPoint = attach.AttachPoint;

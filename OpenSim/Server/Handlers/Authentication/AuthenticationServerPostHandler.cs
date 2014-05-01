@@ -48,6 +48,7 @@ namespace OpenSim.Server.Handlers.Authentication
         private bool m_AllowSetAuthInfo = false;
         private bool m_AllowSetPassword = false;
         private IAuthenticationService m_AuthenticationService;
+
         public AuthenticationServerPostHandler(IAuthenticationService service) :
             this(service, null) { }
 
@@ -193,6 +194,7 @@ namespace OpenSim.Server.Handlers.Authentication
 
             return FailureResult();
         }
+
         private byte[] FailureResult()
         {
             XmlDocument doc = new XmlDocument();
@@ -290,6 +292,7 @@ namespace OpenSim.Server.Handlers.Authentication
 
             return DocToBytes(doc);
         }
+
         private byte[] SuccessResult(string token)
         {
             XmlDocument doc = new XmlDocument();

@@ -40,6 +40,7 @@ namespace OpenSim.Region.Physics.POSPlugin
         private Vector3 _velocity;
         private bool iscolliding;
         private Vector3 m_rotationalVelocity = Vector3.Zero;
+
         public POSPrim()
         {
         }
@@ -212,6 +213,7 @@ namespace OpenSim.Region.Physics.POSPlugin
             get { return m_rotationalVelocity; }
             set { m_rotationalVelocity = value; }
         }
+
         public override bool Selected
         {
             set { return; }
@@ -244,6 +246,7 @@ namespace OpenSim.Region.Physics.POSPlugin
             get { return false; }
             set { return; }
         }
+
         public override Vector3 Torque
         {
             get { return Vector3.Zero; }

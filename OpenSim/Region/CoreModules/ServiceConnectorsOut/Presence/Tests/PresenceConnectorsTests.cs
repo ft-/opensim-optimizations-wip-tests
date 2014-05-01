@@ -25,27 +25,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using System.Threading;
-using log4net.Config;
+using Nini.Config;
 using NUnit.Framework;
 using OpenMetaverse;
-using OpenSim.Framework;
-using Nini.Config;
-using OpenSim.Region.CoreModules.ServiceConnectorsOut.Presence;
-using OpenSim.Region.Framework.Scenes;
-using PresenceInfo = OpenSim.Services.Interfaces.PresenceInfo;
 using OpenSim.Tests.Common;
+using PresenceInfo = OpenSim.Services.Interfaces.PresenceInfo;
 
 namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Presence.Tests
 {
     [TestFixture]
     public class PresenceConnectorsTests : OpenSimTestCase
     {
-        LocalPresenceServicesConnector m_LocalConnector;
+        private LocalPresenceServicesConnector m_LocalConnector;
 
         public override void SetUp()
         {
@@ -72,16 +63,16 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Presence.Tests
         public void TestPresenceV0_1()
         {
             SetUp();
-            
-                // Let's stick in a test presence
-                /*
-                PresenceData p = new PresenceData();
-                p.SessionID = UUID.Zero;
-                p.UserID = UUID.Zero.ToString();
-                p.Data = new Dictionary<string, string>();
-                p.Data["Online"] = true.ToString();
-                m_presenceData.Add(UUID.Zero, p);
-                */
+
+            // Let's stick in a test presence
+            /*
+            PresenceData p = new PresenceData();
+            p.SessionID = UUID.Zero;
+            p.UserID = UUID.Zero.ToString();
+            p.Data = new Dictionary<string, string>();
+            p.Data["Online"] = true.ToString();
+            m_presenceData.Add(UUID.Zero, p);
+            */
 
             string user1 = UUID.Zero.ToString();
             UUID session1 = UUID.Zero;

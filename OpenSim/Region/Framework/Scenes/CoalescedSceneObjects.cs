@@ -70,6 +70,7 @@ namespace OpenSim.Region.Framework.Scenes
         /// The creator of this coalesence, though not necessarily the objects within it.
         /// </summary>
         public UUID CreatorId { get; set; }
+
         /// <summary>
         /// Does this coalesence have any member objects?
         /// </summary>
@@ -100,6 +101,7 @@ namespace OpenSim.Region.Framework.Scenes
                     return Objects[0].Scene;
             }
         }
+
         /// <summary>
         /// Add an object to the coalescence.
         /// </summary>

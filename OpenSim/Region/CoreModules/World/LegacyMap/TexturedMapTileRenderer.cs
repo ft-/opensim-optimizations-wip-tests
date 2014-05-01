@@ -46,6 +46,7 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
         public float s;
         public float v;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public HSV(float h, float s, float v)
         {
             this.h = h;
@@ -131,6 +132,7 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
         private static readonly Color defaultColor2 = Color.FromArgb(69, 89, 49);
         private static readonly Color defaultColor3 = Color.FromArgb(162, 154, 141);
         private static readonly Color defaultColor4 = Color.FromArgb(200, 200, 200);
+
         // some hardcoded terrain UUIDs that work with SL 1.20 (the four default textures and "Blank").
         // The color-values were choosen because they "look right" (at least to me) ;-)
         private static readonly UUID defaultTerrainTexture1 = new UUID("0bc58228-74a0-7e83-89bc-5c23464bcec5");
@@ -151,6 +153,7 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
         private Dictionary<UUID, Color> m_mapping;
 
         private Scene m_scene;
+
         // private IConfigSource m_config; // not used currently
         public void Initialise(Scene scene, IConfigSource source)
         {
@@ -243,6 +246,7 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
             }
             return null;
         }
+
         // the heigthfield might have some jumps in values. Rendered land is smooth, though,
         // as a slope is rendered at that place. So average 4 neighbour values to emulate that.
         private float getHeight(ITerrainChannel hm, int x, int y)
@@ -278,6 +282,7 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
         {
             return (v * v * (3f - 2f * v));
         }
+
         #endregion Helpers
 
         public void TerrainToBitmap(Bitmap mapbmp)

@@ -45,7 +45,7 @@ namespace OpenSim.Region.CoreModules.Framework.InterfaceCommander
         private string m_help;
         private CommandIntentions m_intentions;
         private string m_name;
-         //A permission type system could implement this and know what a command intends on doing.
+        //A permission type system could implement this and know what a command intends on doing.
 
         public Command(string name, CommandIntentions intention, Action<Object[]> command, string help)
         {
@@ -89,6 +89,7 @@ namespace OpenSim.Region.CoreModules.Framework.InterfaceCommander
         {
             m_args.Add(new CommandArgument(name, helptext, type));
         }
+
         public void Run(Object[] args)
         {
             Object[] cleanArgs = new Object[m_args.Count];
@@ -180,6 +181,7 @@ namespace OpenSim.Region.CoreModules.Framework.InterfaceCommander
                 Console.WriteLine("\t" + arg.HelpText);
             }
         }
+
         #endregion ICommand Members
     }
 

@@ -37,6 +37,7 @@ namespace OpenSim.Region.Physics.Manager
     public delegate void PositionUpdate(Vector3 position);
 
     public delegate void VelocityUpdate(Vector3 velocity);
+
     public enum ActorTypes : int
     {
         Unknown = 0,
@@ -58,6 +59,7 @@ namespace OpenSim.Region.Physics.Manager
         public float PenetrationDepth;
         public Vector3 Position;
         public Vector3 SurfaceNormal;
+
         public ContactPoint(Vector3 position, Vector3 surfaceNormal, float penetrationDepth)
         {
             Position = position;
@@ -89,6 +91,7 @@ namespace OpenSim.Region.Physics.Manager
         /// Number of collision events in this update.
         /// </summary>
         public int Count { get { return m_objCollisionList.Count; } }
+
         public void AddCollider(uint localID, ContactPoint contact)
         {
             if (!m_objCollisionList.ContainsKey(localID))
@@ -275,6 +278,7 @@ namespace OpenSim.Region.Physics.Manager
         {
             get { return false; }
         }
+
         public override bool ThrottleUpdates
         {
             get { return false; }
@@ -390,6 +394,7 @@ namespace OpenSim.Region.Physics.Manager
         public delegate void OutOfBounds(Vector3 pos);
 
         public delegate void RequestTerseUpdate();
+
         // disable warning: public events
 #pragma warning disable 67
 
@@ -408,6 +413,7 @@ namespace OpenSim.Region.Physics.Manager
         public event RequestTerseUpdate OnRequestTerseUpdate;
 
         public event VelocityUpdate OnVelocityUpdate;
+
 #pragma warning restore 67
 
         public static PhysicsActor Null
@@ -521,6 +527,7 @@ namespace OpenSim.Region.Physics.Manager
         public abstract Vector3 Size { get; set; }
 
         public abstract bool Stopped { get; }
+
         public virtual Vector3 TargetVelocity
         {
             get { return m_targetVelocity; }
@@ -555,6 +562,7 @@ namespace OpenSim.Region.Physics.Manager
         }
 
         public abstract void link(PhysicsActor obj);
+
         public abstract void LockAngularMotion(Vector3 axis);
 
         public virtual void RaiseOutOfBounds(Vector3 pos)
@@ -582,6 +590,7 @@ namespace OpenSim.Region.Physics.Manager
                 handler();
             }
         }
+
         public virtual void SendCollisionUpdate(EventArgs e)
         {
             CollisionUpdate handler = OnCollisionUpdate;
@@ -595,6 +604,7 @@ namespace OpenSim.Region.Physics.Manager
         public virtual void SetMaterial(int material)
         {
         }
+
         public abstract void SetMomentum(Vector3 momentum);
 
         /// <summary>

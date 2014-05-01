@@ -41,6 +41,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
     {
         protected XEstateModule m_EstateModule;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public EstateConnector(XEstateModule module)
         {
             m_EstateModule = module;
@@ -79,6 +80,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
 
             SendToEstate(EstateID, sendData);
         }
+
         public bool SendUpdateCovenant(uint EstateID, UUID CovenantID)
         {
             Dictionary<string, object> sendData = new Dictionary<string, object>();
@@ -120,6 +122,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
 
             return true;
         }
+
         private bool Call(GridRegion region, Dictionary<string, object> sendData)
         {
             string reqString = ServerUtils.BuildQueryString(sendData);

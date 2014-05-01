@@ -66,6 +66,7 @@ namespace OpenSim.Region.Framework.Scenes
         /// Queues fetch requests
         /// </summary>
         private Queue<FetchHolder> m_fetchHolder = new Queue<FetchHolder>();
+
         public AsyncInventorySender(Scene scene)
         {
             m_processing = false;

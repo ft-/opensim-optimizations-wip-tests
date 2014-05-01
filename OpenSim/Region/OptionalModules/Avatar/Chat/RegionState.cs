@@ -79,6 +79,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
 
         private static readonly ILog m_log =
             LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         private static int _idk_ = 0;
 
         // Runtime variables; these values are assigned when the
@@ -445,6 +446,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
                 m_log.Debug(ex);
             }
         }
+
         // This method gives the region an opportunity to interfere with
         // message delivery. For now we just enforce the enable/disable
         // flag.

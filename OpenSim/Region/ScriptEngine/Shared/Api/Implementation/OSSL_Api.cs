@@ -112,6 +112,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         internal TaskInventoryItem m_item;
         internal ILSL_Api m_LSL_Api = null;
         internal ThreatLevel m_MaxThreatLevel = ThreatLevel.VeryLow;
+
         // get a reference to the LSL API so we can call methods housed there
         internal bool m_OSFunctionsEnabled = false;
 
@@ -120,6 +121,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         internal IScriptEngine m_ScriptEngine;
         protected IUrlModule m_UrlModule = null;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         private enum InfoType
         {
             Nick,
@@ -216,6 +218,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             }
             return lease;
         }
+
         public LSL_Key osAgentSaveAppearance(LSL_Key avatarId, string notecard)
         {
             CheckThreatLevel(ThreatLevel.VeryHigh, "osAgentSaveAppearance");
@@ -3262,6 +3265,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
             m_LSL_Api = (ILSL_Api)m_ScriptEngine.GetApi(m_item.ItemID, "LSL");
         }
+
         private void MessageObject(UUID objUUID, string message)
         {
             object[] resobj = new object[] { new LSL_Types.LSLString(m_host.UUID.ToString()), new LSL_Types.LSLString(message) };
@@ -3471,6 +3475,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 return 0;
             }
         }
+
         private void TeleportAgent(string agent, string regionName,
             LSL_Types.Vector3 position, LSL_Types.Vector3 lookat, bool relaxRestrictions)
         {
@@ -3502,6 +3507,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 }
             }
         }
+
         private void TeleportAgent(string agent, int regionX, int regionY,
             LSL_Types.Vector3 position, LSL_Types.Vector3 lookat, bool relaxRestrictions)
         {
@@ -3536,6 +3542,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 }
             }
         }
+
         #region Attachment commands
 
         public void ForceAttachToAvatarFromInventory(UUID avatarId, string itemName, int attachmentPoint)
@@ -3616,6 +3623,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
             ForceAttachToAvatarFromInventory(avatarId, itemName, attachmentPoint);
         }
+
         public void osForceDetachFromAvatar()
         {
             CheckThreatLevel(ThreatLevel.High, "osForceDetachFromAvatar");
@@ -3801,6 +3809,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         public List<UUID> AllowedCreators;
         public List<string> AllowedOwnerClasses;
         public List<UUID> AllowedOwners;
+
         public FunctionPerms()
         {
             AllowedCreators = new List<UUID>();

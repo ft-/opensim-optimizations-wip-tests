@@ -386,6 +386,7 @@ namespace OpenSim.Framework
 
             return found;
         }
+
         public int RemoveAll(Predicate<TValue> predicate)
         {
             IList<TKey1> list = new List<TKey1>();

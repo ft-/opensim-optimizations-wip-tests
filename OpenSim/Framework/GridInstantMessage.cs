@@ -46,6 +46,7 @@ namespace OpenSim.Framework
         public Guid RegionID;
         public uint timestamp;
         public Guid toAgentID;
+
         public GridInstantMessage()
         {
             binaryBucket = new byte[0];

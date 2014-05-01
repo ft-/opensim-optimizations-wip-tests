@@ -51,6 +51,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private string m_LoginServerIP;
         private IUserAgentService m_UserAgentService;
+
         public HomeAgentHandler(IUserAgentService userAgentService, string loginServerIP, bool proxy) :
             base("/homeagent")
         {

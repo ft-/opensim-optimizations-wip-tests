@@ -48,6 +48,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
         private ActivityDetector m_ActivityDetector;
         private bool m_Enabled = false;
         private IGridUserService m_GridUserService;
+
         #region ISharedRegionModule
 
         public string Name
@@ -59,6 +60,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
         {
             get { return null; }
         }
+
         public void AddRegion(Scene scene)
         {
             if (!m_Enabled)
@@ -121,6 +123,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
             if (!m_Enabled)
                 return;
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -137,6 +140,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
             scene.UnregisterModuleInterface<IGridUserService>(this);
             m_ActivityDetector.RemoveRegion(scene);
         }
+
         #endregion ISharedRegionModule
 
         #region IGridUserService
@@ -170,6 +174,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.GridUser
         {
             return m_GridUserService.SetLastPosition(userID, sessionID, regionID, lastPosition, lastLookAt);
         }
+
         #endregion IGridUserService
     }
 }

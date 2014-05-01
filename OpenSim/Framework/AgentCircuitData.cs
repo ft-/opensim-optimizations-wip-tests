@@ -142,6 +142,7 @@ namespace OpenSim.Framework
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
+
         /// <summary>
         /// Viewer's version string as reported by the viewer at login
         /// </summary>
@@ -155,6 +156,7 @@ namespace OpenSim.Framework
         /// Agent's full name.
         /// </summary>
         public string Name { get { return string.Format("{0} {1}", firstname, lastname); } }
+
         /// <summary>
         /// Viewer's version string
         /// </summary>
@@ -178,6 +180,7 @@ namespace OpenSim.Framework
                 }
             }
         }
+
         /// <summary>
         /// Pack AgentCircuitData into an OSDMap for transmission over LLSD XML or LLSD json
         /// </summary>

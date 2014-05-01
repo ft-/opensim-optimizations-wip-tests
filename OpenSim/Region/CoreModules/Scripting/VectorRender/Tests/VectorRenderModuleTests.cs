@@ -25,31 +25,20 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using System.Threading;
-using log4net.Config;
 using NUnit.Framework;
 using OpenMetaverse;
-using OpenMetaverse.Assets;
-using OpenSim.Framework;
 using OpenSim.Region.CoreModules.Scripting.DynamicTexture;
-using OpenSim.Region.CoreModules.Scripting.VectorRender;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Region.Framework.Scenes.Serialization;
 using OpenSim.Tests.Common;
-using OpenSim.Tests.Common.Mock;
 
 namespace OpenSim.Region.CoreModules.Scripting.VectorRender.Tests
 {
     [TestFixture]
     public class VectorRenderModuleTests : OpenSimTestCase
     {
-        Scene m_scene;
-        DynamicTextureModule m_dtm;
-        VectorRenderModule m_vrm;
+        private Scene m_scene;
+        private DynamicTextureModule m_dtm;
+        private VectorRenderModule m_vrm;
 
         private void SetupScene(bool reuseTextures)
         {
@@ -57,7 +46,7 @@ namespace OpenSim.Region.CoreModules.Scripting.VectorRender.Tests
 
             m_dtm = new DynamicTextureModule();
             m_dtm.ReuseTextures = reuseTextures;
-//            m_dtm.ReuseLowDataTextures = reuseTextures;
+            //            m_dtm.ReuseLowDataTextures = reuseTextures;
 
             m_vrm = new VectorRenderModule();
 
@@ -202,7 +191,7 @@ namespace OpenSim.Region.CoreModules.Scripting.VectorRender.Tests
         public void TestRepeatSameDrawReusingTexture()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             string dtText = "PenColour BLACK; MoveTo 40,220; FontSize 32; Text Hello World;";
 
@@ -242,7 +231,7 @@ namespace OpenSim.Region.CoreModules.Scripting.VectorRender.Tests
         public void TestRepeatSameDrawLowDataTexture()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             string dtText = "PenColour BLACK; MoveTo 40,220; FontSize 32; Text Hello World;";
 

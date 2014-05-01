@@ -41,6 +41,7 @@ namespace OpenSim.Region.UserStatistics
 
         private Regex webFormat = new Regex(@"[^\s]*\s([^,]*),[^\s]*\s([A-Z]*)[^\s-][^\[]*\[([^\]]*)\]([^\n]*)",
                                             RegexOptions.Singleline | RegexOptions.Compiled);
+
         #region IStatsController Members
 
         public string ReportName
@@ -142,6 +143,7 @@ namespace OpenSim.Region.UserStatistics
 
             return output.ToString();
         }
+
         #endregion IStatsController Members
     }
 }

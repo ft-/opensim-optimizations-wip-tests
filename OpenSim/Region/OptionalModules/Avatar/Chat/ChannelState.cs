@@ -103,6 +103,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
         private static int _idk_ = 0;
         private static Regex arg = new Regex(@"\[[^\[\]]*\]");
         private static int DEBUG_CHANNEL = 2147483647;
+
         internal ChannelState()
         {
         }

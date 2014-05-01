@@ -60,6 +60,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         /// specified.
         /// </remarks>
         string Name { get; }
+
         // Return path
         string Path { get; }
 

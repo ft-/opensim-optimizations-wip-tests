@@ -38,9 +38,9 @@ namespace OpenSim.Region.Framework.Interfaces
 
         int Width { get; }       // X dimension
 
-              // Y dimension
+        // Y dimension
 
-            // Z dimension
+        // Z dimension
 
         double this[int x, int y] { get; set; }
 
@@ -56,6 +56,7 @@ namespace OpenSim.Region.Framework.Interfaces
 
         // Return the packaged terrain data for passing into lower levels of communication
         TerrainData GetTerrainData();
+
         void LoadFromXmlString(string data);
 
         ITerrainChannel MakeCopy();

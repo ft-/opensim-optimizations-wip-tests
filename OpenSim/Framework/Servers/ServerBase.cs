@@ -56,6 +56,7 @@ namespace OpenSim.Framework.Servers
         protected ServerStatsCollector m_serverStatsCollector;
         protected string m_startupDirectory = Environment.CurrentDirectory;
         protected DateTime m_startuptime;
+
         /// <summary>
         /// Server version information.  Usually VersionInfo + information about git commit, operating system, etc.
         /// </summary>
@@ -71,6 +72,7 @@ namespace OpenSim.Framework.Servers
         }
 
         public IConfigSource Config { get; protected set; }
+
         /// <summary>
         /// Get a thread pool report.
         /// </summary>
@@ -635,6 +637,7 @@ namespace OpenSim.Framework.Servers
                 m_pidFile = String.Empty;
             }
         }
+
         /// <summary>
         /// Run an optional startup list of commands
         /// </summary>
@@ -846,6 +849,7 @@ namespace OpenSim.Framework.Servers
         {
             Notice("serialosdreq is {0}", WebUtil.SerializeOSDRequestsPerEndpoint);
         }
+
         private void HandleDebugThreadpoolSet(string module, string[] args)
         {
             if (args.Length != 6)
@@ -934,11 +938,13 @@ namespace OpenSim.Framework.Servers
             Notice("Available worker threads: {0}", workerThreads);
             Notice("Available IOCP threads:   {0}", iocpThreads);
         }
+
         private void HandleForceGc(string module, string[] args)
         {
             Notice("Manually invoking runtime garbage collection");
             GC.Collect();
         }
+
         private void HandleSetLogLevel(string module, string[] cmd)
         {
             if (cmd.Length != 4)

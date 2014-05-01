@@ -35,6 +35,7 @@ namespace OpenSim.Region.Framework.Interfaces
     public delegate void ObjectRemoved(UUID prim);
 
     public delegate void ScriptRemoved(UUID script);
+
     public interface IScriptModule : INonSharedRegionModule
     {
         /// <summary>
@@ -46,6 +47,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// Triggered when a script is removed from the script module.
         /// </summary>
         event ScriptRemoved OnScriptRemoved;
+
         string ScriptEngineName { get; }
 
         /// <summary>
@@ -100,6 +102,7 @@ namespace OpenSim.Region.Framework.Interfaces
         void SaveAllState();
 
         bool SetXMLState(UUID itemID, string xml);
+
         /// <summary>
         /// Starts the processing threads.
         /// </summary>

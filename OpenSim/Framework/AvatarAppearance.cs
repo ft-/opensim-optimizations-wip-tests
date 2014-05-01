@@ -82,6 +82,7 @@ namespace OpenSim.Framework
         private const float AVBOXMINZ = 1.2f;
 
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public AvatarAppearance()
         {
             //            m_log.WarnFormat("[AVATAR APPEARANCE]: create empty appearance");
@@ -227,6 +228,7 @@ namespace OpenSim.Framework
             get { return m_visualparams; }
             set { m_visualparams = value; }
         }
+
         public virtual WearableCacheItem[] WearableCacheItems
         {
             get { return m_cacheitems; }
@@ -244,6 +246,7 @@ namespace OpenSim.Framework
             get { return m_wearables; }
             set { m_wearables = value; }
         }
+
         public void ClearAttachments()
         {
             lock (m_attachments)
@@ -299,6 +302,7 @@ namespace OpenSim.Framework
                 }
             }
         }
+
         /// <summary>
         /// If the item is already attached, return it.
         /// </summary>
@@ -696,6 +700,7 @@ namespace OpenSim.Framework
         {
             m_wearables = AvatarWearable.DefaultWearables;
         }
+
         #region Packing Functions
 
         /// <summary>

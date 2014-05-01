@@ -236,6 +236,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
                 m_debugEnabled = groupsConfig.GetBoolean("DebugEnabled", true);
             }
         }
+
         public void RegionLoaded(OpenSim.Region.Framework.Scenes.Scene scene)
         {
             // TODO: May want to consider listenning for Agent Connections so we can pre-cache group info
@@ -249,6 +250,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
                 scene.UnregisterModuleInterface<IGroupsServicesConnector>(this);
             }
         }
+
         #endregion Region Module interfaceBase Members
 
         #region ISharedRegionModule Members
@@ -956,6 +958,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
                 SimianAddGeneric(groupID, "Group", GroupName, GroupInfoMap);
             }
         }
+
         public void UpdateGroupRole(UUID requestingAgentID, UUID groupID, UUID roleID, string name, string description,
                                     string title, ulong powers)
         {
@@ -983,6 +986,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
 
             SimianAddGeneric(groupID, "GroupRole", roleID.ToString(), GroupRoleInfo);
         }
+
         #endregion IGroupsServicesConnector Members
 
         #region GroupSessionTracking
@@ -1029,6 +1033,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
                 }
             }
         }
+
         #endregion GroupSessionTracking
 
         private void EnsureRoleNotSelectedByMember(UUID groupID, UUID roleID, UUID userID)
@@ -1271,6 +1276,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
             map = null;
             return false;
         }
+
         private bool SimianRemoveGenericEntry(UUID ownerID, string type, string key)
         {
             if (m_debugEnabled) m_log.InfoFormat("[SIMIAN-GROUPS-CONNECTOR]  {0} called ({1},{2},{3})", System.Reflection.MethodBase.GetCurrentMethod().Name, ownerID, type, key);

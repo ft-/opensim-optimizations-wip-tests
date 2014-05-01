@@ -50,6 +50,7 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
         {
             return System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64;
         }
+
         #endregion Implementation of IMonitor
     }
 }

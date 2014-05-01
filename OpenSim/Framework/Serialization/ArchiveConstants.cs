@@ -51,6 +51,7 @@ namespace OpenSim.Framework.Serialization
         /// The location of the archive control file
         /// </value>
         public const string CONTROL_FILE_PATH = "archive.xml";
+
         /// <value>
         /// Used to separate components in an inventory node name
         /// </value>
@@ -80,6 +81,7 @@ namespace OpenSim.Framework.Serialization
         /// Path for regions in a multi-region archive
         /// </value>
         public const string REGIONS_PATH = "regions/";
+
         /// <value>
         /// Path for region settings.
         /// </value>
@@ -89,10 +91,12 @@ namespace OpenSim.Framework.Serialization
         /// Path for terrains.  Technically these may be assets, but I think it's quite nice to split them out.
         /// </value>
         public const string TERRAINS_PATH = "terrains/";
+
         /// <value>
         /// Path for user profiles
         /// </value>
         public const string USERS_PATH = "userprofiles/";
+
         /// <value>
         /// Extensions used for asset types in the archive
         /// </value>

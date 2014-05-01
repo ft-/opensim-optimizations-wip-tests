@@ -50,6 +50,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         public const string SetForceActorName = "BSPrim.SetForceActor";
 
         public const string SetTorqueActorName = "BSPrim.SetTorqueActor";
+
         // Keep a handle to the vehicle actor so it is easy to set parameters on same.
         public const string VehicleActorName = "BasicVehicle";
 
@@ -85,7 +86,9 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
         // _size is what the user passed. Scale is what we pass to the physics engine with the mesh.
         private OMV.Vector3 _size;  // the multiplier for each mesh dimension as passed by the user
+
         private bool _throttleUpdates;
+
         public BSPrim(uint localID, String primName, BSScene parent_scene, OMV.Vector3 pos, OMV.Vector3 size,
                            OMV.Quaternion rotation, PrimitiveBaseShape pbs, bool pisPhysical)
             : base(parent_scene, localID, primName, "BSPrim")
@@ -679,6 +682,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         }
 
         private int CrossingFailures { get; set; }
+
         // BSPhysObject.AddAngularForce()
         public override void AddAngularForce(OMV.Vector3 force, bool pushforce, bool inTaintTime)
         {
@@ -867,6 +871,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                 PhysShape = new BSShapeNull();
             });
         }
+
         public override bool ForceBodyShapeRebuild(bool inTaintTime)
         {
             PhysScene.TaintedObject(inTaintTime, LocalID, "BSPrim.ForceBodyShapeRebuild", delegate()
@@ -876,6 +881,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             });
             return true;
         }
+
         // Find and return a handle to the current vehicle actor.
         // Return 'null' if there is no vehicle actor.
         public BSDynamics GetVehicleActor(bool createIfNone)
@@ -901,6 +907,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         public override void link(PhysicsActor obj)
         {
         }
+
         public override void LockAngularMotion(OMV.Vector3 axis)
         {
             DetailLog("{0},BSPrim.LockAngularMotion,call,axis={1}", LocalID, axis);
@@ -1168,6 +1175,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                     PhysScene.PE.ClearAllForces(PhysBody);
             });
         }
+
         // Add me to the physical world.
         // Object MUST NOT already be in the world.
         // This routine exists because some assorted properties get mangled by adding to the world.
@@ -1402,6 +1410,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
             return ret;
         }
+
         // Make gravity work if the object is physical and not selected
         // Called at taint-time!!
         private void SetObjectDynamic(bool forceRebuild)
@@ -1409,6 +1418,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             // Recreate the physical object if necessary
             CreateGeomAndObject(forceRebuild);
         }
+
         #region Mass Calculation
 
         private float CalculateMass()
@@ -1688,6 +1698,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         }// end CalculateMass
 
         #endregion Mass Calculation
+
         #region Extension
 
         public override object Extension(string pFunct, params object[] pParams)

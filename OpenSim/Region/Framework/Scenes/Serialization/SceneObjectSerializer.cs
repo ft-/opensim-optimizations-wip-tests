@@ -362,6 +362,7 @@ namespace OpenSim.Region.Framework.Scenes.Serialization
         {
             SOPToXml2(writer, part, new Dictionary<string, object>());
         }
+
         #region manual serialization
 
         private static Dictionary<string, Action<PrimitiveBaseShape, XmlTextReader>> m_ShapeXmlProcessors
@@ -372,6 +373,7 @@ namespace OpenSim.Region.Framework.Scenes.Serialization
 
         private static Dictionary<string, Action<TaskInventoryItem, XmlTextReader>> m_TaskInventoryXmlProcessors
             = new Dictionary<string, Action<TaskInventoryItem, XmlTextReader>>();
+
         static SceneObjectSerializer()
         {
             #region SOPXmlProcessors initialization
@@ -609,6 +611,7 @@ namespace OpenSim.Region.Framework.Scenes.Serialization
         {
             obj.CreatorID = Util.ReadUUID(reader, "CreatorID");
         }
+
         private static void ProcessDensity(SceneObjectPart obj, XmlTextReader reader)
         {
             obj.Density = reader.ReadElementContentAsFloat("Density", String.Empty);
@@ -867,10 +870,12 @@ namespace OpenSim.Region.Framework.Scenes.Serialization
         {
             obj.UUID = Util.ReadUUID(reader, "UUID");
         }
+
         private static void ProcessVelocity(SceneObjectPart obj, XmlTextReader reader)
         {
             obj.Velocity = Util.ReadVector(reader, "Velocity");
         }
+
         #endregion SOPXmlProcessors
 
         #region TaskInventoryXmlProcessors
@@ -899,6 +904,7 @@ namespace OpenSim.Region.Framework.Scenes.Serialization
         {
             item.CreatorID = Util.ReadUUID(reader, "CreatorID");
         }
+
         private static void ProcessTICurrentPermissions(TaskInventoryItem item, XmlTextReader reader)
         {
             item.CurrentPermissions = (uint)reader.ReadElementContentAsInt("CurrentPermissions", String.Empty);
@@ -958,6 +964,7 @@ namespace OpenSim.Region.Framework.Scenes.Serialization
         {
             item.OldItemID = Util.ReadUUID(reader, "OldItemID");
         }
+
         private static void ProcessTIOwnerChanged(TaskInventoryItem item, XmlTextReader reader)
         {
             item.OwnerChanged = Util.ReadBoolean(reader);
@@ -967,6 +974,7 @@ namespace OpenSim.Region.Framework.Scenes.Serialization
         {
             item.OwnerID = Util.ReadUUID(reader, "OwnerID");
         }
+
         private static void ProcessTIParentID(TaskInventoryItem item, XmlTextReader reader)
         {
             item.ParentID = Util.ReadUUID(reader, "ParentID");
@@ -991,6 +999,7 @@ namespace OpenSim.Region.Framework.Scenes.Serialization
         {
             item.Type = reader.ReadElementContentAsInt("Type", String.Empty);
         }
+
         #endregion TaskInventoryXmlProcessors
 
         #region ShapeXmlProcessors
@@ -1236,6 +1245,7 @@ namespace OpenSim.Region.Framework.Scenes.Serialization
             byte[] teData = Convert.FromBase64String(reader.ReadElementString("TextureEntry"));
             shp.Textures = new Primitive.TextureEntry(teData, 0, teData.Length);
         }
+
         #endregion ShapeXmlProcessors
 
         ////////// Write /////////
@@ -1673,6 +1683,7 @@ namespace OpenSim.Region.Framework.Scenes.Serialization
             writer.WriteElementString("Z", vec.Z.ToString(Utils.EnUsCulture));
             writer.WriteEndElement();
         }
+
         #endregion manual serialization
     }
 }

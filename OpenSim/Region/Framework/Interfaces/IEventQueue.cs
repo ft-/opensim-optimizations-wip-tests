@@ -56,6 +56,7 @@ namespace OpenSim.Region.Framework.Interfaces
         void EnableSimulator(ulong handle, IPEndPoint endPoint, UUID avatarID, int regionSizeX, int regionSizeY);
 
         bool Enqueue(OSD o, UUID avatarID);
+
         void EstablishAgentCommunication(UUID avatarID, IPEndPoint endPoint,
                                          string capsPath, ulong regionHandle, int regionSizeX, int regionSizeY);
 

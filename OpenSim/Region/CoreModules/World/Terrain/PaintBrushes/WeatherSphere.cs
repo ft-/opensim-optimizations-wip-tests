@@ -143,6 +143,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.PaintBrushes
 
             return coord;
         }
+
         #endregion Supporting Functions
 
         #region ITerrainPaintableEffect Members

@@ -680,11 +680,13 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api.Plugins
             public DateTime next;
             public double range;
             public int type;
+
             public SensorInfo Clone()
             {
                 return (SensorInfo)this.MemberwiseClone();
             }
         }
+
         //
         // Sensed entity
         //

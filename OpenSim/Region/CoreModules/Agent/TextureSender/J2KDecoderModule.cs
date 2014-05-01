@@ -74,6 +74,7 @@ namespace OpenSim.Region.CoreModules.Agent.TextureSender
                 return m_cache;
             }
         }
+
         #region ISharedRegionModule
 
         private bool m_useCSJ2K = true;
@@ -83,6 +84,7 @@ namespace OpenSim.Region.CoreModules.Agent.TextureSender
         }
 
         public string Name { get { return "J2KDecoderModule"; } }
+
         public Type ReplaceableInterface
         {
             get { return null; }
@@ -111,6 +113,7 @@ namespace OpenSim.Region.CoreModules.Agent.TextureSender
                 m_useCSJ2K = startupConfig.GetBoolean("UseCSJ2K", m_useCSJ2K);
             }
         }
+
         public void PostInitialise()
         {
         }
@@ -124,6 +127,7 @@ namespace OpenSim.Region.CoreModules.Agent.TextureSender
             if (m_scene == scene)
                 m_scene = null;
         }
+
         #endregion ISharedRegionModule
 
         #region IJ2KDecoder
@@ -320,6 +324,7 @@ namespace OpenSim.Region.CoreModules.Agent.TextureSender
 
             return decodedSuccessfully;
         }
+
         private void SaveFileCacheForAsset(UUID AssetId, OpenJPEG.J2KLayerInfo[] Layers)
         {
             m_decodedCache.AddOrUpdate(AssetId, Layers, TimeSpan.FromMinutes(10));

@@ -25,28 +25,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Net;
-using System.Reflection;
 using Nini.Config;
 using NUnit.Framework;
 using OpenMetaverse;
-using OpenMetaverse.Messages.Linden;
-using OpenMetaverse.Packets;
 using OpenMetaverse.StructuredData;
 using OpenSim.Framework;
-using OpenSim.Framework.Communications;
 using OpenSim.Framework.Servers;
 using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Region.ClientStack.Linden;
 using OpenSim.Region.CoreModules.Avatar.InstantMessage;
 using OpenSim.Region.CoreModules.Framework;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups;
 using OpenSim.Tests.Common;
 using OpenSim.Tests.Common.Mock;
+using System.Collections;
+using System.Collections.Generic;
+using System.Net;
 
 namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups.Tests
 {
@@ -77,13 +71,13 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups.Tests
         public void TestSendAgentGroupDataUpdate()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
-            
+            //            TestHelpers.EnableLogging();
+
             TestScene scene = new SceneHelpers().SetupScene();
             IConfigSource configSource = new IniConfigSource();
-            IConfig config = configSource.AddConfig("Groups");            
+            IConfig config = configSource.AddConfig("Groups");
             config.Set("Enabled", true);
-            config.Set("Module", "GroupsModule");            
+            config.Set("Module", "GroupsModule");
             config.Set("DebugEnabled", true);
 
             GroupsModule gm = new GroupsModule();
@@ -102,7 +96,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups.Tests
 
             Assert.That((int)eventsResponse["int_response_code"], Is.EqualTo((int)HttpStatusCode.OK));
 
-//            Console.WriteLine("Response [{0}]", (string)eventsResponse["str_response_string"]);
+            //            Console.WriteLine("Response [{0}]", (string)eventsResponse["str_response_string"]);
 
             OSDMap rawOsd = (OSDMap)OSDParser.DeserializeLLSDXml((string)eventsResponse["str_response_string"]);
             OSDArray eventsOsd = (OSDArray)rawOsd["events"];
@@ -118,15 +112,15 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups.Tests
 
             Assert.That(foundUpdate, Is.True, "Did not find AgentGroupDataUpdate in response");
 
-            // TODO: More checking of more actual event data.           
+            // TODO: More checking of more actual event data.
         }
 
         [Test]
         public void TestSendGroupNotice()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
-            
+            //            TestHelpers.EnableLogging();
+
             TestScene scene = new SceneHelpers().SetupScene();
 
             MessageTransferModule mtm = new MessageTransferModule();
@@ -136,12 +130,12 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups.Tests
             IConfigSource configSource = new IniConfigSource();
 
             {
-                IConfig config = configSource.AddConfig("Messaging");            
+                IConfig config = configSource.AddConfig("Messaging");
                 config.Set("MessageTransferModule", mtm.Name);
             }
 
             {
-                IConfig config = configSource.AddConfig("Groups");            
+                IConfig config = configSource.AddConfig("Groups");
                 config.Set("Enabled", true);
                 config.Set("Module", gm.Name);
                 config.Set("DebugEnabled", true);

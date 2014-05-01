@@ -38,6 +38,7 @@ namespace OpenSim.Framework
         public string name;
         public uint x;
         public uint y;
+
         public mapItemReply(uint pX, uint pY, UUID pId, string pName, int pExt1, int pExt2)
         {
             x = pX;

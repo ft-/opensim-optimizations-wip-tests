@@ -90,6 +90,7 @@ namespace OpenSim.Region.OptionalModules.World.AutoBackup
                        (this.m_liveRequests = new Dictionary<Guid, string>(1));
             }
         }
+
         public NamingType NamingType
         {
             get;
@@ -107,6 +108,7 @@ namespace OpenSim.Region.OptionalModules.World.AutoBackup
             get;
             set;
         }
+
         public new string ToString()
         {
             string retval = "";

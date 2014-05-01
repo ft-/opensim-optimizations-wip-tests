@@ -90,6 +90,7 @@ namespace OpenSim.Framework
         /// <param name="cmd">Parsed parts of the help string.  If empty then general help is returned.</param>
         /// <returns></returns>
         List<string> GetHelp(string[] cmd);
+
         XmlElement GetXml(XmlDocument doc);
 
         string[] Resolve(string[] cmd);

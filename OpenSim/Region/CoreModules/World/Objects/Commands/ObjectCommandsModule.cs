@@ -53,6 +53,7 @@ namespace OpenSim.Region.CoreModules.World.Objects.Commands
 
         private ICommandConsole m_console;
         private Scene m_scene;
+
         public string Name { get { return "Object Commands Module"; } }
 
         public Type ReplaceableInterface { get { return null; } }
@@ -191,6 +192,7 @@ namespace OpenSim.Region.CoreModules.World.Objects.Commands
         {
             //            m_log.DebugFormat("[OBJECT COMMANDS MODULE]: POST INITIALIZED MODULE");
         }
+
         public void RegionLoaded(Scene scene)
         {
             //            m_log.DebugFormat("[OBJECTS COMMANDS MODULE]: REGION {0} LOADED", scene.RegionInfo.RegionName);
@@ -200,6 +202,7 @@ namespace OpenSim.Region.CoreModules.World.Objects.Commands
         {
             //            m_log.DebugFormat("[OBJECTS COMMANDS MODULE]: REGION {0} REMOVED", scene.RegionInfo.RegionName);
         }
+
         /// <summary>
         /// Append a scene object report to an input StringBuilder
         /// </summary>
@@ -900,6 +903,7 @@ namespace OpenSim.Region.CoreModules.World.Objects.Commands
 
             m_console.OutputFormat(sb.ToString());
         }
+
         private bool TryParseVectorRange(IEnumerable<string> rawComponents, out Vector3 startVector, out Vector3 endVector)
         {
             string rawConsoleStartVector = rawComponents.Take(1).Single();

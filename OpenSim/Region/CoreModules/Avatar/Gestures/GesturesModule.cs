@@ -43,6 +43,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Gestures
     {
         protected Scene m_scene;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public string Name { get { return "Gestures Module"; } }
 
         public Type ReplaceableInterface
@@ -96,6 +97,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Gestures
         public void Initialise(IConfigSource source)
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -105,6 +107,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Gestures
             m_scene.EventManager.OnNewClient -= OnNewClient;
             m_scene = null;
         }
+
         private void OnNewClient(IClientAPI client)
         {
             client.OnActivateGesture += ActivateGesture;

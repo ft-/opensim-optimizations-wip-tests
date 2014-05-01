@@ -67,6 +67,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
         /// Scene used by this module.  This currently needs to be publicly settable for HGInventoryBroker.
         /// </summary>
         public Scene Scene { get; set; }
+
         private IUserManagement UserManager
         {
             get
@@ -78,6 +79,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
                 return m_UserManager;
             }
         }
+
         public void AddRegion(Scene scene)
         {
             if (!m_Enabled)
@@ -136,6 +138,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -147,6 +150,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
             if (!m_Enabled)
                 return;
         }
+
         #region IInventoryService
 
         /// <summary>
@@ -257,6 +261,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
         {
             return m_InventoryService.GetRootFolder(userID);
         }
+
         /// <summary>
         /// Does the given user have an inventory structure?
         /// </summary>
@@ -301,6 +306,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
         {
             return m_InventoryService.UpdateFolder(folder);
         }
+
         /// <summary>
         /// Update an item in the user's inventory
         /// </summary>
@@ -310,6 +316,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
         {
             return m_InventoryService.UpdateItem(item);
         }
+
         #endregion IInventoryService
     }
 }

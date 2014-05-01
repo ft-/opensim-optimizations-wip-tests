@@ -66,6 +66,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
         /// The inner dictionaries contain each row's regions (key: X coordinate).
         /// </summary>
         public SortedDictionary<uint, SortedDictionary<uint, Scene>> Regions { get; set; }
+
         public void AddScene(Scene scene)
         {
             uint x = scene.RegionInfo.RegionLocX;
@@ -148,6 +149,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
         {
             return m_regionDirs[regionID];
         }
+
         /// <summary>
         /// Returns the scene at position 'location'.
         /// </summary>

@@ -68,6 +68,7 @@ namespace OpenSim.Server.Handlers.Base
         {
             get { return String.Empty; }
         }
+
         // We call this from our plugin module to get our configuration
         public IConfig GetConfig()
         {

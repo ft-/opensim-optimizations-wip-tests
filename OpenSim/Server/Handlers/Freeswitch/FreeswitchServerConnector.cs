@@ -45,6 +45,7 @@ namespace OpenSim.Server.Handlers.Freeswitch
 
         private string m_ConfigName = "FreeswitchService";
         private IFreeswitchService m_FreeswitchService;
+
         public FreeswitchServerConnector(IConfigSource config, IHttpServer server, string configName) :
             base(config, server, configName)
         {

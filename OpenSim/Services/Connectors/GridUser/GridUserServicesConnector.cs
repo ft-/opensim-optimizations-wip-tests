@@ -201,6 +201,7 @@ namespace OpenSim.Services.Connectors
 
             return Set(sendData, userID, regionID, position, lookAt);
         }
+
         #endregion IGridUserService
 
         protected virtual GridUserInfo Create(Dictionary<string, object> griduser)

@@ -51,6 +51,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Transfer
         private List<Scene> m_Scenelist = new List<Scene>();
 
         private IMessageTransferModule m_TransferModule;
+
         #region Region Module interface
 
         public string Name
@@ -95,6 +96,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Transfer
                 }
             }
         }
+
         public void PostInitialise()
         {
         }
@@ -122,6 +124,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Transfer
             scene.EventManager.OnIncomingInstantMessage -= OnGridInstantMessage;
             m_Scenelist.Remove(scene);
         }
+
         #endregion Region Module interface
 
         private Scene FindClientScene(UUID agentId)

@@ -41,6 +41,7 @@ namespace OpenSim.Region.Physics.POSPlugin
         private bool flying;
         private bool isColliding;
         private Vector3 m_rotationalVelocity = Vector3.Zero;
+
         public POSCharacter()
         {
         }
@@ -224,6 +225,7 @@ namespace OpenSim.Region.Physics.POSPlugin
             get { return false; }
             set { return; }
         }
+
         public override PrimitiveBaseShape Shape
         {
             set { return; }
@@ -249,6 +251,7 @@ namespace OpenSim.Region.Physics.POSPlugin
             get { return false; }
             set { return; }
         }
+
         public override Vector3 Torque
         {
             get { return Vector3.Zero; }

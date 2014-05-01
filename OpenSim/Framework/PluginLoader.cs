@@ -74,6 +74,7 @@ namespace OpenSim.Framework
         {
         }
     }
+
     /// <summary>
     /// Constraint that bounds the number of plugins to be loaded.
     /// </summary>
@@ -81,6 +82,7 @@ namespace OpenSim.Framework
     {
         private int max;
         private int min;
+
         public PluginCountConstraint(int exact)
         {
             min = exact;
@@ -205,15 +207,18 @@ namespace OpenSim.Framework
             = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private static TextWriter prev_console_;
+
         private Dictionary<string, IPluginConstraint> constraints
             = new Dictionary<string, IPluginConstraint>();
 
         private List<string> extpoints = new List<string>();
+
         private Dictionary<string, IPluginFilter> filters
             = new Dictionary<string, IPluginFilter>();
 
         private PluginInitialiserBase initialiser;
         private List<T> loaded = new List<T>();
+
         public PluginLoader()
         {
             Initialiser = new PluginInitialiserBase();
@@ -247,6 +252,7 @@ namespace OpenSim.Framework
         {
             get { return loaded; }
         }
+
         public void Add(string extpoint)
         {
             if (extpoints.Contains(extpoint))
@@ -334,6 +340,7 @@ namespace OpenSim.Framework
                 }
             }
         }
+
         public void suppress_console_output_(bool save)
         {
             if (save)
@@ -408,6 +415,7 @@ namespace OpenSim.Framework
                         + args.Exception.StackTrace);
         }
     }
+
     /// <summary>
     /// Filters out which plugin to load based on the plugin name or names given.  Plugin names are contained in
     /// their addin.xml

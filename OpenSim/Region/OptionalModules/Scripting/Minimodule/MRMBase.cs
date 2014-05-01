@@ -34,6 +34,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
         private IHost m_host;
         private UUID m_id;
         private IWorld m_world;
+
         public UUID ID
         {
             get { return m_id; }
@@ -55,6 +56,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             m_host = host;
             m_id = uniqueID;
         }
+
         public abstract void Start();
 
         public abstract void Stop();

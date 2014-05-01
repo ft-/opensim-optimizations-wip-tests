@@ -64,6 +64,7 @@ namespace OpenSim.Services.Interfaces
         /// <param name="appearance"></param>
         /// <returns></returns>
         bool SetAppearance(UUID userID, AvatarAppearance appearance);
+
         /// <summary>
         /// Called by everyone who can change the avatar data (so, regions)
         /// </summary>
@@ -71,6 +72,7 @@ namespace OpenSim.Services.Interfaces
         /// <param name="avatar"></param>
         /// <returns></returns>
         bool SetAvatar(UUID userID, AvatarData avatar);
+
         /// <summary>
         /// These methods raison d'etre:
         /// No need to send the entire avatar data (SetAvatar) for changing attachments

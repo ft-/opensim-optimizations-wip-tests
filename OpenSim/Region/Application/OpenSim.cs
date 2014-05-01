@@ -59,6 +59,7 @@ namespace OpenSim
         protected string m_shutdownCommandsFile;
         protected string m_startupCommandsFile;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         /// <summary>
         /// Prompt to use for simulator command line.
         /// </summary>
@@ -72,6 +73,7 @@ namespace OpenSim
         private Timer m_scriptTimer;
         private string m_timedScript = "disabled";
         private int m_timeInterval = 1200;
+
         public OpenSim(IConfigSource configSource)
             : base(configSource)
         {
@@ -431,6 +433,7 @@ namespace OpenSim
                                           "Sets the name of the specified estate to the specified value. New name must be unique.",
                                           SetEstateNameCommand);
         }
+
         /// <summary>
         /// Timer to run a specific text file as console commands.  Configured in in the main ini file
         /// </summary>
@@ -1283,6 +1286,7 @@ namespace OpenSim
 
             MainConsole.Instance.Output("");
         }
+
         /// <summary>
         /// Refreshs prompt with the current selection details.
         /// </summary>
@@ -1308,6 +1312,7 @@ namespace OpenSim
             m_console.DefaultPrompt = prompt;
             m_console.ConsoleScene = SceneManager.CurrentScene;
         }
+
         #endregion Console Commands
     }
 }

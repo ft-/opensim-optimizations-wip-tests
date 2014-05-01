@@ -65,6 +65,7 @@ namespace OpenSim.Framework
                     return m_pool.Count;
             }
         }
+
         public T GetObject()
         {
             lock (m_pool)

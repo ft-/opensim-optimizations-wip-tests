@@ -26,8 +26,8 @@
  */
 
 using System;
-using System.Threading;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace OpenSim.Region.Physics.BulletSPlugin
 {
@@ -63,6 +63,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         protected BSPhysObject m_controllingPrim { get; private set; }
 
         protected BSScene m_physicsScene { get; private set; }
+
         // Release any connections and resources used by the actor.
         public abstract void Dispose();
 
@@ -93,6 +94,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         }
 
         private BSScene m_physicsScene { get; set; }
+
         public void Add(string name, BSActor actor)
         {
             m_actorsRwLock.AcquireWriterLock(-1);
@@ -185,6 +187,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             }
             return ret;
         }
+
         public void RemoveDependencies()
         {
             ForEachActor(a => a.RemoveDependencies());

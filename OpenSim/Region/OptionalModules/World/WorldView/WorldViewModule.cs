@@ -96,6 +96,7 @@ namespace OpenSim.Region.OptionalModules.World.WorldView
 
             m_Enabled = true;
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)

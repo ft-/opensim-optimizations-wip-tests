@@ -54,10 +54,12 @@ namespace OpenSim.Region.CoreModules.Avatar.Groups
 
         private Dictionary<UUID, GroupMembershipData> m_GroupMap =
                 new Dictionary<UUID, GroupMembershipData>();
+
         private List<Scene> m_SceneList = new List<Scene>();
 
         private UUID opensimulatorGroupID =
                 new UUID("00000000-68f9-1111-024e-222222111123");
+
         #region ISharedRegionModule Members
 
         public string Name
@@ -139,6 +141,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Groups
                 }
             }
         }
+
         public void PostInitialise()
         {
         }
@@ -161,6 +164,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Groups
             scene.EventManager.OnNewClient -= OnNewClient;
             scene.EventManager.OnClientClosed -= OnClientClosed;
         }
+
         #endregion ISharedRegionModule Members
 
         private void HandleUUIDGroupNameRequest(UUID id, IClientAPI remote_client)
@@ -245,6 +249,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Groups
 
             client.SendGroupMembership(updateGroups);
         }
+
         //        private void OnInstantMessage(IClientAPI client, GridInstantMessage im)
         //        {
         //        }

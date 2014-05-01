@@ -58,6 +58,7 @@ namespace OpenSim.Services.Interfaces
         GridRegion GetHyperlinkRegion(UUID regionID, UUID agentID, string agentHomeURI, out string message);
 
         bool LinkRegion(string regionDescriptor, out UUID regionID, out ulong regionHandle, out string externalName, out string imageURL, out string reason);
+
         bool LoginAgent(GridRegion source, AgentCircuitData aCircuit, GridRegion destination, out string reason);
     }
 
@@ -70,6 +71,7 @@ namespace OpenSim.Services.Interfaces
         int GetFriendPerms(UUID userID, UUID friendID);
 
         bool NewFriendship(FriendInfo finfo, bool verified);
+
         // Returns the local friends online
         List<UUID> StatusNotification(List<string> friends, UUID userID, bool online);
 
@@ -137,9 +139,11 @@ namespace OpenSim.Services.Interfaces
         bool LoginAgentToGrid(GridRegion source, AgentCircuitData agent, GridRegion gatekeeper, GridRegion finalDestination, bool fromLogin, out string reason);
 
         void LogoutAgent(UUID userID, UUID sessionID);
+
         // Returns the local friends online
         [Obsolete]
         List<UUID> StatusNotification(List<string> friends, UUID userID, bool online);
+
         bool VerifyAgent(UUID sessionID, string token);
 
         bool VerifyClient(UUID sessionID, string reportedIP);

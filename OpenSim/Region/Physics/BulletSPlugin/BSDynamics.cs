@@ -39,6 +39,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
     public sealed class BSDynamics : BSActor
     {
 #pragma warning disable 414
+
         // Just some recomputed constants:
         private static readonly float PIOverFour = ((float)Math.PI) / 4f;
 
@@ -191,12 +192,14 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
         // the prim this dynamic controller belongs to
         private BSPrimLinkable ControllingPrim { get; set; }
-             // if <0 then no hover, else its the current target height
-            // Gravity computed when buoyancy set
-         // damped
-             // per the documentation
+
+        // if <0 then no hover, else its the current target height
+        // Gravity computed when buoyancy set
+        // damped
+        // per the documentation
 #pragma warning disable 414
 #pragma warning restore 414
+
         #region Vehicle parameter setting
 
         public void ProcessFloatVehicleParam(Vehicle pParam, float pValue)
@@ -644,6 +647,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                     m_flags |= parm;
             }
         }
+
         #endregion Vehicle parameter setting
 
         // Angular change to rotate the vehicle around the Z axis when the vehicle
@@ -1540,6 +1544,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                 // ControllingPrim.Linkset.RemoveFromPhysicalCollisionFlags(CollisionFlags.BS_VEHICLE_COLLISIONS);
             }
         }
+
         // end MoveLinear()
         private float SortedClampInRange(float clampa, float val, float clampb)
         {
@@ -1562,6 +1567,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                 m_haveRegisteredForSceneEvents = false;
             }
         }
+
         #region Known vehicle value functions
 
         private const int m_knownChangedForce = 1 << 2;
@@ -1611,6 +1617,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         private float m_knownTerrainHeight;
         private Vector3 m_knownVelocity;
         private float m_knownWaterLevel;
+
         private float VehicleForwardSpeed
         {
             get
@@ -1757,6 +1764,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             }
             m_knownChanged = 0;
         }
+
         private float GetTerrainHeight(Vector3 pos)
         {
             if ((m_knownHas & m_knownChangedTerrainHeight) == 0 || pos != lastRememberedHeightPos)
@@ -1767,6 +1775,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             }
             return m_knownTerrainHeight;
         }
+
         private float GetWaterLevel(Vector3 pos)
         {
             if ((m_knownHas & m_knownChangedWaterLevel) == 0 || pos != lastRememberedWaterHeightPos)
@@ -1777,6 +1786,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             }
             return m_knownWaterLevel;
         }
+
         private void VehicleAddAngularForce(Vector3 aForce)
         {
             if ((m_knownHas & m_knownChangedRotationalForce) == 0)
@@ -1809,6 +1819,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             m_knownForceImpulse += pImpulse;
             m_knownChanged |= m_knownChangedForceImpulse;
         }
+
         private void VehicleAddRotationalImpulse(Vector3 pImpulse)
         {
             if ((m_knownHas & m_knownChangedRotationalImpulse) == 0)
@@ -1819,7 +1830,9 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             m_knownRotationalImpulse += pImpulse;
             m_knownChanged |= m_knownChangedRotationalImpulse;
         }
+
         #endregion Known vehicle value functions
+
         // Invoke the detailed logger and output something if it's enabled.
         private void VDetailLog(string msg, params Object[] args)
         {

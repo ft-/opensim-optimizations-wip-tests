@@ -42,6 +42,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
 
         private Dictionary<ulong, GridRegion> m_neighbours = new Dictionary<ulong, GridRegion>();
         private Scene m_scene;
+
         public RegionCache(Scene s)
         {
             m_scene = s;
@@ -52,6 +53,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
         {
             get { return m_scene.RegionInfo.RegionName; }
         }
+
         public void Clear()
         {
             m_scene.EventManager.OnRegionUp -= OnRegionUp;

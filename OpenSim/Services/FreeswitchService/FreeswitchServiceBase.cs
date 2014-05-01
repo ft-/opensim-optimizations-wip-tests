@@ -48,6 +48,7 @@ namespace OpenSim.Services.FreeswitchService
         protected string m_freeSwitchServerUser = "freeswitch";
         protected string m_freeSwitchSIPProxy;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public FreeswitchServiceBase(IConfigSource config)
             : base(config)
         {

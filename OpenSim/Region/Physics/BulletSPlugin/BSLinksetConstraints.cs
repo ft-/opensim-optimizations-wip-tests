@@ -389,6 +389,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             public ConstraintType constraintType;
             public bool enableTransMotor;
             public float erp;
+
             //
             public OMV.Vector3 frameInAloc;
 
@@ -399,6 +400,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             public OMV.Vector3 linearLimitLow;
             public float solverIterations;
             public OMV.Vector3 springAngularEquilibriumPoint;
+
             // Spring
             public bool[] springAxisEnable;
 
@@ -409,6 +411,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             public float transMotorMaxVel;
             public bool useFrameOffset;
             public bool useLinearReferenceFrameA;
+
             public BSLinkInfoConstraint(BSPrimLinkable pMember)
                 : base(pMember)
             {
@@ -530,6 +533,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                 return ret;
             }
         }
+
         #region Extension
 
         public override object Extension(string pFunct, params object[] pParams)

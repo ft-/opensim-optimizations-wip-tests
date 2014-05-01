@@ -54,14 +54,17 @@ namespace OpenSim.Region.Physics.Manager
         void getIndexListAsPtrToIntArray(out IntPtr indices, out int triStride, out int indexCount);
 
         List<Vector3> getVertexList();
+
         float[] getVertexListAsFloat();
 
         float[] getVertexListAsFloatLocked();
+
         void getVertexListAsPtrToFloatArray(out IntPtr vertexList, out int vertexStride, out int vertexCount);
 
         void releasePinned();
 
         void releaseSourceMeshData();
+
         void TransformLinear(float[,] matrix, float[] offset);
     }
 
@@ -73,6 +76,7 @@ namespace OpenSim.Region.Physics.Manager
 
         IMesh CreateMesh(String primName, PrimitiveBaseShape primShape, Vector3 size, float lod, bool isPhysical, bool shouldCache);
     }
+
     public interface IVertex
     {
     }

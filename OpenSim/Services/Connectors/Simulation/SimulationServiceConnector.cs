@@ -66,6 +66,7 @@ namespace OpenSim.Services.Connectors.Simulation
         {
             return null;
         }
+
         #region Agents
 
         private ExpiringCache<string, bool> _failedSims = new ExpiringCache<string, bool>();
@@ -352,6 +353,7 @@ namespace OpenSim.Services.Connectors.Simulation
             args["destination_uuid"] = OSD.FromString(destination.RegionID.ToString());
             args["teleport_flags"] = OSD.FromString(flags.ToString());
         }
+
         /// <summary>
         /// This is the worker function to send AgentData to a neighbor region
         /// </summary>
@@ -386,6 +388,7 @@ namespace OpenSim.Services.Connectors.Simulation
 
             return false;
         }
+
         #endregion Agents
 
         #region Objects
@@ -448,6 +451,7 @@ namespace OpenSim.Services.Connectors.Simulation
         {
             return "object/";
         }
+
         #endregion Objects
     }
 }

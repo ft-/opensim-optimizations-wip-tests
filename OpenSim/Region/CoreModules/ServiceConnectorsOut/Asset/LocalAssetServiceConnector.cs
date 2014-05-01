@@ -56,6 +56,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Asset
         {
             get { return null; }
         }
+
         public void AddRegion(Scene scene)
         {
             if (!m_Enabled)
@@ -226,6 +227,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Asset
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -260,6 +262,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Asset
         public void RemoveRegion(Scene scene)
         {
         }
+
         public string Store(AssetBase asset)
         {
             if (m_Cache != null)

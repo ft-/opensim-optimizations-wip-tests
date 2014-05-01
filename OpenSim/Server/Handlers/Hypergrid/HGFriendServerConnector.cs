@@ -39,6 +39,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
         private string m_ConfigName = "HGFriendsService";
         private IHGFriendsService m_TheService;
         private IUserAgentService m_UserAgentService;
+
         // Called from Robust
         public HGFriendsServerConnector(IConfigSource config, IHttpServer server, string configName) :
             this(config, server, configName, null)

@@ -109,6 +109,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// </summary>
         /// <param name="message">Message text to send to all users.</param>
         void SendGeneralAlert(string message);
+
         /// <summary>
         /// Send a notification to all users in the scene. This notification
         /// should remain around until the user explicitly dismisses it.

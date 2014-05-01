@@ -177,6 +177,7 @@ namespace OpenSim.Framework.Serialization.External
                 return wr.ToString();
             }
         }
+
         internal static string CalcCreatorData(string homeURL, UUID uuid, string name)
         {
             return homeURL + "/" + uuid + ";" + name;

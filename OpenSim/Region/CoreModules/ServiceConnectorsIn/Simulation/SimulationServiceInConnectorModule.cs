@@ -87,6 +87,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Simulation
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -107,6 +108,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Simulation
         public void RemoveRegion(Scene scene)
         {
         }
+
         #endregion Region Module interface
     }
 }

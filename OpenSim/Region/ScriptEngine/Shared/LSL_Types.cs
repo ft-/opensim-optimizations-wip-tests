@@ -110,6 +110,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
             {
                 return k.value;
             }
+
             public static bool operator !=(key k1, key k2)
             {
                 return k1.value != k2.value;
@@ -119,6 +120,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
             {
                 return k1.value == k2.value;
             }
+
             #endregion Operators
 
             #region Overriders
@@ -227,6 +229,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
             {
                 return new LSLFloat(i.value);
             }
+
             static public implicit operator LSLFloat(double d)
             {
                 return new LSLFloat(d);
@@ -311,6 +314,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
             {
                 return f1.value == f2.value;
             }
+
             #endregion Operators
 
             #region Overriders
@@ -331,6 +335,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
             {
                 return String.Format(Culture.FormatProvider, "{0:0.000000}", this.value);
             }
+
             #endregion Overriders
         }
 
@@ -406,6 +411,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
             {
                 return new LSLInteger(f.value);
             }
+
             static public explicit operator LSLString(LSLInteger i)
             {
                 return new LSLString(i.ToString());
@@ -432,18 +438,22 @@ namespace OpenSim.Region.ScriptEngine.Shared
             {
                 return (uint)i.value;
             }
+
             public static implicit operator list(LSLInteger i)
             {
                 return new list(new object[] { i });
             }
+
             static public implicit operator LSLInteger(int i)
             {
                 return new LSLInteger(i);
             }
+
             static public implicit operator LSLInteger(uint u)
             {
                 return new LSLInteger(u);
             }
+
             static public implicit operator LSLInteger(bool b)
             {
                 if (b)
@@ -575,6 +585,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 bool ret = i1.value == i2.value;
                 return new LSLInteger((ret ? 1 : 0));
             }
+
             static public LSLInteger operator >(LSLInteger i1, LSLInteger i2)
             {
                 bool ret = i1.value > i2.value;
@@ -586,6 +597,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 bool ret = i1.value >= i2.value;
                 return new LSLInteger((ret ? 1 : 0));
             }
+
             public static LSLInteger operator >>(LSLInteger i, int s)
             {
                 return i.value >> s;
@@ -622,6 +634,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
             {
                 return value;
             }
+
             #endregion Operators
 
             #region Overriders
@@ -727,10 +740,12 @@ namespace OpenSim.Region.ScriptEngine.Shared
             {
                 return s.m_string;
             }
+
             public static implicit operator list(LSLString s)
             {
                 return new list(new object[] { s });
             }
+
             public static implicit operator Quaternion(LSLString s)
             {
                 return new Quaternion(s.m_string);
@@ -760,14 +775,17 @@ namespace OpenSim.Region.ScriptEngine.Shared
             {
                 return m_string;
             }
+
             public static implicit operator Vector3(LSLString s)
             {
                 return new Vector3(s.m_string);
             }
+
             public static implicit operator LSLFloat(LSLString s)
             {
                 return new LSLFloat(s);
             }
+
             #endregion Operators
 
             #region Overriders
@@ -802,6 +820,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
             {
                 return m_string.IndexOf(value);
             }
+
             #endregion " Standard string functions "
         }
 
@@ -812,6 +831,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
             public double x;
             public double y;
             public double z;
+
             #region Constructors
 
             public Quaternion(Quaternion Quat)
@@ -890,6 +910,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
             #endregion Methods
 
             #region Overriders
+
             public static explicit operator Quaternion(string s)
             {
                 return new Quaternion(s);
@@ -950,6 +971,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
             {
                 return (x.GetHashCode() ^ y.GetHashCode() ^ z.GetHashCode() ^ s.GetHashCode());
             }
+
             public override string ToString()
             {
                 string st = String.Format(Culture.FormatProvider, "<{0:0.000000},{1:0.000000},{2:0.000000},{3:0.000000}>", x, y, z, s);
@@ -961,6 +983,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 string s = String.Format("<{0:0.000000},{1:0.000000},{2:0.000000},{3:0.000000}>", r.x, r.y, r.z, r.s);
                 return s;
             }
+
             #endregion Overriders
 
             public static Quaternion operator -(Quaternion a, Quaternion b)
@@ -1124,6 +1147,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 string s = String.Format("<{0:0.000000},{1:0.000000},{2:0.000000}>", x, y, z);
                 return s;
             }
+
             #endregion Overriders
 
             #region Vector & Vector Math
@@ -1153,6 +1177,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
             {
                 return new Vector3(lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z);
             }
+
             #endregion Vector & Vector Math
 
             #region Vector & Float Math
@@ -1238,6 +1263,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
             {
                 return (v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z);
             }
+
             public static double Mag(Vector3 v)
             {
                 return Math.Sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
@@ -1256,6 +1282,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
 
             #endregion Static Helper Functions
         }
+
         [Serializable]
         public class list
         {
@@ -1325,6 +1352,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
                     return size;
                 }
             }
+
             public static bool operator !=(list a, list b)
             {
                 int la = -1;
@@ -1550,6 +1578,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
             {
                 return m_data[itemIndex].GetType();
             }
+
             public LSL_Types.LSLString GetLSLStringItem(int itemIndex)
             {
                 if (m_data[itemIndex] is LSL_Types.key)
@@ -1561,6 +1590,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
                     return new LSL_Types.LSLString(m_data[itemIndex].ToString());
                 }
             }
+
             public LSL_Types.Quaternion GetQuaternionItem(int itemIndex)
             {
                 if (m_data[itemIndex] is LSL_Types.Quaternion)
@@ -1690,6 +1720,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
                         m_data[itemIndex].GetType().Name : "null"));
                 }
             }
+
             public list Sort(int stride, int ascending)
             {
                 if (Data.Length == 0)
@@ -1847,6 +1878,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 Array.Resize(ref m_data, Length + 1);
                 m_data.SetValue(o, Length - 1);
             }
+
             public class AlphaCompare : IComparer
             {
                 int IComparer.Compare(object x, object y)
@@ -1895,7 +1927,9 @@ namespace OpenSim.Region.ScriptEngine.Shared
                     return compare(lhs, rhs, 1);
                 }
             }
+
             #region CSV Methods
+
             public static explicit operator LSLString(list l)
             {
                 return new LSLString(l.ToSoup());
@@ -1947,6 +1981,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
             {
                 return l.ToSoup();
             }
+
             #endregion CSV Methods
 
             #region Statistic Methods
@@ -2030,6 +2065,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 }
                 return minimum;
             }
+
             public int NumericLength()
             {
                 int count = 0;
@@ -2069,6 +2105,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
             {
                 return (this.Max() / this.Min());
             }
+
             public double StdDev()
             {
                 return Math.Sqrt(this.Variance());
@@ -2101,6 +2138,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 }
                 return sum;
             }
+
             public double Variance()
             {
                 double s = 0;
@@ -2111,6 +2149,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
                 }
                 return (s - num.Data.Length * Math.Pow(num.Mean(), 2)) / (num.Data.Length - 1);
             }
+
             #endregion Statistic Methods
         }
     }

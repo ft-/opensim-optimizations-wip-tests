@@ -52,6 +52,7 @@ namespace OpenSim.Framework
         public string osSecret;
         public bool Persistent = true;
         public int ProxyOffset = 0;
+
         // private IConfigSource m_configSource = null;
         public string proxyUrl = "";
 
@@ -425,6 +426,7 @@ namespace OpenSim.Framework
 
             set { m_windlight = value; }
         }
+
         public static RegionInfo Create(UUID regionID, string regionName, uint regX, uint regY, string externalHostName, uint httpPort, uint simPort, uint remotingPort, string serverURI)
         {
             RegionInfo regionInfo;
@@ -525,12 +527,14 @@ namespace OpenSim.Framework
             RegionSizeY = Constants.RegionSize;
             RegionSizeZ = Constants.RegionHeight;
         }
+
         public void SetEndPoint(string ipaddr, int port)
         {
             IPAddress tmpIP = IPAddress.Parse(ipaddr);
             IPEndPoint tmpEPE = new IPEndPoint(tmpIP, port);
             m_internalEndPoint = tmpEPE;
         }
+
         public void UnpackRegionInfoData(OSDMap args)
         {
             if (args["region_id"] != null)
@@ -866,6 +870,7 @@ namespace OpenSim.Framework
             string keylower = key.ToLower();
             m_extraSettings[keylower] = value;
         }
+
         private void WriteNiniConfig(IConfigSource source)
         {
             IConfig config = source.Configs[RegionName];
@@ -975,6 +980,7 @@ namespace OpenSim.Framework
         public bool valid = false;
         public Vector3 waterColor = new Vector3(4.0f, 38.0f, 64.0f);
         public float waterFogDensityExponent = 4.0f;
+
         public delegate void SaveDelegate(RegionLightShareData wl);
 
         public event SaveDelegate OnSave;

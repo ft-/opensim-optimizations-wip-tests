@@ -48,6 +48,7 @@ namespace OpenSim.Server.Base
         // Logger
         //
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         // Run flag
         //
         private bool m_Running = true;
@@ -182,6 +183,7 @@ namespace OpenSim.Server.Base
             get;
             private set;
         }
+
         public bool Running
         {
             get { return m_Running; }

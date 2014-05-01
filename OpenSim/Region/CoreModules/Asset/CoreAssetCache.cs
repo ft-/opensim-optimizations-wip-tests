@@ -45,6 +45,7 @@ namespace OpenSim.Region.CoreModules.Asset
 
         private Cache m_Cache;
         private bool m_Enabled;
+
         public string Name
         {
             get { return "CoreAssetCache"; }
@@ -126,6 +127,7 @@ namespace OpenSim.Region.CoreModules.Asset
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
         }

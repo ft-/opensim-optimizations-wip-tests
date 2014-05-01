@@ -120,6 +120,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         }
 
         public override ConstraintType Type { get { return ConstraintType.D6_CONSTRAINT_TYPE; } }
+
         public bool SetBreakingImpulseThreshold(float threshold)
         {
             bool ret = false;
@@ -151,6 +152,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             }
             return ret;
         }
+
         public bool TranslationalLimitMotor(bool enable, float targetVelocity, float maxMotorForce)
         {
             bool ret = false;

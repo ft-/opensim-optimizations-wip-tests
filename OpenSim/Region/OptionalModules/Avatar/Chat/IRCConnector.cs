@@ -45,6 +45,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
         #region Global (static) state
 
         private const int WD_INTERVAL = 1000;
+
         // This computation is not the real region center if the region is larger than 256.
         //     This computation isn't fixed because there is not a handle back to the region.
         private static readonly Vector3 CenterOfRegion = new Vector3(((int)Constants.RegionSize * 0.5f), ((int)Constants.RegionSize * 0.5f), 20);
@@ -71,10 +72,11 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
 
         // base watchdog interval
         private static int PING_PERIOD = 15;       // WD intervals per PING
-       // Login time out interval
+
+        // Login time out interval
 
         // ping interval counter
-         // IRC connect counter
+        // IRC connect counter
 
         // List of configured connectors
         // Watchdog state
@@ -111,6 +113,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
         // reset.
 
         internal string m_baseNick = null;
+
         // base name for randomizing
         internal string m_nick = null;
 
@@ -121,6 +124,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
 
         internal bool motd = false;
         internal string usermod = String.Empty;
+
         // Channel characteristic info (if available)
         internal string version = String.Empty;
 
@@ -130,6 +134,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
         private Thread m_listener = null;
 
         private string m_password = null;
+
         // connection status
         private bool m_pending = false;
 
@@ -138,17 +143,19 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
         private string m_server = null;
         private NetworkStream m_stream = null;
         private TcpClient m_tcp;
+
         // login disposition
         private int m_timeout = L_TIMEOUT;
 
         private string m_user = "USER OpenSimBot 8 * :I'm an OpenSim to IRC bot";
+
         // Network interface
         private StreamWriter m_writer;
 
         private Object msyncConnect = new Object();
 
-         // add random suffix
-          // effective nickname
+        // add random suffix
+        // effective nickname
 
         public bool Connected
         {
@@ -172,10 +179,10 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
             set { m_nick = value; }
         }
 
-                    // connector enablement
-    // login timeout counter
-                    // associated channel id
-                        // session port
+        // connector enablement
+        // login timeout counter
+        // associated channel id
+        // session port
 
         public string Password
         {
@@ -189,17 +196,19 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
             set { m_port = value; }
         }
 
-                    // IRC server name
+        // IRC server name
 
         public string Server
         {
             get { return m_server; }
             set { m_server = value; }
         }
+
         public string User
         {
             get { return m_user; }
         }
+
         #endregion Instance state
 
         #region connector instance management
@@ -324,6 +333,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
         }
 
         // Only close the connector if the dependency count is zero.
+
         #endregion connector instance management
 
         #region session management
@@ -565,6 +575,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
             if (m_enabled && (m_resetk == resetk))
                 Reconnect();
         }
+
         private Dictionary<string, string> ExtractMsg(string input)
         {
             //examines IRC commands and extracts any private messages
@@ -594,6 +605,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
 
             return result;
         }
+
         #region IRC Command Handlers
 
         public void eventIrcJoin(string prefix, string command, string parms)
@@ -827,6 +839,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Chat
 
             // m_log.DebugFormat("[IRC-Connector-{0}] prefix = <{1}> cmd = <{2}> complete", idn, pfx, cmd);
         }
+
         #endregion IRC Command Handlers
 
         #region Connector Watch Dog

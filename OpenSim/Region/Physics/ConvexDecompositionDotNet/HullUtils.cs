@@ -1423,6 +1423,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
         {
             return (float)Math.Floor(0.5f + a / precision) * precision;
         }
+
         public static int shareedge(int3 a, int3 b)
         {
             int i;
@@ -1451,6 +1452,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
             a = b;
             b = tmp;
         }
+
         public static ConvexH test_btbq(float planetestepsilon)
         {
             // back to back quads
@@ -1533,6 +1535,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
             float3 b = new float3(p0.dist, p1.dist, p2.dist);
             return -b * mi;
         }
+
         public static float3 TriNormal(float3 v0, float3 v1, float3 v2)
         {
             // return the normal of the triangle
@@ -1543,6 +1546,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
                 return new float3(1, 0, 0);
             return cp * (1.0f / m);
         }
+
         public static Quaternion VirtualTrackBall(float3 cop, float3 cor, float3 dir1, float3 dir2)
         {
             // routine taken from game programming gems.
@@ -1586,6 +1590,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
             }
             return RotationArc(u, v);
         }
+
         private static void BringOutYourDead(List<float3> verts, out List<float3> overts, List<int> indices)
         {
             int[] used = new int[verts.Count];

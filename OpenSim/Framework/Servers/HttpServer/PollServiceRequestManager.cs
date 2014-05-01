@@ -105,6 +105,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         /// Number of responses actually processed and sent to viewer (or aborted due to error).
         /// </summary>
         public int ResponsesProcessed { get; private set; }
+
         public void Enqueue(PollServiceHttpRequest req)
         {
             if (IsRunning)
@@ -319,6 +320,7 @@ namespace OpenSim.Framework.Servers.HttpServer
                 t.Change(100, Timeout.Infinite);
             }
         }
+
         // work threads
     }
 }

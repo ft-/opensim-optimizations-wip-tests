@@ -50,6 +50,7 @@ namespace OpenSim.Framework
         /// The address of the users home sim, used for foreigners.
         /// </summary>
         private string _userUserServerURI = String.Empty;
+
         public string UserHomeAddress
         {
             get { return _userHomeAddress; }

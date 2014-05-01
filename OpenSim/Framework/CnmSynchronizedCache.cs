@@ -741,6 +741,7 @@ namespace OpenSim.Framework
                 return m_cache.TryGetValue(key, out value);
             }
         }
+
         #endregion ICnmCache<TKey,TValue> Members
     }
 }

@@ -80,6 +80,7 @@ namespace OpenSim.Region.Physics.OdePlugin
         private d.Vector3 _zeroPosition;
         private IntPtr Amotor = IntPtr.Zero;
         private float CAPSULE_LENGTH = 2.140599f;
+
         //private static float POSTURE_SERVO = 10000.0f;
         private float CAPSULE_RADIUS = 0.37f;
 
@@ -87,10 +88,12 @@ namespace OpenSim.Region.Physics.OdePlugin
         private bool flying = false;
         private bool m_alwaysRun = false;
         private float m_buoyancy = 0f;
+
         // private CollisionLocker ode;
         private bool[] m_colliderarr = new bool[11];
 
         private bool[] m_colliderGroundarr = new bool[11];
+
         // Default we're a Character
         private CollisionCategories m_collisionCategories = (CollisionCategories.Character);
 
@@ -108,6 +111,7 @@ namespace OpenSim.Region.Physics.OdePlugin
         private bool m_iscolliding = false;
         private bool m_iscollidingGround = false;
         private bool m_iscollidingObj = false;
+
         // taints and their non-tainted counterparts
         private bool m_isPhysical = false;
 
@@ -118,6 +122,7 @@ namespace OpenSim.Region.Physics.OdePlugin
         private Vector3 m_rotationalVelocity;
         private float m_tainted_CAPSULE_LENGTH;
         private bool m_tainted_isPhysical = false;
+
         /// <summary>
         /// Hold set forces so we can process them outside physics calculations.  This prevents race conditions if we set force
         /// while calculatios are going on
@@ -127,6 +132,7 @@ namespace OpenSim.Region.Physics.OdePlugin
         private Vector3 m_taintPosition;
         private Vector3 m_taintTargetVelocity;
         private float m_tensor = 3800000f;
+
         /// <summary>
         /// Base movement for calculating tilt.
         /// </summary>
@@ -149,6 +155,7 @@ namespace OpenSim.Region.Physics.OdePlugin
 
         //        private float heightFudgeFactor = 0.52f;
         private float walkDivisor = 1.3f;
+
         /// <summary>
         /// ODE Avatar.
         /// </summary>
@@ -622,6 +629,7 @@ namespace OpenSim.Region.Physics.OdePlugin
         /// Body for dynamics simulation
         /// </summary>
         internal IntPtr Body { get; private set; }
+
         // unique UUID of this character object
         internal UUID m_uuid { get; private set; }
 
@@ -629,6 +637,7 @@ namespace OpenSim.Region.Physics.OdePlugin
         /// Collision geometry
         /// </summary>
         internal IntPtr Shell { get; private set; }
+
         public override void AddAngularForce(Vector3 force, bool pushforce)
         {
         }
@@ -698,6 +707,7 @@ namespace OpenSim.Region.Physics.OdePlugin
         {
             m_pidControllerActive = status;
         }
+
         public override void SetVolumeDetect(int param)
         {
         }

@@ -60,6 +60,7 @@ namespace OpenSim
         public ConsoleCommand CreateAccount = null;
         public string managedStatsURI = String.Empty;
         public string userStatsURI = String.Empty;
+
         /// <value>
         /// The file used to load and save prim backup xml if no filename has been specified
         /// </value>
@@ -75,12 +76,14 @@ namespace OpenSim
         protected int proxyOffset = 0;
         protected string proxyUrl;
         private const string PLUGIN_ASSET_CACHE = "/OpenSim/AssetCache";
+
         // These are the names of the plugin-points extended by this
         // class during system startup.
         //
         private const string PLUGIN_ASSET_SERVER_CLIENT = "/OpenSim/AssetClient";
 
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -111,14 +114,17 @@ namespace OpenSim
             get { return m_configSettings; }
             set { m_configSettings = value; }
         }
+
         public EnvConfigSource envConfigSource
         {
             get { return m_EnvConfigSource; }
         }
+
         public uint HttpServerPort
         {
             get { return m_httpServerPort; }
         }
+
         /// <summary>
         /// Remove a region from the simulator without deleting it permanently.
         /// </summary>
@@ -656,6 +662,7 @@ namespace OpenSim
                 Util.LogOverloads = startupConfig.GetBoolean("LogOverloads", true);
             }
         }
+
         /// <summary>
         /// Create a scene and its initial base structures.
         /// </summary>
@@ -832,6 +839,7 @@ namespace OpenSim
             if (m_console != null)
                 AddPluginCommands(m_console);
         }
+
         private void HandleCommanderCommand(string module, string[] cmd)
         {
             SceneManager.SendCommandToPluginModules(cmd);
@@ -846,6 +854,7 @@ namespace OpenSim
             if (moduleCommander != null)
                 m_console.Output(moduleCommander.Help);
         }
+
         /// <summary>
         /// Try to set up the estate owner for the given scene.
         /// </summary>
@@ -961,7 +970,9 @@ namespace OpenSim
                 controller.RemoveRegionFromModules(scene);
             }
         }
+
         # region Setup methods
+
         /// <summary>
         /// Handler to supply the current status of this sim
         /// </summary>

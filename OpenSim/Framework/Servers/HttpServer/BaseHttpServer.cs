@@ -50,30 +50,33 @@ namespace OpenSim.Framework.Servers.HttpServer
     public class BaseHttpServer : IHttpServer
     {
         public volatile bool HTTPDRunning = false;
-        
+
         private Dictionary<string, JsonRPCMethod> jsonRpcHandlers = new Dictionary<string, JsonRPCMethod>();
         private ReaderWriterLock jsonRpcHandlersRwLock = new ReaderWriterLock();
-        
+
         private DefaultLLSDMethod m_defaultLlsdHandler = null;
-        
+
         private Dictionary<string, GenericHTTPMethod> m_HTTPHandlers = new Dictionary<string, GenericHTTPMethod>();
         private ReaderWriterLock m_HTTPHandlersRwLock = new ReaderWriterLock();
-        
+
         // private HttpListener m_httpListener;
         private CoolHTTPListener m_httpListener2;
 
         private IPAddress m_listenIPAddress = IPAddress.Any;
+
         // <--   Moving away from the monolithic..  and going to /registered/
         private Dictionary<string, LLSDMethod> m_llsdHandlers = new Dictionary<string, LLSDMethod>();
+
         private ReaderWriterLock m_llsdHandlersRwLock = new ReaderWriterLock();
 
         //        protected Dictionary<string, IHttpAgentHandler> m_agentHandlers = new Dictionary<string, IHttpAgentHandler>();
         private Dictionary<string, PollServiceEventArgs> m_pollHandlers =
             new Dictionary<string, PollServiceEventArgs>();
+
         private ReaderWriterLock m_pollHandlersRwLock = new ReaderWriterLock();
 
         private uint m_port;
-        
+
         private Dictionary<string, XmlRpcMethod> m_rpcHandlers = new Dictionary<string, XmlRpcMethod>();
         private ReaderWriterLock m_rpcHandlersRwLock = new ReaderWriterLock();
 
@@ -84,9 +87,10 @@ namespace OpenSim.Framework.Servers.HttpServer
 
         private Dictionary<string, IRequestHandler> m_streamHandlers = new Dictionary<string, IRequestHandler>();
         private ReaderWriterLock m_streamHandlersRwLock = new ReaderWriterLock();
-        
+
         private Dictionary<string, WebSocketRequestDelegate> m_WebSocketHandlers =
             new Dictionary<string, WebSocketRequestDelegate>();
+
         private ReaderWriterLock m_WebSocketHandlersRwLock = new ReaderWriterLock();
 
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
@@ -169,6 +173,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         /// opensim-request-id header but we are not currently logging this.
         /// </remarks>
         public int RequestNumber { get; private set; }
+
         public string SSLCommonName
         {
             get { return m_SSLCommonName; }
@@ -178,10 +183,12 @@ namespace OpenSim.Framework.Servers.HttpServer
         {
             get { return m_sslport; }
         }
+
         public bool UseSSL
         {
             get { return m_ssl; }
         }
+
         public bool AddHTTPHandler(string methodName, GenericHTTPMethod handler)
         {
             //m_log.DebugFormat("[BASE HTTP SERVER]: Registering {0}", methodName);
@@ -964,6 +971,7 @@ namespace OpenSim.Framework.Servers.HttpServer
                 m_WebSocketHandlersRwLock.ReleaseWriterLock();
             }
         }
+
         public void RemoveXmlRPCHandler(string method)
         {
             m_rpcHandlersRwLock.AcquireWriterLock(-1);
@@ -1213,6 +1221,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         {
             return httpMethod + ":" + path;
         }
+
         private byte[] BuildLLSDResponse(OSHttpRequest request, OSHttpResponse response, OSD llsdResponse)
         {
             if (request.AcceptTypes != null && request.AcceptTypes.Length > 0)
@@ -2190,6 +2199,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         public OSHttpRequest oreq = null;
         public OSHttpResponse oresp = null;
         public IHttpRequest req = null;
+
         public HttpServerContextObj(IHttpClientContext contxt, IHttpRequest reqs)
         {
             context = contxt;

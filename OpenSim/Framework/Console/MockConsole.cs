@@ -53,6 +53,7 @@ namespace OpenSim.Framework.Console
         {
             return null;
         }
+
         public XmlElement GetXml(XmlDocument doc)
         {
             return null;
@@ -78,6 +79,7 @@ namespace OpenSim.Framework.Console
         public event OnOutputDelegate OnOutput;
 
 #pragma warning restore 0067
+
         public ICommands Commands { get { return m_commands; } }
 
         public object ConsoleScene

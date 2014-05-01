@@ -25,21 +25,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
+using Nini.Config;
+using NUnit.Framework;
+using OpenMetaverse;
+using OpenSim.Framework;
+using OpenSim.Services.AssetService;
+using OpenSim.Tests.Common;
+using OpenSim.Tests.Common.Mock;
 using System.IO;
 using System.Net;
 using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
-using Nini.Config;
-using NUnit.Framework;
-using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Server.Handlers.Asset;
-using OpenSim.Services.AssetService;
-using OpenSim.Services.Interfaces;
-using OpenSim.Tests.Common;
-using OpenSim.Tests.Common.Mock;
 
 namespace OpenSim.Server.Handlers.Asset.Test
 {
@@ -53,8 +50,8 @@ namespace OpenSim.Server.Handlers.Asset.Test
 
             UUID assetId = TestHelpers.ParseTail(0x1);
 
-            IConfigSource config = new IniConfigSource();         
-            config.AddConfig("AssetService");           
+            IConfigSource config = new IniConfigSource();
+            config.AddConfig("AssetService");
             config.Configs["AssetService"].Set("StorageProvider", "OpenSim.Tests.Common.dll");
 
             AssetService assetService = new AssetService(config);
@@ -73,7 +70,7 @@ namespace OpenSim.Server.Handlers.Asset.Test
                 XmlSerializer serializer = new XmlSerializer(typeof(AssetBase));
                 serializer.Serialize(writer, asset);
                 writer.Flush();
-            }            
+            }
 
             buffer.Position = 0;
             asph.Handle(null, buffer, null, null);
@@ -88,13 +85,13 @@ namespace OpenSim.Server.Handlers.Asset.Test
         {
             TestHelpers.InMethod();
 
-            IConfigSource config = new IniConfigSource();         
-            config.AddConfig("AssetService");           
+            IConfigSource config = new IniConfigSource();
+            config.AddConfig("AssetService");
             config.Configs["AssetService"].Set("StorageProvider", "OpenSim.Tests.Common.dll");
 
             AssetService assetService = new AssetService(config);
 
-            AssetServerPostHandler asph = new AssetServerPostHandler(assetService);          
+            AssetServerPostHandler asph = new AssetServerPostHandler(assetService);
 
             MemoryStream buffer = new MemoryStream();
             byte[] badData = new byte[] { 0x48, 0x65, 0x6c, 0x6c, 0x6f };

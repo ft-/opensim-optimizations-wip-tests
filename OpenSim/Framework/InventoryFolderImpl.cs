@@ -131,6 +131,7 @@ namespace OpenSim.Framework
 
             return null;
         }
+
         /// <summary>
         /// Deletes an item if it exists in this folder or any children
         /// </summary>
@@ -408,6 +409,7 @@ namespace OpenSim.Framework
 
             return removedFolder;
         }
+
         public List<InventoryFolderImpl> RequestListOfFolderImpls()
         {
             List<InventoryFolderImpl> folderList = new List<InventoryFolderImpl>();

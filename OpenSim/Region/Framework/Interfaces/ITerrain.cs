@@ -103,9 +103,11 @@ namespace OpenSim.Region.Framework.Interfaces
         bool Tainted();
 
         bool Tainted(int x, int y);
+
         void WriteToFileF32(string filename);
 
         void WriteToFileF64(string filename);
+
         void WriteToFileHiRAW(string filename);
 
         void WriteToFileRAW(string filename);

@@ -44,6 +44,7 @@ namespace OpenSim.Server.Handlers.Login
         private BasicDosProtectorOptions m_DosProtectionOptions;
         private ILoginService m_LoginService;
         private bool m_Proxy;
+
         public LLLoginServiceInConnector(IConfigSource config, IHttpServer server, IScene scene) :
             base(config, server, String.Empty)
         {

@@ -53,6 +53,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
         private IUserManagement m_uMan;
 
         public event UndeliveredMessage OnUndeliveredMessage;
+
         public virtual string Name
         {
             get { return "HGMessageTransferModule"; }
@@ -104,6 +105,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
             m_IMService = imServer.GetService();
             m_Enabled = true;
         }
+
         /// <summary>
         /// Find the root client for a ID
         /// </summary>
@@ -142,6 +144,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
                 m_Scenes.Remove(scene);
             }
         }
+
         public void SendInstantMessage(GridInstantMessage im, MessageResultNotification result)
         {
             UUID toAgentID = new UUID(im.toAgentID);
@@ -272,6 +275,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
 
             return successful;
         }
+
         private string TryGetRecipientUUI(UUID fromAgent, UUID toAgent)
         {
             // Let's call back the fromAgent's user agent service
@@ -305,6 +309,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
 
             return string.Empty;
         }
+
         #region IInstantMessageSimConnector
 
         public bool SendInstantMessage(GridInstantMessage im)

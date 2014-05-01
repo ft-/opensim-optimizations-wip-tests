@@ -61,6 +61,7 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
         {
             get { return m_assMapper; }
         }
+
         //        private bool m_Initialized = false;
 
         #region INonSharedRegionModule
@@ -122,6 +123,7 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
                 }
             }
         }
+
         #endregion INonSharedRegionModule
 
         #region Event handlers
@@ -167,6 +169,7 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
             base.OnNewClient(client);
             client.OnCompleteMovementToRegion += new Action<IClientAPI, bool>(OnCompleteMovementToRegion);
         }
+
         protected void TeleportFail(IClientAPI client, bool gridLogout)
         {
             if (gridLogout && m_RestrictInventoryAccessAbroad)
@@ -200,6 +203,7 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
                 }
             }
         }
+
         #endregion Event handlers
 
         #region Overrides of Basic Inventory Access methods
@@ -316,6 +320,7 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
                                 presence.RegionHandle,
                                 m_ThisGatekeeper);
         }
+
         protected override InventoryItemBase GetItem(UUID agentID, UUID itemID)
         {
             InventoryItemBase item = base.GetItem(agentID, itemID);
@@ -367,6 +372,7 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
                 }
             }
         }
+
         //
         // These 2 are for local and foreign users going away respectively
         //

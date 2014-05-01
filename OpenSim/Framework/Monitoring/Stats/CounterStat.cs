@@ -36,6 +36,7 @@ namespace OpenSim.Framework.Monitoring
     {
         private object counterLock = new object();
         private SortedDictionary<string, EventHistogram> m_histograms;
+
         public CounterStat(
                             string shortName,
                             string name,
@@ -57,6 +58,7 @@ namespace OpenSim.Framework.Monitoring
         {
             m_histograms.Add(histoName, histo);
         }
+
         public void Event()
         {
             this.Event(1);
@@ -83,6 +85,7 @@ namespace OpenSim.Framework.Monitoring
                 process(kvp.Key, kvp.Value);
             }
         }
+
         // CounterStat is a basic stat plus histograms
         public override OSDMap ToOSDMap()
         {

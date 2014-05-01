@@ -195,6 +195,7 @@ namespace OpenSim.Region.UserStatistics
             summaryInfo.Add("totalKBIn", new OSDString(values.total_kb_in.ToString()));
             return summaryInfo.ToString();
         }
+
         public string RenderView(Hashtable pModelResult)
         {
             List<ClientVersionData> clidata = (List<ClientVersionData>)pModelResult["ClientData"];
@@ -314,6 +315,7 @@ TD.align_top { vertical-align: top; }
             output.Append("</HTML>");
             return output.ToString();
         }
+
         #endregion IStatsController Members
     }
 }

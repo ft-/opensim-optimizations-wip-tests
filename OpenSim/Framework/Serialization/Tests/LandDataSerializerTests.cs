@@ -41,6 +41,7 @@ namespace OpenSim.Framework.Serialization.Tests
 
         private LandData land;
         private LandData landWithParcelAccessList;
+
         [SetUp]
         public void setup()
         {

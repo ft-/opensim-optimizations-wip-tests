@@ -58,6 +58,7 @@ namespace OpenSim.Region.CoreModules.Scripting.VectorRender
         private Graphics m_graph;
         private Scene m_scene;
         private IDynamicTextureManager m_textureManager;
+
         public VectorRenderModule()
         {
         }
@@ -127,6 +128,7 @@ namespace OpenSim.Region.CoreModules.Scripting.VectorRender
         {
             return true;
         }
+
         #endregion IDynamicTextureRender Members
 
         #region ISharedRegionModule Members
@@ -171,6 +173,7 @@ namespace OpenSim.Region.CoreModules.Scripting.VectorRender
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (m_textureManager == null && m_scene == scene)
@@ -186,6 +189,7 @@ namespace OpenSim.Region.CoreModules.Scripting.VectorRender
         public void RemoveRegion(Scene scene)
         {
         }
+
         #endregion ISharedRegionModule Members
 
         private static void GetParams(char[] partsDelimiter, ref string line, int startLength, ref float x, ref float y)

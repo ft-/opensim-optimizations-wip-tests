@@ -64,6 +64,7 @@ namespace OpenSim.Region.Framework.Interfaces
         JsonStoreNodeType GetNodeType(UUID storeID, string path);
 
         JsonStoreStats GetStoreStats();
+
         bool GetValue(UUID storeID, string path, bool useJson, out string value);
 
         JsonStoreValueType GetValueType(UUID storeID, string path);

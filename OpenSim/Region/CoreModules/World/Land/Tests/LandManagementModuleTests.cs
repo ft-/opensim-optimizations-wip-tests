@@ -25,13 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using NUnit.Framework;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Tests.Common;
-using OpenSim.Tests.Common.Mock;
 
 namespace OpenSim.Region.CoreModules.World.Land.Tests
 {
@@ -41,19 +39,19 @@ namespace OpenSim.Region.CoreModules.World.Land.Tests
         public void TestAddLandObject()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             UUID userId = TestHelpers.ParseTail(0x1);
 
             LandManagementModule lmm = new LandManagementModule();
-            Scene scene = new SceneHelpers().SetupScene();            
-            SceneHelpers.SetupSceneModules(scene, lmm);             
-            
+            Scene scene = new SceneHelpers().SetupScene();
+            SceneHelpers.SetupSceneModules(scene, lmm);
+
             ILandObject lo = new LandObject(userId, false, scene);
             lo.LandData.Name = "lo1";
             lo.SetLandBitmap(
                 lo.GetSquareLandBitmap(0, 0, (int)Constants.RegionSize, (int)Constants.RegionSize));
-            lo = lmm.AddLandObject(lo);          
+            lo = lmm.AddLandObject(lo);
 
             // TODO: Should add asserts to check that land object was added properly.
 
@@ -68,7 +66,7 @@ namespace OpenSim.Region.CoreModules.World.Land.Tests
             {
                 ILandObject loAtCoord = lmm.GetLandObject(0, 0);
                 Assert.That(loAtCoord.LandData.LocalID, Is.EqualTo(lo.LandData.LocalID));
-                Assert.That(loAtCoord.LandData.GlobalID, Is.EqualTo(lo.LandData.GlobalID));                          
+                Assert.That(loAtCoord.LandData.GlobalID, Is.EqualTo(lo.LandData.GlobalID));
             }
 
             {
@@ -85,12 +83,12 @@ namespace OpenSim.Region.CoreModules.World.Land.Tests
         public void TestLoadWithNoParcels()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             SceneHelpers sh = new SceneHelpers();
             LandManagementModule lmm = new LandManagementModule();
-            Scene scene = sh.SetupScene();            
-            SceneHelpers.SetupSceneModules(scene, lmm);   
+            Scene scene = sh.SetupScene();
+            SceneHelpers.SetupSceneModules(scene, lmm);
 
             scene.loadAllLandObjectsFromStorage(scene.RegionInfo.RegionID);
 
@@ -110,14 +108,14 @@ namespace OpenSim.Region.CoreModules.World.Land.Tests
         public void TestLoadWithSinglePartialCoveringParcel()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             UUID userId = TestHelpers.ParseTail(0x1);
 
             SceneHelpers sh = new SceneHelpers();
             LandManagementModule lmm = new LandManagementModule();
-            Scene scene = sh.SetupScene();            
-            SceneHelpers.SetupSceneModules(scene, lmm);   
+            Scene scene = sh.SetupScene();
+            SceneHelpers.SetupSceneModules(scene, lmm);
 
             ILandObject originalLo1 = new LandObject(userId, false, scene);
             originalLo1.LandData.Name = "lo1";
@@ -144,14 +142,14 @@ namespace OpenSim.Region.CoreModules.World.Land.Tests
         public void TestLoadWithMultiplePartialCoveringParcels()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             UUID userId = TestHelpers.ParseTail(0x1);
 
             SceneHelpers sh = new SceneHelpers();
             LandManagementModule lmm = new LandManagementModule();
-            Scene scene = sh.SetupScene();            
-            SceneHelpers.SetupSceneModules(scene, lmm);   
+            Scene scene = sh.SetupScene();
+            SceneHelpers.SetupSceneModules(scene, lmm);
 
             ILandObject originalLo1 = new LandObject(userId, false, scene);
             originalLo1.LandData.Name = "lo1";
@@ -174,7 +172,7 @@ namespace OpenSim.Region.CoreModules.World.Land.Tests
             Assert.That(loAtCoord1.LandData.Name, Is.EqualTo(originalLo1.LandData.Name));
             Assert.That(loAtCoord1.LandData.GlobalID, Is.EqualTo(originalLo1.LandData.GlobalID));
 
-            ILandObject loAtCoord2 
+            ILandObject loAtCoord2
                 = lmm.GetLandObject((int)Constants.RegionSize - 1, (((int)Constants.RegionSize / 4) * 3) - 1);
             Assert.That(loAtCoord2.LandData.Name, Is.EqualTo(originalLo2.LandData.Name));
             Assert.That(loAtCoord2.LandData.GlobalID, Is.EqualTo(originalLo2.LandData.GlobalID));
@@ -193,14 +191,14 @@ namespace OpenSim.Region.CoreModules.World.Land.Tests
         public void TestLoad()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             UUID userId = TestHelpers.ParseTail(0x1);
 
             SceneHelpers sh = new SceneHelpers();
             LandManagementModule lmm = new LandManagementModule();
-            Scene scene = sh.SetupScene();            
-            SceneHelpers.SetupSceneModules(scene, lmm);   
+            Scene scene = sh.SetupScene();
+            SceneHelpers.SetupSceneModules(scene, lmm);
 
             ILandObject originalLo1 = new LandObject(userId, false, scene);
             originalLo1.LandData.Name = "lo1";
@@ -221,7 +219,7 @@ namespace OpenSim.Region.CoreModules.World.Land.Tests
             {
                 ILandObject loAtCoord = lmm.GetLandObject(0, 0);
                 Assert.That(loAtCoord.LandData.Name, Is.EqualTo(originalLo1.LandData.Name));
-                Assert.That(loAtCoord.LandData.GlobalID, Is.EqualTo(originalLo1.LandData.GlobalID));                          
+                Assert.That(loAtCoord.LandData.GlobalID, Is.EqualTo(originalLo1.LandData.GlobalID));
             }
 
             {
@@ -235,26 +233,26 @@ namespace OpenSim.Region.CoreModules.World.Land.Tests
         public void TestSubdivide()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             UUID userId = TestHelpers.ParseTail(0x1);
 
             LandManagementModule lmm = new LandManagementModule();
-            Scene scene = new SceneHelpers().SetupScene();            
-            SceneHelpers.SetupSceneModules(scene, lmm);             
-            
+            Scene scene = new SceneHelpers().SetupScene();
+            SceneHelpers.SetupSceneModules(scene, lmm);
+
             ILandObject lo = new LandObject(userId, false, scene);
             lo.LandData.Name = "lo1";
             lo.SetLandBitmap(
                 lo.GetSquareLandBitmap(0, 0, (int)Constants.RegionSize, (int)Constants.RegionSize));
-            lo = lmm.AddLandObject(lo);          
+            lo = lmm.AddLandObject(lo);
 
             lmm.Subdivide(0, 0, LandManagementModule.LandUnit, LandManagementModule.LandUnit, userId);
 
             {
                 ILandObject loAtCoord = lmm.GetLandObject(0, 0);
                 Assert.That(loAtCoord.LandData.LocalID, Is.Not.EqualTo(lo.LandData.LocalID));
-                Assert.That(loAtCoord.LandData.GlobalID, Is.Not.EqualTo(lo.LandData.GlobalID));                          
+                Assert.That(loAtCoord.LandData.GlobalID, Is.Not.EqualTo(lo.LandData.GlobalID));
             }
 
             {

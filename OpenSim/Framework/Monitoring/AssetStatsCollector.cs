@@ -42,6 +42,7 @@ namespace OpenSim.Framework.Monitoring
         private long assetRequestsToday;
         private long assetRequestsYesterday;
         private DateTime startTime = DateTime.Now;
+
         public AssetStatsCollector()
         {
             ageStatsTimer.Elapsed += new ElapsedEventHandler(OnAgeing);
@@ -53,7 +54,9 @@ namespace OpenSim.Framework.Monitoring
         public long AssetRequestsNotFoundYesterday { get { return assetRequestsNotFoundYesterday; } }
 
         public long AssetRequestsToday { get { return assetRequestsToday; } }
+
         public long AssetRequestsYesterday { get { return assetRequestsYesterday; } }
+
         /// <summary>
         /// Record that an asset request failed to find an asset
         /// </summary>

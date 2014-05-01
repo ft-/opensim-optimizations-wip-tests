@@ -57,6 +57,7 @@ namespace OpenSim.Framework
             get { return m_name; }
             set { m_name = value; }
         }
+
         /// <summary>
         /// The agent who's inventory this is contained by
         /// </summary>

@@ -432,6 +432,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api.Interfaces
 
         string osSetDynamicTextureURLBlendFace(string dynamicID, string contentType, string url, string extraParams,
                                            bool blend, int disp, int timer, int alpha, int face);
+
         void osSetEstateSunSettings(bool sunFixed, double sunHour);
 
         string osSetFontName(string drawList, string fontName);
@@ -500,7 +501,9 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api.Interfaces
         void osTerrainFlush();
 
         LSL_Float osTerrainGetHeight(int x, int y); // Deprecated
+
         LSL_Integer osTerrainSetHeight(int x, int y, double val); //Deprecated
+
         #region Attachment commands
 
         /// <summary>
@@ -558,7 +561,8 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api.Interfaces
         void osMessageAttachments(LSL_Key avatar, string message, LSL_List attachmentPoints, int flags);
 
         #endregion Attachment commands
- // Deprecated
+
+        // Deprecated
 
         LSL_String osUnixTimeToTimestamp(long time);
 

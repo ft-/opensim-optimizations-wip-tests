@@ -264,6 +264,7 @@ namespace OpenSim.Server.Handlers.GridUser
 
             return FailureResult();
         }
+
         private byte[] SuccessResult()
         {
             XmlDocument doc = new XmlDocument();

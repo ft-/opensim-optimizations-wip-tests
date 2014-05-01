@@ -45,6 +45,7 @@ namespace OpenSim.Region.CoreModules.World.Wind.Plugins
         private Vector2 m_curPredominateWind = new Vector2();
         private float m_rateChange = 1.0f;
         private float m_varDirection = 30.0f;
+
         // Average magnitude of the wind vector
         // Average direction of the wind in degrees
         private float m_varStrength = 5.0f;
@@ -52,9 +53,10 @@ namespace OpenSim.Region.CoreModules.World.Wind.Plugins
         private Vector2[] m_windSpeeds = new Vector2[16 * 16];
         //private Random m_rndnums = new Random(Environment.TickCount);
 
- // Max Strength  Variance
+        // Max Strength  Variance
         // Max Direction Variance
-         //
+        //
+
         #region IPlugin Members
 
         public string Name
@@ -66,6 +68,7 @@ namespace OpenSim.Region.CoreModules.World.Wind.Plugins
         {
             get { return "1.0.0.0"; }
         }
+
         public void Initialise()
         {
         }
@@ -221,6 +224,7 @@ namespace OpenSim.Region.CoreModules.World.Wind.Plugins
                 }
             }
         }
+
         #endregion IWindModelPlugin Members
 
         private void LogSettings()

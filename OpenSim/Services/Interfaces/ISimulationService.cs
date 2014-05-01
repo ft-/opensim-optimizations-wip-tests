@@ -44,6 +44,7 @@ namespace OpenSim.Services.Interfaces
         /// The scene.
         /// </returns>
         IScene GetScene(UUID regionId);
+
         #region Agents
 
         /// <summary>
@@ -102,6 +103,7 @@ namespace OpenSim.Services.Interfaces
         /// <param name="data"></param>
         /// <returns></returns>
         bool UpdateAgent(GridRegion destination, AgentPosition data);
+
         #endregion Agents
 
         #region Objects

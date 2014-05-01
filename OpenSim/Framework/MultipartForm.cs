@@ -47,6 +47,7 @@ namespace OpenSim.Framework
             public string ContentType;
             public byte[] Data;
             public string Filename;
+
             public File(string name, string filename, string contentType, byte[] data)
             {
                 Name = name;

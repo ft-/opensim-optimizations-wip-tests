@@ -55,6 +55,7 @@ namespace Nwc.XmlRpc
         private XmlRpcResponseDeserializer _deserializer = new XmlRpcResponseDeserializer();
         private bool _disableKeepAlive = true;
         private XmlRpcRequestSerializer _serializer = new XmlRpcRequestSerializer();
+
         /// <summary>Instantiate an <c>XmlRpcRequest</c> for a specified method and parameters.</summary>
         /// <param name="methodName"><c>String</c> designating the <i>object.method</i> on the server the request
         /// should be directed to.</param>
@@ -187,6 +188,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
         private bool m_debugEnabled = false;
         private bool m_disableKeepAlive = false;
         private string m_groupReadKey = string.Empty;
+
         // Used to track which agents are have dropped from a group chat session
         // Should be reset per agent, on logon
         // TODO: move this to Flotsam XmlRpc Service
@@ -197,6 +199,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
         private string m_groupsServerURI = string.Empty;
         private string m_groupWriteKey = string.Empty;
         private ExpiringCache<string, XmlRpcResponse> m_memoryCache;
+
         #region Region Module interfaceBase Members
 
         public string Name
@@ -280,6 +283,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
                 m_connectorEnabled = true;
             }
         }
+
         public void RegionLoaded(OpenSim.Region.Framework.Scenes.Scene scene)
         {
             // TODO: May want to consider listenning for Agent Connections so we can pre-cache group info
@@ -293,6 +297,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
                 scene.UnregisterModuleInterface<IGroupsServicesConnector>(this);
             }
         }
+
         #endregion Region Module interfaceBase Members
 
         #region ISharedRegionModule Members
@@ -806,6 +811,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
 
             XmlRpcCall(requestingAgentID, "groups.updateGroup", param);
         }
+
         public void UpdateGroupRole(UUID requestingAgentID, UUID groupID, UUID roleID, string name, string description,
                                     string title, ulong powers)
         {
@@ -828,6 +834,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
 
             XmlRpcCall(requestingAgentID, "groups.updateGroupRole", param);
         }
+
         #endregion IGroupsServicesConnector Members
 
         #region GroupSessionTracking
@@ -878,6 +885,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
                 agentList.Remove(agentID);
             }
         }
+
         private void CreateGroupChatSessionTracking(UUID groupID)
         {
             if (!m_groupsAgentsDroppedFromChatSession.ContainsKey(groupID))
@@ -973,6 +981,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
 
             return group;
         }
+
         #endregion XmlRpcHashtableMarshalling
 
         /// <summary>

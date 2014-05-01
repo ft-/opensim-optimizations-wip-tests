@@ -114,6 +114,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
         // PositionDisplacement is the vehicle relative distance from the root prim position to the center-of-mass.
         public virtual OMV.Vector3 PositionDisplacement { get; set; }
+
         // Clears any center-of-mass displacement introduced by linksets, etc.
         // Does not clear the displacement set by the user.
         public void ClearDisplacement()
@@ -154,6 +155,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
             return PositionDisplacement;
         }
+
         public override void UpdateProperties(EntityProperties entprop)
         {
             // Undo any center-of-mass displacement that might have been done.

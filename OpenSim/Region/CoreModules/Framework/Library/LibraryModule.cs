@@ -55,6 +55,7 @@ namespace OpenSim.Region.CoreModules.Framework.Library
 
         //        private string m_LibraryName = "OpenSim Library";
         private Scene m_Scene;
+
         #region ISharedRegionModule
 
         public bool IsSharedModule
@@ -113,6 +114,7 @@ namespace OpenSim.Region.CoreModules.Framework.Library
                 m_Enabled = false;
             }
         }
+
         public void PostInitialise()
         {
         }
@@ -138,6 +140,7 @@ namespace OpenSim.Region.CoreModules.Framework.Library
 
             scene.UnregisterModuleInterface<ILibraryService>(m_Library);
         }
+
         #endregion ISharedRegionModule
 
         #region LoadLibraries

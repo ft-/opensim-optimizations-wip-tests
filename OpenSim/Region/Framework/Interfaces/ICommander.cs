@@ -45,6 +45,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// The name of this commander
         /// </value>
         string Name { get; }
+
         string GenerateRuntimeAPI();
 
         void ProcessConsoleCommand(string function, string[] args);

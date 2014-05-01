@@ -32,8 +32,8 @@ using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using System;
-using System.Threading;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace OpenSim.Region.CoreModules.Agent.AssetTransaction
 {
@@ -44,14 +44,14 @@ namespace OpenSim.Region.CoreModules.Agent.AssetTransaction
         protected Scene m_Scene;
         private bool m_dumpAssetsToFile = false;
         private ReaderWriterLock m_RwLock = new ReaderWriterLock();
-        private int  m_levelUpload = 0;
+        private int m_levelUpload = 0;
 
         /// <summary>
         /// Each agent has its own singleton collection of transactions
         /// </summary>
         private Dictionary<UUID, AgentAssetTransactions> AgentTransactions =
             new Dictionary<UUID, AgentAssetTransactions>();
-        
+
         #region Region Module interface
 
         public void Initialise(IConfigSource source)
@@ -92,7 +92,7 @@ namespace OpenSim.Region.CoreModules.Agent.AssetTransaction
             get { return typeof(IAgentAssetTransactions); }
         }
 
-        #endregion
+        #endregion Region Module interface
 
         public void NewClient(IClientAPI client)
         {
@@ -101,6 +101,7 @@ namespace OpenSim.Region.CoreModules.Agent.AssetTransaction
         }
 
         #region AgentAssetTransactions
+
         /// <summary>
         /// Get the collection of asset transactions for the given user.
         /// If one does not already exist, it is created.
@@ -179,8 +180,8 @@ namespace OpenSim.Region.CoreModules.Agent.AssetTransaction
                 string description, string name, sbyte invType,
                 sbyte type, byte wearableType, uint nextOwnerMask)
         {
-//            m_log.DebugFormat(
-//                "[TRANSACTIONS MANAGER] Called HandleItemCreationFromTransaction with item {0}", name);
+            //            m_log.DebugFormat(
+            //                "[TRANSACTIONS MANAGER] Called HandleItemCreationFromTransaction with item {0}", name);
 
             AgentAssetTransactions transactions =
                     GetUserTransactions(remoteClient.AgentId);
@@ -205,9 +206,9 @@ namespace OpenSim.Region.CoreModules.Agent.AssetTransaction
         public void HandleItemUpdateFromTransaction(IClientAPI remoteClient,
                 UUID transactionID, InventoryItemBase item)
         {
-//            m_log.DebugFormat(
-//                "[ASSET TRANSACTION MODULE]: Called HandleItemUpdateFromTransaction with item {0}",
-//                item.Name);
+            //            m_log.DebugFormat(
+            //                "[ASSET TRANSACTION MODULE]: Called HandleItemUpdateFromTransaction with item {0}",
+            //                item.Name);
 
             AgentAssetTransactions transactions = GetUserTransactions(remoteClient.AgentId);
 
@@ -230,9 +231,9 @@ namespace OpenSim.Region.CoreModules.Agent.AssetTransaction
         public void HandleTaskItemUpdateFromTransaction(
             IClientAPI remoteClient, SceneObjectPart part, UUID transactionID, TaskInventoryItem item)
         {
-//            m_log.DebugFormat(
-//                "[ASSET TRANSACTION MODULE]: Called HandleTaskItemUpdateFromTransaction with item {0} in {1} for {2} in {3}",
-//                item.Name, part.Name, remoteClient.Name, m_Scene.RegionInfo.RegionName);
+            //            m_log.DebugFormat(
+            //                "[ASSET TRANSACTION MODULE]: Called HandleTaskItemUpdateFromTransaction with item {0} in {1} for {2} in {3}",
+            //                item.Name, part.Name, remoteClient.Name, m_Scene.RegionInfo.RegionName);
 
             AgentAssetTransactions transactions =
                     GetUserTransactions(remoteClient.AgentId);
@@ -254,10 +255,10 @@ namespace OpenSim.Region.CoreModules.Agent.AssetTransaction
                 UUID assetID, UUID transactionID, sbyte type, byte[] data,
                 bool storeLocal, bool tempFile)
         {
-//            m_log.DebugFormat(
-//                "[ASSET TRANSACTION MODULE]: HandleUDPUploadRequest - assetID: {0}, transaction {1}, type {2}, storeLocal {3}, tempFile {4}, data.Length {5}",
-//                assetID, transactionID, type, storeLocal, tempFile, data.Length);
-            
+            //            m_log.DebugFormat(
+            //                "[ASSET TRANSACTION MODULE]: HandleUDPUploadRequest - assetID: {0}, transaction {1}, type {2}, storeLocal {3}, tempFile {4}, data.Length {5}",
+            //                assetID, transactionID, type, storeLocal, tempFile, data.Length);
+
             if (((AssetType)type == AssetType.Texture ||
                 (AssetType)type == AssetType.Sound ||
                 (AssetType)type == AssetType.TextureTGA ||
@@ -307,12 +308,12 @@ namespace OpenSim.Region.CoreModules.Agent.AssetTransaction
         public void HandleXfer(IClientAPI remoteClient, ulong xferID,
                 uint packetID, byte[] data)
         {
-//            m_log.Debug("xferID: " + xferID + "  packetID: " + packetID + "  data length " + data.Length);
+            //            m_log.Debug("xferID: " + xferID + "  packetID: " + packetID + "  data length " + data.Length);
             AgentAssetTransactions transactions = GetUserTransactions(remoteClient.AgentId);
 
             transactions.HandleXfer(xferID, packetID, data);
         }
 
-        #endregion
+        #endregion AgentAssetTransactions
     }
 }

@@ -40,6 +40,7 @@ namespace OpenSim.Region.OptionalModules.World.WorldView
         protected Object m_RequestLock = new Object();
         protected WorldViewModule m_WorldViewModule;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public WorldViewRequestHandler(WorldViewModule fmodule, string rid)
             : base("GET", "/worldview/" + rid)
         {

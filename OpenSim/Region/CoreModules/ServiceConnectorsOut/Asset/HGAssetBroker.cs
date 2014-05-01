@@ -52,6 +52,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Asset
         private IAssetService m_GridService;
         private IAssetService m_HGService;
         private string m_LocalAssetServiceURI;
+
         public string Name
         {
             get { return "HGAssetBroker"; }
@@ -61,6 +62,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Asset
         {
             get { return null; }
         }
+
         public void AddRegion(Scene scene)
         {
             if (!m_Enabled)
@@ -300,6 +302,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Asset
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -324,6 +327,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Asset
         public void RemoveRegion(Scene scene)
         {
         }
+
         public string Store(AssetBase asset)
         {
             bool isHG = IsHG(asset.ID);

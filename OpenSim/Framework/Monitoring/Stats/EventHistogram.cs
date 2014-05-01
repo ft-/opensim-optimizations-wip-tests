@@ -43,6 +43,7 @@ namespace OpenSim.Framework.Monitoring
         private int m_numBuckets;
         private int m_timeBase;
         private int m_totalHistogramMilliseconds;
+
         public EventHistogram(int numberOfBuckets, int millisecondsPerBucket)
         {
             m_numBuckets = numberOfBuckets;
@@ -154,6 +155,7 @@ namespace OpenSim.Framework.Monitoring
 
             return ret;
         }
+
         // Zero out the histogram
         public void Zero()
         {

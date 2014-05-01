@@ -89,6 +89,7 @@ namespace OpenSim.Region.Framework.Scenes
         public Quaternion targetRot;
         public float tolerance;
     }
+
     /// <summary>
     /// A scene object group is conceptually an object in the scene.  The object is constituted of SceneObjectParts
     /// (often known as prims), one of which is considered the root part.
@@ -143,6 +144,7 @@ namespace OpenSim.Region.Framework.Scenes
             STATUS_ROTATE_Y = 0x004,
             STATUS_ROTATE_Z = 0x008,
         }
+
         /// <summary>
         /// The avatar to which this scene object is attached.
         /// </summary>
@@ -221,6 +223,7 @@ namespace OpenSim.Region.Framework.Scenes
 
             get { return m_hasGroupChanged; }
         }
+
         /// <summary>
         /// If this scene object has an attachment point then indicate whether there is a point where
         /// attachments are perceivable by avatars other than the avatar to which this object is attached.
@@ -1098,7 +1101,9 @@ namespace OpenSim.Region.Framework.Scenes
                 return true;
             return false;
         }
+
         // private Dictionary<UUID, scriptEvents> m_scriptEvents = new Dictionary<UUID, scriptEvents>();
+
         #region Properties
 
         /// <summary>
@@ -1456,6 +1461,7 @@ namespace OpenSim.Region.Framework.Scenes
             get { return RootPart.Name; }
             set { RootPart.Name = value; }
         }
+
         public UUID OwnerID
         {
             get { return m_rootPart.OwnerID; }
@@ -1486,6 +1492,7 @@ namespace OpenSim.Region.Framework.Scenes
         {
             get { return m_parts.Count; }
         }
+
         public ulong RegionHandle
         {
             get { return m_regionHandle; }
@@ -1586,6 +1593,7 @@ namespace OpenSim.Region.Framework.Scenes
 
             return false;
         }
+
         /// <summary>
         /// Check both the attachment property and the relevant properties of the underlying root part.
         /// </summary>
@@ -1631,6 +1639,7 @@ namespace OpenSim.Region.Framework.Scenes
             public ScenePresence av;
             public uint ParentID;
         }
+
         #endregion Properties
 
         //        ~SceneObjectGroup()
@@ -1983,6 +1992,7 @@ namespace OpenSim.Region.Framework.Scenes
                 }
             }
         }
+
         public EntityIntersection TestIntersection(Ray hRay, bool frontFacesOnly, bool faceCenters)
         {
             // We got a request from the inner_scene to raytrace along the Ray hRay
@@ -2028,7 +2038,9 @@ namespace OpenSim.Region.Framework.Scenes
 
             return result;
         }
+
         #endregion Constructors
+
         /// <summary>
         ///
         /// </summary>
@@ -2038,6 +2050,7 @@ namespace OpenSim.Region.Framework.Scenes
             part.ParentID = m_rootPart.LocalId;
             part.ClearUndoState();
         }
+
         /// <summary>
         /// Make sure that every non root part has the proper parent root part local id
         /// </summary>
@@ -2051,6 +2064,7 @@ namespace OpenSim.Region.Framework.Scenes
                     part.ParentID = m_rootPart.LocalId;
             }
         }
+
         // justincc: I don't believe this hack is needed any longer, especially since the physics
         // parts of set AbsolutePosition were already commented out.  By changing HasGroupChanged to false
         // this method was preventing proper reload of scene objects.
@@ -2061,6 +2075,7 @@ namespace OpenSim.Region.Framework.Scenes
         // teravus: After this was removed from the linking algorithm, Linked prims no longer collided
         // properly when non-physical if they havn't been moved.   This breaks ALL builds.
         // see: http://opensimulator.org/mantis/view.php?id=3108
+
         #region Events
 
         /// <summary>
@@ -2160,6 +2175,7 @@ namespace OpenSim.Region.Framework.Scenes
         }
 
         #endregion Events
+
         #region Copying
 
         public void applyAngularImpulse(Vector3 impulse)
@@ -2380,6 +2396,7 @@ namespace OpenSim.Region.Framework.Scenes
         {
             UpdatePrimFlags(RootPart.LocalId, UsesPhysics, makeTemporary, IsPhantom, IsVolumeDetect);
         }
+
         public void ScriptSetVolumeDetect(bool makeVolumeDetect)
         {
             UpdatePrimFlags(RootPart.LocalId, UsesPhysics, IsTemporary, IsPhantom, makeVolumeDetect);
@@ -2397,6 +2414,7 @@ namespace OpenSim.Region.Framework.Scenes
             ScheduleFullUpdate();
             */
         }
+
         /// <summary>
         ///
         /// </summary>
@@ -2424,6 +2442,7 @@ namespace OpenSim.Region.Framework.Scenes
                 }
             }
         }
+
         /// <summary>
         /// Uses a PID to attempt to clamp the object on the Z axis at the given height over tau seconds.
         /// </summary>
@@ -2485,7 +2504,9 @@ namespace OpenSim.Region.Framework.Scenes
             if (pa != null)
                 pa.PIDActive = false;
         }
+
         #endregion Copying
+
         #region SceneGroupPart Methods
 
         /// <summary>
@@ -2950,6 +2971,7 @@ namespace OpenSim.Region.Framework.Scenes
             //HasGroupChanged = true;
             //ScheduleGroupForFullUpdate();
         }
+
         public void NonPhysicalGrabMovement(Vector3 pos)
         {
             AbsolutePosition = pos;
@@ -3245,6 +3267,7 @@ namespace OpenSim.Region.Framework.Scenes
             //    and the simulator.
             part.UpdatePrimFlags(UsesPhysics, IsTemporary, IsPhantom, IsVolumeDetect);
         }
+
         #endregion Packet Handlers
 
         #region Shape
@@ -3590,6 +3613,7 @@ namespace OpenSim.Region.Framework.Scenes
                 part.IgnoreUndoUpdate = false;
             }
         }
+
         #endregion Position
 
         #region Rotation
@@ -3660,6 +3684,7 @@ namespace OpenSim.Region.Framework.Scenes
             HasGroupChanged = true;
             ScheduleGroupForTerseUpdate();
         }
+
         /// <summary>
         /// Update the rotation of just the root prim of a linkset.
         /// </summary>
@@ -3781,7 +3806,9 @@ namespace OpenSim.Region.Framework.Scenes
                 part.IgnoreUndoUpdate = false;
             }
         }
+
         #endregion Rotation
+
         /// <summary>
         /// If the object is a sculpt/mesh, retrieve the mesh data for each part and reinsert it into each shape so that
         /// the physics engine can use it.
@@ -3806,6 +3833,7 @@ namespace OpenSim.Region.Framework.Scenes
                         parts[i].CheckSculptAndLoad();
                 }
         */
+
         #region ISceneObject
 
         public virtual ISceneObject CloneForNewScene()
@@ -3836,6 +3864,7 @@ namespace OpenSim.Region.Framework.Scenes
         {
             return SceneObjectSerializer.ToXml2Format(this);
         }
+
         #endregion ISceneObject
     }
 }

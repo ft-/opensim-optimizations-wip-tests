@@ -69,6 +69,7 @@ namespace OpenSim.Region.Physics.OdePlugin
         /// Pending raycast requests
         /// </summary>
         protected List<ODERayCastRequest> m_PendingRequests = new List<ODERayCastRequest>();
+
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         /// <summary>
@@ -82,10 +83,12 @@ namespace OpenSim.Region.Physics.OdePlugin
         /// Scene that created this object.
         /// </summary>
         private OdeScene m_scene;
+
         /// <summary>
         /// ODE near callback delegate
         /// </summary>
         private d.NearCallback nearCallback;
+
         public ODERayCastRequestManager(OdeScene pScene)
         {
             m_scene = pScene;
@@ -178,6 +181,7 @@ namespace OpenSim.Region.Physics.OdePlugin
                 m_PendingRayRequests.Add(req);
             }
         }
+
         /// <summary>
         /// Dereference the creator scene so that it can be garbage collected if needed.
         /// </summary>

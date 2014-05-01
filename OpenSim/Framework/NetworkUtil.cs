@@ -82,6 +82,7 @@ namespace OpenSim.Framework
             set { m_disabled = value; }
             get { return m_disabled; }
         }
+
         public static string GetHostFor(IPAddress user, string defaultHostname)
         {
             if (!m_disabled)

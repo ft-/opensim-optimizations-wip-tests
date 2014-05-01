@@ -54,6 +54,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
         protected const int TIMEOUT = 60 * 1000;
 
         protected AssetsArchiver m_assetsArchiver;
+
         /// <value>
         /// Asset service used to request the assets
         /// </value>
@@ -78,6 +79,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
         protected System.Timers.Timer m_requestCallbackTimer;
         protected UUID m_scopeID;
         protected IUserAccountService m_userAccountService;
+
         /// <value>
         /// uuids to request
         /// </value>
@@ -133,6 +135,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
             Completed,
             Aborted
         };
+
         /// <summary>
         /// Called back by the asset cache when it has the asset
         /// </summary>

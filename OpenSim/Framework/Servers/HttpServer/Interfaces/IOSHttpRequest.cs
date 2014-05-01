@@ -64,6 +64,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         Hashtable Query { get; }
 
         NameValueCollection QueryString { get; }
+
         string RawUrl { get; }
 
         IPEndPoint RemoteIPEndPoint { get; }

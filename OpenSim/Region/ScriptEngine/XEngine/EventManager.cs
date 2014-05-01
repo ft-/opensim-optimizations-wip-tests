@@ -423,6 +423,7 @@ namespace OpenSim.Region.ScriptEngine.XEngine
             //            part = part.ParentGroup.RootPart;
             money(part.LocalId, agentID, amount);
         }
+
         // run_time_permissions: not handled here
         // dataserver: not handled here
         // link_message: not handled here

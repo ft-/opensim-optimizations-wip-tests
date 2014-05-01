@@ -215,6 +215,7 @@ namespace OpenSim.Services.Connectors
                 return eplock;
             }
         }
+
         private IAssetService GetConnector(string url)
         {
             IAssetService connector = null;
@@ -242,6 +243,7 @@ namespace OpenSim.Services.Connectors
             }
             return connector;
         }
+
         private struct AssetAndIndex
         {
             public UUID assetID;

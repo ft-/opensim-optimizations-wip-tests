@@ -62,6 +62,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
         protected Vector3 m_displacement = Vector3.Zero;
 
         protected string m_errorMessage;
+
         /// <value>
         /// If true, force the loading of parcels from the oar file
         /// </value>
@@ -74,6 +75,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
 
         protected string m_loadPath;
         protected Stream m_loadStream;
+
         /// <value>
         /// Should the archive being loaded be merged with what is already on the region?
         /// Merging usually suppresses terrain and parcel loading
@@ -83,6 +85,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
         protected bool m_noObjects = false;
         protected Guid m_requestId;
         protected Scene m_rootScene;
+
         /// <value>
         /// Rotation (in radians) to apply to the objects as they are loaded.
         /// </value>

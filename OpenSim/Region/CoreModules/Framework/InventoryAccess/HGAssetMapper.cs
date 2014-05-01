@@ -52,6 +52,7 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
 
         private string m_HomeURI;
         private Scene m_scene;
+
         #endregion Fields
 
         #region Constructor
@@ -227,6 +228,7 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
 
             return meta;
         }
+
         // TODO: unused
         // private void Dump(Dictionary<UUID, bool> lst)
         // {

@@ -188,6 +188,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
 
             return FailureResult();
         }
+
         private byte[] FriendshipTerminated(Dictionary<string, object> request)
         {
             UUID fromID = UUID.Zero;
@@ -303,6 +304,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
         {
             return BoolResult(true);
         }
+
         #endregion Misc
     }
 }

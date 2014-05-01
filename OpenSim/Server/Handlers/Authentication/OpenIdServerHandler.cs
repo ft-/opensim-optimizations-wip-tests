@@ -81,11 +81,13 @@ For more information, see <a href='http://openid.net/'>http://openid.net/</a>.
 <body>OpenID identifier for {2} {3}</body>
 </html>
 ";
+
         #endregion HTML
 
         private IAuthenticationService m_authenticationService;
         private ProviderMemoryStore m_openidStore = new ProviderMemoryStore();
         private IUserAccountService m_userAccountService;
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -98,6 +100,7 @@ For more information, see <a href='http://openid.net/'>http://openid.net/</a>.
         }
 
         public override string ContentType { get { return "text/html"; } }
+
         /// <summary>
         /// Handles all GET and POST requests for OpenID identifier pages and endpoint
         /// server communication
@@ -245,6 +248,7 @@ For more information, see <a href='http://openid.net/'>http://openid.net/</a>.
             public string Handle;
             public byte[] PrivateData;
         }
+
         #region IAssociationStore<AssociationRelyingPartyType> Members
 
         public void ClearExpiredAssociations()
@@ -328,6 +332,7 @@ For more information, see <a href='http://openid.net/'>http://openid.net/</a>.
                 m_sortedStore[item.Expires] = item;
             }
         }
+
         #endregion IAssociationStore<AssociationRelyingPartyType> Members
     }
 }

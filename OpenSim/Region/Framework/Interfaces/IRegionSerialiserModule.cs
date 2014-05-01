@@ -111,6 +111,7 @@ namespace OpenSim.Region.Framework.Interfaces
         void SavePrimsToXml2(Scene scene, TextWriter stream, Vector3 min, Vector3 max);
 
         List<string> SerialiseRegion(Scene scene, string saveDir);
+
         /// <summary>
         /// Serialize an individual scene object into the xml2 format
         /// </summary>

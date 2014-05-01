@@ -107,10 +107,13 @@ namespace OpenSim.Region.ScriptEngine.Interfaces
         /// Queue an event for execution
         /// </summary>
         IScriptWorkItem QueueEventHandler(object parms);
+
         void ResetScript(UUID itemID);
 
         void SetMinEventDelay(UUID itemID, double delay);
+
         void SetScriptState(UUID itemID, bool state);
+
         void SetState(UUID itemID, string newState);
     }
 }

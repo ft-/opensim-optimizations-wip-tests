@@ -41,11 +41,13 @@ namespace OpenSim.Region.Framework.Scenes.Animation
     public class ScenePresenceAnimator
     {
         public int m_animTickJump;
+
         // ScenePresence has to see this to control +Z force
         public bool m_jumping = false;
 
         public float m_jumpVelocity = 0f;
         protected AnimationSet m_animations = new AnimationSet();
+
         /// <value>
         /// The scene presence that this animator applies to
         /// </value>
@@ -67,16 +69,19 @@ namespace OpenSim.Region.Framework.Scenes.Animation
         {
             get { return m_animations; }
         }
+
         /// <value>
         /// The current movement animation
         /// </value>
         public string CurrentMovementAnimation { get; private set; }
+
         //        private int m_landing = 0;
 
         /// <summary>
         /// Is the avatar falling?
         /// </summary>
         public bool Falling { get; private set; }
+
         public void AddAnimation(UUID animID, UUID objectID)
         {
             if (m_scenePresence.IsChildAgent)

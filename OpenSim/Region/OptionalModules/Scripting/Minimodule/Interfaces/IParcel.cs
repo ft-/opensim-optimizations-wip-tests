@@ -34,6 +34,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
         string Description { get; set; }
 
         string Name { get; set; }
+
         ISocialEntity Owner { get; set; }
     }
 }

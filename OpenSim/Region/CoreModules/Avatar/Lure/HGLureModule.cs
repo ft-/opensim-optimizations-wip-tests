@@ -52,6 +52,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Lure
         private ExpiringCache<UUID, GridInstantMessage> m_PendingLures = new ExpiringCache<UUID, GridInstantMessage>();
         private string m_ThisGridURL;
         private IMessageTransferModule m_TransferModule = null;
+
         public string Name
         {
             get { return "HGLureModule"; }
@@ -95,6 +96,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Lure
                 }
             }
         }
+
         public void OnStartLure(byte lureType, string message, UUID targetid, IClientAPI client)
         {
             if (!(client.Scene is Scene))

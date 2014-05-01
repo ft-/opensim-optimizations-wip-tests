@@ -60,6 +60,7 @@ namespace OpenSim.Services.HypergridService
 
         //        private string m_HomeURL;
         private IUserAccountService m_UserAccountService;
+
         //        private UserAccountCache m_Cache;
         public HGSuitcaseInventoryService(IConfigSource config, string configName)
             : base(config, configName)
@@ -396,6 +397,7 @@ namespace OpenSim.Services.HypergridService
             if (!Array.Exists(sysFolders, delegate(XInventoryFolder f) { if (f.type == (int)AssetType.CurrentOutfitFolder) return true; return false; }))
                 CreateFolder(principalID, rootID, (int)AssetType.CurrentOutfitFolder, "Current Outfit");
         }
+
         //public List<InventoryItemBase> GetActiveGestures(UUID principalID)
         //{
         //}
@@ -512,6 +514,7 @@ namespace OpenSim.Services.HypergridService
 
             return folders[0];
         }
+
         /// <summary>
         /// Return true if the folderID is a subfolder of the Suitcase or the suitcase folder  itself
         /// </summary>
@@ -549,6 +552,7 @@ namespace OpenSim.Services.HypergridService
         {
             suitcase.type = (short)AssetType.Folder;
         }
+
         #endregion Auxiliary functions
 
         #region Avatar Appearance

@@ -53,6 +53,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// need to be placed back in case of transfer fail.
         /// </summary>
         List<string> InTransitScriptStates { get; }
+
         // Don't use these methods directly.  Instead, use the AttachmentsModule
         void AddAttachment(SceneObjectGroup gobj);
 
@@ -81,6 +82,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// </summary>
         /// <returns></returns>
         bool HasAttachments();
+
         void RemoveAttachment(SceneObjectGroup gobj);
     }
 }

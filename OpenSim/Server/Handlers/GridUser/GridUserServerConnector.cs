@@ -38,6 +38,7 @@ namespace OpenSim.Server.Handlers.GridUser
     {
         private string m_ConfigName = "GridUserService";
         private IGridUserService m_GridUserService;
+
         public GridUserServiceConnector(IConfigSource config, IHttpServer server, string configName) :
             base(config, server, configName)
         {

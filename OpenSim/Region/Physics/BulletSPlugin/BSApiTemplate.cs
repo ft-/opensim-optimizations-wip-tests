@@ -223,6 +223,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         private int VertexCount;
         private Vector3[] Vertices;
     }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct EntityProperties
     {
@@ -312,6 +313,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         public Vector3 Normal;
         public Vector3 Point;
     }
+
     public abstract class BSAPITemplate
     {
         public const int HINGE_NOT_SPECIFIED = -1;
@@ -777,11 +779,13 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         public abstract void UpdateInertiaTensor(BulletBody obj);
 
         public abstract bool UpdateParameter(BulletWorld world, UInt32 localID, String parm, float value);
+
         // =====================================================================================
         // btCollisionWorld entries
         public abstract void UpdateSingleAabb(BulletWorld world, BulletBody obj);
 
         public abstract bool UseFrameOffset(BulletConstraint constrain, float enable);
+
         public abstract bool WantsSleeping(BulletBody obj);
     };
 }

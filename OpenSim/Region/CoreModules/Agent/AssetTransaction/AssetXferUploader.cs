@@ -122,6 +122,7 @@ namespace OpenSim.Region.CoreModules.Agent.AssetTransaction
             Uploading,
             Complete
         }
+
         /// <summary>
         /// Process transfer data received from the client.
         /// </summary>

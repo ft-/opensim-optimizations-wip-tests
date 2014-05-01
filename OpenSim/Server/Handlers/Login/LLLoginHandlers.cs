@@ -262,6 +262,7 @@ namespace OpenSim.Server.Handlers.Login
 
             return failResponse;
         }
+
         private OSD FailedOSDResponse()
         {
             OSDMap map = new OSDMap();

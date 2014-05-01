@@ -35,6 +35,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
         public float4 x = new float4();
         public float4 y = new float4();
         public float4 z = new float4();
+
         public float4x4()
         {
         }

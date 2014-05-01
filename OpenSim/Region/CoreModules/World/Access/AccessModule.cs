@@ -105,6 +105,7 @@ namespace OpenSim.Region.CoreModules.World
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -113,6 +114,7 @@ namespace OpenSim.Region.CoreModules.World
         {
             m_SceneList.Remove(scene);
         }
+
         private bool ProcessCommand(Scene scene, string[] cmd)
         {
             if (cmd.Length < 2)

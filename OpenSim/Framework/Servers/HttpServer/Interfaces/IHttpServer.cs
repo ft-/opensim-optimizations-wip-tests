@@ -38,6 +38,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         string SSLCommonName { get; }
 
         uint SSLPort { get; }
+
         bool UseSSL { get; }
 
         //        // Note that the agent string is provided simply to differentiate
@@ -88,6 +89,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         bool AddLLSDHandler(string path, LLSDMethod handler);
 
         bool AddPollServiceHTTPHandler(string methodName, PollServiceEventArgs args);
+
         /// <summary>
         /// Add a stream handler to the http server.  If the handler already exists, then nothing happens.
         /// </summary>
@@ -104,6 +106,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         bool AddXmlRPCHandler(string method, XmlRpcMethod handler);
 
         bool AddXmlRPCHandler(string method, XmlRpcMethod handler, bool keepAlive);
+
         string GetHTTP404(string host);
 
         string GetHTTP500();
@@ -138,6 +141,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         void RemoveStreamHandler(string httpMethod, string path);
 
         void RemoveWebSocketHandler(string servicepath);
+
         void RemoveXmlRPCHandler(string method);
 
         bool SetDefaultLLSDHandler(DefaultLLSDMethod handler);

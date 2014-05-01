@@ -74,6 +74,7 @@ namespace OpenSim.Region.OptionalModules.Framework.Monitoring
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -81,6 +82,7 @@ namespace OpenSim.Region.OptionalModules.Framework.Monitoring
         public void RemoveRegion(Scene scene)
         {
         }
+
         protected void CheckAssetService()
         {
             // Try to fetch an asset that will not exist (and hence avoid hitting cache)

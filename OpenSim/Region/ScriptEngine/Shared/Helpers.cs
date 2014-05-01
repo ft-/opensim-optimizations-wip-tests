@@ -87,6 +87,7 @@ namespace OpenSim.Region.ScriptEngine.Shared
             Velocity = new LSL_Types.Vector3();
             initializeSurfaceTouch();
         }
+
         public SurfaceTouchEventArgs SurfaceTouchArgs
         {
             set
@@ -118,7 +119,9 @@ namespace OpenSim.Region.ScriptEngine.Shared
         public LSL_Types.Vector3 TouchPos { get { return touchPos; } }
 
         public LSL_Types.Vector3 TouchST { get { return touchST; } }
+
         public LSL_Types.Vector3 TouchUV { get { return touchUV; } }
+
         public void Populate(Scene scene)
         {
             SceneObjectPart part = scene.GetSceneObjectPart(Key);

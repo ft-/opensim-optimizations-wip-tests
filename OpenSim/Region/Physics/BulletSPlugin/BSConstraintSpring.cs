@@ -49,6 +49,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         }
 
         public override ConstraintType Type { get { return ConstraintType.D6_SPRING_CONSTRAINT_TYPE; } }
+
         public bool SetAxisEnable(int pIndex, bool pAxisEnable)
         {
             PhysicsScene.DetailLog("{0},BSConstraintSpring.SetEnable,obj1ID={1},obj2ID={2},indx={3},enable={4}",

@@ -47,6 +47,7 @@ namespace OpenSim.Framework.Communications.Limit
         /// Record the time at which an asset request occurs.
         /// </summary>
         private readonly Dictionary<TId, Request> requests = new Dictionary<TId, Request>();
+
         /// <summary></summary>
         /// <param name="repeatPeriod"></param>
         public TimeLimitStrategy(TimeSpan repeatPeriod)
@@ -58,6 +59,7 @@ namespace OpenSim.Framework.Communications.Limit
         {
             get { return m_repeatPeriod; }
         }
+
         /// <summary>
         /// <see cref="IRequestLimitStrategy"/>
         /// </summary>
@@ -130,6 +132,7 @@ namespace OpenSim.Framework.Communications.Limit
         /// Time of last request
         /// </summary>
         public DateTime Time;
+
         public Request(DateTime time)
         {
             Time = time;

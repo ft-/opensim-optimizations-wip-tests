@@ -89,6 +89,7 @@ byt   0               1               2               3
         public WebSocketReader.OpCode Opcode;
 
         public UInt64 PayloadLen;
+
         public static WebsocketFrameHeader HeaderDefault()
         {
             return new WebsocketFrameHeader
@@ -1142,6 +1143,7 @@ dec   0                   1                   2                   3
             return true;
         }
     }
+
     public class WebsocketTextEventArgs : EventArgs
     {
         public string Data;

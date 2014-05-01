@@ -25,10 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
 using NUnit.Framework;
 using OpenSim.Tests.Common;
-using OpenSim.Region.ScriptEngine.Shared;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.ScriptEngine.Shared.Tests
 {
@@ -155,7 +154,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Tests
             m_stringDoubleSet.Add("1ef", 1.0);
             m_stringDoubleSet.Add("e10", 0.0);
             m_stringDoubleSet.Add("1.e0.0", 1.0);
- 
+
             m_doubleStringSet = new Dictionary<double, string>();
             m_doubleStringSet.Add(2.0, "2.000000");
             m_doubleStringSet.Add(-2.0, "-2.000000");
@@ -253,7 +252,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Tests
 
             foreach (KeyValuePair<double, int> number in m_doubleIntSet)
             {
-                testNumber = (int) new LSL_Types.LSLFloat(number.Key);
+                testNumber = (int)new LSL_Types.LSLFloat(number.Key);
                 Assert.AreEqual(number.Value, testNumber, "Converting double " + number.Key + ", expecting int " + number.Value);
             }
         }
@@ -270,7 +269,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Tests
 
             foreach (KeyValuePair<double, int> number in m_doubleUintSet)
             {
-                testNumber = (uint) new LSL_Types.LSLFloat(number.Key);
+                testNumber = (uint)new LSL_Types.LSLFloat(number.Key);
                 Assert.AreEqual(number.Value, testNumber, "Converting double " + number.Key + ", expecting uint " + number.Value);
             }
         }
@@ -355,7 +354,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Tests
 
             foreach (int number in m_intList)
             {
-                testFloat = (LSL_Types.LSLFloat) new LSL_Types.LSLInteger(number);
+                testFloat = (LSL_Types.LSLFloat)new LSL_Types.LSLInteger(number);
                 Assert.That(testFloat.value, new DoubleToleranceConstraint(number, _lowPrecisionTolerance));
             }
         }
@@ -372,7 +371,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Tests
 
             foreach (KeyValuePair<string, double> number in m_stringDoubleSet)
             {
-                testFloat = (LSL_Types.LSLFloat) number.Key;
+                testFloat = (LSL_Types.LSLFloat)number.Key;
                 Assert.That(testFloat.value, new DoubleToleranceConstraint(number.Value, _lowPrecisionTolerance));
             }
         }
@@ -389,7 +388,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Tests
 
             foreach (KeyValuePair<string, double> number in m_stringDoubleSet)
             {
-                testFloat = (LSL_Types.LSLFloat) new LSL_Types.LSLString(number.Key);
+                testFloat = (LSL_Types.LSLFloat)new LSL_Types.LSLString(number.Key);
                 Assert.That(testFloat.value, new DoubleToleranceConstraint(number.Value, _lowPrecisionTolerance));
             }
         }

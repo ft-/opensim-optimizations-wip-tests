@@ -47,6 +47,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authorization
         private IAuthorizationService m_AuthorizationService;
         private bool m_Enabled = false;
         private Scene m_Scene;
+
         public string Name
         {
             get { return "LocalAuthorizationServicesConnector"; }
@@ -56,6 +57,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authorization
         {
             get { return null; }
         }
+
         public void AddRegion(Scene scene)
         {
             if (!m_Enabled)
@@ -99,6 +101,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authorization
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)

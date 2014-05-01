@@ -54,7 +54,7 @@ namespace OpenSim.Region.CoreModules.World.Land
         private readonly int landUnit = 4;
 
         private int m_lastSeqId = 0;
-          // cache invalidation after 30 seconds
+        // cache invalidation after 30 seconds
 
         public bool[,] LandBitmap { get; set; }
 
@@ -115,6 +115,7 @@ namespace OpenSim.Region.CoreModules.World.Land
             int free = GetSimulatorMaxPrimCount() - LandData.SimwidePrims;
             return free;
         }
+
         #region Constructors
 
         public LandObject(LandData landData, Scene scene)
@@ -174,6 +175,7 @@ namespace OpenSim.Region.CoreModules.World.Land
             newLand.LandBitmap = (bool[,])(LandBitmap.Clone());
             return newLand;
         }
+
         public int GetParcelMaxPrimCount()
         {
             if (overrideParcelMaxPrimCount != null)
@@ -215,6 +217,7 @@ namespace OpenSim.Region.CoreModules.World.Land
         {
             overrideSimulatorMaxPrimCount = overrideDel;
         }
+
         #endregion General Functions
 
         #region Packet Request Handling
@@ -595,6 +598,7 @@ namespace OpenSim.Region.CoreModules.World.Land
 
             if (sellObjects) SellLandObjects(previousOwner);
         }
+
         #endregion Packet Request Handling
 
         #region AccessList Functions
@@ -711,6 +715,7 @@ namespace OpenSim.Region.CoreModules.World.Land
         {
             LandData.Bitmap = ConvertLandBitmapToBytes();
         }
+
         /// <summary>
         /// Updates the AABBMin and AABBMax values after area/shape modification of the land object
         /// </summary>
@@ -865,6 +870,7 @@ namespace OpenSim.Region.CoreModules.World.Land
             // m_log.DebugFormat("{0} SetLandBitmap. BitmapSize=<{1},{2}>", LogHeader, LandBitmap.GetLength(0), LandBitmap.GetLength(1));
             ForceUpdateLandInfo();
         }
+
         private bool[,] ConvertBytesToLandBitmap()
         {
             bool[,] tempConvertMap = new bool[m_scene.RegionInfo.RegionSizeX / landUnit, m_scene.RegionInfo.RegionSizeY / landUnit];
@@ -937,6 +943,7 @@ namespace OpenSim.Region.CoreModules.World.Land
             //                         LogHeader, LandBitmap.GetLength(0), LandBitmap.GetLength(1));
             return tempConvertArr;
         }
+
         #endregion Land Bitmap Functions
 
         #region Object Select and Object Owner Listing
@@ -1066,6 +1073,7 @@ namespace OpenSim.Region.CoreModules.World.Land
                 remote_client.SendLandObjectOwners(LandData, groups, primCount);
             }
         }
+
         #endregion Object Select and Object Owner Listing
 
         #region Object Sales
@@ -1187,6 +1195,7 @@ namespace OpenSim.Region.CoreModules.World.Land
             objs[0] = obj;
             m_scene.returnObjects(objs, obj.OwnerID);
         }
+
         #endregion Object Returning
 
         #region Object Adding/Removing from Parcel
@@ -1212,6 +1221,7 @@ namespace OpenSim.Region.CoreModules.World.Land
             lock (primsOverMe)
                 primsOverMe.Clear();
         }
+
         #endregion Object Adding/Removing from Parcel
 
         /// <summary>
@@ -1242,6 +1252,7 @@ namespace OpenSim.Region.CoreModules.World.Land
             LandData.MusicURL = url;
             SendLandUpdateToAvatarsOverMe();
         }
+
         #endregion Member Functions
 
         private void ExpireAccessList()

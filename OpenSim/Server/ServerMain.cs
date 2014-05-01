@@ -49,6 +49,7 @@ namespace OpenSim.Server
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
+
         public static int Main(string[] args)
         {
             m_Server = new HttpServerBase("R.O.B.U.S.T.", args);

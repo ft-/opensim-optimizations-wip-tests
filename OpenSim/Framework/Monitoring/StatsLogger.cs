@@ -106,6 +106,7 @@ namespace OpenSim.Framework.Monitoring
                 "For debug purposes.  Experimental.",
                 HandleStatsSaveCommand);
         }
+
         public static void Start()
         {
             if (m_loggingTimer != null)

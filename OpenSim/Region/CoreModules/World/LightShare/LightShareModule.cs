@@ -46,6 +46,7 @@ namespace OpenSim.Region.CoreModules.World.LightShare
         private static bool m_enableWindlight;
         private readonly Commander m_commander = new Commander("windlight");
         private Scene m_scene;
+
         #region ICommandableModule Members
 
         public ICommander CommandInterface
@@ -101,6 +102,7 @@ namespace OpenSim.Region.CoreModules.World.LightShare
 
             m_log.DebugFormat("[WINDLIGHT]: windlight module {0}", (m_enableWindlight ? "enabled" : "disabled"));
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -118,6 +120,7 @@ namespace OpenSim.Region.CoreModules.World.LightShare
 
             m_scene = null;
         }
+
         #endregion INonSharedRegionModule Members
 
         public static bool EnableWindlight
@@ -201,6 +204,7 @@ namespace OpenSim.Region.CoreModules.World.LightShare
             param.Add(mBlock);
             return param;
         }
+
         private void EventManager_OnMakeRootAgent(ScenePresence presence)
         {
             //            m_log.Debug("[WINDLIGHT]: Sending windlight scene to new client {0}", presence.Name);
@@ -219,6 +223,7 @@ namespace OpenSim.Region.CoreModules.World.LightShare
             m_scene.TryGetClient(pUUID, out client);
             SendProfileToClient(client, wl);
         }
+
         #endregion events
 
         #region ICommandableModule Members
@@ -286,6 +291,7 @@ namespace OpenSim.Region.CoreModules.World.LightShare
 
             m_scene.RegisterModuleCommander(m_commander);
         }
+
         #endregion ICommandableModule Members
     }
 }

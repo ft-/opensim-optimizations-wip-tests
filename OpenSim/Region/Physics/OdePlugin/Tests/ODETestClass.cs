@@ -25,15 +25,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
+using log4net;
 using Nini.Config;
 using NUnit.Framework;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Physics.Manager;
-using OpenSim.Region.Physics.OdePlugin;
 using OpenSim.Tests.Common;
-using log4net;
+using System;
 using System.Reflection;
 
 namespace OpenSim.Region.Physics.OdePlugin.Tests
@@ -52,7 +51,7 @@ namespace OpenSim.Region.Physics.OdePlugin.Tests
         {
             IConfigSource TopConfig = new IniConfigSource();
             IConfig config = TopConfig.AddConfig("Startup");
-            config.Set("DecodedSculptMapPath","j2kDecodeCache");
+            config.Set("DecodedSculptMapPath", "j2kDecodeCache");
 
             // Loading ODEPlugin
             cbt = new OdePlugin();
@@ -61,7 +60,7 @@ namespace OpenSim.Region.Physics.OdePlugin.Tests
             // Getting Physics Scene
             ps = cbt.GetScene("test");
             // Initializing Physics Scene.
-            ps.Initialise(imp.GetMesher(TopConfig),null);
+            ps.Initialise(imp.GetMesher(TopConfig), null);
             float[] _heightmap = new float[(int)Constants.RegionSize * (int)Constants.RegionSize];
             for (int i = 0; i < ((int)Constants.RegionSize * (int)Constants.RegionSize); i++)
             {
@@ -75,7 +74,6 @@ namespace OpenSim.Region.Physics.OdePlugin.Tests
         {
             ps.DeleteTerrain();
             ps.Dispose();
-
         }
 
         [Test]
@@ -87,7 +85,7 @@ namespace OpenSim.Region.Physics.OdePlugin.Tests
             Quaternion rot = Quaternion.Identity;
             PhysicsActor prim = ps.AddPrimShape("CoolShape", newcube, position, size, rot, true, 0);
             OdePrim oprim = (OdePrim)prim;
-            OdeScene pscene = (OdeScene) ps;
+            OdeScene pscene = (OdeScene)ps;
 
             Assert.That(oprim.m_taintadd);
 

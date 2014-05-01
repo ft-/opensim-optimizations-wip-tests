@@ -45,7 +45,8 @@ namespace OpenSim.Region.Physics.Manager
     public delegate void RayCallback(List<ContactResult> list);
 
     public delegate void RaycastCallback(bool hitYN, Vector3 collisionPoint, uint localid, float distance, Vector3 normal);
-     // this refers to an "error message due to a problem", not "amount of joint constraint violation"
+
+    // this refers to an "error message due to a problem", not "amount of joint constraint violation"
 
     public delegate void RequestAssetDelegate(UUID assetID, AssetReceivedDelegate callback);
 
@@ -80,6 +81,7 @@ namespace OpenSim.Region.Physics.Manager
 
         All = 0x3f
     }
+
     /// <summary>
     /// Contact result from a raycast.
     /// </summary>
@@ -124,6 +126,7 @@ namespace OpenSim.Region.Physics.Manager
         /// Usually set to include the region name that the physics engine is acting for.
         /// </summary>
         public string Name { get; protected set; }
+
         public RequestAssetDelegate RequestAssetMethod { get; set; }
 
         public virtual bool SupportsNINJAJoints
@@ -324,6 +327,7 @@ namespace OpenSim.Region.Physics.Manager
                 OnPhysicsCrash();
             }
         }
+
         public virtual void UnCombine(PhysicsScene pScene)
         {
         }

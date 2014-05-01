@@ -96,6 +96,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="estateID"></param>
         /// <returns></returns>
         EstateSettings LoadEstateSettings(int estateID);
+
         /// <summary>
         /// Load/Get all estate settings.
         /// </summary>

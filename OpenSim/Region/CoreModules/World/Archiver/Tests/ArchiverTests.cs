@@ -25,18 +25,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using System.Threading;
-using log4net.Config;
 using Nini.Config;
 using NUnit.Framework;
 using OpenMetaverse;
 using OpenMetaverse.Assets;
 using OpenSim.Framework;
-using OpenSim.Framework.Serialization;
 using OpenSim.Framework.Serialization.External;
 using OpenSim.Region.CoreModules.World.Land;
 using OpenSim.Region.CoreModules.World.Serialiser;
@@ -46,11 +39,15 @@ using OpenSim.Region.Framework.Scenes.Serialization;
 using OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups;
 using OpenSim.Tests.Common;
 using OpenSim.Tests.Common.Mock;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Threading;
 using ArchiveConstants = OpenSim.Framework.Serialization.ArchiveConstants;
+using RegionSettings = OpenSim.Framework.RegionSettings;
 using TarArchiveReader = OpenSim.Framework.Serialization.TarArchiveReader;
 using TarArchiveWriter = OpenSim.Framework.Serialization.TarArchiveWriter;
-using RegionSettings = OpenSim.Framework.RegionSettings;
-using OpenSim.Region.Framework.Interfaces;
 
 namespace OpenSim.Region.CoreModules.World.Archiver.Tests
 {
@@ -66,7 +63,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
         protected SerialiserModule m_serialiserModule;
 
         protected TaskInventoryItem m_soundItem;
-        
+
         [SetUp]
         public override void SetUp()
         {
@@ -88,11 +85,11 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
                 m_lastRequestId = requestId;
                 m_lastErrorMessage = errorMessage;
                 Console.WriteLine("About to pulse ArchiverTests on LoadCompleted");
-                                
+
                 Monitor.PulseAll(this);
             }
         }
-        
+
         private void SaveCompleted(Guid requestId, string errorMessage)
         {
             lock (this)
@@ -111,7 +108,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
             PrimitiveBaseShape shape = PrimitiveBaseShape.CreateSphere();
             Vector3 groupPosition = new Vector3(10, 20, 30);
             Quaternion rotationOffset = new Quaternion(20, 30, 40, 50);
-//            Vector3 offsetPosition = new Vector3(5, 10, 15);
+            //            Vector3 offsetPosition = new Vector3(5, 10, 15);
 
             return new SceneObjectPart(ownerId, shape, groupPosition, rotationOffset, Vector3.Zero) { Name = partName };
         }
@@ -127,7 +124,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
 
             return new SceneObjectPart(ownerId, shape, groupPosition, rotationOffset, offsetPosition) { Name = partName };
         }
-       
+
         private void CreateTestObjects(Scene scene, out SceneObjectGroup sog1, out SceneObjectGroup sog2, out UUID ncAssetUuid)
         {
             SceneObjectPart part1 = CreateSceneObjectPart1();
@@ -182,7 +179,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
         public void TestSaveOar()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             SceneObjectGroup sog1;
             SceneObjectGroup sog2;
@@ -193,17 +190,17 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
             m_scene.EventManager.OnOarFileSaved += SaveCompleted;
 
             Guid requestId = new Guid("00000000-0000-0000-0000-808080808080");
-            
+
             lock (this)
             {
                 m_archiverModule.ArchiveRegion(archiveWriteStream, requestId);
                 //AssetServerBase assetServer = (AssetServerBase)scene.CommsManager.AssetCache.AssetServer;
                 //while (assetServer.HasWaitingRequests())
                 //    assetServer.ProcessNextRequest();
-                
+
                 Monitor.Wait(this, 60000);
             }
-            
+
             Assert.That(m_lastRequestId, Is.EqualTo(requestId));
 
             byte[] archive = archiveWriteStream.ToArray();
@@ -211,7 +208,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
             TarArchiveReader tar = new TarArchiveReader(archiveReadStream);
 
             bool gotNcAssetFile = false;
-            
+
             string expectedNcAssetFileName = string.Format("{0}_{1}", ncAssetUuid, "notecard.txt");
 
             List<string> foundPaths = new List<string>();
@@ -220,7 +217,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
             expectedPaths.Add(ArchiveHelpers.CreateObjectPath(sog2));
 
             string filePath;
-            TarArchiveReader.TarEntryType tarEntryType;         
+            TarArchiveReader.TarEntryType tarEntryType;
 
             byte[] data = tar.ReadEntry(out filePath, out tarEntryType);
             Assert.That(filePath, Is.EqualTo(ArchiveConstants.CONTROL_FILE_PATH));
@@ -228,9 +225,9 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
             Dictionary<string, object> archiveOptions = new Dictionary<string, object>();
             ArchiveReadRequest arr = new ArchiveReadRequest(m_scene, (Stream)null, Guid.Empty, archiveOptions);
             arr.LoadControlFile(filePath, data, new DearchiveScenesInfo());
-            
-            Assert.That(arr.ControlFileLoaded, Is.True);        
-            
+
+            Assert.That(arr.ControlFileLoaded, Is.True);
+
             while (tar.ReadEntry(out filePath, out tarEntryType) != null)
             {
                 if (filePath.StartsWith(ArchiveConstants.ASSETS_PATH))
@@ -259,14 +256,14 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
         public void TestSaveOarNoAssets()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             SceneObjectPart part1 = CreateSceneObjectPart1();
             SceneObjectGroup sog1 = new SceneObjectGroup(part1);
             m_scene.AddNewSceneObject(sog1, false);
 
             SceneObjectPart part2 = CreateSceneObjectPart2();
-            
+
             AssetNotecard nc = new AssetNotecard();
             nc.BodyText = "Hello World!";
             nc.Encode();
@@ -276,10 +273,10 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
                 = AssetHelpers.CreateAsset(ncAssetUuid, AssetType.Notecard, nc.AssetData, UUID.Zero);
             m_scene.AssetService.Store(ncAsset);
             SceneObjectGroup sog2 = new SceneObjectGroup(part2);
-            TaskInventoryItem ncItem 
+            TaskInventoryItem ncItem
                 = new TaskInventoryItem { Name = "ncItem", AssetID = ncAssetUuid, ItemID = ncItemUuid };
             part2.Inventory.AddInventoryItem(ncItem, true);
-            
+
             m_scene.AddNewSceneObject(sog2, false);
 
             MemoryStream archiveWriteStream = new MemoryStream();
@@ -291,7 +288,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
             m_archiverModule.ArchiveRegion(archiveWriteStream, requestId, options);
 
             // Don't wait for completion - with --noassets save oar happens synchronously
-//                Monitor.Wait(this, 60000);
+            //                Monitor.Wait(this, 60000);
 
             Assert.That(m_lastRequestId, Is.EqualTo(requestId));
 
@@ -305,7 +302,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
             expectedPaths.Add(ArchiveHelpers.CreateObjectPath(sog2));
 
             string filePath;
-            TarArchiveReader.TarEntryType tarEntryType;         
+            TarArchiveReader.TarEntryType tarEntryType;
 
             byte[] data = tar.ReadEntry(out filePath, out tarEntryType);
             Assert.That(filePath, Is.EqualTo(ArchiveConstants.CONTROL_FILE_PATH));
@@ -313,9 +310,9 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
             Dictionary<string, object> archiveOptions = new Dictionary<string, object>();
             ArchiveReadRequest arr = new ArchiveReadRequest(m_scene, (Stream)null, Guid.Empty, archiveOptions);
             arr.LoadControlFile(filePath, data, new DearchiveScenesInfo());
-            
-            Assert.That(arr.ControlFileLoaded, Is.True);        
-            
+
+            Assert.That(arr.ControlFileLoaded, Is.True);
+
             while (tar.ReadEntry(out filePath, out tarEntryType) != null)
             {
                 if (filePath.StartsWith(ArchiveConstants.ASSETS_PATH))
@@ -340,15 +337,15 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
         public void TestLoadOar()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             MemoryStream archiveWriteStream = new MemoryStream();
             TarArchiveWriter tar = new TarArchiveWriter(archiveWriteStream);
-            
+
             // Put in a random blank directory to check that this doesn't upset the load process
             tar.WriteDir("ignoreme");
-            
-            // Also check that direct entries which will also have a file entry containing that directory doesn't 
+
+            // Also check that direct entries which will also have a file entry containing that directory doesn't
             // upset load
             tar.WriteDir(ArchiveConstants.TERRAINS_PATH);
 
@@ -391,7 +388,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
                 Math.Round(part1.GroupPosition.X), Math.Round(part1.GroupPosition.Y), Math.Round(part1.GroupPosition.Z),
                 part1.UUID);
             tar.WriteFile(ArchiveConstants.OBJECTS_PATH + object1FileName, SceneObjectSerializer.ToXml2Format(object1));
-            
+
             tar.Close();
 
             MemoryStream archiveReadStream = new MemoryStream(archiveWriteStream.ToArray());
@@ -401,7 +398,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
                 m_scene.EventManager.OnOarFileLoaded += LoadCompleted;
                 m_archiverModule.DearchiveRegion(archiveReadStream);
             }
-            
+
             Assert.That(m_lastErrorMessage, Is.Null);
 
             TestLoadedRegion(part1, soundItemName, soundData);
@@ -467,42 +464,42 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
         public void TestLoadPublishedOar()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             SceneObjectPart part1 = CreateSceneObjectPart1();
             SceneObjectGroup sog1 = new SceneObjectGroup(part1);
             m_scene.AddNewSceneObject(sog1, false);
 
             SceneObjectPart part2 = CreateSceneObjectPart2();
-            
+
             AssetNotecard nc = new AssetNotecard();
             nc.BodyText = "Hello World!";
             nc.Encode();
             UUID ncAssetUuid = new UUID("00000000-0000-0000-1000-000000000000");
             UUID ncItemUuid = new UUID("00000000-0000-0000-1100-000000000000");
-            AssetBase ncAsset 
+            AssetBase ncAsset
                 = AssetHelpers.CreateAsset(ncAssetUuid, AssetType.Notecard, nc.AssetData, UUID.Zero);
             m_scene.AssetService.Store(ncAsset);
             SceneObjectGroup sog2 = new SceneObjectGroup(part2);
-            TaskInventoryItem ncItem 
+            TaskInventoryItem ncItem
                 = new TaskInventoryItem { Name = "ncItem", AssetID = ncAssetUuid, ItemID = ncItemUuid };
             part2.Inventory.AddInventoryItem(ncItem, true);
-            
+
             m_scene.AddNewSceneObject(sog2, false);
 
             MemoryStream archiveWriteStream = new MemoryStream();
             m_scene.EventManager.OnOarFileSaved += SaveCompleted;
 
             Guid requestId = new Guid("00000000-0000-0000-0000-808080808080");
-            
+
             lock (this)
             {
                 m_archiverModule.ArchiveRegion(
                     archiveWriteStream, requestId, new Dictionary<string, Object>() { { "wipe-owners", Boolean.TrueString } });
-                
+
                 Monitor.Wait(this, 60000);
             }
-            
+
             Assert.That(m_lastRequestId, Is.EqualTo(requestId));
 
             byte[] archive = archiveWriteStream.ToArray();
@@ -551,23 +548,23 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
         public void TestLoadOarDeededLand()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             UUID landID = TestHelpers.ParseTail(0x10);
 
             MockGroupsServicesConnector groupsService = new MockGroupsServicesConnector();
 
             IConfigSource configSource = new IniConfigSource();
-            IConfig config = configSource.AddConfig("Groups");            
+            IConfig config = configSource.AddConfig("Groups");
             config.Set("Enabled", true);
-            config.Set("Module", "GroupsModule");            
+            config.Set("Module", "GroupsModule");
             config.Set("DebugEnabled", true);
             SceneHelpers.SetupSceneModules(
                 m_scene, configSource, new object[] { new GroupsModule(), groupsService, new LandManagementModule() });
 
             // Create group in scene for loading
             // FIXME: For now we'll put up with the issue that we'll get a group ID that varies across tests.
-            UUID groupID 
+            UUID groupID
                 = groupsService.CreateGroup(UUID.Zero, "group1", "", true, UUID.Zero, 3, true, true, true, UUID.Zero);
 
             // Construct OAR
@@ -617,7 +614,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
 
             MemoryStream archiveWriteStream = new MemoryStream();
             TarArchiveWriter tar = new TarArchiveWriter(archiveWriteStream);
-            
+
             tar.WriteDir(ArchiveConstants.TERRAINS_PATH);
             tar.WriteFile(
                 ArchiveConstants.CONTROL_FILE_PATH,
@@ -658,7 +655,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
             rs.AddSpawnPoint(SpawnPoint.Parse("1,-2,0.33"));
 
             tar.WriteFile(ArchiveConstants.SETTINGS_PATH + "region1.xml", RegionSettingsSerializer.Serialize(rs));
-            
+
             tar.Close();
 
             MemoryStream archiveReadStream = new MemoryStream(archiveWriteStream.ToArray());
@@ -668,7 +665,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
                 m_scene.EventManager.OnOarFileLoaded += LoadCompleted;
                 m_archiverModule.DearchiveRegion(archiveReadStream);
             }
-            
+
             Assert.That(m_lastErrorMessage, Is.Null);
             RegionSettings loadedRs = m_scene.RegionInfo.RegionSettings;
 
@@ -705,7 +702,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
             Assert.AreEqual(UUID.Zero, loadedRs.TelehubObject); // because no object was found with the original UUID
             Assert.AreEqual(0, loadedRs.SpawnPoints().Count);
         }
-        
+
         /// <summary>
         /// Test merging an OpenSim Region Archive into an existing scene
         /// </summary>
@@ -717,11 +714,11 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
 
             MemoryStream archiveWriteStream = new MemoryStream();
 
-//            string part2Name = "objectMerge";
-//            PrimitiveBaseShape part2Shape = PrimitiveBaseShape.CreateCylinder();
-//            Vector3 part2GroupPosition = new Vector3(90, 80, 70);
-//            Quaternion part2RotationOffset = new Quaternion(60, 70, 80, 90);
-//            Vector3 part2OffsetPosition = new Vector3(20, 25, 30);
+            //            string part2Name = "objectMerge";
+            //            PrimitiveBaseShape part2Shape = PrimitiveBaseShape.CreateCylinder();
+            //            Vector3 part2GroupPosition = new Vector3(90, 80, 70);
+            //            Quaternion part2RotationOffset = new Quaternion(60, 70, 80, 90);
+            //            Vector3 part2OffsetPosition = new Vector3(20, 25, 30);
 
             SceneObjectPart part2 = CreateSceneObjectPart2();
 
@@ -816,7 +813,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
                     SceneObjectGroup sog1;
                     SceneObjectGroup sog2;
                     UUID ncAssetUuid;
-                    
+
                     CreateTestObjects(scene, out sog1, out sog2, out ncAssetUuid);
 
                     expectedPaths[scene.RegionInfo.RegionID] = new List<string>();
@@ -841,7 +838,6 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
                 m_archiverModule.ArchiveRegion(archiveWriteStream, requestId, options);
                 Monitor.Wait(this, 60000);
             }
-
 
             // Check that the OAR contains the expected data
             Assert.That(m_lastRequestId, Is.EqualTo(requestId));
@@ -991,7 +987,6 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
 
             tar.Close();
 
-            
             // Delete the current objects, to test that they're loaded from the OAR and didn't
             // just remain in the scene.
             m_sceneHelpers.SceneManager.ForEachScene(delegate(Scene scene)
@@ -1001,7 +996,6 @@ namespace OpenSim.Region.CoreModules.World.Archiver.Tests
 
             // Create a "hole", to test that that the corresponding region isn't loaded from the OAR
             m_sceneHelpers.SceneManager.CloseScene(SceneManager.Instance.Scenes[1]);
-
 
             // Check thay the OAR file contains the expected data
 

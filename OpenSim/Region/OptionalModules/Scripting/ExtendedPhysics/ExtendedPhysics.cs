@@ -134,6 +134,7 @@ namespace OpenSim.Region.OptionalModules.Scripting
         public const int PHYS_PARAM_LINK_TYPE = 14419;
 
         public const int PHYS_PARAM_MAX = 14421;
+
         // Code for specifying params.
         // The choice if 14400 is arbitrary and only serves to catch parameter code misuse.
         public const int PHYS_PARAM_MIN = 14401;
@@ -168,10 +169,12 @@ namespace OpenSim.Region.OptionalModules.Scripting
         public const string PhysFunctChangeLinkFixed = "BulletSim.ChangeLinkFixed";
         public const string PhysFunctChangeLinkParams = "BulletSim.ChangeLinkParams";
         public const string PhysFunctChangeLinkType = "BulletSim.ChangeLinkType";
+
         // Per prim functions. See BSPrim.
         public const string PhysFunctGetLinksetType = "BulletSim.GetLinksetType";
 
         public const string PhysFunctGetLinkType = "BulletSim.GetLinkType";
+
         // Per avatar functions. See BSCharacter.
         public const string PhysFunctSetLinksetType = "BulletSim.SetLinksetType";
 
@@ -192,6 +195,7 @@ namespace OpenSim.Region.OptionalModules.Scripting
         private IConfig Configuration { get; set; }
 
         private bool Enabled { get; set; }
+
         #region INonSharedRegionModule
 
         public string Name { get { return this.GetType().Name; } }
@@ -233,6 +237,7 @@ namespace OpenSim.Region.OptionalModules.Scripting
 
             m_log.InfoFormat("{0} module {1} enabled", LogHeader, (Enabled ? "is" : "is not"));
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!Enabled) return;
@@ -264,6 +269,7 @@ namespace OpenSim.Region.OptionalModules.Scripting
                 Close();
             }
         }
+
         #endregion INonSharedRegionModule
 
         // physChangeLinkFixed(integer linkNum)
@@ -486,6 +492,7 @@ namespace OpenSim.Region.OptionalModules.Scripting
         private void EventManager_OnSceneObjectPartUpdated(SceneObjectPart sop, bool isFullUpdate)
         {
         }
+
         // Find the root and child PhysActors based on the linkNum.
         // Return 'true' if both are found and returned.
         private bool GetRootAndChildPhysActors(UUID hostID, int linkNum, out PhysicsActor rootPhysActor, out PhysicsActor childPhysActor)
@@ -583,6 +590,7 @@ namespace OpenSim.Region.OptionalModules.Scripting
 
             return ret;
         }
+
         // Extension() returns an object. Convert that object into the integer error we expect to return.
         private int MakeIntError(object extensionRet)
         {

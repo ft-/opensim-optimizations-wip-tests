@@ -119,6 +119,7 @@ namespace OpenSim.Region.Framework.Scenes
     public delegate bool SellParcelHandler(UUID user, ILandObject parcel, Scene scene);
 
     public delegate void SetBypassPermissionsHandler(bool value);
+
     public delegate bool StartScriptHandler(UUID script, UUID user, Scene scene);
 
     public delegate bool StopScriptHandler(UUID script, UUID user, Scene scene);
@@ -132,6 +133,7 @@ namespace OpenSim.Region.Framework.Scenes
     public delegate bool TerraformLandHandler(UUID user, Vector3 position, Scene requestFromScene);
 
     public delegate bool TransferObjectHandler(UUID objectID, UUID recipient, Scene scene);
+
     public delegate bool TransferObjectInventoryHandler(UUID itemID, UUID objectID, UUID userID);
 
     public delegate bool TransferUserInventoryHandler(UUID itemID, UUID userID, UUID recipientID);
@@ -139,6 +141,7 @@ namespace OpenSim.Region.Framework.Scenes
     public delegate bool ViewNotecardHandler(UUID script, UUID objectID, UUID user, Scene scene);
 
     public delegate bool ViewScriptHandler(UUID script, UUID objectID, UUID user, Scene scene);
+
     #endregion Delegates
 
     public class ScenePermissions
@@ -238,6 +241,7 @@ namespace OpenSim.Region.Framework.Scenes
         public event SellParcelHandler OnSellParcel;
 
         public event SetBypassPermissionsHandler OnSetBypassPermissions;
+
         public event StartScriptHandler OnStartScript;
 
         public event StopScriptHandler OnStopScript;
@@ -251,6 +255,7 @@ namespace OpenSim.Region.Framework.Scenes
         public event TerraformLandHandler OnTerraformLand;
 
         public event TransferObjectHandler OnTransferObject;
+
         public event TransferObjectInventoryHandler OnTransferObjectInventory;
 
         public event TransferUserInventoryHandler OnTransferUserInventory;
@@ -258,6 +263,7 @@ namespace OpenSim.Region.Framework.Scenes
         public event ViewNotecardHandler OnViewNotecard;
 
         public event ViewScriptHandler OnViewScript;
+
         #endregion Events
 
         #region Object Permission Checks
@@ -423,6 +429,7 @@ namespace OpenSim.Region.Framework.Scenes
             if (handler != null)
                 handler(value);
         }
+
         #region REZ OBJECT
 
         public bool CanRezObject(int objectCount, UUID owner, Vector3 objectPosition)
@@ -735,6 +742,7 @@ namespace OpenSim.Region.Framework.Scenes
             }
             return true;
         }
+
         #endregion VIEW SCRIPT
 
         #region EDIT SCRIPT
@@ -768,6 +776,7 @@ namespace OpenSim.Region.Framework.Scenes
             }
             return true;
         }
+
         #endregion EDIT SCRIPT
 
         #region RUN SCRIPT (When Script Placed in Object)
@@ -968,6 +977,7 @@ namespace OpenSim.Region.Framework.Scenes
             }
             return true;
         }
+
         #endregion CAN BE GODLIKE
 
         #region EDIT PARCEL
@@ -1026,6 +1036,7 @@ namespace OpenSim.Region.Framework.Scenes
         }
 
         #endregion ABANDON PARCEL
+
         #endregion Object Permission Checks
 
         public bool CanControlPrimMedia(UUID userID, UUID primID, int face)
@@ -1100,6 +1111,7 @@ namespace OpenSim.Region.Framework.Scenes
             }
             return true;
         }
+
         /// <summary>
         /// Check whether the specified user is allowed to create the given inventory type in their inventory.
         /// </summary>
@@ -1222,6 +1234,7 @@ namespace OpenSim.Region.Framework.Scenes
             }
             return true;
         }
+
         public bool CanTransferUserInventory(UUID itemID, UUID userID, UUID recipientID)
         {
             TransferUserInventoryHandler handler = OnTransferUserInventory;

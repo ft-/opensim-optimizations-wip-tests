@@ -433,6 +433,7 @@ namespace OpenSim.Framework
         public int SizeY { get; protected set; }
 
         public int SizeZ { get; protected set; }
+
         public abstract float this[int x, int y] { get; set; }
 
         // Someday terrain will have caves

@@ -86,9 +86,11 @@ namespace OpenSim.Region.Framework.Interfaces
         UUID GetUserIdByName(string firstName, string lastName);
 
         string GetUserName(UUID uuid);
+
         string GetUserServerURL(UUID uuid, string serverType);
 
         string GetUserUUI(UUID uuid);
+
         bool IsLocalGridUser(UUID uuid);
     }
 }

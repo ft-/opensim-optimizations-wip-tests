@@ -49,6 +49,7 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
         private List<UUID> m_Clients;
         private Scene m_scene = null; // only need one for communication with GridService
         private List<Scene> m_scenes = new List<Scene>();
+
         #region ISharedRegionModule Members
 
         public string Name
@@ -82,6 +83,7 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
         public void Initialise(IConfigSource source)
         {
         }
+
         public void PostInitialise()
         {
         }
@@ -98,6 +100,7 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
 
             scene.EventManager.OnNewClient -= OnNewClient;
         }
+
         #endregion ISharedRegionModule Members
 
         private void AddFinalBlock(List<MapBlockData> blocks)
@@ -222,6 +225,7 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
         {
             client.OnMapNameRequest += OnMapNameRequestHandler;
         }
+
         //        private Scene GetClientScene(IClientAPI client)
         //        {
         //            foreach (Scene s in m_scenes)

@@ -74,6 +74,7 @@ namespace OpenSim.Framework.Serialization
             TYPE_FIFO = 7,
             TYPE_CONTIGUOUS_FILE = 8,
         }
+
         /// <summary>
         /// Convert octal bytes to a decimal representation
         /// </summary>

@@ -85,6 +85,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.MapImage
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -96,6 +97,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.MapImage
             if (!m_Enabled)
                 return;
         }
+
         #endregion Region Module interface
     }
 }

@@ -49,6 +49,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
 
         private bool m_debugEnabled = true;
         private IGroupsServicesConnector m_groupData = null;
+
         // Config Options
         private bool m_groupMessagingEnabled = false;
 
@@ -60,6 +61,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
         private IMessageTransferModule m_msgTransferModule = null;
         private IPresenceService m_presenceService;
         private List<Scene> m_sceneList = new List<Scene>();
+
         /// <summary>
         /// Cache for online users.
         /// </summary>
@@ -154,6 +156,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
                 "[GROUPS-MESSAGING]: GroupsMessagingModule enabled with MessageOnlineOnly = {0}, DebugEnabled = {1}",
                 m_messageOnlineAgentsOnly, m_debugEnabled);
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_groupMessagingEnabled)
@@ -202,6 +205,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
 
             m_sceneList.Remove(scene);
         }
+
         #endregion Region Module interfaceBase Members
 
         #region ISharedRegionModule Members
@@ -341,6 +345,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
                 return false;
             }
         }
+
         #region SimGridEventHandlers
 
         private void OnClientLogin(IClientAPI client)
@@ -398,6 +403,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.XmlRpcGroups
 
             client.OnInstantMessage += OnInstantMessage;
         }
+
         private void ProcessMessageFromGroupSession(GridInstantMessage msg, IClientAPI client)
         {
             if (m_debugEnabled) m_log.DebugFormat("[GROUPS-MESSAGING]: Session message from {0} going to agent {1}", msg.fromAgentName, msg.toAgentID);

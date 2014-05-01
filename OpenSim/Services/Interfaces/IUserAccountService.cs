@@ -129,6 +129,7 @@ namespace OpenSim.Services.Interfaces
             ServiceURLs = new Dictionary<string, object>();
             Created = Util.UnixTimeSinceEpoch();
         }
+
         public UserAccount(Dictionary<string, object> kvp)
         {
             if (kvp.ContainsKey("FirstName"))
@@ -174,6 +175,7 @@ namespace OpenSim.Services.Interfaces
         {
             get { return FirstName + " " + LastName; }
         }
+
         public Dictionary<string, object> ToKeyValuePairs()
         {
             Dictionary<string, object> result = new Dictionary<string, object>();

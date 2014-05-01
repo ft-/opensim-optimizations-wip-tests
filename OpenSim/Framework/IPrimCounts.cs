@@ -45,6 +45,7 @@ namespace OpenSim.Framework
         /// Parcel owner owned prims
         /// </summary>
         int Owner { get; }
+
         /// <summary>
         /// Selected prims
         /// </summary>
@@ -59,6 +60,7 @@ namespace OpenSim.Framework
         /// Total prims on the parcel.
         /// </summary>
         int Total { get; }
+
         /// <summary>
         /// Prims per individual users.
         /// </summary>

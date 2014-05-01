@@ -45,6 +45,7 @@ namespace OpenSim.Region.CoreModules.World.Objects.BuySell
 
         protected IDialogModule m_dialogModule;
         protected Scene m_scene = null;
+
         public string Name { get { return "Object BuySell Module"; } }
 
         public Type ReplaceableInterface { get { return null; } }
@@ -208,6 +209,7 @@ namespace OpenSim.Region.CoreModules.World.Objects.BuySell
         public void Initialise(IConfigSource source)
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             m_dialogModule = scene.RequestModuleInterface<IDialogModule>();
@@ -217,6 +219,7 @@ namespace OpenSim.Region.CoreModules.World.Objects.BuySell
         {
             m_scene.EventManager.OnNewClient -= SubscribeToClientEvents;
         }
+
         public void SubscribeToClientEvents(IClientAPI client)
         {
             client.OnObjectSaleInfo += ObjectSaleInfo;

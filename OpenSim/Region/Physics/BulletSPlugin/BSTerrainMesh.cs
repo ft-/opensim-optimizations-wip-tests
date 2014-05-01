@@ -41,6 +41,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
         private BulletBody m_terrainBody;
         private BulletShape m_terrainShape;
+
         public BSTerrainMesh(BSScene physicsScene, Vector3 regionBase, uint id, Vector3 regionSize)
             : base(physicsScene, regionBase, id)
         {
@@ -396,6 +397,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         {
             return m_physicsScene.SimpleWaterLevel;
         }
+
         private class HeightMapGetter
         {
             private float[] m_heightMap;

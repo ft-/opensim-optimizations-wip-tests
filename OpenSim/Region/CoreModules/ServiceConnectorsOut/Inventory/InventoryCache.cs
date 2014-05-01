@@ -41,6 +41,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Inventory
         private static ExpiringCache<UUID, Dictionary<AssetType, InventoryFolderBase>> m_FolderTypes = new ExpiringCache<UUID, Dictionary<AssetType, InventoryFolderBase>>();
         private static ExpiringCache<UUID, InventoryCollection> m_Inventories = new ExpiringCache<UUID, InventoryCollection>();
         private static ExpiringCache<UUID, InventoryFolderBase> m_RootFolders = new ExpiringCache<UUID, InventoryFolderBase>();
+
         public void Cache(UUID userID, InventoryFolderBase root)
         {
             m_RootFolders.AddOrUpdate(userID, root, CACHE_EXPIRATION_SECONDS);

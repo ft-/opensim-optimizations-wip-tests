@@ -63,6 +63,7 @@ namespace OpenSim.Region.OptionalModules.Materials
         public string Name { get { return "MaterialsModule"; } }
 
         public Type ReplaceableInterface { get { return null; } }
+
         public static OSD ZCompressOSD(OSD inOsd, bool useHeader)
         {
             OSD osd = null;
@@ -130,6 +131,7 @@ namespace OpenSim.Region.OptionalModules.Materials
 
             m_log.DebugFormat("[Materials]: Initialized");
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -550,6 +552,7 @@ namespace OpenSim.Region.OptionalModules.Materials
                     "RenderMaterials", null);
             MainServer.Instance.AddStreamHandler(renderMaterialsPutHandler);
         }
+
         private UUID StoreMaterialAsAsset(UUID agentID, OSDMap mat, SceneObjectPart sop)
         {
             UUID id;

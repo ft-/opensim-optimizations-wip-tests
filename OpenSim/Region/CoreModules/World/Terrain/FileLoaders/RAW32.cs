@@ -177,6 +177,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
 
             bs.Close();
         }
+
         #endregion ITerrainLoader Members
 
         //Returns true if this extension is supported for terrain save-tile

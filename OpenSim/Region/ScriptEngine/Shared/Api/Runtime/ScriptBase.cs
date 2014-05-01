@@ -176,6 +176,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
 
 #if DEBUG
 #endif
+
         public void NoOp()
         {
             // Does what is says on the packet. Nowt, nada, nothing.

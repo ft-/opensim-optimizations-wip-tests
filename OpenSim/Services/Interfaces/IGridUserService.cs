@@ -79,6 +79,7 @@ namespace OpenSim.Services.Interfaces
         public DateTime Logout;
         public bool Online;
         public string UserID;
+
         public GridUserInfo()
         {
         }

@@ -75,6 +75,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.XmlRpcRouterModule
                     "XmlRpcRouterModule") == "XmlRpcRouterModule")
                 m_Enabled = true;
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -86,6 +87,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.XmlRpcRouterModule
 
             scene.UnregisterModuleInterface<IXmlRpcRouter>(this);
         }
+
         #endregion INonSharedRegionModule
 
         public void ObjectRemoved(UUID objectID)

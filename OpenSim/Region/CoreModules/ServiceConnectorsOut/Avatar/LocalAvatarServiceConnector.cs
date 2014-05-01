@@ -61,6 +61,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Avatar
         {
             get { return null; }
         }
+
         public void AddRegion(Scene scene)
         {
             if (!m_Enabled)
@@ -120,6 +121,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Avatar
             if (!m_Enabled)
                 return;
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -131,6 +133,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Avatar
             if (!m_Enabled)
                 return;
         }
+
         #endregion ISharedRegionModule
 
         #region IAvatarService
@@ -159,14 +162,17 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Avatar
         {
             return m_AvatarService.SetAppearance(userID, appearance);
         }
+
         public bool SetAvatar(UUID userID, AvatarData avatar)
         {
             return m_AvatarService.SetAvatar(userID, avatar);
         }
+
         public bool SetItems(UUID userID, string[] names, string[] values)
         {
             return m_AvatarService.SetItems(userID, names, values);
         }
+
         #endregion IAvatarService
     }
 }

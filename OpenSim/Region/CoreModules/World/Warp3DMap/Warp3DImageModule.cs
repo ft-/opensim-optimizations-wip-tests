@@ -114,9 +114,11 @@ namespace OpenSim.Region.CoreModules.World.Warp3DMap
 
         // true if should render the prims on the tile
         private bool m_textureTerrain = true;   // true if to create terrain splatting texture
-  // size of prim before we consider texturing it
-            // true if to render meshes rather than just bounding boxes
+
+        // size of prim before we consider texturing it
+        // true if to render meshes rather than just bounding boxes
         private bool m_useAntiAliasing = false; // true if to anti-alias the rendered image
+
         #region Region Module interface
 
         public string Name
@@ -179,6 +181,7 @@ namespace OpenSim.Region.CoreModules.World.Warp3DMap
             m_useAntiAliasing
                 = Util.GetConfigVarFromSections<bool>(m_config, "UseAntiAliasing", configSections, m_useAntiAliasing);
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -186,6 +189,7 @@ namespace OpenSim.Region.CoreModules.World.Warp3DMap
         public void RemoveRegion(Scene scene)
         {
         }
+
         #endregion Region Module interface
 
         #region IMapImageGenerator Members
@@ -292,6 +296,7 @@ namespace OpenSim.Region.CoreModules.World.Warp3DMap
             Viewport viewport = new Viewport(camPos, camDir, fov, Constants.RegionSize, 0.1f, width, height);
             return CreateMapTile(viewport, useTextures);
         }
+
         public byte[] WriteJpeg2000Image()
         {
             try
@@ -589,6 +594,7 @@ namespace OpenSim.Region.CoreModules.World.Warp3DMap
             renderer.Scene.addMaterial("WaterColor", waterColorMaterial);
             renderer.SetObjectMaterial("Water", "WaterColor");
         }
+
         private Color4 GetFaceColor(Primitive.TextureEntryFace face)
         {
             Color4 color;
@@ -666,6 +672,7 @@ namespace OpenSim.Region.CoreModules.World.Warp3DMap
                 renderer.Scene.material(name).setTransparency((byte)((1f - color.A) * 255f));
             return name;
         }
+
         private warp_Texture GetTexture(UUID id)
         {
             warp_Texture ret = null;
@@ -801,6 +808,7 @@ namespace OpenSim.Region.CoreModules.World.Warp3DMap
         {
             return new warp_Vector(vector.X, vector.Z, vector.Y);
         }
+
         private static Vector3 SurfaceNormal(Vector3 c1, Vector3 c2, Vector3 c3)
         {
             Vector3 edge1 = new Vector3(c2.X - c1.X, c2.Y - c1.Y, c2.Z - c1.Z);
@@ -811,6 +819,7 @@ namespace OpenSim.Region.CoreModules.World.Warp3DMap
 
             return normal;
         }
+
         #endregion Static Helpers
     }
 }

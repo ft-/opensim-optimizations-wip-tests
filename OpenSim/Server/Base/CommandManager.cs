@@ -342,12 +342,14 @@ namespace OpenSim.Server.Base
             }
             return;
         }
+
         // Update plugin **not ready
         private void HandleConsoleUpdatePlugin(string module, string[] cmd)
         {
             MainConsole.Instance.Output(PluginManager.Update());
             return;
         }
+
         #endregion console handlers
     }
 }

@@ -66,6 +66,7 @@ namespace OpenSim.Region.Framework.Scenes
         public event Action<SceneManager> OnRegionsReadyStatusChange;
 
         public event RestartSim OnRestartSim;
+
         public static SceneManager Instance
         {
             get
@@ -110,6 +111,7 @@ namespace OpenSim.Region.Framework.Scenes
                 }
             }
         }
+
         public Scene CurrentOrFirstScene
         {
             get
@@ -148,6 +150,7 @@ namespace OpenSim.Region.Framework.Scenes
         {
             get { return new List<Scene>(m_localScenes); }
         }
+
         public void Add(Scene scene)
         {
             m_localScenesRwLock.AcquireWriterLock(-1);
@@ -206,6 +209,7 @@ namespace OpenSim.Region.Framework.Scenes
                 m_localScenesRwLock.ReleaseReaderLock();
             }
         }
+
         public void CloseScene(Scene scene)
         {
             m_localScenesRwLock.AcquireWriterLock(-1);

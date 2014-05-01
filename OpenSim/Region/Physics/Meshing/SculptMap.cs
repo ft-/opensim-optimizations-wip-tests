@@ -44,6 +44,7 @@ namespace PrimMesher
         public int height;
         public byte[] redBytes;
         public int width;
+
         public SculptMap()
         {
         }

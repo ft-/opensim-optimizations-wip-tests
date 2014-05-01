@@ -49,6 +49,7 @@ namespace OpenSim.Region.CoreModules.Scripting.DynamicTexture
         public const int DISP_EXPIRE = 1;
         public const int DISP_TEMP = 2;
         private const int ALL_SIDES = -1;
+
         /// <summary>
         /// Record dynamic textures that we can reuse for a given data and parameter combination rather than
         /// regenerate.
@@ -90,6 +91,7 @@ namespace OpenSim.Region.CoreModules.Scripting.DynamicTexture
         /// If true then where possible dynamic textures are reused.
         /// </summary>
         public bool ReuseTextures { get; set; }
+
         #region IDynamicTextureManager Members
 
         public UUID AddDynamicTextureData(UUID simID, UUID primID, string contentType, string data,
@@ -329,6 +331,7 @@ namespace OpenSim.Region.CoreModules.Scripting.DynamicTexture
 
             return discardLevel2DataThreshold < texture.Data.Length;
         }
+
         #endregion IDynamicTextureManager Members
 
         #region ISharedRegionModule Members
@@ -375,6 +378,7 @@ namespace OpenSim.Region.CoreModules.Scripting.DynamicTexture
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -384,6 +388,7 @@ namespace OpenSim.Region.CoreModules.Scripting.DynamicTexture
             if (RegisteredScenes.ContainsKey(scene.RegionInfo.RegionID))
                 RegisteredScenes.Remove(scene.RegionInfo.RegionID);
         }
+
         #endregion ISharedRegionModule Members
 
         #region Nested type: DynamicTextureUpdater
@@ -404,6 +409,7 @@ namespace OpenSim.Region.CoreModules.Scripting.DynamicTexture
             public int UpdateTimer;
             public string Url;
             private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
             public DynamicTextureUpdater()
             {
                 UpdateTimer = 0;
@@ -553,6 +559,7 @@ namespace OpenSim.Region.CoreModules.Scripting.DynamicTexture
 
                 return oldID;
             }
+
             private byte[] BlendTextures(byte[] frontImage, byte[] backImage, bool setNewAlpha, byte newAlpha)
             {
                 ManagedImage managedImage;
@@ -590,6 +597,7 @@ namespace OpenSim.Region.CoreModules.Scripting.DynamicTexture
 
                 return null;
             }
+
             private void SetAlpha(ref Bitmap b, byte alpha)
             {
                 for (int w = 0; w < b.Width; w++)

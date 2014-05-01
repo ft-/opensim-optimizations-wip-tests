@@ -478,6 +478,7 @@ namespace OpenSim.Region.Framework.Scenes
         {
             SimChat(message, type, channel, fromPos, fromName, fromID, UUID.Zero, fromAgent, broadcast);
         }
+
         /// <summary>
         /// Handle the update of an object's user group.
         /// </summary>
@@ -516,6 +517,7 @@ namespace OpenSim.Region.Framework.Scenes
                 }
             }
         }
+
         private void ProcessViewerEffect(IClientAPI remoteClient, List<ViewerEffectEventHandlerArg> args)
         {
             // TODO: don't create new blocks if recycling an old packet

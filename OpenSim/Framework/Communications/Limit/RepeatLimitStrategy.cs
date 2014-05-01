@@ -43,6 +43,7 @@ namespace OpenSim.Framework.Communications.Limit
         /// Record each asset request that we're notified about.
         /// </summary>
         private readonly Dictionary<TId, int> requestCounts = new Dictionary<TId, int>();
+
         /// <summary></summary>
         /// <param name="maxRequests">The maximum number of requests that may be served before all further
         /// requests are dropped.</param>
@@ -55,6 +56,7 @@ namespace OpenSim.Framework.Communications.Limit
         {
             get { return m_maxRequests; }
         }
+
         /// <summary>
         /// <see cref="IRequestLimitStrategy"/>
         /// </summary>

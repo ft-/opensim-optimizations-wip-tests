@@ -49,6 +49,7 @@ namespace OpenSim.Region.Framework.Interfaces
         UUID RequestSecureURL(IScriptModule engine, SceneObjectPart host, UUID itemID);
 
         UUID RequestURL(IScriptModule engine, SceneObjectPart host, UUID itemID);
+
         void ScriptRemoved(UUID itemID);
     }
 }

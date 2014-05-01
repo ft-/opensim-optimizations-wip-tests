@@ -57,10 +57,12 @@ namespace OpenSim.Region.CoreModules.Avatar.AvatarFactory
 
         // seconds to wait before saving changed appearance
         private int m_sendtime = 2; // seconds to wait before sending changed appearance
+
         private object m_setAppearanceLock = new object();
 
         // milliseconds to wait between checks for appearance updates
         private System.Timers.Timer m_updateTimer = new System.Timers.Timer();
+
         #region Region Module interface
 
         public bool IsSharedModule
@@ -103,6 +105,7 @@ namespace OpenSim.Region.CoreModules.Avatar.AvatarFactory
                 // m_log.InfoFormat("[AVFACTORY] configured for {0} save and {1} send",m_savetime,m_sendtime);
             }
         }
+
         public void RegionLoaded(Scene scene)
         {
             m_updateTimer.Enabled = false;
@@ -121,6 +124,7 @@ namespace OpenSim.Region.CoreModules.Avatar.AvatarFactory
 
             m_scene = null;
         }
+
         private void SubscribeToClientEvents(IClientAPI client)
         {
             client.OnRequestWearables += Client_OnRequestWearables;
@@ -527,6 +531,7 @@ namespace OpenSim.Region.CoreModules.Avatar.AvatarFactory
             // Send animations back to the avatar as well
             sp.Animator.SendAnimPack();
         }
+
         #endregion IAvatarFactoryModule
 
         #region AvatarFactoryModule private methods
@@ -1012,6 +1017,7 @@ namespace OpenSim.Region.CoreModules.Avatar.AvatarFactory
                 }
             }
         }
+
         #endregion AvatarFactoryModule private methods
 
         #region Client Event Handlers
@@ -1147,6 +1153,7 @@ namespace OpenSim.Region.CoreModules.Avatar.AvatarFactory
             else
                 m_log.WarnFormat("[AVFACTORY]: Client_OnSetAppearance unable to find presence for {0}", client.AgentId);
         }
+
         #endregion Client Event Handlers
 
         public void WriteBakedTexturesReport(IScenePresence sp, ReportOutputAction outputAction)

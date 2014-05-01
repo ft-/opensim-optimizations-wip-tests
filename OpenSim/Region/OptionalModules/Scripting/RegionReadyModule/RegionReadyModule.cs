@@ -58,6 +58,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.RegionReady
         private bool m_oarFileLoading;
         private Scene m_scene;
         private string m_uri = string.Empty;
+
         #region INonSharedRegionModule interface
 
         public string Name
@@ -121,6 +122,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.RegionReady
                 }
             }
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -140,6 +142,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.RegionReady
 
             m_scene = null;
         }
+
         #endregion INonSharedRegionModule interface
 
         public void OarLoadingAlert(string msg)

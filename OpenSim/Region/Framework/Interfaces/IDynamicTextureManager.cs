@@ -58,6 +58,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// Null if a uri was not used.
         /// </remarks>
         Uri InputUri { get; }
+
         /// <summary>
         /// Signal whether the texture is reuseable (i.e. whether the same input data will always generate the same
         /// texture).
@@ -184,6 +185,7 @@ namespace OpenSim.Region.Framework.Interfaces
                                out double xSize, out double ySize);
 
         string GetName();
+
         bool SupportsAsynchronous();
     }
 }

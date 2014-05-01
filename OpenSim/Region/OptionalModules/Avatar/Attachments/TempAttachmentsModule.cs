@@ -45,6 +45,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Attachments
 
         private IRegionConsole m_console;
         private Scene m_scene;
+
         public string Name
         {
             get { return "TempAttachmentsModule"; }
@@ -66,6 +67,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Attachments
         public void Initialise(IConfigSource configSource)
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             m_scene = scene;
@@ -91,6 +93,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Attachments
         public void RemoveRegion(Scene scene)
         {
         }
+
         private int llAttachToAvatarTemp(UUID host, UUID script, int attachmentPoint)
         {
             SceneObjectPart hostPart = m_scene.GetSceneObjectPart(host);

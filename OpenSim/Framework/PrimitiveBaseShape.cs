@@ -73,11 +73,13 @@ namespace OpenSim.Framework
         RightTriangle = 4,
         HalfCircle = 5
     }
+
     [Serializable]
     public class PrimitiveBaseShape
     {
         private static readonly byte[] DEFAULT_TEXTURE = new Primitive.TextureEntry(new UUID("89556747-24cb-43ed-920b-47caed15465f")).GetBytes();
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         [XmlIgnore]
         private float _flexiDrag;
 
@@ -108,6 +110,7 @@ namespace OpenSim.Framework
 
         private HollowShape _hollowShape;
         private byte _lastattach;
+
         [XmlIgnore]
         private float _lightColorA = 1.0f;
 
@@ -155,6 +158,7 @@ namespace OpenSim.Framework
         private ushort _profileEnd;
         private ushort _profileHollow;
         private ProfileShape _profileShape;
+
         [XmlIgnore]
         private float _projectionAmb;
 
@@ -172,6 +176,7 @@ namespace OpenSim.Framework
         private UUID _projectionTextureID;
 
         private Vector3 _scale;
+
         [XmlIgnore]
         private byte[] _sculptData = Utils.EmptyBytes;
 
@@ -187,6 +192,7 @@ namespace OpenSim.Framework
 
         private byte _state;
         private byte[] m_textureEntry;
+
         public PrimitiveBaseShape()
         {
             PCode = (byte)PCodeEnum.Primitive;
@@ -742,6 +748,7 @@ namespace OpenSim.Framework
                 }
             }
         }
+
         public ushort ProfileEnd
         {
             get
@@ -941,6 +948,7 @@ namespace OpenSim.Framework
 
             set { m_textureEntry = value.GetBytes(); }
         }
+
         public static PrimitiveBaseShape Create()
         {
             PrimitiveBaseShape shape = new PrimitiveBaseShape();
@@ -993,6 +1001,7 @@ namespace OpenSim.Framework
 
             return shape;
         }
+
         public PrimitiveBaseShape Copy()
         {
             return (PrimitiveBaseShape)MemberwiseClone();
@@ -1495,11 +1504,13 @@ namespace OpenSim.Framework
         {
             _scale = new Vector3(side, side, side);
         }
+
         public void SetSculptProperties(byte sculptType, UUID SculptTextureUUID)
         {
             _sculptType = sculptType;
             _sculptTexture = SculptTextureUUID;
         }
+
         /// <summary>
         /// Creates a OpenMetaverse.Primitive and populates it with converted PrimitiveBaseShape values
         /// </summary>
@@ -1607,6 +1618,7 @@ namespace OpenSim.Framework
             hash = ((hash << 5) + hash) + (ulong)((byte)c);
             return ((hash << 5) + hash) + (ulong)(c >> 8);
         }
+
         /// <summary>
         /// Encapsulates a list of media entries.
         /// </summary>

@@ -201,6 +201,7 @@ namespace OpenSim.Services.Connectors.Hypergrid
 
             return false;
         }
+
         public List<UUID> StatusNotification(List<string> friends, UUID userID, bool online)
         {
             Dictionary<string, object> sendData = new Dictionary<string, object>();
@@ -294,6 +295,7 @@ namespace OpenSim.Services.Connectors.Hypergrid
 
             return false;
         }
+
         #endregion IFriendsService
     }
 }

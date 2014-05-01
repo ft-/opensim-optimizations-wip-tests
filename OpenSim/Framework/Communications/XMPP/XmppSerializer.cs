@@ -44,7 +44,9 @@ namespace OpenSim.Framework.Communications.XMPP
         // need to do it this way, as XmlSerializer(type, extratypes)
         // does not work on mono (at least).
         private Dictionary<Type, XmlSerializer> _serializerForType = new Dictionary<Type, XmlSerializer>();
+
         private XmlSerializerNamespaces _xmlNs;
+
         public XmppSerializer(bool server)
         {
             _xmlNs = new XmlSerializerNamespaces();

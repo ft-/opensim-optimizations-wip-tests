@@ -43,12 +43,14 @@ namespace OpenSim.Region.CoreModules.World.Archiver
         protected static int LOG_ASSET_LOAD_NOTIFICATION_INTERVAL = 50;
 
         protected TarArchiveWriter m_archiveWriter;
+
         /// <value>
         /// Keep a count of the number of assets written so that we can provide status updates
         /// </value>
         protected int m_assetsWritten;
 
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public AssetsArchiver(TarArchiveWriter archiveWriter)
         {
             m_archiveWriter = archiveWriter;

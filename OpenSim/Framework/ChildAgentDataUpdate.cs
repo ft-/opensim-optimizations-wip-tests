@@ -51,11 +51,13 @@ namespace OpenSim.Framework
         public bool AlwaysRun;
         public Animation[] Anims;
         public Animation AnimState = null;
+
         // Appearance
         public AvatarAppearance Appearance;
 
         public float Aspect;
         public Vector3 AtAxis;
+
         // These two must have the same Count
         public List<ISceneObject> AttachmentObjects;
 
@@ -65,6 +67,7 @@ namespace OpenSim.Framework
         public Vector3 Center;
         public uint CircuitCode;
         public uint ControlFlags;
+
         // Scripted
         public ControllerData[] Controllers;
 
@@ -81,6 +84,7 @@ namespace OpenSim.Framework
         public Vector3 Position;
         public UUID PreyAgent;
         public UUID RegionID;
+
         /// <summary>
         /// Signal on a V2 teleport that Scene.IncomingChildAgentDataUpdate(AgentData ad) should wait for the
         /// scene presence to become root (triggered when the viewer sends a CompleteAgentMovement UDP packet after
@@ -91,11 +95,13 @@ namespace OpenSim.Framework
         public UUID SessionID;
         public Vector3 SitOffset;
         public Vector3 Size;
+
         //public int[] Throttles;
         public byte[] Throttles;
 
         public Vector3 UpAxis;
         public Vector3 Velocity;
+
         // DEBUG ON
         private static readonly ILog m_log =
                 LogManager.GetLogger(
@@ -117,6 +123,7 @@ namespace OpenSim.Framework
             get { return m_id; }
             set { m_id = value; }
         }
+
         // DEBUG OFF
 
         /*
@@ -125,6 +132,7 @@ namespace OpenSim.Framework
                 public UUID[] Wearables;
                 public AvatarAttachment[] Attachments;
         */
+
         public void Dump()
         {
             System.Console.WriteLine("------------ AgentData ------------");
@@ -527,6 +535,7 @@ namespace OpenSim.Framework
         public bool AcceptNotices;
         public UUID GroupID;
         public ulong GroupPowers;
+
         public AgentGroupData(UUID id, ulong powers, bool notices)
         {
             GroupID = id;
@@ -575,6 +584,7 @@ namespace OpenSim.Framework
         public ulong RegionHandle;
         public UUID SessionID;
         public Vector3 Size;
+
         // This probably shouldn't be here
         public byte[] Throttles;
 
@@ -587,6 +597,7 @@ namespace OpenSim.Framework
             get { return m_id; }
             set { m_id = value; }
         }
+
         /// <summary>
         /// Soon to be decommissioned
         /// </summary>
@@ -702,6 +713,7 @@ namespace OpenSim.Framework
         {
         }
     }
+
     public class CompleteAgentData : AgentData
     {
         public override OSDMap Pack()
@@ -721,6 +733,7 @@ namespace OpenSim.Framework
         public uint IgnoreControls;
         public UUID ItemID;
         public UUID ObjectID;
+
         public ControllerData(UUID obj, UUID item, uint ignore, uint ev)
         {
             ObjectID = obj;

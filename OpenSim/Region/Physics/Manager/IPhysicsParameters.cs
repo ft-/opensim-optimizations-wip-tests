@@ -40,6 +40,7 @@ namespace OpenSim.Region.Physics.Manager
         // Set parameter on a specific or all instances.
         // Return 'false' if not able to set the parameter.
         bool SetPhysicsParameter(string parm, string value, uint localID);
+
         // Get parameter from a particular object
         // TODO:
         // bool GetPhysicsParameter(string parm, out string value, uint localID);
@@ -56,8 +57,10 @@ namespace OpenSim.Region.Physics.Manager
 
         // values that denote true and false values
         public const float NUMERIC_TRUE = 1f;
+
         public string desc;
         public string name;
+
         public PhysParameterEntry(string n, string d)
         {
             name = n;

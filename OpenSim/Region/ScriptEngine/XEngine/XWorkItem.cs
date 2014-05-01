@@ -43,6 +43,7 @@ namespace OpenSim.Region.ScriptEngine.XEngine
         {
             get { return wr; }
         }
+
         public bool Abort()
         {
             return wr.Cancel(true);
@@ -52,6 +53,7 @@ namespace OpenSim.Region.ScriptEngine.XEngine
         {
             return wr.Cancel();
         }
+
         public bool Wait(int t)
         {
             // We use the integer version of WaitAll because the current version of SmartThreadPool has a bug with the

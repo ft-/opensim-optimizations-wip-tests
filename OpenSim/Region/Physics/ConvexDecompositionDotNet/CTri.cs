@@ -136,6 +136,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
         {
             return float3.dot(mNormal, t.mNormal);
         }
+
         public float getVolume()
         {
             int[] indices = new int[8 * 3];
@@ -195,6 +196,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
 
             return sect.Distance(p); // return the intersection distance
         }
+
         public bool samePlane(CTri t)
         {
             const float THRESH = 0.001f;
@@ -212,6 +214,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
                 return false;
             return true;
         }
+
         public bool sharesEdge(CTri t)
         {
             bool ret = false;
@@ -229,6 +232,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
 
             return ret;
         }
+
         private static float DistToPt(float3 p, float4 plane)
         {
             float x = p.x;

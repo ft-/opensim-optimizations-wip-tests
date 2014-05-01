@@ -44,11 +44,13 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
         public const float HEIGHT_GETHEIGHT_RET = 24.765f;
         public const float HEIGHT_INITIAL_LASTHEIGHT = 24.876f;
+
         // These height values are fractional so the odd values will be
         //     noticable when debugging.
         public const float HEIGHT_INITIALIZATION = 24.987f;
 
         public const float WATER_HEIGHT_GETHEIGHT_RET = 19.998f;
+
         // Until the whole simulator is changed to pass us the region size, we rely on constants.
         public Vector3 DefaultRegionSize = new Vector3(Constants.RegionSize, Constants.RegionSize, Constants.RegionHeight);
 
@@ -105,7 +107,9 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
         // The scene that I am part of
         private BSScene m_physicsScene { get; set; }
+
         private PhysicsScene MegaRegionParentPhysicsScene { get; set; }
+
         // Return a new position that is over known terrain if the position is outside our terrain.
         public Vector3 ClampPositionIntoKnownTerrain(Vector3 pPos)
         {
@@ -223,6 +227,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         {
             ReleaseGroundPlaneAndTerrain();
         }
+
         public float GetTerrainHeightAtXYZ(Vector3 pos)
         {
             float tX = pos.X;
@@ -603,6 +608,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         public Vector3 TerrainBase { get; private set; }
 
         protected BSScene m_physicsScene { get; private set; }
+
         public abstract void Dispose();
 
         public abstract float GetTerrainHeightAtXYZ(Vector3 pos);

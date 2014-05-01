@@ -59,6 +59,7 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
         {
             return m_scene.MonitorFrameTime;
         }
+
         #endregion Implementation of IMonitor
     }
 }

@@ -145,7 +145,6 @@ namespace OpenSim.Services.Interfaces
 #pragma warning restore 414
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-
         public GridRegion()
         {
             RegionSizeX = (int)Constants.RegionSize;
@@ -338,6 +337,7 @@ namespace OpenSim.Services.Interfaces
             get { return m_httpPort; }
             set { m_httpPort = value; }
         }
+
         public IPEndPoint InternalEndPoint
         {
             get { return m_internalEndPoint; }
@@ -429,6 +429,7 @@ namespace OpenSim.Services.Interfaces
                 }
             }
         }
+
         /*
         public GridRegion(int regionLocX, int regionLocY, IPEndPoint internalEndPoint, string externalUri)
         {
@@ -479,6 +480,7 @@ namespace OpenSim.Services.Interfaces
         }
 
         #endregion
+
         public Dictionary<string, object> ToKeyValuePairs()
         {
             Dictionary<string, object> kvp = new Dictionary<string, object>();

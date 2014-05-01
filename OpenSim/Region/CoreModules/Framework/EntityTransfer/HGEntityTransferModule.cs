@@ -54,6 +54,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
         private GatekeeperServiceConnector m_GatekeeperConnector;
         private int m_levelHGTeleport = 0;
         private IUserAgentService m_UAS;
+
         protected List<AvatarAppearance> ExportedAppearance
         {
             get
@@ -148,6 +149,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
                 }
             }
         }
+
         public override void RegionLoaded(Scene scene)
         {
             base.RegionLoaded(scene);
@@ -201,6 +203,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
                 }
             }
         }
+
         #endregion ISharedRegionModule
 
         #region HG overrides of IEntiryTransferModule
@@ -423,6 +426,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
 
             return false;
         }
+
         protected override bool ValidateGenericConditions(ScenePresence sp, GridRegion reg, GridRegion finalDestination, uint teleportFlags, out string reason)
         {
             reason = "Please wear your grid's allowed appearance before teleporting to another grid";
@@ -537,6 +541,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
 
         //    return base.UpdateAgent(reg, finalDestination, agentData, sp);
         //}
+
         #endregion HG overrides of IEntiryTransferModule
 
         #region IUserAgentVerificationModule

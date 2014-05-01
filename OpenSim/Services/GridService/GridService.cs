@@ -58,6 +58,7 @@ namespace OpenSim.Services.GridService
 
         private static GridService m_RootInstance = null;
         private bool m_DeleteOnUnregister = true;
+
         public GridService(IConfigSource config)
             : base(config)
         {
@@ -425,6 +426,7 @@ namespace OpenSim.Services.GridService
 
             return String.Empty;
         }
+
         /// <summary>
         /// Get a hypergrid region.
         /// </summary>
@@ -438,6 +440,7 @@ namespace OpenSim.Services.GridService
             else
                 return null;
         }
+
         #endregion IGridService
 
         #region Data structure conversions
@@ -470,6 +473,7 @@ namespace OpenSim.Services.GridService
             rdata.Data["owner_uuid"] = rinfo.EstateOwner.ToString();
             return rdata;
         }
+
         #endregion Data structure conversions
 
         public List<GridRegion> GetDefaultHypergridRegions(UUID scopeID)
@@ -514,6 +518,7 @@ namespace OpenSim.Services.GridService
             m_log.DebugFormat("[GRID SERVICE]: GetDefaultRegions returning {0} regions", ret.Count);
             return ret;
         }
+
         public List<GridRegion> GetFallbackRegions(UUID scopeID, int x, int y)
         {
             List<GridRegion> ret = new List<GridRegion>();
@@ -689,6 +694,7 @@ namespace OpenSim.Services.GridService
 
             OutputRegionsToConsoleSummary(regions);
         }
+
         private void OutputRegionsToConsole(List<RegionData> regions)
         {
             foreach (RegionData r in regions)
@@ -732,6 +738,7 @@ namespace OpenSim.Services.GridService
 
             MainConsole.Instance.Output(dispList.ToString());
         }
+
         private int ParseFlags(int prev, string flags)
         {
             OpenSim.Framework.RegionFlags f = (OpenSim.Framework.RegionFlags)prev;

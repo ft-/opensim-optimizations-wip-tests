@@ -187,6 +187,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
 
             return success;
         }
+
         #endregion IFriendsService
 
         private OSDArray GetFriended(string ownerID)

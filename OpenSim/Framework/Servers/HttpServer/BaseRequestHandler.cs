@@ -70,6 +70,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         public int RequestsHandled { get; protected set; }
 
         public int RequestsReceived { get; protected set; }
+
         public string GetParam(string path)
         {
             if (CheckParam(path))

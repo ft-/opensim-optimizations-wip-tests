@@ -147,6 +147,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         {
             get { return _contentEncoding; }
         }
+
         public long ContentLength
         {
             get { return _request.ContentLength; }
@@ -161,6 +162,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         {
             get { return _contentType; }
         }
+
         public HttpCookieCollection Cookies
         {
             get
@@ -212,6 +214,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         {
             get { return _queryString; }
         }
+
         /// <value>
         /// POST request values, if applicable
         /// </value>
@@ -226,6 +229,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         {
             get { return _remoteIPEndPoint; }
         }
+
         public Uri Url
         {
             get { return _request.Uri; }
@@ -235,6 +239,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         {
             get { return _userAgent; }
         }
+
         internal IHttpClientContext IHttpClientContext
         {
             get { return _context; }
@@ -244,6 +249,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         {
             get { return _request; }
         }
+
         /// <summary>
         /// Internal whiteboard for handlers to store temporary stuff
         /// into.
@@ -252,6 +258,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         {
             get { return _whiteboard; }
         }
+
         public override string ToString()
         {
             StringBuilder me = new StringBuilder();

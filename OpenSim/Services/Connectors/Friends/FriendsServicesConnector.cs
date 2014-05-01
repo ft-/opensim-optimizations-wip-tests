@@ -243,6 +243,7 @@ namespace OpenSim.Services.Connectors.Friends
 
             return new FriendInfo[0];
         }
+
         #endregion IFriendsService
 
         public Dictionary<string, object> ToKeyValuePairs(string principalID, string friend, int flags)

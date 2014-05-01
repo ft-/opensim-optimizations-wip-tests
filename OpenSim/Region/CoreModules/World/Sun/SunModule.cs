@@ -48,6 +48,7 @@ namespace OpenSim.Region.CoreModules
 
         private const double m_AverageTilt = -0.25 * Math.PI;
         private const double m_SeasonalCycle = 2.0D * Math.PI;
+
         //
         // Global Constants used to determine where in the sky the sun is
         //
@@ -59,10 +60,10 @@ namespace OpenSim.Region.CoreModules
         private const int TICKS_PER_SECOND = 10000000;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-  // A daily shift of approximately 1.7188 degrees
+        // A daily shift of approximately 1.7188 degrees
 
-  // A perfect circle measured in radians
-          // Ditto
+        // A perfect circle measured in radians
+        // Ditto
 
         //
         //    Per Region Values
@@ -70,6 +71,7 @@ namespace OpenSim.Region.CoreModules
 
         private double d_day_length = 4;
         private double d_day_night = 0.5;
+
         // axis offset: Default Hoizon shift to try and closely match the sun model in LL Viewer
         private double d_DayTimeSunHourScale = 0.5;
 
@@ -83,6 +85,7 @@ namespace OpenSim.Region.CoreModules
 
         private double HorizonShift;
         private ulong m_CurrentTimeOffset = 0;
+
         // Number of real time hours per virtual day
         private double m_DayLengthHours = 0;
 
@@ -105,6 +108,7 @@ namespace OpenSim.Region.CoreModules
         private bool m_SunFixed = false;
 
         private float m_SunFixedHour = 0f;
+
         // Sun's position information is updated and sent to clients every m_UpdateInterval frames
         private int m_UpdateInterval = 0;
 
@@ -112,6 +116,7 @@ namespace OpenSim.Region.CoreModules
         private int m_YearLengthDays = 0;
 
         private float Magnitude;
+
         // Calculated every update
         private float OrbitalPosition;
 
@@ -128,7 +133,8 @@ namespace OpenSim.Region.CoreModules
         // at least once with the proper Region Settings before we start
         // updating those region settings in GenSunPos()
         private bool receivedEstateToolsSunUpdate = false;
-    // Every 10 seconds (actually less)
+
+        // Every 10 seconds (actually less)
 
         private double SeasonalOffset;
 
@@ -143,26 +149,28 @@ namespace OpenSim.Region.CoreModules
         private double SunSpeed;
 
         // There are 60 VW days in a VW year
- // Day/Night hours are equal
+        // Day/Night hours are equal
         // Calculated Once in the lifetime of a region
         private long TicksToEpoch;              // Elapsed time for 1/1/1970
 
-                // Rate of passage in radians/second
-                     // Rate of change for seasonal effects
+        // Rate of passage in radians/second
+        // Rate of change for seasonal effects
 
         // private double HoursToRadians;          // Rate of change for seasonal effects
         private long TicksUTCOffset = 0;        // seconds offset from UTC
 
-          // Orbital placement at a point in time
+        // Orbital placement at a point in time
 
         private Quaternion Tilt = new Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
 
         // Axis offset to skew day and night
         private double TotalDistanceTravelled;  // Distance since beginning of time (in radians)
-                  // Seaonal variation of tilt
-                       // Normal tilt
+
+        // Seaonal variation of tilt
+        // Normal tilt
         // private double VWTimeRatio;             // VW time as a ratio of real time
         private Vector3 Velocity = Vector3.Zero;
+
         // Current time in elapsed seconds since Jan 1st 1970
         private ulong CurrentTime
         {
@@ -172,6 +180,7 @@ namespace OpenSim.Region.CoreModules
                 return ctime + m_CurrentTimeOffset;
             }
         }
+
         public void HandleSunConsoleCommand(string module, string[] cmdparams)
         {
             if (m_scene.ConsoleScene() == null)
@@ -432,6 +441,7 @@ namespace OpenSim.Region.CoreModules
             m_log.Debug("[SUN]: Percentage of time for daylight " + m_DayTimeSunHourScale);
             m_log.Debug("[SUN]: Positional data updated every " + m_UpdateInterval + " frames");
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -446,6 +456,7 @@ namespace OpenSim.Region.CoreModules
             m_scene.EventManager.OnEstateToolsSunUpdate -= EstateToolsSunUpdate;
             m_scene.EventManager.OnGetCurrentTimeAsLindenSunHour -= GetCurrentTimeAsLindenSunHour;
         }
+
         #endregion INonSharedRegion Methods
 
         #region EventManager Events
@@ -532,6 +543,7 @@ namespace OpenSim.Region.CoreModules
         {
             SunToClient(avatar.ControllingClient);
         }
+
         #endregion EventManager Events
 
         private Dictionary<string, string> GetParamList()
@@ -682,6 +694,7 @@ namespace OpenSim.Region.CoreModules
             // When sun settings are updated, we should update all clients with new settings.
             SunUpdateToAllClients();
         }
+
         #endregion ISunModule Members
     }
 }

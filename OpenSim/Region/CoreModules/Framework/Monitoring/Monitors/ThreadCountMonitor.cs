@@ -50,6 +50,7 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
         {
             return System.Diagnostics.Process.GetCurrentProcess().Threads.Count;
         }
+
         #endregion Implementation of IMonitor
     }
 }

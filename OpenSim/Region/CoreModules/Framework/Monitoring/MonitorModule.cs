@@ -71,6 +71,7 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring
         /// Is this module enabled?
         /// </summary>
         public bool Enabled { get; private set; }
+
         #region Implementation of INonSharedRegionModule
 
         public string Name
@@ -117,6 +118,7 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring
             if (!Enabled)
                 return;
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -133,6 +135,7 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring
 
             m_scene = null;
         }
+
         #endregion Implementation of INonSharedRegionModule
 
         public void AddMonitors()
@@ -397,6 +400,7 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring
                 alert.Test();
             }
         }
+
         private void MakeStat(string pName, string pUnitName, Action<Stat> act)
         {
             Stat tempStat = new Stat(pName, pName, pName, pUnitName, "scene", m_scene.RegionInfo.RegionName, StatType.Pull, act, StatVerbosity.Info);
@@ -408,6 +412,7 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring
         {
             m_log.Error("[Monitor] " + reporter.Name + " for " + m_scene.RegionInfo.RegionName + " reports " + reason + " (Fatal: " + fatal + ")");
         }
+
         private void RegisterStatsManagerRegionStatistics()
         {
             MakeStat("RootAgents", "avatars", (s) => { s.Value = m_scene.SceneGraph.GetRootAgentCount(); });

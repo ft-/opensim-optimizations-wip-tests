@@ -25,10 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
 using NUnit.Framework;
 using OpenSim.Tests.Common;
-using OpenSim.Region.ScriptEngine.Shared;
 
 namespace OpenSim.Region.ScriptEngine.Shared.Tests
 {
@@ -159,6 +157,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Tests
 
             Assert.AreEqual(testValue, (LSL_Types.Vector3)testList.Data[0]);
         }
+
         /// <summary>
         /// Tests casting Quaternion item to Quaternion.
         /// </summary>
@@ -173,7 +172,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Tests
             Assert.AreEqual(testValue, (LSL_Types.Quaternion)testList.Data[0]);
         }
 
-//====================================================================================
+        //====================================================================================
 
         /// <summary>
         /// Tests GetLSLIntegerItem for LSLInteger item.
@@ -261,6 +260,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Tests
 
             Assert.AreEqual(testValue, testList.GetVector3Item(0));
         }
+
         /// <summary>
         /// Tests GetQuaternionItem for Quaternion item.
         /// </summary>

@@ -94,6 +94,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Login
 
             m_log.Info("[LLLOGIN IN CONNECTOR]: Starting...");
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -113,6 +114,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Login
             if (m_Enabled && m_Scenes.Contains(scene))
                 m_Scenes.Remove(scene);
         }
+
         #endregion Region Module interface
     }
 }

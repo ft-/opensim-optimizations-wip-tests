@@ -62,11 +62,13 @@ namespace OpenSim.Services.Connectors.SimianGrid
         private System.Timers.Timer m_refreshTimer = new System.Timers.Timer();
         private Dictionary<UUID, Scene> m_scenes = new Dictionary<UUID, Scene>();
         private string m_serverUrl = String.Empty;
+
         #region ISharedRegionModule
 
         public string Name { get { return "SimianGridMaptile"; } }
 
         public Type ReplaceableInterface { get { return null; } }
+
         ///<summary>
         ///
         ///</summary>
@@ -129,6 +131,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
         public void RegionLoaded(Scene scene)
         {
         }
+
         ///<summary>
         ///
         ///</summary>

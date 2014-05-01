@@ -53,6 +53,7 @@ namespace OpenSim.Services.HypergridService
         private UserAccountCache m_Cache;
         private string m_HomeURL;
         private IUserAccountService m_UserAccountService;
+
         public HGAssetService(IConfigSource config, string configName)
             : base(config, configName)
         {
@@ -131,6 +132,7 @@ namespace OpenSim.Services.HypergridService
 
             return meta;
         }
+
         //public virtual bool Get(string id, Object sender, AssetRetrieved handler)
 
         public override string Store(AssetBase asset)
@@ -140,6 +142,7 @@ namespace OpenSim.Services.HypergridService
 
             return base.Store(asset);
         }
+
         #endregion IAssetService overrides
 
         protected void AdjustIdentifiers(AssetMetadata meta)

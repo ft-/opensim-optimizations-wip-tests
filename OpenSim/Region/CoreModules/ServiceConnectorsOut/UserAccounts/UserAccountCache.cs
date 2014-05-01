@@ -41,6 +41,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.UserAccounts
 
         private ExpiringCache<string, UUID> m_NameCache;
         private ExpiringCache<UUID, UserAccount> m_UUIDCache;
+
         public UserAccountCache()
         {
             m_UUIDCache = new ExpiringCache<UUID, UserAccount>();

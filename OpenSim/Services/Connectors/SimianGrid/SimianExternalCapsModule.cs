@@ -105,6 +105,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_enabled)
@@ -122,6 +123,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
             m_scene.EventManager.OnRegisterCaps -= RegisterCapsEventHandler;
             m_scene.EventManager.OnDeregisterCaps -= DeregisterCapsEventHandler;
         }
+
         #endregion IRegionModule Members
 
         #region IExternalCapsModule
@@ -164,6 +166,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
         public void RegisterCapsEventHandler(UUID agentID, Caps caps)
         {
         }
+
         #endregion EventHandlers
 
         private String ExpandSkeletonURL(String urlSkel, Dictionary<String, String> subs)

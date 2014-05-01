@@ -74,6 +74,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
         {
             return m_rootScene.GetScenePresence(m_ID);
         }
+
         #region IAvatar implementation
 
         public IAvatarAttachment[] Attachments

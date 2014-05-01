@@ -75,7 +75,6 @@ namespace OpenSim.Region.CoreModules.World.Terrain
 #pragma warning restore 414
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-
         private readonly Commander m_commander = new Commander("terrain");
 
         private readonly Dictionary<StandardTerrainEffects, ITerrainFloodEffect> m_floodeffects =
@@ -92,6 +91,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain
         private Dictionary<string, ITerrainEffect> m_plugineffects;
         private ITerrainChannel m_revert;
         private Scene m_scene;
+
         /// <summary>
         /// Human readable list of terrain file extensions that are supported.
         /// </summary>
@@ -101,6 +101,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain
         private string m_supportFileExtensionsForTileSave = "";
 
         private volatile bool m_tainted;
+
         #region ICommandableModule Members
 
         public ICommander CommandInterface
@@ -188,6 +189,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain
             if (terrainConfig != null)
                 m_InitialTerrain = terrainConfig.GetString("InitialTerrain", m_InitialTerrain);
         }
+
         public void RegionLoaded(Scene scene)
         {
             //Do this here to give file loaders time to initialize and
@@ -211,6 +213,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain
                 m_scene.UnregisterModuleInterface<ITerrainModule>(this);
             }
         }
+
         #endregion INonSharedRegionModule Members
 
         #region ITerrainModule Members
@@ -399,6 +402,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain
         {
             m_channel = channel;
         }
+
         private static Stream URIFetch(Uri uri)
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
@@ -417,6 +421,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain
             // return new BufferedStream(file, (int) response.ContentLength);
             return new BufferedStream(file, 1000000);
         }
+
         #region Plugin Loading Methods
 
         public void InstallPlugin(string pluginName, ITerrainEffect effect)
@@ -490,6 +495,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain
                 }
             }
         }
+
         #endregion Plugin Loading Methods
 
         #endregion ITerrainModule Members
@@ -916,6 +922,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain
             m_loaders[".tif"] = new TIFF();
             m_loaders[".tiff"] = m_loaders[".tif"];
         }
+
         /// <summary>
         /// Checks to see height deltas in the tainted terrain patch at xStart ,yStart
         /// are all within the current estate limits
@@ -952,6 +959,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain
 
             return changesLimited;
         }
+
         /// <summary>
         /// Sends a copy of the current terrain to the scenes clients
         /// </summary>
@@ -972,6 +980,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain
                 }
             );
         }
+
         private void StoreUndoState()
         {
             lock (m_undo)
@@ -1340,6 +1349,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain
                          (int)args[3],
                          (int)args[4]);
         }
+
         private void InterfaceShowDebugStats(Object[] args)
         {
             double max = Double.MinValue;
@@ -1365,6 +1375,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain
             m_log.Info("Channel " + m_channel.Width + "x" + m_channel.Height);
             m_log.Info("max/min/avg/sum: " + max + "/" + min + "/" + avg + "/" + sum);
         }
+
         #endregion Console Commands
     }
 }

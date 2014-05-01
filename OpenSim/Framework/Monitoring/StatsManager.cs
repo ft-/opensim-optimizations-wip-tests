@@ -90,6 +90,7 @@ namespace OpenSim.Framework.Monitoring
 
         // All subcommands
         public static HashSet<string> SubCommands = new HashSet<string> { AllSubCommand, ListSubCommand };
+
         //        private static AssetStatsCollector assetStats;
         //        private static UserStatsCollector userStats;
         //        private static SimExtraStatsCollector simExtraStats = new SimExtraStatsCollector();
@@ -393,6 +394,7 @@ namespace OpenSim.Framework.Monitoring
 
             StatsLogger.RegisterConsoleCommands(console);
         }
+
         /// <summary>
         /// Register a statistic.
         /// </summary>
@@ -528,12 +530,14 @@ namespace OpenSim.Framework.Monitoring
             foreach (string report in GetAllStatsReports())
                 con.Output(report);
         }
+
         private static void OutputCategoryStatsToConsole(
             ICommandConsole con, SortedDictionary<string, SortedDictionary<string, Stat>> category)
         {
             foreach (string report in GetCategoryStatsReports(category))
                 con.Output(report);
         }
+
         private static void OutputContainerStatsToConsole(
             ICommandConsole con, SortedDictionary<string, Stat> container)
         {

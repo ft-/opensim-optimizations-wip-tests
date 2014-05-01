@@ -100,6 +100,7 @@ namespace OpenSim.Region.Physics.POSPlugin
         public override void Initialise(IMesher meshmerizer, IConfigSource config)
         {
         }
+
         public override void RemoveAvatar(PhysicsActor character)
         {
             POSCharacter act = (POSCharacter)character;
@@ -117,12 +118,14 @@ namespace OpenSim.Region.Physics.POSPlugin
                 _prims.Remove(p);
             }
         }
+
         /*
                 public override PhysicsActor AddPrim(Vector3 position, Vector3 size, Quaternion rotation)
                 {
                     return null;
                 }
         */
+
         public override void SetTerrain(float[] heightMap)
         {
             _heightMap = heightMap;

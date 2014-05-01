@@ -91,6 +91,7 @@ namespace OpenSim.Region.CoreModules.Avatars.Commands
         {
             //            m_log.DebugFormat("[USER COMMANDS MODULE]: POST INITIALIZED MODULE");
         }
+
         public void RegionLoaded(Scene scene)
         {
             //            m_log.DebugFormat("[USER COMMANDS MODULE]: REGION {0} LOADED", scene.RegionInfo.RegionName);
@@ -103,6 +104,7 @@ namespace OpenSim.Region.CoreModules.Avatars.Commands
             lock (m_scenes)
                 m_scenes.Remove(scene.RegionInfo.RegionID);
         }
+
         private ScenePresence GetUser(string firstName, string lastName)
         {
             ScenePresence userFound = null;

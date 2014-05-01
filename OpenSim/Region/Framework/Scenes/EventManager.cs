@@ -356,6 +356,7 @@ namespace OpenSim.Region.Framework.Scenes
         /// The MRM module also uses it.
         /// </remarks>
         public event OnFrameDelegate OnFrame;
+
         public event SunLindenHour OnGetCurrentTimeAsLindenSunHour;
 
         public event GetScriptRunning OnGetScriptRunning;
@@ -1007,6 +1008,7 @@ namespace OpenSim.Region.Framework.Scenes
         /// after it determines that an update has been made.
         /// </remarks>
         public event OnTerrainTaintedDelegate OnTerrainTainted;
+
         /// <summary>
         /// Triggered if the terrain has been edited
         /// </summary>
@@ -1015,7 +1017,9 @@ namespace OpenSim.Region.Framework.Scenes
         /// but is used by core solely to update the physics engine.
         /// </remarks>
         public event OnTerrainTickDelegate OnTerrainTick;
+
         public event IncomingInstantMessage OnUnhandledInstantMessage;
+
         /// <summary>
         /// An indication that the script has changed.
         /// </summary>
@@ -1589,6 +1593,7 @@ namespace OpenSim.Region.Framework.Scenes
                 }
             }
         }
+
         public void TriggerNotAtRotTargetEvent(uint localID)
         {
             ScriptNotAtRotTargetEvent handlerScriptNotAtRotTargetEvent = OnScriptNotAtRotTargetEvent;
@@ -3185,6 +3190,7 @@ namespace OpenSim.Region.Framework.Scenes
                 }
             }
         }
+
         /*
         public delegate void ScriptTimerEvent(uint localID, double timerinterval);
         /// <summary>
@@ -3266,6 +3272,7 @@ namespace OpenSim.Region.Framework.Scenes
             public int parcelPrice = 0;
             public bool removeContribution = false;
             public int transactionID = 0;
+
             public LandBuyArgs(UUID pagentId, UUID pgroupId, bool pfinal, bool pgroupOwned,
                 bool premoveContribution, int pparcelLocalID, int pparcelArea, int pparcelPrice,
                 bool pauthenticated)
@@ -3285,6 +3292,7 @@ namespace OpenSim.Region.Framework.Scenes
         public class MoneyTransferArgs : EventArgs
         {
             public int amount;
+
             /// <summary>
             /// Always false. The SL protocol sucks.
             /// </summary>
@@ -3294,6 +3302,7 @@ namespace OpenSim.Region.Framework.Scenes
             public UUID receiver;
             public UUID sender;
             public int transactiontype;
+
             public MoneyTransferArgs(UUID asender, UUID areceiver, int aamount, int atransactiontype, string adescription)
             {
                 sender = asender;
@@ -3303,6 +3312,7 @@ namespace OpenSim.Region.Framework.Scenes
                 description = adescription;
             }
         }
+
         //        public void TriggerGatherUuids(SceneObjectPart sop, IDictionary<UUID, AssetType> assetUuids)
         //        {
         //            GatherUuids handler = OnGatherUuids;

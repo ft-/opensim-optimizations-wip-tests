@@ -57,14 +57,17 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule.Object
         bool Phantom { get; set; }
 
         bool PhantomCollisions { get; set; }
+
         Vector3 RotationalVelocity { get; set; }
 
         Vector3 Torque { get; set; }
 
         Vector3 Velocity { get; set; }
+
         void AddAngularForce(Vector3 force, bool pushforce);
 
         void AddForce(Vector3 force, bool pushforce);
+
         void SetMomentum(Vector3 momentum);
     }
 }

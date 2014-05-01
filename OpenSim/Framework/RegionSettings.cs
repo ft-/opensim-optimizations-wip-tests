@@ -36,6 +36,7 @@ namespace OpenSim.Framework
         public float Distance;
         public float Pitch;
         public float Yaw;
+
         /// <summary>
         /// Generate a SpawnPoint from a string
         /// </summary>
@@ -86,6 +87,7 @@ namespace OpenSim.Framework
             // Get the elevation (pitch)
             Pitch = (float)-Math.Atan2(dir.Z, Math.Sqrt(dir.X * dir.X + dir.Y * dir.Y));
         }
+
         /// <summary>
         /// Returns a string representation of this SpawnPoint.
         /// </summary>
@@ -197,6 +199,7 @@ namespace OpenSim.Framework
         public delegate void SaveDelegate(RegionSettings rs);
 
         public event SaveDelegate OnSave;
+
         public int AgentLimit
         {
             get { return m_AgentLimit; }
@@ -512,6 +515,7 @@ namespace OpenSim.Framework
             if (OnSave != null)
                 OnSave(this);
         }
+
         // Return the List of SpawnPoints
         public List<SpawnPoint> SpawnPoints()
         {

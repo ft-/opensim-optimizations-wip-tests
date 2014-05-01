@@ -110,6 +110,7 @@ namespace OpenSim.Framework
         public delegate void SaveDelegate(EstateSettings rs);
 
         public event SaveDelegate OnSave;
+
         public string AbuseEmail
         {
             get { return m_AbuseEmail; }
@@ -211,6 +212,7 @@ namespace OpenSim.Framework
             get { return m_EstateID; }
             set { m_EstateID = value; }
         }
+
         public UUID[] EstateManagers
         {
             get { return l_EstateManagers.ToArray(); }
@@ -222,6 +224,7 @@ namespace OpenSim.Framework
             get { return m_EstateName; }
             set { m_EstateName = value; }
         }
+
         public UUID EstateOwner
         {
             get { return m_EstateOwner; }
@@ -245,11 +248,13 @@ namespace OpenSim.Framework
             get { return m_ParentEstateID; }
             set { m_ParentEstateID = value; }
         }
+
         public int PricePerMeter
         {
             get { return m_PricePerMeter; }
             set { m_PricePerMeter = value; }
         }
+
         public bool PublicAccess
         {
             get { return m_PublicAccess; }
@@ -261,11 +266,13 @@ namespace OpenSim.Framework
             get { return m_RedirectGridX; }
             set { m_RedirectGridX = value; }
         }
+
         public int RedirectGridY
         {
             get { return m_RedirectGridY; }
             set { m_RedirectGridY = value; }
         }
+
         public bool ResetHomeOnTeleport
         {
             get { return m_ResetHomeOnTeleport; }
@@ -289,6 +296,7 @@ namespace OpenSim.Framework
             get { return m_UseGlobalTime; }
             set { m_UseGlobalTime = value; }
         }
+
         public void AddBan(EstateBan ban)
         {
             if (ban == null)
@@ -393,6 +401,7 @@ namespace OpenSim.Framework
             if (OnSave != null)
                 OnSave(this);
         }
+
         public void SetFromFlags(ulong regionFlags)
         {
             ResetHomeOnTeleport = ((regionFlags & (ulong)OpenMetaverse.RegionFlags.ResetHomeOnTeleport) == (ulong)OpenMetaverse.RegionFlags.ResetHomeOnTeleport);

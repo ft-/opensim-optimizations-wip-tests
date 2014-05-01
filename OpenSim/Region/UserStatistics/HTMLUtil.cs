@@ -241,6 +241,7 @@ namespace OpenSim.Region.UserStatistics
             }
             o.Append(">\n\t");
         }
+
         public static void UL_C(ref StringBuilder o)
         {
             o.Append("</ul>\n");

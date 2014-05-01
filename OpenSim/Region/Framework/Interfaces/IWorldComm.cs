@@ -124,6 +124,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="regexBitfield">Bitfield indicating which strings should be processed as regex.</param>
         /// <returns>number of the scripts handle</returns>
         int Listen(uint LocalID, UUID itemID, UUID hostID, int channel, string name, UUID id, string msg, int regexBitfield);
+
         void ListenControl(UUID itemID, int handle, int active);
 
         void ListenRemove(UUID itemID, int handle);
@@ -159,6 +160,7 @@ namespace OpenSim.Region.Framework.Interfaces
         string GetName();
 
         Object[] GetSerializationData();
+
         bool IsActive();
     }
 }

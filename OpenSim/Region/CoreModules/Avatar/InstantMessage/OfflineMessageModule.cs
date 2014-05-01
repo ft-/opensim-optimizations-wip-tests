@@ -49,6 +49,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
         private string m_RestURL = String.Empty;
         private List<Scene> m_SceneList = new List<Scene>();
         private IMessageTransferModule m_TransferModule = null;
+
         public string Name
         {
             get { return "OfflineMessageModule"; }
@@ -101,6 +102,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
 
             m_ForwardOfflineGroupMessages = cnf.GetBoolean("ForwardOfflineGroupMessages", m_ForwardOfflineGroupMessages);
         }
+
         public void PostInitialise()
         {
             if (!enabled)
@@ -140,6 +142,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
                 m_SceneList.Remove(scene);
             }
         }
+
         private IClientAPI FindClient(UUID agentID)
         {
             foreach (Scene s in m_SceneList)
@@ -161,6 +164,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
             }
             return null;
         }
+
         private void OnNewClient(IClientAPI client)
         {
             client.OnRetrieveInstantMessages += RetrieveInstantMessages;

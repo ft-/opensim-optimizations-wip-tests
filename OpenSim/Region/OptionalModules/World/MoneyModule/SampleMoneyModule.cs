@@ -79,6 +79,7 @@ namespace OpenSim.Region.OptionalModules.World.MoneyModule
         private bool m_enabled = true;
 
         private IConfigSource m_gConfig;
+
         /// <summary>
         /// Scenes by Region Handle
         /// </summary>
@@ -134,6 +135,7 @@ namespace OpenSim.Region.OptionalModules.World.MoneyModule
         {
             get { return 0; }
         }
+
         public void AddRegion(Scene scene)
         {
             if (m_enabled)
@@ -213,6 +215,7 @@ namespace OpenSim.Region.OptionalModules.World.MoneyModule
             ReadConfigAndPopulate(startupConfig, "Startup");
             ReadConfigAndPopulate(economyConfig, "Economy");
         }
+
         public bool ObjectGiveMoney(UUID objectID, UUID fromID, UUID toID, int amount)
         {
             string description = String.Format("Object {0} pays {1}", resolveObjectName(objectID), resolveAgentName(toID));
@@ -235,6 +238,7 @@ namespace OpenSim.Region.OptionalModules.World.MoneyModule
         public void RemoveRegion(Scene scene)
         {
         }
+
         #endregion IMoneyModule Members
 
         public bool AmountCovered(UUID agentID, int amount)
@@ -766,6 +770,7 @@ namespace OpenSim.Region.OptionalModules.World.MoneyModule
                 m_sellEnabled = startupConfig.GetBoolean("SellEnabled", false);
             }
         }
+
         private string resolveAgentName(UUID agentID)
         {
             // try avatar username surname
@@ -795,6 +800,7 @@ namespace OpenSim.Region.OptionalModules.World.MoneyModule
             }
             return String.Empty;
         }
+
         # region Standalone box enablers only
         #endregion
 
@@ -809,6 +815,7 @@ namespace OpenSim.Region.OptionalModules.World.MoneyModule
         #endregion
 
         #region event Handlers
+
         private void ValidateLandBuy(Object osender, EventManager.LandBuyArgs e)
         {
             lock (e)
@@ -816,6 +823,7 @@ namespace OpenSim.Region.OptionalModules.World.MoneyModule
                 e.economyValidated = true;
             }
         }
+
         #endregion
     }
 }

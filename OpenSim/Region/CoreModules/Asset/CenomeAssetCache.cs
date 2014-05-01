@@ -119,6 +119,7 @@ namespace OpenSim.Region.CoreModules.Asset
         public static readonly TimeSpan DefaultExpirationTime = TimeSpan.FromMinutes(30.0);
 
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         /// <summary>
         /// Cache object.
         /// </summary>
@@ -218,6 +219,7 @@ namespace OpenSim.Region.CoreModules.Asset
             // XXX:This is probably not an efficient implementation.
             return m_cache.TryGetValue(id, out asset);
         }
+
         /// <summary>
         /// Clear asset cache.
         /// </summary>

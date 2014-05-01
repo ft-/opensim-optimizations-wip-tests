@@ -58,6 +58,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
 
         private bool m_Enabled = false;
         private string m_serverUrl = String.Empty;
+
         #region ISharedRegionModule
 
         public SimianAvatarServiceConnector()
@@ -84,6 +85,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
         public void RegionLoaded(Scene scene)
         {
         }
+
         public void RemoveRegion(Scene scene)
         {
             if (m_Enabled) { scene.UnregisterModuleInterface<IAvatarService>(this); }
@@ -278,6 +280,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
 
             return success;
         }
+
         // <summary>
         // </summary>
         // <param name=""></param>
@@ -349,11 +352,13 @@ namespace OpenSim.Services.Connectors.SimianGrid
                 return false;
             }
         }
+
         public bool SetItems(UUID userID, string[] names, string[] values)
         {
             m_log.Error("[SIMIAN AVATAR CONNECTOR]: SetItems called for " + userID + " with " + names.Length + " names and " + values.Length + " values, implement this");
             return false;
         }
+
         #endregion IAvatarService
     }
 }

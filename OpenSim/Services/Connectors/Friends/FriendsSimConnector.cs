@@ -138,6 +138,7 @@ namespace OpenSim.Services.Connectors.Friends
         {
             return "friends";
         }
+
         private bool Call(GridRegion region, Dictionary<string, object> sendData)
         {
             string reqString = ServerUtils.BuildQueryString(sendData);

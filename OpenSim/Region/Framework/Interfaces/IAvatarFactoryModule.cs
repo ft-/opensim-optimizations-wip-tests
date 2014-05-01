@@ -84,6 +84,7 @@ namespace OpenSim.Region.Framework.Interfaces
         void SetAppearance(IScenePresence sp, AvatarAppearance appearance, WearableCacheItem[] cacheItems);
 
         void SetAppearance(IScenePresence sp, Primitive.TextureEntry textureEntry, byte[] visualParams, WearableCacheItem[] cacheItems);
+
         /// <summary>
         /// Validate that OpenSim can find the baked textures need to display a given avatar
         /// </summary>
@@ -93,6 +94,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// true if all the baked textures referenced by the texture IDs exist or the appearance is only using default textures.  false otherwise.
         /// </returns>
         bool ValidateBakedTextureCache(IScenePresence sp);
+
         /// <summary>
         /// Get a report about the current state of a scene presence's baked appearance textures.
         /// </summary>

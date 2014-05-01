@@ -53,7 +53,9 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api.Interfaces
         LSL_Rotation modInvokeR(string fname, params object[] parms);
 
         LSL_String modInvokeS(string fname, params object[] parms);
+
         LSL_Vector modInvokeV(string fname, params object[] parms);
+
         //Module functions
         string modSendCommand(string modules, string command, string k);
     }

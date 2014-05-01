@@ -26,13 +26,11 @@
  */
 
 using NUnit.Framework;
-using OpenSim.Framework;
 using OpenMetaverse;
-using OpenMetaverse.StructuredData;
+using OpenSim.Tests.Common;
 using System;
 using System.Globalization;
 using System.Threading;
-using OpenSim.Tests.Common;
 
 namespace OpenSim.Framework.Tests
 {
@@ -41,7 +39,6 @@ namespace OpenSim.Framework.Tests
     {
         private bool m_RegionSettingsOnSaveEventFired;
         private bool m_RegionLightShareDataOnSaveEventFired;
-
 
         [Test]
         public void ChildAgentDataUpdate01()
@@ -64,7 +61,7 @@ namespace OpenSim.Framework.Tests
             Vector3 AtAxis1 = Vector3.UnitX;
 
             ulong RegionHandle1 = ulong.MinValue;
-            byte[] Throttles1 = new byte[] {0, 1, 0};
+            byte[] Throttles1 = new byte[] { 0, 1, 0 };
 
             Vector3 Velocity1 = Vector3.Zero;
             float Far1 = 256;
@@ -110,8 +107,8 @@ namespace OpenSim.Framework.Tests
                 && position2.Center == position1.Center
                 && position2.RegionHandle == position1.RegionHandle
                 && position2.Far == position1.Far
-               
-                ,"Copy From ChildAgentDataUpdate failed");
+
+                , "Copy From ChildAgentDataUpdate failed");
 
             position2 = new AgentPosition();
 
@@ -130,7 +127,6 @@ namespace OpenSim.Framework.Tests
             Assert.IsTrue(position2.ChangedGrid == position1.ChangedGrid, "ChangedGrid didn't unpack the same way it packed");
             Assert.IsTrue(position2.Center == position1.Center, "Center didn't unpack the same way it packed");
             Assert.IsTrue(position2.Size == position1.Size, "Size didn't unpack the same way it packed");
-
         }
 
         [Test]
@@ -141,19 +137,19 @@ namespace OpenSim.Framework.Tests
             settings.Save();
             settings.OnSave -= RegionSaveFired;
 
-//            string str = settings.LoadedCreationDate;
-//            int dt = settings.LoadedCreationDateTime;
-//            string id = settings.LoadedCreationID;
-//            string time = settings.LoadedCreationTime;
+            //            string str = settings.LoadedCreationDate;
+            //            int dt = settings.LoadedCreationDateTime;
+            //            string id = settings.LoadedCreationID;
+            //            string time = settings.LoadedCreationTime;
 
             Assert.That(m_RegionSettingsOnSaveEventFired, "RegionSettings Save Event didn't Fire");
-            
         }
+
         public void RegionSaveFired(RegionSettings settings)
         {
             m_RegionSettingsOnSaveEventFired = true;
         }
-        
+
         [Test]
         public void InventoryItemBaseConstructorTest01()
         {
@@ -163,15 +159,14 @@ namespace OpenSim.Framework.Tests
 
             UUID ItemID = UUID.Random();
             UUID OwnerID = UUID.Random();
-            
+
             InventoryItemBase b2 = new InventoryItemBase(ItemID);
             Assert.That(b2.ID == ItemID, "ID constructor should create an inventory item with ID = ItemID");
             Assert.That(b2.Owner == UUID.Zero, "ID constructor  should create an inventory item with Owner = UUID.Zero");
 
-            InventoryItemBase b3 = new InventoryItemBase(ItemID,OwnerID);
+            InventoryItemBase b3 = new InventoryItemBase(ItemID, OwnerID);
             Assert.That(b3.ID == ItemID, "ID,OwnerID constructor should create an inventory item with ID = ItemID");
             Assert.That(b3.Owner == OwnerID, "ID,OwnerID  constructor  should create an inventory item with Owner = OwnerID");
-
         }
 
         [Test]
@@ -198,9 +193,10 @@ namespace OpenSim.Framework.Tests
             Assert.IsTrue(m_RegionLightShareDataOnSaveEventFired, "OnSave Event Never Fired");
 
             object o = rlsd.Clone();
-            RegionLightShareData dupe = (RegionLightShareData) o;
+            RegionLightShareData dupe = (RegionLightShareData)o;
             Assert.IsTrue(rlsd.sceneGamma == dupe.sceneGamma, "Memberwise Clone of RegionLightShareData failed");
         }
+
         public void RegionLightShareDataSaveFired(RegionLightShareData settings)
         {
             m_RegionLightShareDataOnSaveEventFired = true;
@@ -213,10 +209,12 @@ namespace OpenSim.Framework.Tests
             es.AddBan(null);
             UUID bannedUserId = UUID.Random();
             es.AddBan(new EstateBan()
-                          {   BannedHostAddress = string.Empty,
+                          {
+                              BannedHostAddress = string.Empty,
                               BannedHostIPMask = string.Empty,
                               BannedHostNameMask = string.Empty,
-                              BannedUserID = bannedUserId}
+                              BannedUserID = bannedUserId
+                          }
                           );
             Assert.IsTrue(es.IsBanned(bannedUserId), "User Should be banned but is not.");
             Assert.IsFalse(es.IsBanned(UUID.Zero), "User Should not be banned but is.");
@@ -250,8 +248,7 @@ namespace OpenSim.Framework.Tests
 
             Assert.That(es.EstateGroups.Length == 1, "1 Estate Groups Added..   so the array should be 1 length");
 
-            Assert.That(es.EstateGroups[0] == bannedUserId,"User ID should be in EstateGroups");
-
+            Assert.That(es.EstateGroups[0] == bannedUserId, "User ID should be in EstateGroups");
         }
 
         [Test]
@@ -267,7 +264,7 @@ namespace OpenSim.Framework.Tests
             Assert.That(fld.ID == uuid1, "ID,Owner constructor failed to save value in ID field.");
             Assert.That(fld.Owner == uuid2, "ID,Owner constructor failed to save value in ID field.");
         }
-        
+
         [Test]
         public void AsssetBaseConstructorTest01()
         {
@@ -275,12 +272,11 @@ namespace OpenSim.Framework.Tests
             Assert.IsNotNull(abase.Metadata, "void constructor of AssetBase should have created a MetaData element but didn't.");
             UUID itemID = UUID.Random();
             UUID creatorID = UUID.Random();
-            abase = new AssetBase(itemID.ToString(), "test item", (sbyte) AssetType.Texture, creatorID.ToString());
+            abase = new AssetBase(itemID.ToString(), "test item", (sbyte)AssetType.Texture, creatorID.ToString());
 
             Assert.IsNotNull(abase.Metadata, "string,string,sbyte,string constructor of AssetBase should have created a MetaData element but didn't.");
             Assert.That(abase.ID == itemID.ToString(), "string,string,sbyte,string constructor failed to set ID property");
             Assert.That(abase.Metadata.CreatorID == creatorID.ToString(), "string,string,sbyte,string constructor failed to set Creator ID");
-
 
             abase = new AssetBase(itemID.ToString(), "test item", -1, creatorID.ToString());
             Assert.IsNotNull(abase.Metadata, "string,string,sbyte,string constructor of AssetBase with unknown type should have created a MetaData element but didn't.");
@@ -293,7 +289,7 @@ namespace OpenSim.Framework.Tests
             abase.Metadata = metts;
 
             Assert.That(abase.ToString() == itemID.ToString(), "ToString is overriden to be fullID.ToString()");
-            Assert.That(abase.ID == itemID.ToString(),"ID should be MetaData.FullID.ToString() when string.empty or null is provided to the ID property");
+            Assert.That(abase.ID == itemID.ToString(), "ID should be MetaData.FullID.ToString() when string.empty or null is provided to the ID property");
         }
 
         [Test]
@@ -302,7 +298,6 @@ namespace OpenSim.Framework.Tests
             CultureInfo ci = new CultureInfo("en-US", false);
             Culture.SetCurrentCulture();
             Assert.That(Thread.CurrentThread.CurrentCulture.Name == ci.Name, "SetCurrentCulture failed to set thread culture to en-US");
-
-        }     
+        }
     }
 }

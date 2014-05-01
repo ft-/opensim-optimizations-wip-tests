@@ -112,6 +112,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC
         }
 
         public bool SenseAsAgent { get; set; }
+
         public void ActivateGesture(UUID assetId, UUID gestureId)
         {
         }
@@ -363,6 +364,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC
         {
             SendOnChatFromClient(channel, message, ChatTypeEnum.Whisper);
         }
+
         private bool hasTouchEvents(SceneObjectPart part)
         {
             if ((part.ScriptEvents & scriptEvents.touch) != 0 ||
@@ -371,6 +373,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC
                 return true;
             return false;
         }
+
         #region Internal Functions
 
         private void SendOnChatFromClient(int channel, string message, ChatTypeEnum chatType)
@@ -620,6 +623,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC
         public event ObjectOwner OnObjectOwner;
 
         public event ObjectPermissions OnObjectPermissions;
+
         public event ObjectRequest OnObjectRequest;
 
         public event ObjectSaleInfo OnObjectSaleInfo;
@@ -635,6 +639,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC
         public event ParcelAccessListUpdateRequest OnParcelAccessListUpdateRequest;
 
         public event ParcelBuy OnParcelBuy;
+
         public event ParcelBuyPass OnParcelBuyPass;
 
         public event ParcelDeedToGroup OnParcelDeedToGroup;
@@ -728,6 +733,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC
         public event RezMultipleAttachmentsFromInv OnRezMultipleAttachmentsFromInv;
 
         public event RezObject OnRezObject;
+
         public event RezScript OnRezScript;
 
         public event RezSingleAttachmentFromInv OnRezSingleAttachmentFromInv;
@@ -743,6 +749,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC
         public event SetAlwaysRun OnSetAlwaysRun;
 
         public event SetAppearance OnSetAppearance;
+
         public event SetEstateFlagsRequest OnSetEstateFlagsRequest;
 
         public event SetEstateTerrainBaseTexture OnSetEstateTerrainBaseTexture;
@@ -774,6 +781,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC
         public event StartLure OnStartLure;
 
         public event StopAnim OnStopAnim;
+
         public event GenericCall2 OnStopMovement;
 
         public event TeleportCancel OnTeleportCancel;
@@ -783,6 +791,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC
         public event TeleportLandmarkRequest OnTeleportLandmarkRequest;
 
         public event TeleportLocationRequest OnTeleportLocationRequest;
+
         public event TeleportLureRequest OnTeleportLureRequest;
 
         public event FriendshipTermination OnTerminateFriendship;
@@ -840,10 +849,13 @@ namespace OpenSim.Region.OptionalModules.World.NPC
         public event UUIDNameRequest OnUUIDGroupNameRequest;
 
         public event ViewerEffectEventHandler OnViewerEffect;
+
         public event XferReceive OnXferReceive;
+
 #pragma warning restore 67
 
         #endregion Event Definitions IGNORE
+
         #region Overrriden Methods IGNORE
 
         private uint m_circuitCode;
@@ -934,6 +946,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC
             get { return m_startPos; }
             set { }
         }
+
         public void Close()
         {
             Close(false);
@@ -981,6 +994,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC
         {
             return false;
         }
+
         public virtual void Kick(string message)
         {
         }
@@ -1356,6 +1370,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC
         public virtual void SendWearables(AvatarWearable[] wearables, int serial)
         {
         }
+
         public virtual void SendWindData(Vector2[] windSpeeds)
         {
         }
@@ -1371,6 +1386,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC
         public virtual void SetChildAgentThrottle(byte[] throttle)
         {
         }
+
         public void SetClientInfo(ClientInfo info)
         {
         }
@@ -1384,10 +1400,13 @@ namespace OpenSim.Region.OptionalModules.World.NPC
         public void Stop()
         {
         }
+
         public void Terminate()
         {
         }
+
         #endregion Overrriden Methods IGNORE
+
         #region IClientAPI Members
 
         public bool AddGenericPacketHandler(string MethodName, GenericMessage handler)
@@ -1423,6 +1442,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC
         public void SendClassifiedInfoReply(UUID classifiedID, UUID creatorID, uint creationDate, uint expirationDate, uint category, string name, string description, UUID parcelID, uint parentEstate, UUID snapshotID, string simName, Vector3 globalPos, string parcelName, byte classifiedFlags, int price)
         {
         }
+
         public void SendCreateGroupReply(UUID groupID, bool success, string message)
         {
         }
@@ -1446,6 +1466,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC
         public void SendUserInfoReply(bool imViaEmail, bool visible, string email)
         {
         }
+
         #endregion IClientAPI Members
     }
 }

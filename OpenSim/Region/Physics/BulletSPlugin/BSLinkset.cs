@@ -536,6 +536,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                 return false;
             }
         }
+
         #region Extension
 
         public virtual object Extension(string pFunct, params object[] pParams)

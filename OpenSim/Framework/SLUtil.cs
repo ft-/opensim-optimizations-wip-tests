@@ -192,6 +192,7 @@ namespace OpenSim.Framework
             private string contentType2;
             private string extension;
             private InventoryType inventoryType;
+
             public TypeMapping(AssetType assetType, InventoryType inventoryType, string contentType, string contentType2, string extension)
                 : this((sbyte)assetType, inventoryType, contentType, contentType2, extension)
             {
@@ -225,6 +226,7 @@ namespace OpenSim.Framework
             {
                 get { return assetType; }
             }
+
             public string ContentType
             {
                 get { return contentType; }
@@ -245,6 +247,7 @@ namespace OpenSim.Framework
                 get { return inventoryType; }
             }
         }
+
         #endregion SL / file extension / content-type conversions
 
         /// <summary>

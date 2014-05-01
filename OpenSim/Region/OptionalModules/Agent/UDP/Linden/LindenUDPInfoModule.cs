@@ -53,6 +53,7 @@ namespace OpenSim.Region.OptionalModules.UDP.Linden
     {
         protected Dictionary<UUID, Scene> m_scenes = new Dictionary<UUID, Scene>();
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public string Name { get { return "Linden UDP Module"; } }
 
         public Type ReplaceableInterface { get { return null; } }
@@ -137,6 +138,7 @@ namespace OpenSim.Region.OptionalModules.UDP.Linden
         {
             //            m_log.DebugFormat("[LINDEN UDP INFO MODULE]: POST INITIALIZED MODULE");
         }
+
         public void RegionLoaded(Scene scene)
         {
             //            m_log.DebugFormat("[LINDEN UDP INFO MODULE]: REGION {0} LOADED", scene.RegionInfo.RegionName);
@@ -149,6 +151,7 @@ namespace OpenSim.Region.OptionalModules.UDP.Linden
             lock (m_scenes)
                 m_scenes.Remove(scene.RegionInfo.RegionID);
         }
+
         protected string GetColumnEntry(string entry, int maxLength, int columnPadding)
         {
             return string.Format(
@@ -620,6 +623,7 @@ namespace OpenSim.Region.OptionalModules.UDP.Linden
 
             return report.ToString();
         }
+
         /// <summary>
         /// Generate an image queue report
         /// </summary>
@@ -686,6 +690,7 @@ namespace OpenSim.Region.OptionalModules.UDP.Linden
 
             return report.ToString();
         }
+
         private void PrintRequests(string type, Dictionary<string, int> sortedDict, int sum)
         {
             m_log.InfoFormat("[INFO]:");

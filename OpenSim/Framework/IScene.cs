@@ -53,6 +53,7 @@ namespace OpenSim.Framework
         Crashed = 2,
         Starting = 3,
     };
+
     public interface IScene
     {
         event restart OnRestart;
@@ -82,7 +83,9 @@ namespace OpenSim.Framework
         RegionInfo RegionInfo { get; }
 
         RegionStatus RegionStatus { get; set; }
+
         float TimeDilation { get; }
+
         /// <summary>
         /// Add a new agent with an attached client.  All agents except initial login clients will starts off as a child agent
         /// - the later agent crossing will promote it to a root agent.
@@ -130,6 +133,7 @@ namespace OpenSim.Framework
         T[] RequestModuleInterfaces<T>();
 
         void Restart();
+
         void StackModuleInterface<M>(M mod);
 
         //        void AddCommand(object module, string command, string shorthelp, string longhelp, CommandDelegate callback);

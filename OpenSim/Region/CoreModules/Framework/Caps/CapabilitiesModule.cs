@@ -53,6 +53,7 @@ namespace OpenSim.Region.CoreModules.Framework
         /// Each agent has its own capabilities handler.
         /// </summary>
         private Dictionary<UUID, Caps> m_capsObjects = new Dictionary<UUID, Caps>();
+
         private ReaderWriterLock m_capsObjectsRwLock = new ReaderWriterLock();
 
         private Dictionary<UUID, string> m_capsPaths = new Dictionary<UUID, string>();
@@ -60,12 +61,14 @@ namespace OpenSim.Region.CoreModules.Framework
 
         private Dictionary<UUID, Dictionary<ulong, string>> m_childrenSeeds
             = new Dictionary<UUID, Dictionary<ulong, string>>();
+
         private ReaderWriterLock m_childrenSeedsRwLock = new ReaderWriterLock();
 
         protected Scene m_scene;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private string m_showCapsCommandFormat = "   {0,-38} {1,-60}\n";
+
         public string Name
         {
             get { return "Capabilities Module"; }
@@ -260,6 +263,7 @@ namespace OpenSim.Region.CoreModules.Framework
         public void Initialise(IConfigSource source)
         {
         }
+
         public void PostInitialise()
         {
         }
@@ -310,6 +314,7 @@ namespace OpenSim.Region.CoreModules.Framework
         {
             m_scene.UnregisterModuleInterface<ICapabilitiesModule>(this);
         }
+
         public void SetAgentCapsSeeds(AgentCircuitData agent)
         {
             m_capsPathsRwLock.AcquireWriterLock(-1);
@@ -333,6 +338,7 @@ namespace OpenSim.Region.CoreModules.Framework
                 m_childrenSeedsRwLock.ReleaseWriterLock();
             }
         }
+
         public void SetChildrenSeed(UUID agentID, Dictionary<ulong, string> seeds)
         {
             //m_log.DebugFormat(" !!! Setting child seeds in {0} to {1}", m_scene.RegionInfo.RegionName, seeds.Count);
@@ -347,6 +353,7 @@ namespace OpenSim.Region.CoreModules.Framework
                 m_childrenSeedsRwLock.ReleaseWriterLock();
             }
         }
+
         private void BuildDetailedStatsByCapReport(StringBuilder sb, string capName)
         {
             sb.AppendFormat("Capability name {0}\n", capName);
@@ -590,6 +597,7 @@ namespace OpenSim.Region.CoreModules.Framework
 
             MainConsole.Instance.Output(sb.ToString());
         }
+
         private void HandleShowCapsStatsByUserCommand(string module, string[] cmdParams)
         {
             if (SceneManager.Instance.CurrentScene != null && SceneManager.Instance.CurrentScene != m_scene)
@@ -623,6 +631,7 @@ namespace OpenSim.Region.CoreModules.Framework
 
             MainConsole.Instance.Output(sb.ToString());
         }
+
         private class CapTableRow
         {
             public CapTableRow(string name, int requestsReceived, int requestsHandled)

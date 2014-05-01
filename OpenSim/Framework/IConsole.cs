@@ -49,6 +49,7 @@ namespace OpenSim.Framework
         void Output(string text);
 
         void OutputFormat(string format, params object[] components);
+
         // Displays a prompt and waits for the user to enter a string, then returns that string
         // (Done with no echo and suitable for passwords)
         string PasswdPrompt(string p);

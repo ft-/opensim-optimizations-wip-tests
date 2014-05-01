@@ -123,6 +123,7 @@ namespace OpenSim.Region.CoreModules.Scripting.WorldComm
         /// Local ID from script engine
         /// </summary>
         private uint m_localID;
+
         /// <summary>
         /// The message
         /// </summary>
@@ -132,6 +133,7 @@ namespace OpenSim.Region.CoreModules.Scripting.WorldComm
         /// Object name to filter messages from
         /// </summary>
         private string m_name;
+
         public ListenerInfo(int handle, uint localID, UUID ItemID,
                 UUID hostID, int channel, string name, UUID id,
                 string message)
@@ -272,10 +274,12 @@ namespace OpenSim.Region.CoreModules.Scripting.WorldComm
 
         private Dictionary<int, List<ListenerInfo>> m_listeners =
                 new Dictionary<int, List<ListenerInfo>>();
+
         private ReaderWriterLock m_ListenerRwLock = new ReaderWriterLock();
 
         private int m_maxhandles;
         private int m_maxlisteners;
+
         public ListenerManager(int maxlisteners, int maxhandles)
         {
             m_maxlisteners = maxlisteners;
@@ -301,6 +305,7 @@ namespace OpenSim.Region.CoreModules.Scripting.WorldComm
                 }
             }
         }
+
         public void Activate(UUID itemID, int handle)
         {
             m_ListenerRwLock.AcquireReaderLock(-1);
@@ -608,6 +613,7 @@ namespace OpenSim.Region.CoreModules.Scripting.WorldComm
                 m_ListenerRwLock.ReleaseWriterLock();
             }
         }
+
         /// <summary>
         /// non-locked access, since its always called in the context of the
         /// lock
@@ -652,6 +658,7 @@ namespace OpenSim.Region.CoreModules.Scripting.WorldComm
         /// process name parameter as regex
         /// </summary>
         public const int OS_LISTEN_REGEX_NAME = 0x1;
+
         #endregion Constants for the bitfield parameter of osListenRegex
     }
 
@@ -668,6 +675,7 @@ namespace OpenSim.Region.CoreModules.Scripting.WorldComm
         private Scene m_scene;
         private int m_shoutdistance = 100;
         private int m_whisperdistance = 10;
+
         #region INonSharedRegionModule Members
 
         public string Name
@@ -721,6 +729,7 @@ namespace OpenSim.Region.CoreModules.Scripting.WorldComm
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -734,6 +743,7 @@ namespace OpenSim.Region.CoreModules.Scripting.WorldComm
             m_scene.EventManager.OnChatBroadcast -= DeliverClientMessage;
             m_scene.EventManager.OnChatBroadcast -= DeliverClientMessage;
         }
+
         #endregion INonSharedRegionModule Members
 
         #region IWorldComm Members
@@ -1034,6 +1044,7 @@ namespace OpenSim.Region.CoreModules.Scripting.WorldComm
         {
             m_listenerManager.Remove(itemID, handle);
         }
+
         protected void QueueMessage(ListenerInfo li)
         {
             lock (m_pending.SyncRoot)
@@ -1041,6 +1052,7 @@ namespace OpenSim.Region.CoreModules.Scripting.WorldComm
                 m_pending.Enqueue(li);
             }
         }
+
         #endregion IWorldComm Members
 
         /********************************************************************

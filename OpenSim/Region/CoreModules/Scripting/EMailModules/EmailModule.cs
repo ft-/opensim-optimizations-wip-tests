@@ -79,8 +79,9 @@ namespace OpenSim.Region.CoreModules.Scripting.EmailModules
         private string SMTP_SERVER_LOGIN = string.Empty;
         private string SMTP_SERVER_PASSWORD = string.Empty;
         private int SMTP_SERVER_PORT = 25;
- // 2 hours without llGetNextEmail drops the queue
-          // largest email allowed by default, as per lsl docs.
+        // 2 hours without llGetNextEmail drops the queue
+        // largest email allowed by default, as per lsl docs.
+
         #region ISharedRegionModule
 
         public string Name
@@ -164,6 +165,7 @@ namespace OpenSim.Region.CoreModules.Scripting.EmailModules
                 return;
             }
         }
+
         public void PostInitialise()
         {
         }
@@ -175,6 +177,7 @@ namespace OpenSim.Region.CoreModules.Scripting.EmailModules
         public void RemoveRegion(Scene scene)
         {
         }
+
         #endregion ISharedRegionModule
 
         /// <summary>
@@ -419,6 +422,7 @@ namespace OpenSim.Region.CoreModules.Scripting.EmailModules
             string unused;
             return (null != findPrim(objectID, out unused));
         }
+
         private void resolveNamePositionRegionName(UUID objectID, out string ObjectName, out string ObjectAbsolutePosition, out string ObjectRegionName)
         {
             string m_ObjectRegionName;

@@ -48,6 +48,7 @@ namespace PrimMesher
         public List<Coord> normals;
         public List<UVCoord> uvs;
         public List<ViewerFace> viewerFaces;
+
         public SculptMesh(string fileName, int sculptType, int lod, int viewerMode, int mirror, int invert)
         {
             Bitmap bitmap = (Bitmap)Bitmap.FromFile(fileName);
@@ -315,6 +316,7 @@ namespace PrimMesher
             bitmap.Dispose();
             return sculptMesh;
         }
+
 #endif
 #if SYSTEM_DRAWING
 #endif
@@ -585,7 +587,9 @@ namespace PrimMesher
             }
             return rows;
         }
+
 #endif
+
         private void calcVertexNormals(SculptType sculptType, int xSize, int ySize)
         {  // compute vertex normals by summing all the surface normals of all the triangles sharing
             // each vertex and then normalizing

@@ -68,6 +68,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
 
         private bool m_Enabled = false;
         private string m_serverUrl = String.Empty;
+
         #region INonSharedRegionModule
 
         public SimianProfiles()
@@ -94,6 +95,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
         public void RegionLoaded(Scene scene)
         {
         }
+
         public void RemoveRegion(Scene scene)
         {
             if (m_Enabled)
@@ -250,6 +252,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
         {
             // FIXME: Save this info
         }
+
         #endregion Classifieds
 
         #region Picks
@@ -300,6 +303,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
         {
             // FIXME: Save this
         }
+
         #endregion Picks
 
         #region Notes
@@ -325,6 +329,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
             // FIXME: Fetch this
             client.SendAvatarNotesReply(targetAvatarID, String.Empty);
         }
+
         #endregion Notes
 
         #region Profiles
@@ -428,6 +433,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
 
             AddUserData(client.AgentId, "LLAbout", map);
         }
+
         private void UpdateUserInfoHandler(bool imViaEmail, bool visible, IClientAPI client)
         {
             m_log.Info("[SIMIAN PROFILES]: Ignoring user info update from " + client.Name);
@@ -452,7 +458,9 @@ namespace OpenSim.Services.Connectors.SimianGrid
 
             client.SendUserInfoReply(false, true, email);
         }
+
         #endregion Profiles
+
         private OSDMap FetchUserData(UUID userID)
         {
             m_log.DebugFormat("[SIMIAN PROFILES]: Fetch information about {0}", userID);

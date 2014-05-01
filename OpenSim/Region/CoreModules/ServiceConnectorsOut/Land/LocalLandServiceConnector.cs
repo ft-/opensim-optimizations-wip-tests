@@ -48,6 +48,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Land
 
         private bool m_Enabled = false;
         private List<Scene> m_Scenes = new List<Scene>();
+
         public LocalLandServicesConnector()
         {
         }
@@ -68,6 +69,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Land
         {
             get { return null; }
         }
+
         public void AddRegion(Scene scene)
         {
             m_Scenes.Add(scene);
@@ -95,6 +97,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Land
                 }
             }
         }
+
         public void PostInitialise()
         {
         }
@@ -102,6 +105,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Land
         public void RegionLoaded(Scene scene)
         {
         }
+
         public void RemoveRegion(Scene scene)
         {
             if (m_Scenes.Contains(scene))

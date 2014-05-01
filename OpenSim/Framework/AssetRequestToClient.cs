@@ -42,6 +42,7 @@ namespace OpenSim.Framework
         public AssetBase AssetInf;
         public byte AssetRequestSource = 2;
         public long DataPointer = 0;
+
         //public bool AssetInCache;
         //public int TimeRequested;
         public int DiscardLevel = -1;
@@ -53,6 +54,7 @@ namespace OpenSim.Framework
         public byte[] Params = null;
         public UUID RequestAssetID;
         public UUID TransferRequestID;
+
         public AssetRequestToClient()
         {
         }

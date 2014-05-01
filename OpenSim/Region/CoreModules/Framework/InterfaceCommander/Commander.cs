@@ -90,6 +90,7 @@ namespace OpenSim.Region.CoreModules.Framework.InterfaceCommander
         {
             get { return m_name; }
         }
+
         #region ICommander Members
 
         /// <summary>
@@ -156,6 +157,7 @@ namespace OpenSim.Region.CoreModules.Framework.InterfaceCommander
         {
             m_commands[commandName] = command;
         }
+
         /// <summary>
         /// Runs a specified function with attached arguments
         /// *** <b>DO NOT CALL DIRECTLY.</b> ***
@@ -167,6 +169,7 @@ namespace OpenSim.Region.CoreModules.Framework.InterfaceCommander
         {
             m_commands[function].Run(args);
         }
+
         #endregion ICommander Members
 
         private string EscapeRuntimeAPICommand(string command)

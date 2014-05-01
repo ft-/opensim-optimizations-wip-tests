@@ -62,6 +62,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
         private Scene m_scene = null;
         private Dictionary<UUID, HashSet<UUID>> m_scriptStores = new Dictionary<UUID, HashSet<UUID>>();
         private IJsonStoreModule m_store;
+
         #region Region Module interface
 
         // -----------------------------------------------------------------
@@ -140,6 +141,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
         public void PostInitialise()
         {
         }
+
         // -----------------------------------------------------------------
         /// <summary>
         /// Called when all modules have been added for a region. This is
@@ -212,6 +214,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
             foreach (UUID id in stores)
                 m_store.DestroyStore(id);
         }
+
         #endregion Region Module interface
 
         #region ScriptConstantsInterface
@@ -224,6 +227,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
 
         [ScriptConstant]
         public static readonly int JSON_NODETYPE_UNDEF = (int)JsonStoreNodeType.Undefined;
+
         [ScriptConstant]
         public static readonly int JSON_NODETYPE_VALUE = (int)JsonStoreNodeType.Value;
 
@@ -241,6 +245,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
 
         [ScriptConstant]
         public static readonly int JSON_VALUETYPE_UNDEF = (int)JsonStoreValueType.Undefined;
+
         #endregion ScriptConstantsInterface
 
         #region ScriptInvocationInteface
@@ -479,6 +484,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
         {
             return m_store.TestStore(storeID) ? 1 : 0;
         }
+
         // -----------------------------------------------------------------
         /// <summary>
         ///
@@ -491,6 +497,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
             Util.FireAndForget(delegate(object o) { DoJsonWriteNotecard(reqID, hostID, scriptID, storeID, path, name); });
             return reqID;
         }
+
         #endregion ScriptInvocationInteface
 
         // -----------------------------------------------------------------
@@ -513,6 +520,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
             m_log.InfoFormat("[JsonStore] runtime error: {0}", msg);
             throw new Exception("JsonStore Runtime Error: " + msg);
         }
+
         private string ConvertList2Path(object[] pathlist)
         {
             string path = "";
@@ -723,6 +731,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.JsonStore
 
             DispatchValue(scriptID, reqID, String.Empty);
         }
+
         // -----------------------------------------------------------------
         /// <summary>
         ///

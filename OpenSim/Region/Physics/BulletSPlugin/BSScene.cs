@@ -42,16 +42,19 @@ namespace OpenSim.Region.Physics.BulletSPlugin
     public sealed class BSScene : PhysicsScene, IPhysicsParameters
     {
         public const uint CHILDTERRAIN_ID = 2;
+
         // Used to fill in the LocalID when there isn't one. It's the correct number of characters.
         public const string DetailLogZero = "0000000000";
 
         public const uint GROUNDPLANE_ID = 1;
         public const uint TERRAIN_ID = 0;
+
         // A number to use for SimulationStep that is probably not any step value
         // Used by the collision code (which remembers the step when a collision happens) to remember not any simulation step.
         public static long NotASimulationStep = -1234;
 
         public string BulletSimVersion = "?";
+
         // All the collision processing is protected with this lock object
         public Object CollisionLock = new Object();
 
@@ -59,17 +62,20 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         public Thread m_physicsThread;
 
         public IMesher mesher;
+
         // Keeping track of the objects with collisions so we can report begin and end of a collision
         public HashSet<BSPhysObject> ObjectsWithCollisions = new HashSet<BSPhysObject>();
 
         public HashSet<BSPhysObject> ObjectsWithNoMoreCollisions = new HashSet<BSPhysObject>();
         public HashSet<BSPhysObject> ObjectsWithUpdates = new HashSet<BSPhysObject>();
         public BSAPITemplate PE;
+
         // Sometimes you just have to log everything.
         public Logging.LogWriter PhysicsLogging;
 
         public Dictionary<uint, BSPhysObject> PhysObjects;
         public BSShapeCollection Shapes;
+
         // Properties are updated here
         public Object UpdateLock = new Object();
 
@@ -110,6 +116,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         // Keep track of all the avatars so we can send them a collision event
         //    every tick so OpenSim will update its animation.
         private HashSet<BSPhysObject> m_avatars = new HashSet<BSPhysObject>();
+
         private ReaderWriterLock m_avatarsRwLock = new ReaderWriterLock();
 
         // True if initialized and ready to do simulation steps
@@ -177,6 +184,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
         // The name of the region we're working for.
         public string RegionName { get; private set; }
+
         public float SimpleWaterLevel { get; set; }
 
         // A value of the time 'now' so all the collision and update routines do not have to get their own
@@ -197,12 +205,14 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         public BulletWorld World { get; private set; }
 
         public uint WorldID { get; private set; }
-     // the time simulated previously. Used for physics framerate calc.
 
-         // The current simulation step.
+        // the time simulated previously. Used for physics framerate calc.
+
+        // The current simulation step.
         internal float LastTimeStep { get; private set; }   // The simulation time from the last invocation of Simulate()
 
         internal float NominalFrameRate { get; set; }       // Parameterized ideal frame rate that simulation is scaled to
+
         // Invoke the detailed logger and output something if it's enabled.
         public void DetailLog(string msg, params Object[] args)
         {
@@ -237,6 +247,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             public TaintCallback callback;
             public String ident;
             public String originator;
+
             public TaintCallbackEntry(string pIdent, TaintCallback pCallBack)
             {
                 originator = BSScene.DetailLogZero;
@@ -251,6 +262,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                 callback = pCallBack;
             }
         }
+
         #region Construction and Initialization
 
         public BSScene(string engineType, string identifier)
@@ -504,6 +516,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
             return ret;
         }
+
         #endregion Construction and Initialization
 
         #region Prim and Avatar addition and removal
@@ -624,6 +637,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                 m_log.ErrorFormat("{0}: Attempt to remove prim that is not a BSPrim type.", LogHeader);
             }
         }
+
         #endregion Prim and Avatar addition and removal
 
         #region Simulation
@@ -797,6 +811,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             // Multiply by a fixed nominal frame rate to give a rate similar to the simulator (usually 55).
             m_simulatedTime += (float)numSubSteps * m_fixedTimeStep * 1000f * NominalFrameRate;
         }
+
         // Something has collided
         private void SendCollision(uint localID, uint collidingWith, Vector3 collidePoint, Vector3 collideNormal, float penetration)
         {
@@ -906,7 +921,9 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             m_simulatedTime = 0f;
             return simTime;
         }
+
         #endregion Simulation
+
         #region Terrain
 
         // This call says I am a child to region zero in a mega-region. 'pScene' is that
@@ -931,11 +948,13 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         {
             SimpleWaterLevel = baseheight;
         }
+
         // Although no one seems to check this, I do support combining.
         public override bool SupportsCombining()
         {
             return TerrainManager.SupportsCombining();
         }
+
         // Unhook all the combining that I know about.
         public override void UnCombine(PhysicsScene pScene)
         {
@@ -943,6 +962,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         }
 
         #endregion Terrain
+
         #region Extensions
 
         public override object Extension(string pFunct, params object[] pParams)
@@ -1110,6 +1130,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             if (actions != null)
                 actions(timeStep);
         }
+
         #endregion Taints
 
         #region IPhysicsParameters
@@ -1210,6 +1231,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                 }
             });
         }
+
         #endregion IPhysicsParameters
     }
 }

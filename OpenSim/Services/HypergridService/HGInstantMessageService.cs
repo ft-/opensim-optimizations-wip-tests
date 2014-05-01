@@ -62,12 +62,13 @@ namespace OpenSim.Services.HypergridService
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
 
-         // 33 hours
+        // 33 hours
 
         private static bool m_ForwardOfflineGroupMessages;
         private static bool m_InGatekeeper;
         private static bool m_Initialized = false;
         private static ExpiringCache<UUID, GridRegion> m_RegionCache;
+
         public HGInstantMessageService(IConfigSource config)
             : this(config, null)
         {
@@ -335,6 +336,7 @@ namespace OpenSim.Services.HypergridService
                 return TrySendInstantMessage(im, upd, false, foreigner);
             }
         }
+
         private bool UndeliveredMessage(GridInstantMessage im)
         {
             if (m_OfflineIMService == null)

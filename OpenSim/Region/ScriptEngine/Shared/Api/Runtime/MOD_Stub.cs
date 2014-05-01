@@ -86,10 +86,12 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
         {
             return m_MOD_Functions.modInvokeS(fname, parms);
         }
+
         public LSL_Vector modInvokeV(string fname, params object[] parms)
         {
             return m_MOD_Functions.modInvokeV(fname, parms);
         }
+
         public string modSendCommand(string module, string command, string k)
         {
             return m_MOD_Functions.modSendCommand(module, command, k);

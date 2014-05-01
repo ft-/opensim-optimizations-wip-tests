@@ -40,6 +40,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         protected BulletWorld m_world;
         protected BSScene PhysicsScene;
         private static string LogHeader = "[BULLETSIM CONSTRAINT]";
+
         public BSConstraint(BulletWorld world)
         {
             m_world = world;
@@ -55,6 +56,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         public bool IsEnabled { get { return m_enabled; } }
 
         public abstract ConstraintType Type { get; }
+
         public virtual bool CalculateTransforms()
         {
             bool ret = false;
@@ -129,6 +131,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             }
             return ret;
         }
+
         public virtual bool SetSolverIterations(float cnt)
         {
             bool ret = false;

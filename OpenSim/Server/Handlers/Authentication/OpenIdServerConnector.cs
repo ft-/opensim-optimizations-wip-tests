@@ -45,6 +45,7 @@ namespace OpenSim.Server.Handlers.Authentication
         private IAuthenticationService m_AuthenticationService;
         private string m_ConfigName = "OpenIdService";
         private IUserAccountService m_UserAccountService;
+
         public OpenIdServerConnector(IConfigSource config, IHttpServer server, string configName) :
             base(config, server, configName)
         {

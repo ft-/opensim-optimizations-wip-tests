@@ -55,6 +55,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
         private IImprovedAssetCache m_cache;
         private bool m_Enabled = false;
         private string m_serverUrl = String.Empty;
+
         #region ISharedRegionModule
 
         public SimianAssetServiceConnector()
@@ -87,6 +88,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
                     m_cache = cache;
             }
         }
+
         public void RemoveRegion(Scene scene)
         {
             if (m_Enabled) { scene.UnregisterModuleInterface<IAssetService>(this); }
@@ -282,6 +284,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
             // return GetRemoteMetadata(id);
             return SimianGetMetadataOperation(id);
         }
+
         /// <summary>
         /// Creates a new asset
         /// </summary>
@@ -356,6 +359,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
             string result = Store(asset);
             return !String.IsNullOrEmpty(result);
         }
+
         #endregion IAssetService
 
         #region SimianOperations
@@ -520,6 +524,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
 
             return null;
         }
+
         #endregion SimianOperations
 
         // private AssetMetadata GetRemoteMetadata(string id)

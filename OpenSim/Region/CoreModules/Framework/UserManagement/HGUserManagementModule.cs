@@ -61,6 +61,7 @@ namespace OpenSim.Region.CoreModules.Framework.UserManagement
                 m_log.DebugFormat("[USER MANAGEMENT MODULE]: {0} is enabled", Name);
             }
         }
+
         #endregion ISharedRegionModule
 
         protected override void AddAdditionalUsers(string query, List<UserData> users)

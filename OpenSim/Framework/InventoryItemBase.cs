@@ -381,6 +381,7 @@ namespace OpenSim.Framework
                 m_invType = value;
             }
         }
+
         /// <value>
         ///
         /// </value>
@@ -396,6 +397,7 @@ namespace OpenSim.Framework
                 m_nextPermissions = value;
             }
         }
+
         /// <value>
         ///
         /// </value>
@@ -411,6 +413,7 @@ namespace OpenSim.Framework
                 m_salePrice = value;
             }
         }
+
         /// <value>
         ///
         /// </value>
@@ -426,6 +429,7 @@ namespace OpenSim.Framework
                 m_saleType = value;
             }
         }
+
         public object Clone()
         {
             return MemberwiseClone();

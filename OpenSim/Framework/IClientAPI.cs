@@ -513,10 +513,13 @@ namespace OpenSim.Framework
     public delegate void UUIDNameRequest(UUID id, IClientAPI remote_client);
 
     public delegate void ViewerEffectEventHandler(IClientAPI sender, List<ViewerEffectEventHandlerArg> args);
+
     /*    public delegate void UpdateInventoryItem(
             IClientAPI remoteClient, UUID transactionID, UUID itemID, string name, string description,
             uint nextOwnerMask);*/
+
     public delegate void XferReceive(IClientAPI remoteClient, ulong xferID, uint packetID, byte[] data);
+
     #endregion Client API Delegate definitions
 
     /// <summary>
@@ -1083,6 +1086,7 @@ namespace OpenSim.Framework
         UUID SessionId { get; }
 
         Vector3 StartPos { get; set; }
+
         bool AddGenericPacketHandler(string MethodName, GenericMessage handler);
 
         /// <summary>
@@ -1122,6 +1126,7 @@ namespace OpenSim.Framework
         void InPacket(object NewPack);
 
         bool IsGroupMember(UUID GroupID);
+
         void Kick(string message);
 
         /// <summary>
@@ -1134,6 +1139,7 @@ namespace OpenSim.Framework
         void MoveAgentIntoRegion(RegionInfo regInfo, Vector3 pos, Vector3 look);
 
         void ProcessInPacket(Packet NewPack);
+
         void RefreshGroupMembership();
 
         void ReprioritizeUpdates();
@@ -1539,6 +1545,7 @@ namespace OpenSim.Framework
         void Start();
 
         void Stop();
+
         #region Parcel Methods
 
         void SendParcelMediaCommand(uint flags, ParcelMediaCommandEnum command, float time);
@@ -1609,6 +1616,7 @@ namespace OpenSim.Framework
         public UUID parcelID;
         public uint Status;
     }
+
     public struct DirPopularReplyData
     {
         public float dwell;
@@ -1691,6 +1699,7 @@ namespace OpenSim.Framework
                 m_updateTime = update.UpdateTime;
         }
     }
+
     public class PlacesReplyData
     {
         public int ActualArea;

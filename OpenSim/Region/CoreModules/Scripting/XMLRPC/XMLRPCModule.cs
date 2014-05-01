@@ -98,6 +98,7 @@ namespace OpenSim.Region.CoreModules.Scripting.XMLRPC
         {
             return m_itemID;
         }
+
         public uint GetLocalID()
         {
             return m_localID;
@@ -173,6 +174,7 @@ namespace OpenSim.Region.CoreModules.Scripting.XMLRPC
         {
             return m_processed;
         }
+
         public void SetIntRetval(int resp)
         {
             m_respInt = resp;
@@ -226,21 +228,25 @@ namespace OpenSim.Region.CoreModules.Scripting.XMLRPC
             get { return _finished; }
             set { _finished = value; }
         }
+
         public UUID ItemID
         {
             get { return _itemID; }
             set { _itemID = value; }
         }
+
         public uint LocalID
         {
             get { return _localID; }
             set { _localID = value; }
         }
+
         public UUID ReqID
         {
             get { return _reqID; }
             set { _reqID = value; }
         }
+
         public UUID GetReqID()
         {
             return ReqID;
@@ -368,6 +374,7 @@ namespace OpenSim.Region.CoreModules.Scripting.XMLRPC
         {
             get { return m_remoteDataPort; }
         }
+
         #region ISharedRegionModule Members
 
         public string Name
@@ -432,6 +439,7 @@ namespace OpenSim.Region.CoreModules.Scripting.XMLRPC
                 httpServer.AddXmlRPCHandler("llRemoteData", XmlRpcRemoteData);
             }
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -447,6 +455,7 @@ namespace OpenSim.Region.CoreModules.Scripting.XMLRPC
                 m_scenes.Remove(scene);
             }
         }
+
         #endregion ISharedRegionModule Members
 
         #region IXMLRPC Members
@@ -606,6 +615,7 @@ namespace OpenSim.Region.CoreModules.Scripting.XMLRPC
 
             return newChannel;
         }
+
         /**********************************************
          * Remote Data Reply
          *
@@ -650,6 +660,7 @@ namespace OpenSim.Region.CoreModules.Scripting.XMLRPC
          * Remove channel from dictionary
          *
          *********************************************/
+
         public void RemoveCompletedRequest(UUID id)
         {
             lock (XMLRPCListLock)
@@ -688,6 +699,7 @@ namespace OpenSim.Region.CoreModules.Scripting.XMLRPC
             req.Process();
             return req.ReqID;
         }
+
         #endregion IXMLRPC Members
 
         public XmlRpcResponse XmlRpcRemoteData(XmlRpcRequest request, IPEndPoint remoteClient)

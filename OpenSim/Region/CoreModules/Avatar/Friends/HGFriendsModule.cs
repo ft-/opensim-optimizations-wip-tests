@@ -63,6 +63,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
                 return m_uMan;
             }
         }
+
         #region ISharedRegionModule
 
         public override string Name
@@ -469,6 +470,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
 
             base.OnInstantMessage(client, im);
         }
+
         protected override void StatusNotify(List<FriendInfo> friendList, UUID userID, bool online)
         {
             //m_log.DebugFormat("[HGFRIENDS MODULE]: Entering StatusNotify for {0}", userID);
@@ -510,6 +512,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
 
             //            m_log.DebugFormat("[HGFRIENDS MODULE]: Exiting StatusNotify for {0}", userID);
         }
+
         protected override void StoreBackwards(UUID friendID, UUID agentID)
         {
             bool agentIsLocal = true;
@@ -727,6 +730,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
 
             return false;
         }
+
         private void Delete(UUID foreignUser, UUID localUser, string uui)
         {
             UUID id;
@@ -768,6 +772,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
                 }
             }
         }
+
         private string GetUUI(UUID localUser, UUID foreignUser)
         {
             // Let's see if the user is here by any chance

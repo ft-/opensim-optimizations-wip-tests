@@ -43,6 +43,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         public const float MaxRestitution = 1f;
         public const float MinDensity = 0.01f;
         public const float MinFriction = 0f;
+
         // Various constants that come from that other virtual world that shall not be named.
         public const float MinGravityZ = -1f;
 
@@ -689,7 +690,9 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         public static float UpdateVelocityChangeThreshold { get; private set; }
 
         public static bool UseSeparatePhysicsThread { get; private set; }
+
         public static bool UseSingleSidedMeshes { get; private set; }
+
         public static float VehicleAngularBankingTimescaleFudge { get; private set; }
 
         public static float VehicleAngularDamping { get; private set; }
@@ -728,24 +731,26 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         public static float VehicleMinLinearVelocity { get; private set; }
 
         public static float VehicleMinLinearVelocitySquared { get; private set; }
+
         public static float VehicleRestitution { get; private set; }
-        		// 100
 
-        				// 2
+        // 100
 
-        			// 0.1
+        // 2
 
-        				// 0.0
+        // 0.1
 
-        				    // 100
+        // 0.0
 
-        		// false
+        // 100
 
-        	// false
+        // false
 
-    // derivative
+        // false
 
-            // proportional
+        // derivative
+
+        // proportional
         // =====================================================================================
         // =====================================================================================
 
@@ -851,6 +856,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             private PGetValue<T> getter;
             private PSetOnObject<T> objectSet;
             private PSetValue<T> setter;
+
             public ParameterDefn(string pName, string pDesc, T pDefault, PGetValue<T> pGetter, PSetValue<T> pSetter)
                 : base(pName, pDesc)
             {
@@ -970,7 +976,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         {
             public string desc;
             public string name;         // string name of the parameter
-                     // a short description of what the parameter means
+            // a short description of what the parameter means
 
             public ParameterDefnBase(string pName, string pDesc)
             {

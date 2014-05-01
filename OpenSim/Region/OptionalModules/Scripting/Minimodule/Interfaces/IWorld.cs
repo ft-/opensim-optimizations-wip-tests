@@ -45,6 +45,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
         IAvatar[] Avatars { get; }
 
         IObjectAccessor Objects { get; }
+
         IParcel[] Parcels { get; }
 
         IHeightmap Terrain { get; }

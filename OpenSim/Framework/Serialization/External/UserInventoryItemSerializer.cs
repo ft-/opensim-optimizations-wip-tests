@@ -155,6 +155,7 @@ namespace OpenSim.Framework.Serialization.External
         {
             item.Name = reader.ReadElementContentAsString("Name", String.Empty);
         }
+
         private static void ProcessNextPermissions(InventoryItemBase item, XmlTextReader reader)
         {
             item.NextPermissions = (uint)reader.ReadElementContentAsInt("NextPermissions", String.Empty);
@@ -164,6 +165,7 @@ namespace OpenSim.Framework.Serialization.External
         {
             item.Owner = Util.ReadUUID(reader, "Owner");
         }
+
         private static void ProcessSalePrice(InventoryItemBase item, XmlTextReader reader)
         {
             item.SalePrice = reader.ReadElementContentAsInt("SalePrice", String.Empty);
@@ -173,6 +175,7 @@ namespace OpenSim.Framework.Serialization.External
         {
             item.SaleType = (byte)reader.ReadElementContentAsInt("SaleType", String.Empty);
         }
+
         #endregion InventoryItemBase Processors
 
         /// <summary>

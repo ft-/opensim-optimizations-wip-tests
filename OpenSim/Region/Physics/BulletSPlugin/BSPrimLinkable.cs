@@ -41,6 +41,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         //    calls the linkset implementation for its creation and management.
 
 #pragma warning disable 414
+
         // A linkset reports any collision on any part of the linkset.
         public long SomeCollisionSimulationStep = 0;
 
@@ -94,6 +95,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         public int LinksetChildIndex { get; set; }
 
         public BSLinkset.LinksetImplementation LinksetType { get; set; }
+
         // When simulator changes orientation, this might be moving a child of the linkset.
         public override OMV.Quaternion Orientation
         {
@@ -225,6 +227,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             }
             return;
         }
+
         // Refresh the linkset structure and parameters when the prim's physical parameters are changed.
         public override void UpdatePhysicalParameters()
         {
@@ -279,6 +282,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             Linkset.RemoveDependencies(this);
             base.RemoveDependencies();
         }
+
         #region Extension
 
         public override object Extension(string pFunct, params object[] pParams)

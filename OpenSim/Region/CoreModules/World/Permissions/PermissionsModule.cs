@@ -78,6 +78,7 @@ namespace OpenSim.Region.CoreModules.World.Permissions
         private uint PERM_MOVE = (uint)524288;
 
         private uint PERM_TRANS = (uint)8192;
+
         /// <value>
         /// Different user set names that come in from the configuration file.
         /// </value>
@@ -128,6 +129,7 @@ namespace OpenSim.Region.CoreModules.World.Permissions
         private bool m_RegionManagerIsGod = false;
         private bool m_RegionOwnerIsGod = false;
         private bool m_SimpleBuildPermissions = false;
+
         private IFriendsModule FriendsModule
         {
             get
@@ -137,6 +139,7 @@ namespace OpenSim.Region.CoreModules.World.Permissions
                 return m_friendsModule;
             }
         }
+
         private IGroupsModule GroupsModule
         {
             get
@@ -146,6 +149,7 @@ namespace OpenSim.Region.CoreModules.World.Permissions
                 return m_groupsModule;
             }
         }
+
         private IMoapModule MoapModule
         {
             get
@@ -347,6 +351,7 @@ namespace OpenSim.Region.CoreModules.World.Permissions
                 }
             }
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -358,6 +363,7 @@ namespace OpenSim.Region.CoreModules.World.Permissions
 
             m_scene.UnregisterModuleInterface<IPermissionsModule>(this);
         }
+
         #endregion INonSharedRegionModule Members
 
         #region Console command handlers
@@ -432,6 +438,7 @@ namespace OpenSim.Region.CoreModules.World.Permissions
                 m_log.InfoFormat("[PERMISSIONS] Forced permissions to {0} in {1}", m_bypassPermissionsValue, m_scene.RegionInfo.RegionName);
             }
         }
+
         #endregion Console command handlers
 
         #region Helper Functions
@@ -538,6 +545,7 @@ namespace OpenSim.Region.CoreModules.World.Permissions
         {
             m_scene.EventManager.TriggerPermissionError(user, reason);
         }
+
         /// <summary>
         /// Parse a user set configuration setting
         /// </summary>
@@ -573,6 +581,7 @@ namespace OpenSim.Region.CoreModules.World.Permissions
 
             return userSet;
         }
+
         #endregion Helper Functions
 
         public bool BypassPermissions()
@@ -587,6 +596,7 @@ namespace OpenSim.Region.CoreModules.World.Permissions
 
             return m_propagatePermissions;
         }
+
         public void SetBypassPermissions(bool value)
         {
             m_bypassPermissions = value;
@@ -830,6 +840,7 @@ namespace OpenSim.Region.CoreModules.World.Permissions
 
             return objectFlagsMask;
         }
+
         #endregion Object Permissions
 
         #region Generic Permissions
@@ -868,6 +879,7 @@ namespace OpenSim.Region.CoreModules.World.Permissions
 
             return permission;
         }
+
         protected bool GenericParcelOwnerPermission(UUID user, ILandObject parcel, ulong groupPowers, bool allowEstateManager)
         {
             if (parcel.LandData.OwnerID == user)
@@ -926,6 +938,7 @@ namespace OpenSim.Region.CoreModules.World.Permissions
 
             return permission;
         }
+
         protected bool GenericParcelPermission(UUID user, Vector3 pos, ulong groupPowers)
         {
             ILandObject parcel = m_scene.LandChannel.GetLandObject(pos.X, pos.Y);
@@ -1334,6 +1347,7 @@ namespace OpenSim.Region.CoreModules.World.Permissions
 
             return GenericParcelOwnerPermission(user, parcel, 0, true);
         }
+
         private bool CanReturnObjects(ILandObject land, UUID user, List<SceneObjectGroup> objects, Scene scene)
         {
             DebugPermissionInformation(MethodInfo.GetCurrentMethod().Name);
@@ -1765,6 +1779,7 @@ namespace OpenSim.Region.CoreModules.World.Permissions
 
             return IsAdministrator(user);
         }
+
         #endregion Permission Checks
 
         private bool CanBuyLand(UUID userID, ILandObject parcel, Scene scene)
@@ -2001,6 +2016,7 @@ namespace OpenSim.Region.CoreModules.World.Permissions
 
             return GenericObjectPermission(userID, objectID, false);
         }
+
         private bool CanResetScript(UUID prim, UUID script, UUID agentID, Scene scene)
         {
             DebugPermissionInformation(MethodInfo.GetCurrentMethod().Name);
@@ -2023,6 +2039,7 @@ namespace OpenSim.Region.CoreModules.World.Permissions
 
             return true;
         }
+
         private bool GenericPrimMediaPermission(SceneObjectPart part, UUID agentID, MediaPermission perms)
         {
             //            if (IsAdministrator(agentID))

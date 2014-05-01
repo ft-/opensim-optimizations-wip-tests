@@ -38,6 +38,7 @@ namespace OpenSim.Server.Handlers.Presence
     {
         private string m_ConfigName = "PresenceService";
         private IPresenceService m_PresenceService;
+
         public PresenceServiceConnector(IConfigSource config, IHttpServer server, string configName) :
             base(config, server, configName)
         {

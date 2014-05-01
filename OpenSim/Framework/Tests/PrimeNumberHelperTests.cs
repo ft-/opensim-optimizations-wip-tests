@@ -25,13 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Reflection;
 using NUnit.Framework;
-using OpenMetaverse;
-using OpenMetaverse.StructuredData;
-using OpenSim.Framework;
 using OpenSim.Tests.Common;
+using System;
 
 namespace OpenSim.Framework.Tests
 {
@@ -43,11 +39,10 @@ namespace OpenSim.Framework.Tests
         {
             int prime1 = PrimeNumberHelper.GetPrime(7919);
             Assert.That(prime1 == 8419, "Prime Number Get Prime Failed, 7919 is prime");
-            Assert.That(PrimeNumberHelper.IsPrime(prime1),"Prime1 should be prime");
+            Assert.That(PrimeNumberHelper.IsPrime(prime1), "Prime1 should be prime");
             Assert.That(PrimeNumberHelper.IsPrime(7919), "7919 is prime but is falsely failing the prime test");
             prime1 = PrimeNumberHelper.GetPrime(Int32.MaxValue - 1);
             Assert.That(prime1 == -1, "prime1 should have been -1 since there are no primes between Int32.MaxValue-1 and Int32.MaxValue");
-
         }
 
         [Test]
@@ -122,14 +117,14 @@ namespace OpenSim.Framework.Tests
                            };
             for (int i = 0; i < primes.Length; i++)
             {
-                Assert.That(PrimeNumberHelper.IsPrime(primes[i]),primes[i] + " is prime but is erroniously failing the prime test");
+                Assert.That(PrimeNumberHelper.IsPrime(primes[i]), primes[i] + " is prime but is erroniously failing the prime test");
             }
 
             int[] nonprimes = {
                                4, 6, 8, 10, 14, 16, 18, 22, 28, 30, 36, 40, 42, 46, 52, 58, 60, 66, 70, 72, 78, 82, 88,
-                               96,  366, 372, 378, 382, 388, 396, 400, 408, 418, 420, 430, 432, 438, 442, 448, 456, 460, 462, 
-                               466, 478, 486, 490, 498, 502, 508, 856, 858, 862, 876, 880, 882, 886, 906, 910, 918, 928, 936, 
-                               940, 946, 952, 966, 970, 976, 982, 990, 996, 1008, 1740, 1746, 1752, 1758, 4650, 4656, 4662, 
+                               96,  366, 372, 378, 382, 388, 396, 400, 408, 418, 420, 430, 432, 438, 442, 448, 456, 460, 462,
+                               466, 478, 486, 490, 498, 502, 508, 856, 858, 862, 876, 880, 882, 886, 906, 910, 918, 928, 936,
+                               940, 946, 952, 966, 970, 976, 982, 990, 996, 1008, 1740, 1746, 1752, 1758, 4650, 4656, 4662,
                                4672, 4678, 4690, 7740, 7752, 7756, 7758, 7788, 7792, 7816, 7822, 7828, 7840, 7852, 7866, 7872,
                                7876, 7878, 7882, 7900, 7906, 7918
                            };

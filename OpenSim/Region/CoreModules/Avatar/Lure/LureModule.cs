@@ -48,6 +48,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Lure
 
         private bool m_Enabled = false;
         private IMessageTransferModule m_TransferModule = null;
+
         public string Name
         {
             get { return "LureModule"; }
@@ -89,6 +90,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Lure
                 }
             }
         }
+
         public void OnInstantMessage(IClientAPI client, GridInstantMessage im)
         {
         }

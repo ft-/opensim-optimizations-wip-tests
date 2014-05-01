@@ -56,6 +56,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
         public delegate void TerrainUploadComplete(string name, byte[] filedata, IClientAPI remoteClient);
 
         public event TerrainUploadComplete TerrainUploadDone;
+
         public ulong XferID
         {
             get { return mXferID; }

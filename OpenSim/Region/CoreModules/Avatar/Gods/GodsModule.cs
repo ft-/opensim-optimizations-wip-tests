@@ -54,6 +54,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Gods
 
         private static readonly ILog m_log =
             LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public string Name { get { return "Gods Module"; } }
 
         public Type ReplaceableInterface
@@ -89,6 +90,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Gods
         public void Initialise(IConfigSource source)
         {
         }
+
         /// <summary>
         /// Kicks User specified from the simulator. This logs them off of the grid
         /// If the client gets the UUID: 44e87126e7944ded05b37c42da3d5cdb it assumes
@@ -175,6 +177,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Gods
             m_scene.EventManager.OnNewClient -= SubscribeToClientEvents;
             m_scene = null;
         }
+
         public void RequestGodlikePowers(
             UUID agentID, UUID sessionID, UUID token, bool godLike, IClientAPI controllingClient)
         {

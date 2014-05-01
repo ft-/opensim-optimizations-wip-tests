@@ -55,6 +55,7 @@ namespace OpenSim.Region.Framework.Scenes
 
         private static readonly string LogHeader = "[SCENE INVENTORY]";
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         /// <summary>
         /// Add the given inventory item to a user's inventory.
         /// </summary>
@@ -1873,6 +1874,7 @@ namespace OpenSim.Region.Framework.Scenes
             foreach (IScriptModule engine in engines)
                 engine.StartProcessing();
         }
+
         public void UpdateInventoryItemAsset(IClientAPI remoteClient, UUID transactionID,
                                              UUID itemID, InventoryItemBase itemUpd)
         {
@@ -2195,6 +2197,7 @@ namespace OpenSim.Region.Framework.Scenes
                 }
             }
         }
+
         /// <summary>
         /// Update an item which is either already in the client's inventory or is within
         /// a transaction
@@ -2209,6 +2212,7 @@ namespace OpenSim.Region.Framework.Scenes
         /*        public void UpdateInventoryItemAsset(IClientAPI remoteClient, UUID transactionID,
                                                      UUID itemID, string name, string description,
                                                      uint nextOwnerMask)*/
+
         private InventoryItemBase CreateAgentInventoryItemFromTask(UUID destAgent, SceneObjectPart part, UUID itemId)
         {
             TaskInventoryItem taskItem = part.Inventory.GetInventoryItem(itemId);

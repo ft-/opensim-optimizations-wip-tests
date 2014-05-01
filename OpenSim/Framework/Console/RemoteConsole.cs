@@ -49,6 +49,7 @@ namespace OpenSim.Framework.Console
     {
         private string m_AllowedOrigin = String.Empty;
         private IConfigSource m_Config = null;
+
         private Dictionary<UUID, ConsoleConnection> m_Connections =
                 new Dictionary<UUID, ConsoleConnection>();
 
@@ -59,6 +60,7 @@ namespace OpenSim.Framework.Console
         private List<string> m_Scrollback = new List<string>();
         private IHttpServer m_Server = null;
         private string m_UserName = String.Empty;
+
         public RemoteConsole(string defaultPrompt)
             : base(defaultPrompt)
         {
@@ -160,6 +162,7 @@ namespace OpenSim.Framework.Console
             m_Server.AddHTTPHandler("/CloseSession/", HandleHttpCloseSession);
             m_Server.AddHTTPHandler("/SessionCommand/", HandleHttpSessionCommand);
         }
+
         private Hashtable CheckOrigin(Hashtable result)
         {
             if (!string.IsNullOrEmpty(m_AllowedOrigin))
@@ -463,6 +466,7 @@ namespace OpenSim.Framework.Console
 
             return reply;
         }
+
         private bool HasEvents(UUID RequestID, UUID sessionID)
         {
             ConsoleConnection c = null;
@@ -478,6 +482,7 @@ namespace OpenSim.Framework.Console
                 return true;
             return false;
         }
+
         private Hashtable NoEvents(UUID RequestID, UUID id)
         {
             Hashtable result = new Hashtable();

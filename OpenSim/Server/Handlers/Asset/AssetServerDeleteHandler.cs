@@ -56,6 +56,7 @@ namespace OpenSim.Server.Handlers.Asset
         private AllowedRemoteDeleteTypes m_allowedTypes;
 
         private IAssetService m_AssetService;
+
         public AssetServerDeleteHandler(IAssetService service, AllowedRemoteDeleteTypes allowedTypes) :
             base("DELETE", "/assets")
         {

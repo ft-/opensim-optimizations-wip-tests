@@ -55,6 +55,7 @@ namespace OpenSim.Region.CoreModules.Framework.Monitoring.Monitors
         public string Name { get; private set; }
 
         public Scene Scene { get; private set; }
+
         public string GetFriendlyName()
         {
             return FriendlyName;

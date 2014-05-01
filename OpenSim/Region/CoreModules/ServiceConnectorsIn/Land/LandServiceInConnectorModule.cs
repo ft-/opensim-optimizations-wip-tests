@@ -105,6 +105,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Land
 
             //            m_log.Info("[LAND IN CONNECTOR]: Starting...");
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -114,6 +115,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Land
             if (m_Enabled && m_Scenes.Contains(scene))
                 m_Scenes.Remove(scene);
         }
+
         #endregion Region Module interface
 
         #region ILandService

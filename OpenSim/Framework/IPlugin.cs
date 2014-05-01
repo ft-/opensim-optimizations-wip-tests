@@ -45,6 +45,7 @@ namespace OpenSim.Framework
         /// </summary>
         /// <returns>Plugin version in MAJOR.MINOR.REVISION.BUILD format</returns>
         string Version { get; }
+
         /// <summary>
         /// Default-initialises the plugin
         /// </summary>

@@ -154,10 +154,12 @@ namespace OpenSim.Services.Connectors
         {
             m_database.StoreObject(obj, regionUUID);
         }
+
         public void StorePrimInventory(UUID primID, ICollection<TaskInventoryItem> items)
         {
             m_database.StorePrimInventory(primID, items);
         }
+
         public void StoreRegionEnvironmentSettings(UUID regionUUID, string settings)
         {
             m_database.StoreRegionEnvironmentSettings(regionUUID, settings);

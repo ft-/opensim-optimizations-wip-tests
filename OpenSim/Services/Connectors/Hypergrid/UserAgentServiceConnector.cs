@@ -51,6 +51,7 @@ namespace OpenSim.Services.Connectors.Hypergrid
         private GridRegion m_Gatekeeper;
         private string m_ServerURL;
         private string m_ServerURLHost;
+
         public UserAgentServiceConnector(string url)
             : this(url, true)
         {
@@ -516,6 +517,7 @@ namespace OpenSim.Services.Connectors.Hypergrid
         {
             return "homeagent/";
         }
+
         protected override void PackData(OSDMap args, GridRegion source, AgentCircuitData aCircuit, GridRegion destination, uint flags)
         {
             base.PackData(args, source, aCircuit, destination, flags);
@@ -524,6 +526,7 @@ namespace OpenSim.Services.Connectors.Hypergrid
             args["gatekeeper_port"] = OSD.FromString(m_Gatekeeper.HttpPort.ToString());
             args["destination_serveruri"] = OSD.FromString(destination.ServerURI);
         }
+
         private Hashtable CallServer(string methodName, Hashtable hash)
         {
             IList paramList = new ArrayList();
@@ -557,6 +560,7 @@ namespace OpenSim.Services.Connectors.Hypergrid
 
             return hash;
         }
+
         private bool GetBoolResponse(XmlRpcRequest request, out string reason)
         {
             //m_log.Debug("[USER AGENT CONNECTOR]: GetBoolResponse from/to " + m_ServerURLHost);

@@ -38,6 +38,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
         public float[] mMin = new float[3];
         public ConvexResult mResult;
         public float mVolume;
+
         public CHull(ConvexResult result)
         {
             mResult = new ConvexResult(result);
@@ -303,6 +304,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
 
             return dcount == 3;
         }
+
         public int process(DecompDesc desc)
         {
             int ret = 0;
@@ -373,6 +375,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
 
             return ret;
         }
+
         public void sortChulls(List<CHull> hulls)
         {
             hulls.Sort(delegate(CHull a, CHull b) { return a.mVolume.CompareTo(b.mVolume); });
@@ -383,10 +386,12 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
     {
         public ConvexDecompositionCallback mCallback;
         public float mCpercent;
+
         // options
         public uint mDepth;
 
         public List<int> mIndices;
+
         // hull output limits.
         public uint mMaxVertices;
 
@@ -395,15 +400,15 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
 
         public float mSkinWidth;
         public List<float3> mVertices;
- // depth to split, a maximum of 10, generally not over 7.
+        // depth to split, a maximum of 10, generally not over 7.
 
- // the percentage volume conservation threshold to collapse hulls. 0-30 is reasonable.
+        // the percentage volume conservation threshold to collapse hulls. 0-30 is reasonable.
 
- // maximum number of vertices in the output hull. Recommended 32 or less.
+        // maximum number of vertices in the output hull. Recommended 32 or less.
 
-         // a skin width to apply to the output hulls.
+        // a skin width to apply to the output hulls.
 
-         // the interface to receive back the results.
+        // the interface to receive back the results.
 
         public DecompDesc()
         {

@@ -92,6 +92,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Profile
             get;
             private set;
         }
+
         public void InitialiseService(IConfigSource source)
         {
             ConfigName = "UserProfilesService";
@@ -202,6 +203,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Profile
                 }
             }
         }
+
         void IRegionModuleBase.RegionLoaded(Scene scene)
         {
             if (!Enabled)
@@ -219,6 +221,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Profile
                     regions.Remove(scene.RegionInfo.RegionID);
             }
         }
+
         #endregion IRegionModuleBase implementation
     }
 }

@@ -59,6 +59,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Land
         {
             get { return null; }
         }
+
         public void AddRegion(Scene scene)
         {
             if (!m_Enabled)
@@ -92,6 +93,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Land
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (m_Enabled)
@@ -103,6 +105,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Land
             if (m_Enabled)
                 m_LocalService.RemoveRegion(scene);
         }
+
         #region ILandService
 
         public override LandData GetLandData(UUID scopeID, ulong regionHandle, uint x, uint y, out byte regionAccess)

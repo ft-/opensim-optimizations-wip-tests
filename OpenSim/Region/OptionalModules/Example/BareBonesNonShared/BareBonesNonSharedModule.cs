@@ -76,6 +76,7 @@ namespace OpenSim.Region.OptionalModules.Example.BareBonesNonShared
         {
             m_log.DebugFormat("[BARE BONES NON SHARED]: INITIALIZED MODULE");
         }
+
         public void RegionLoaded(Scene scene)
         {
             m_log.DebugFormat("[BARE BONES NON SHARED]: REGION {0} LOADED", scene.RegionInfo.RegionName);

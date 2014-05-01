@@ -45,7 +45,6 @@ namespace OpenSim.Region.Framework.Scenes
 #pragma warning restore 414
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-
         #region Events
 
         public event restart OnRestart;
@@ -80,6 +79,7 @@ namespace OpenSim.Region.Framework.Scenes
         /// The module commanders available from this scene
         /// </value>
         private Dictionary<string, ICommander> m_moduleCommanders = new Dictionary<string, ICommander>();
+
         private ReaderWriterLock m_moduleCommandersRwLock = new ReaderWriterLock();
 
         protected ScenePermissions m_permissions;
@@ -139,6 +139,7 @@ namespace OpenSim.Region.Framework.Scenes
         }
 
         public string Name { get { return RegionInfo.RegionName; } }
+
         public ScenePermissions Permissions
         {
             get { return m_permissions; }
@@ -184,7 +185,9 @@ namespace OpenSim.Region.Framework.Scenes
         {
             return null;
         }
+
         /* Used by the loadbalancer plugin on GForge */
+
         #endregion Fields
 
         public SceneBase(RegionInfo regInfo)
@@ -271,6 +274,7 @@ namespace OpenSim.Region.Framework.Scenes
         }
 
         public abstract void OtherRegionUp(GridRegion otherRegion);
+
         #endregion admin stuff
 
         #region Shutdown
@@ -481,6 +485,7 @@ namespace OpenSim.Region.Framework.Scenes
         {
             RegionModules.Remove(name);
         }
+
         /// <summary>
         /// For the given interface, retrieve the region module which implements it.
         /// </summary>
@@ -557,6 +562,7 @@ namespace OpenSim.Region.Framework.Scenes
                 m_moduleCommandersRwLock.ReleaseWriterLock();
             }
         }
+
         public void UnregisterModuleInterface<M>(M mod)
         {
             List<Object> l;
@@ -575,13 +581,16 @@ namespace OpenSim.Region.Framework.Scenes
                 }
             }
         }
+
         #endregion Module Methods
+
         public abstract bool CheckClient(UUID agentID, System.Net.IPEndPoint ep);
 
         public virtual ISceneObject DeserializeObject(string representation)
         {
             return null;
         }
+
         public void Restart()
         {
             // This has to be here to fire the event

@@ -83,6 +83,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
 
             colours.Save(stream, ImageFormat.Jpeg);
         }
+
         #endregion ITerrainLoader Members
 
         //Returns true if this extension is supported for terrain save-tile
@@ -95,6 +96,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
         {
             return "JPEG";
         }
+
         private static Bitmap CreateBitmapFromMap(ITerrainChannel map)
         {
             int pallete;

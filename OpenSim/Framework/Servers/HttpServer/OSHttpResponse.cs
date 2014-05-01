@@ -152,6 +152,7 @@ namespace OpenSim.Framework.Servers.HttpServer
                 _httpResponse.ContentType = value;
             }
         }
+
         public bool KeepAlive
         {
             get
@@ -221,6 +222,7 @@ namespace OpenSim.Framework.Servers.HttpServer
                 _httpResponse.ProtocolVersion = value;
             }
         }
+
         /// <summary>
         /// Set a redirct location.
         /// </summary>
@@ -299,6 +301,7 @@ namespace OpenSim.Framework.Servers.HttpServer
                 _httpResponse.Reason = value;
             }
         }
+
         /// <summary>
         /// Add a header field and content to the response.
         /// </summary>

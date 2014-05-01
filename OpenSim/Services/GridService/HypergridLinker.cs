@@ -72,6 +72,7 @@ namespace OpenSim.Services.GridService
         private static uint m_autoMappingX = 0;
         private static uint m_autoMappingY = 0;
         private static bool m_enableAutoMapping = false;
+
         public HypergridLinker(IConfigSource config, GridService gridService, IRegionData db)
         {
             IConfig gridConfig = config.Configs["GridService"];
@@ -174,6 +175,7 @@ namespace OpenSim.Services.GridService
                 return m_DefaultRegion;
             }
         }
+
         #region Link Region
 
         private static Random random = new Random();
@@ -190,6 +192,7 @@ namespace OpenSim.Services.GridService
             uint xloc = Util.RegionToWorldLoc((uint)random.Next(0, Int16.MaxValue));
             return TryLinkRegionToCoords(scopeID, regionDescriptor, (int)xloc, 0, out reason);
         }
+
         public bool TryCreateLink(UUID scopeID, int xloc, int yloc, string remoteRegionName, uint externalPort, string externalHostName, UUID ownerID, out GridRegion regInfo, out string reason)
         {
             return TryCreateLink(scopeID, xloc, yloc, remoteRegionName, externalPort, externalHostName, null, ownerID, out regInfo, out reason);
@@ -413,6 +416,7 @@ namespace OpenSim.Services.GridService
 
             return null;
         }
+
         public bool TryUnlinkRegion(string mapName)
         {
             m_log.DebugFormat("[HYPERGRID LINKER]: Request to unlink {0}", mapName);
@@ -501,6 +505,7 @@ namespace OpenSim.Services.GridService
         {
             m_Database.Delete(regionID);
         }
+
         #endregion Link Region
 
         #region Console Commands
@@ -772,6 +777,7 @@ namespace OpenSim.Services.GridService
             else
                 MainConsole.Instance.Output("Failed to link region: " + reason);
         }
+
         private void UnlinkRegionCmdUsage()
         {
             MainConsole.Instance.Output("Usage: unlink-region <LocalName>");

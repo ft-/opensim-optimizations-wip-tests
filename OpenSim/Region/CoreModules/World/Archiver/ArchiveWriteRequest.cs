@@ -65,6 +65,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
         protected Scene m_rootScene;
         protected Stream m_saveStream;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -128,6 +129,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
         /// Determine whether this archive will save assets.  Default is true.
         /// </summary>
         public bool SaveAssets { get; set; }
+
         /// <summary>
         /// Archive the region requested.
         /// </summary>

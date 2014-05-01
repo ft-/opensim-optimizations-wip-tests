@@ -47,6 +47,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
         private IFriendsSimConnector m_FriendsLocalSimConnector;
         private IHGFriendsService m_TheService;
         private IUserAgentService m_UserAgentService;
+
         public HGFriendsServerPostHandler(IHGFriendsService service, IUserAgentService uas, IFriendsSimConnector friendsConn) :
             base("POST", "/hgfriends")
         {
@@ -212,6 +213,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
             else
                 return FailureResult();
         }
+
         private byte[] StatusNotification(Dictionary<string, object> request)
         {
             UUID principalID = UUID.Zero;
@@ -275,6 +277,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
 
             return BoolResult(success);
         }
+
         #endregion Method-specific handlers
 
         #region Misc
@@ -420,6 +423,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
             m_log.DebugFormat("[HGFRIENDS HANDLER]: Verification ok");
             return true;
         }
+
         #endregion Misc
     }
 }

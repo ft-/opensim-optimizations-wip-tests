@@ -25,71 +25,63 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.IO;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
 using Nini.Config;
-
-using OpenSim.Framework;
-using OpenSim.Region.Physics.BulletSPlugin;
 using OpenSim.Region.Physics.Meshing;
+using System.Collections.Generic;
+using System.IO;
 
 namespace OpenSim.Region.Physics.BulletSPlugin.Tests
 {
-// Utility functions for building up and tearing down the sample physics environments
-public static class BulletSimTestsUtil
-{
-    // 'engineName' is the Bullet engine to use. Either null (for unmanaged), "BulletUnmanaged" or "BulletXNA"
-    // 'params' is a set of keyValue pairs to set in the engine's configuration file (override defaults)
-    //      May be 'null' if there are no overrides.
-    public static BSScene CreateBasicPhysicsEngine(Dictionary<string,string> paramOverrides)
+    // Utility functions for building up and tearing down the sample physics environments
+    public static class BulletSimTestsUtil
     {
-        IConfigSource openSimINI = new IniConfigSource();
-        IConfig startupConfig = openSimINI.AddConfig("Startup");
-        startupConfig.Set("physics", "BulletSim");
-        startupConfig.Set("meshing", "Meshmerizer");
-        startupConfig.Set("cacheSculptMaps", "false");  // meshmerizer shouldn't save maps
-
-        IConfig bulletSimConfig = openSimINI.AddConfig("BulletSim");
-        // If the caller cares, specify the bullet engine otherwise it will default to "BulletUnmanaged".
-        // bulletSimConfig.Set("BulletEngine", "BulletUnmanaged");
-        // bulletSimConfig.Set("BulletEngine", "BulletXNA");
-        bulletSimConfig.Set("MeshSculptedPrim", "false");
-        bulletSimConfig.Set("ForceSimplePrimMeshing", "true");
-        if (paramOverrides != null)
+        // 'engineName' is the Bullet engine to use. Either null (for unmanaged), "BulletUnmanaged" or "BulletXNA"
+        // 'params' is a set of keyValue pairs to set in the engine's configuration file (override defaults)
+        //      May be 'null' if there are no overrides.
+        public static BSScene CreateBasicPhysicsEngine(Dictionary<string, string> paramOverrides)
         {
-            foreach (KeyValuePair<string, string> kvp in paramOverrides)
+            IConfigSource openSimINI = new IniConfigSource();
+            IConfig startupConfig = openSimINI.AddConfig("Startup");
+            startupConfig.Set("physics", "BulletSim");
+            startupConfig.Set("meshing", "Meshmerizer");
+            startupConfig.Set("cacheSculptMaps", "false");  // meshmerizer shouldn't save maps
+
+            IConfig bulletSimConfig = openSimINI.AddConfig("BulletSim");
+            // If the caller cares, specify the bullet engine otherwise it will default to "BulletUnmanaged".
+            // bulletSimConfig.Set("BulletEngine", "BulletUnmanaged");
+            // bulletSimConfig.Set("BulletEngine", "BulletXNA");
+            bulletSimConfig.Set("MeshSculptedPrim", "false");
+            bulletSimConfig.Set("ForceSimplePrimMeshing", "true");
+            if (paramOverrides != null)
             {
-                bulletSimConfig.Set(kvp.Key, kvp.Value);
+                foreach (KeyValuePair<string, string> kvp in paramOverrides)
+                {
+                    bulletSimConfig.Set(kvp.Key, kvp.Value);
+                }
             }
+
+            // If a special directory exists, put detailed logging therein.
+            // This allows local testing/debugging without having to worry that the build engine will output logs.
+            if (Directory.Exists("physlogs"))
+            {
+                bulletSimConfig.Set("PhysicsLoggingDir", "./physlogs");
+                bulletSimConfig.Set("PhysicsLoggingEnabled", "True");
+                bulletSimConfig.Set("PhysicsLoggingDoFlush", "True");
+                bulletSimConfig.Set("VehicleLoggingEnabled", "True");
+            }
+
+            BSPlugin bsPlugin = new BSPlugin();
+
+            BSScene bsScene = (BSScene)bsPlugin.GetScene("BSTestRegion");
+
+            // Since the asset requestor is not initialized, any mesh or sculptie will be a cube.
+            // In the future, add a fake asset fetcher to get meshes and sculpts.
+            // bsScene.RequestAssetMethod = ???;
+
+            Meshing.Meshmerizer mesher = new Meshmerizer(openSimINI);
+            bsScene.Initialise(mesher, openSimINI);
+
+            return bsScene;
         }
-
-        // If a special directory exists, put detailed logging therein.
-        // This allows local testing/debugging without having to worry that the build engine will output logs.
-        if (Directory.Exists("physlogs"))
-        {
-            bulletSimConfig.Set("PhysicsLoggingDir","./physlogs");
-            bulletSimConfig.Set("PhysicsLoggingEnabled","True");
-            bulletSimConfig.Set("PhysicsLoggingDoFlush","True");
-            bulletSimConfig.Set("VehicleLoggingEnabled","True");
-        }
-
-        BSPlugin bsPlugin = new BSPlugin();
-
-        BSScene bsScene = (BSScene)bsPlugin.GetScene("BSTestRegion");
-
-        // Since the asset requestor is not initialized, any mesh or sculptie will be a cube.
-        // In the future, add a fake asset fetcher to get meshes and sculpts.
-        // bsScene.RequestAssetMethod = ???;
-
-        Meshing.Meshmerizer mesher = new Meshmerizer(openSimINI);
-        bsScene.Initialise(mesher, openSimINI);
-
-        return bsScene;
     }
-
-}
 }

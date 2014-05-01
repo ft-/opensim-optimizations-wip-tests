@@ -49,6 +49,7 @@ namespace OpenSim.Services.InventoryService
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
+
         public XInventoryService(IConfigSource config)
             : this(config, "InventoryService")
         {
@@ -694,6 +695,7 @@ namespace OpenSim.Services.InventoryService
 
             return sysFolders;
         }
+
         private InventoryFolderBase GetSystemFolderForType(InventoryFolderBase rootFolder, AssetType type)
         {
             //            m_log.DebugFormat("[XINVENTORY SERVICE]: Getting folder type {0} for user {1}", type, principalID);
@@ -717,6 +719,7 @@ namespace OpenSim.Services.InventoryService
 
             return ConvertToOpenSim(folders[0]);
         }
+
         private bool ParentIsTrash(UUID folderID)
         {
             XInventoryFolder[] folder = m_Database.GetFolders(new string[] { "folderID" }, new string[] { folderID.ToString() });

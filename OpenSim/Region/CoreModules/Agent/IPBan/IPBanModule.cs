@@ -76,6 +76,7 @@ namespace OpenSim.Region.CoreModules.Agent.IPBan
         public void Initialise(IConfigSource source)
         {
         }
+
         public void PostInitialise()
         {
             if (File.Exists("bans.txt"))
@@ -95,6 +96,7 @@ namespace OpenSim.Region.CoreModules.Agent.IPBan
         public void RemoveRegion(Scene scene)
         {
         }
+
         #endregion Implementation of ISharedRegionModule
 
         /// <summary>

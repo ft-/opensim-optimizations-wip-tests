@@ -67,6 +67,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
         }
 
         public Scene Scene { get; private set; }
+
         public void AddRegion(Scene scene)
         {
             Scene = scene;
@@ -273,6 +274,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
         {
             //m_log.Debug("[ARCHIVER] Initialising");
         }
+
         public void RegionLoaded(Scene scene)
         {
             RegionCombinerModule = scene.RequestModuleInterface<IRegionCombinerModule>();

@@ -41,6 +41,7 @@ namespace OpenSim.Region.DataSnapshot
 
         //        private Scene m_scene = null;
         private DataSnapshotManager m_externalData = null;
+
         public DataRequestHandler(Scene scene, DataSnapshotManager externalData)
         {
             //            m_scene = scene;

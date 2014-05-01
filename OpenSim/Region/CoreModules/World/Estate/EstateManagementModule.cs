@@ -69,6 +69,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
         public Scene Scene { get; private set; }
 
         public IUserManagement UserManager { get; private set; }
+
         #region Region Module interface
 
         public string Name { get { return "EstateManagementModule"; } }
@@ -102,6 +103,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
             if (config != null)
                 AllowRegionRestartFromClient = config.GetBoolean("AllowRegionRestartFromClient", true);
         }
+
         public void RegionLoaded(Scene scene)
         {
             // Sets up the sun module based no the saved Estate and Region Settings
@@ -114,6 +116,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
         public void RemoveRegion(Scene scene)
         {
         }
+
         #endregion Region Module interface
 
         #region IEstateModule Functions
@@ -312,6 +315,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
             if (change != null)
                 change(Scene.RegionInfo.RegionID);
         }
+
         #endregion IEstateModule Functions
 
         #region Packet Data Responders
@@ -1232,6 +1236,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
                     Scene.RegionInfo.EstateSettings.EstateBans,
                     Scene.RegionInfo.EstateSettings.EstateID);
         }
+
         private void SendSimulatorBlueBoxMessage(
             IClientAPI remote_client, UUID invoice, UUID senderID, UUID sessionID, string senderName, string message)
         {
@@ -1240,6 +1245,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
             if (dm != null)
                 dm.SendNotificationToUsersInRegion(senderID, senderName, message);
         }
+
         #endregion Packet Data Responders
 
         #region Outgoing Packets
@@ -1353,6 +1359,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
                 HandleRegionInfoRequest(client);
             });
         }
+
         #endregion Outgoing Packets
 
         #region Other Functions
@@ -1450,6 +1457,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
 
             return (uint)flags;
         }
+
         private void SendTelehubInfo(IClientAPI client)
         {
             RegionSettings settings =

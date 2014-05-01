@@ -183,6 +183,7 @@ namespace OpenSim.Server.Handlers.Simulation
 
             //            Console.WriteLine("str_response_string [{0}]", responsedata["str_response_string"]);
         }
+
         protected virtual void ReleaseAgent(UUID regionID, UUID id)
         {
             m_SimulationService.ReleaseAgent(regionID, id, "");
@@ -195,6 +196,7 @@ namespace OpenSim.Server.Handlers.Simulation
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private ISimulationService m_SimulationService;
+
         public AgentPostHandler(ISimulationService service) :
             base("POST", "/agent")
         {
@@ -391,6 +393,7 @@ namespace OpenSim.Server.Handlers.Simulation
             httpResponse.StatusCode = (int)responsedata["int_response_code"];
             return encoding.GetBytes((string)responsedata["str_response_string"]);
         }
+
         protected virtual void UnpackData(OSDMap args, AgentDestinationData data, Hashtable request)
         {
             // retrieve the input arguments
@@ -417,6 +420,7 @@ namespace OpenSim.Server.Handlers.Simulation
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private ISimulationService m_SimulationService;
+
         public AgentPutHandler(ISimulationService service) :
             base("PUT", "/agent")
         {
@@ -568,6 +572,7 @@ namespace OpenSim.Server.Handlers.Simulation
             httpResponse.StatusCode = (int)responsedata["int_response_code"];
             return encoding.GetBytes((string)responsedata["str_response_string"]);
         }
+
         // subclasses can override this
         protected virtual bool UpdateAgent(GridRegion destination, AgentData agent)
         {

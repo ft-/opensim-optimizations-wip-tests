@@ -25,35 +25,26 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
-using System.Threading;
-using System.Timers;
-using System.Xml;
-using Timer=System.Timers.Timer;
 using Nini.Config;
 using NUnit.Framework;
 using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Framework.Communications;
 using OpenSim.Framework.Servers;
 using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Region.CoreModules.Avatar.Attachments;
 using OpenSim.Region.CoreModules.Framework;
 using OpenSim.Region.CoreModules.Framework.EntityTransfer;
 using OpenSim.Region.CoreModules.Framework.InventoryAccess;
-using OpenSim.Region.CoreModules.Scripting.WorldComm;
 using OpenSim.Region.CoreModules.ServiceConnectorsOut.Simulation;
-using OpenSim.Region.CoreModules.World.Serialiser;
-using OpenSim.Region.Framework.Scenes;
 using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.ScriptEngine.Interfaces;
+using OpenSim.Region.Framework.Scenes;
 using OpenSim.Region.ScriptEngine.XEngine;
 using OpenSim.Services.Interfaces;
 using OpenSim.Tests.Common;
 using OpenSim.Tests.Common.Mock;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading;
+using System.Xml;
 
 namespace OpenSim.Region.CoreModules.Avatar.Attachments.Tests
 {
@@ -64,7 +55,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments.Tests
     public class AttachmentsModuleTests : OpenSimTestCase
     {
         private AutoResetEvent m_chatEvent = new AutoResetEvent(false);
-//        private OSChatMessage m_osChatMessageReceived;
+        //        private OSChatMessage m_osChatMessageReceived;
 
         // Used to test whether the operations have fired the attach event.  Must be reset after each test.
         private int m_numberOfAttachEventsFired;
@@ -86,9 +77,9 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments.Tests
 
         private void OnChatFromWorld(object sender, OSChatMessage oscm)
         {
-//            Console.WriteLine("Got chat [{0}]", oscm.Message);
+            //            Console.WriteLine("Got chat [{0}]", oscm.Message);
 
-//            m_osChatMessageReceived = oscm;
+            //            m_osChatMessageReceived = oscm;
             m_chatEvent.Set();
         }
 
@@ -155,7 +146,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments.Tests
 
             // Necessary to stop serialization complaining
             // FIXME: Stop this being necessary if at all possible
-//            modules.Add(new WorldCommModule());
+            //            modules.Add(new WorldCommModule());
         }
 
         /// <summary>
@@ -188,7 +179,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments.Tests
         public void TestAddAttachmentFromGround()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             m_numberOfAttachEventsFired = 0;
 
@@ -236,7 +227,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments.Tests
         public void TestWearAttachmentFromGround()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             Scene scene = CreateTestScene();
             UserAccount ua1 = UserAccountHelpers.CreateUserWithInventory(scene, 0x1);
@@ -353,7 +344,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments.Tests
         public void TestAddSatOnAttachmentFromGround()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             m_numberOfAttachEventsFired = 0;
 
@@ -385,7 +376,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments.Tests
         public void TestRezAttachmentFromInventory()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             Scene scene = CreateTestScene();
             UserAccount ua1 = UserAccountHelpers.CreateUserWithInventory(scene, 0x1);
@@ -450,7 +441,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments.Tests
         public void TestWearAttachmentFromInventory()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             Scene scene = CreateTestScene();
             UserAccount ua1 = UserAccountHelpers.CreateUserWithInventory(scene, 0x1);
@@ -483,7 +474,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments.Tests
 
             // Test wearing a second attachment at the same position
             // Until multiple attachments at one point is implemented, this will remove the first attachment
-            // This test relies on both attachments having the same default attachment point (in this case LeftHand 
+            // This test relies on both attachments having the same default attachment point (in this case LeftHand
             // since none other has been set).
             {
                 scene.AttachmentsModule.RezSingleAttachmentFromInventory(sp, attItem2.ID, (uint)AttachmentPoint.Default);
@@ -574,7 +565,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments.Tests
         public void TestDetachAttachmentToGround()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             Scene scene = CreateTestScene();
             UserAccount ua1 = UserAccountHelpers.CreateUserWithInventory(scene, 0x1);
@@ -646,7 +637,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments.Tests
         public void TestDetachScriptedAttachmentToInventory()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             Scene scene = CreateScriptingEnabledTestScene();
             UserAccount ua1 = UserAccountHelpers.CreateUserWithInventory(scene, 0x1);
@@ -695,7 +686,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments.Tests
             IScriptModule xengine = scene.RequestModuleInterface<IScriptModule>();
             Assert.That(xengine.GetScriptState(reRezzedScriptItem.ItemID), Is.True);
 
-//            Console.WriteLine(soXml.OuterXml);
+            //            Console.WriteLine(soXml.OuterXml);
         }
 
         /// <summary>
@@ -705,7 +696,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments.Tests
         public void TestRemoveAttachmentsOnAvatarExit()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             Scene scene = CreateTestScene();
             UserAccount ua1 = UserAccountHelpers.CreateUserWithInventory(scene, 0x1);
@@ -732,7 +723,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments.Tests
         public void TestRezAttachmentsOnAvatarEntrance()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             Scene scene = CreateTestScene();
             UserAccount ua1 = UserAccountHelpers.CreateUserWithInventory(scene, 0x1);
@@ -802,7 +793,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments.Tests
         public void TestSameSimulatorNeighbouringRegionsTeleportV1()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             BaseHttpServer httpServer = new BaseHttpServer(99999);
             MainServer.AddHttpServer(httpServer);
@@ -909,7 +900,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments.Tests
         public void TestSameSimulatorNeighbouringRegionsTeleportV2()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             BaseHttpServer httpServer = new BaseHttpServer(99999);
             MainServer.AddHttpServer(httpServer);
@@ -965,8 +956,8 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments.Tests
             // Both these operations will occur on different threads and will wait for each other.
             // We have to do this via ThreadPool directly since FireAndForget has been switched to sync for the V1
             // test protocol, where we are trying to avoid unpredictable async operations in regression tests.
-            tc.OnTestClientSendRegionTeleport 
-                += (regionHandle, simAccess, regionExternalEndPoint, locationID, flags, capsURL) 
+            tc.OnTestClientSendRegionTeleport
+                += (regionHandle, simAccess, regionExternalEndPoint, locationID, flags, capsURL)
                     => ThreadPool.UnsafeQueueUserWorkItem(o => destinationTestClients[0].CompleteMovement(), null);
 
             m_numberOfAttachEventsFired = 0;

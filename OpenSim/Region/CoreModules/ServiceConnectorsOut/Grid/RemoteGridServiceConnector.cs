@@ -53,6 +53,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
         private IGridService m_LocalGridService;
         private RegionInfoCache m_RegionInfoCache = new RegionInfoCache();
         private IGridService m_RemoteGridService;
+
         public RemoteGridServicesConnector()
         {
         }
@@ -73,6 +74,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
         {
             get { return null; }
         }
+
         public void AddRegion(Scene scene)
         {
             if (m_Enabled)
@@ -138,6 +140,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
 
             m_LocalGridService = new LocalGridServicesConnector(source);
         }
+
         #endregion ISharedRegionmodule
 
         #region IGridService
@@ -343,6 +346,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
 
             return msg;
         }
+
         #endregion IGridService
     }
 }

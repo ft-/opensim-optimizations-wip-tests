@@ -42,6 +42,7 @@ namespace OpenSim.Services.AssetService
     {
         protected static XAssetService m_RootInstance;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public XAssetService(IConfigSource config)
             : this(config, "AssetService")
         {
@@ -193,6 +194,7 @@ namespace OpenSim.Services.AssetService
             else
                 return null;
         }
+
         public virtual string Store(AssetBase asset)
         {
             bool exists = m_Database.AssetsExist(new[] { asset.FullID })[0];
@@ -215,6 +217,7 @@ namespace OpenSim.Services.AssetService
         {
             return false;
         }
+
         private void MigrateFromChainedService(AssetBase asset)
         {
             Store(asset);

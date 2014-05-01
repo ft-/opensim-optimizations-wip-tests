@@ -237,6 +237,7 @@ namespace OpenSim.Framework.Console
 
             return true;
         }
+
         /// <summary>
         /// Convert a vector input from the console to an OpenMetaverse.Vector3
         /// </summary>

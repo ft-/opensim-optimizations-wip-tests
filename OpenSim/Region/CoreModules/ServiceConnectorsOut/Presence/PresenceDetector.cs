@@ -37,6 +37,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Presence
 
         private Scene m_aScene;
         private IPresenceService m_PresenceService;
+
         public PresenceDetector(IPresenceService presenceservice)
         {
             m_PresenceService = presenceservice;

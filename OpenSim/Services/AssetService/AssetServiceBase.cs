@@ -38,6 +38,7 @@ namespace OpenSim.Services.AssetService
         protected IAssetLoader m_AssetLoader = null;
         protected string m_ConfigName = "AssetService";
         protected IAssetDataPlugin m_Database = null;
+
         public AssetServiceBase(IConfigSource config)
             : this(config, "AssetService")
         {

@@ -25,7 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using NUnit.Framework;
 using OpenSim.Framework;
 using OpenSim.Region.CoreModules.World.Terrain.PaintBrushes;
@@ -50,7 +49,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.Tests
             {
                 for (y = 0; y < (int)Constants.RegionSize; y++)
                 {
-                    allowMask[x,y] = true;
+                    allowMask[x, y] = true;
                 }
             }
 
@@ -70,11 +69,11 @@ namespace OpenSim.Region.CoreModules.World.Terrain.Tests
             // Test LowerSphere
             //
             map = new TerrainChannel((int)Constants.RegionSize, (int)Constants.RegionSize);
-            for (x=0; x<map.Width; x++)
+            for (x = 0; x < map.Width; x++)
             {
-                for (y=0; y<map.Height; y++)
+                for (y = 0; y < map.Height; y++)
                 {
-                    map[x,y] = 1.0;
+                    map[x, y] = 1.0;
                 }
             }
             effect = new LowerSphere();

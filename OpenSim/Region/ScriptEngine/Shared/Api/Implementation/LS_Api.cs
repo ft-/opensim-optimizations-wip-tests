@@ -52,6 +52,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         internal SceneObjectPart m_host;
         internal bool m_LSFunctionsEnabled = false;
         internal IScriptEngine m_ScriptEngine;
+
         public Scene World
         {
             get { return m_ScriptEngine.World; }
@@ -83,6 +84,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             }
             return lease;
         }
+
         public void lsClearWindlightScene()
         {
             if (!m_LSFunctionsEnabled)
@@ -392,6 +394,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             IWorldComm wComm = m_ScriptEngine.World.RequestModuleInterface<IWorldComm>();
             wComm.DeliverMessage(ChatTypeEnum.Shout, ScriptBaseClass.DEBUG_CHANNEL, m_host.Name, m_host.UUID, message);
         }
+
         private RegionLightShareData getWindlightProfileFromRules(LSL_List rules)
         {
             RegionLightShareData wl = (RegionLightShareData)m_host.ParentGroup.Scene.RegionInfo.WindlightSettings.Clone();

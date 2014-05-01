@@ -53,11 +53,13 @@ namespace OpenSim.Services.MapImageService
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
+
         private static bool m_Initialized = false;
         private static object m_Sync = new object();
         private static string m_TilesStoragePath = "maptiles";
         private static Color m_Watercolor = Color.FromArgb(29, 71, 95);
         private static string m_WaterTileFile = string.Empty;
+
         public MapImageService(IConfigSource config)
         {
             if (!m_Initialized)
@@ -178,6 +180,7 @@ namespace OpenSim.Services.MapImageService
 
             return true;
         }
+
         #endregion IMapImageService
 
         private bool CreateTile(uint zoomLevel, int x, int y)
@@ -289,6 +292,7 @@ namespace OpenSim.Services.MapImageService
 
             return null;
         }
+
         #region Image utilities
 
         private void FillImage(Bitmap bm, Color c)

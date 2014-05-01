@@ -51,6 +51,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
     {
         protected static readonly FriendInfo[] EMPTY_FRIENDS = new FriendInfo[0];
         protected bool m_Enabled = false;
+
         /// <summary>
         /// Cache friends lists for users.
         /// </summary>
@@ -62,6 +63,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
 
         protected IFriendsService m_FriendsService = null;
         protected FriendsSimConnector m_FriendsSimConnector;
+
         /// <summary>
         /// Maintain a record of viewers that need to be sent notifications for friends that are online.  This only
         /// needs to be done on login.  Subsequent online/offline friend changes are sent by a different mechanism.
@@ -77,6 +79,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
         protected IPresenceService m_PresenceService = null;
         protected List<Scene> m_Scenes = new List<Scene>();
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public IFriendsService FriendsService
         {
             get
@@ -696,6 +699,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
                 return false;
             }
         }
+
         #region ISharedRegionModule
 
         public virtual string Name
@@ -786,7 +790,9 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
                 throw new Exception("Connector load error");
             }
         }
+
         #endregion ISharedRegionModule
+
         #region Local
 
         public bool LocalFriendshipApproved(UUID userID, string userName, UUID friendID)
@@ -843,6 +849,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
             }
             return false;
         }
+
         public bool LocalFriendshipTerminated(UUID userID, UUID exfriendID)
         {
             IClientAPI friendClient = LocateClientObject(exfriendID);
@@ -987,6 +994,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Friends
                 finfo.TheirFlags = rights;
             }
         }
+
         #endregion Get / Set friends in several flavours
     }
 }

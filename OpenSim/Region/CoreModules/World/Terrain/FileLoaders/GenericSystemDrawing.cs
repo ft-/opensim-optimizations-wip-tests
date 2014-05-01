@@ -185,6 +185,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
 
             return retval;
         }
+
         protected virtual void Save(Bitmap bmp, string filename)
         {
             bmp.Save(filename, ImageFormat.Png);
@@ -202,6 +203,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
         {
             return "SYS.DRAWING";
         }
+
         /// <summary>
         /// Protected method, generates a coloured bitmap
         /// image from a specified terrain channel.

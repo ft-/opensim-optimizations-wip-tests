@@ -25,11 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
-using log4net;
 using Nini.Config;
 using NUnit.Framework;
 using OpenMetaverse;
@@ -37,14 +32,11 @@ using OpenMetaverse.Assets;
 using OpenMetaverse.StructuredData;
 using OpenSim.Framework;
 using OpenSim.Region.CoreModules.Avatar.AvatarFactory;
-using OpenSim.Region.OptionalModules.World.NPC;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Region.ScriptEngine.Shared;
+using OpenSim.Region.OptionalModules.World.NPC;
 using OpenSim.Region.ScriptEngine.Shared.Api;
-using OpenSim.Region.ScriptEngine.Shared.Instance;
-using OpenSim.Services.Interfaces;
 using OpenSim.Tests.Common;
-using OpenSim.Tests.Common.Mock;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.ScriptEngine.Shared.Tests
 {
@@ -82,7 +74,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Tests
         public void TestOsOwnerSaveAppearance()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             UUID userId = TestHelpers.ParseTail(0x1);
             float newHeight = 1.9f;
@@ -122,7 +114,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Tests
         public void TestOsAgentSaveAppearance()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             UUID ownerId = TestHelpers.ParseTail(0x1);
             UUID nonOwnerId = TestHelpers.ParseTail(0x2);

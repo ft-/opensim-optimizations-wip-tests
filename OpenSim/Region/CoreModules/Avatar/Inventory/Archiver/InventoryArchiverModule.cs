@@ -78,6 +78,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver
         }
 
         public event InventoryArchiveSaved OnInventoryArchiveSaved;
+
         protected IUserAccountService UserAccountService
         {
             get
@@ -93,6 +94,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver
                 return m_UserAccountService;
             }
         }
+
         //        public InventoryArchiverModule(bool disablePresenceChecks)
         //        {
         //            DisablePresenceChecks = disablePresenceChecks;
@@ -157,6 +159,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver
         public void Initialise(IConfigSource source)
         {
         }
+
         public void PostInitialise()
         {
         }
@@ -168,6 +171,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver
         public void RemoveRegion(Scene scene)
         {
         }
+
         #endregion ISharedRegionModule
 
         public bool ArchiveInventory(
@@ -368,6 +372,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver
             if (handlerInventoryArchiveSaved != null)
                 handlerInventoryArchiveSaved(id, succeeded, userInfo, invPath, saveStream, reportedException);
         }
+
         /// <summary>
         /// Get user information for the given name.
         /// </summary>
@@ -538,6 +543,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver
                     userInfo.FirstName, userInfo.LastName, reportedException.Message);
             }
         }
+
         /// <summary>
         /// Notify the client of loaded nodes if they are logged in
         /// </summary>

@@ -62,6 +62,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
         public delegate void GridInstantMessageDelegate(GridInstantMessage im, MessageResultNotification result, UUID prevRegionID);
 
         public event UndeliveredMessage OnUndeliveredMessage;
+
         public virtual string Name
         {
             get { return "MessageTransferModule"; }
@@ -112,6 +113,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
 
             m_Enabled = true;
         }
+
         public virtual void PostInitialise()
         {
             if (!m_Enabled)
@@ -135,6 +137,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
                 m_Scenes.Remove(scene);
             }
         }
+
         public virtual void SendInstantMessage(GridInstantMessage im, MessageResultNotification result)
         {
             UUID toAgentID = new UUID(im.toAgentID);
@@ -645,6 +648,7 @@ namespace OpenSim.Region.CoreModules.Avatar.InstantMessage
             //m_log.DebugFormat("[INSTANT MESSAGE]: Undeliverable");
             result(false);
         }
+
         /// <summary>
         /// Get ulong region handle for region by it's Region UUID.
         /// We use region handles over grid comms because there's all sorts of free and cool caching.

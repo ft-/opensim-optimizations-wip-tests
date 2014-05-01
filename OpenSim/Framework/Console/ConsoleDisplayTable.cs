@@ -95,10 +95,12 @@ namespace OpenSim.Framework.Console
         /// Table rows
         /// </summary>
         public List<ConsoleDisplayTableRow> Rows { get; private set; }
+
         /// <summary>
         /// Spacing between table columns
         /// </summary>
         public int TableSpacing { get; set; }
+
         public void AddColumn(string name, int width)
         {
             Columns.Add(new ConsoleDisplayTableColumn(name, width));
@@ -128,6 +130,7 @@ namespace OpenSim.Framework.Console
             AddToStringBuilder(sb);
             return sb.ToString();
         }
+
         /// <summary>
         /// Gets the format string for the table.
         /// </summary>

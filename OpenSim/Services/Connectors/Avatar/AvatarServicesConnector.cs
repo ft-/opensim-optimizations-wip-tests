@@ -218,6 +218,7 @@ namespace OpenSim.Services.Connectors
             AvatarData avatar = new AvatarData(appearance);
             return SetAvatar(userID, avatar);
         }
+
         public bool SetAvatar(UUID userID, AvatarData avatar)
         {
             Dictionary<string, object> sendData = new Dictionary<string, object>();
@@ -267,6 +268,7 @@ namespace OpenSim.Services.Connectors
 
             return false;
         }
+
         public bool SetItems(UUID userID, string[] names, string[] values)
         {
             Dictionary<string, object> sendData = new Dictionary<string, object>();
@@ -308,6 +310,7 @@ namespace OpenSim.Services.Connectors
 
             return false;
         }
+
         #endregion IAvatarService
     }
 }

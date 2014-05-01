@@ -91,6 +91,7 @@ namespace OpenSim.Region.CoreModules.Framework.Search
                 m_log.DebugFormat("[BASIC SEARCH MODULE]: {0} is enabled", Name);
             }
         }
+
         public void PostInitialise()
         {
         }
@@ -120,6 +121,7 @@ namespace OpenSim.Region.CoreModules.Framework.Search
                 scene.EventManager.OnMakeChildAgent -= new EventManager.OnMakeChildAgentDelegate(EventManager_OnMakeChildAgent);
             }
         }
+
         #endregion ISharedRegionModule
 
         #region Event Handlers
@@ -133,6 +135,7 @@ namespace OpenSim.Region.CoreModules.Framework.Search
         {
             sp.ControllingClient.OnDirFindQuery += OnDirFindQuery;
         }
+
         private void OnDirFindQuery(IClientAPI remoteClient, UUID queryID, string queryText, uint queryFlags, int queryStart)
         {
             queryText = queryText.Trim();

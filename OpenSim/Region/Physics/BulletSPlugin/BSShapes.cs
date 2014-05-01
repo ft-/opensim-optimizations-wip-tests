@@ -82,6 +82,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         public BulletShape physShapeInfo { get; set; }
 
         public int referenceCount { get; set; }
+
         public virtual BSPhysicsShapeType ShapeType
         {
             get
@@ -132,6 +133,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             referenceCount++;
             lastReferenced = DateTime.Now;
         }
+
         #region Common shape routines
 
         // Create a hash of all the shape parameters to be used as a key for this particular shape.
@@ -274,6 +276,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
             return fillShape.physShapeInfo;
         }
+
         #endregion Common shape routines
     }
 
@@ -281,6 +284,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
     public class BSShapeAvatar : BSShape
     {
 #pragma warning disable 414
+
         // X component -- distance from zero to the front or back of a level
         private const float Adep = 0f;
 
@@ -295,6 +299,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
         private const float Bdep = 0.3f;
         private const float Bfwid = 0.2f;
+
         // Zero goes directly through the middle so the offsets are from that middle axis
         //     and up and down from a middle horizon (A and E are the same distance from the zero).
         // The height, width and depth is one. All scaling is done by the simulator.
@@ -303,6 +308,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         private const float Bwid = 0.3f;
         private const float Cdep = 0.5f;
         private const float Cfwid = 0.4f;
+
         // From the top A and E are just lines.
         //              B, C and D are hexagons:
         //
@@ -316,6 +322,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         private const float Cwid = 0.5f;
         private const float Ddep = 0.2f;
         private const float Dfwid = 0.2f;
+
         // From the front:
         //     A---A
         //    /     \
@@ -521,6 +528,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             IncrementReference();
             return this;
         }
+
         private static BulletShape CreatePhysicalCompoundShape(BSScene physicsScene)
         {
             BulletShape cShape = physicsScene.PE.CreateCompoundShape(physicsScene.World, false);
@@ -599,6 +607,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         private static ReaderWriterLock ConvexHullsRwLock = new ReaderWriterLock();
         private static string LogHeader = "[BULLETSIM SHAPE CONVEX HULL]";
 #pragma warning restore 414
+
         public BSShapeConvexHull(BulletShape pShape)
             : base(pShape)
         {
@@ -717,6 +726,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         private static ReaderWriterLock GImpactsRwLock = new ReaderWriterLock();
         private static string LogHeader = "[BULLETSIM SHAPE GIMPACT]";
 #pragma warning restore 414
+
         public BSShapeGImpact(BulletShape pShape)
             : base(pShape)
         {
@@ -950,6 +960,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             }
             return ret;
         }
+
         private BulletShape CreatePhysicalHull(BSScene physicsScene, BSPhysObject prim, System.UInt64 newHullKey,
                                                 PrimitiveBaseShape pbs, OMV.Vector3 size, float lod)
         {
@@ -1176,6 +1187,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         private static Dictionary<System.UInt64, BSShapeMesh> Meshes = new Dictionary<System.UInt64, BSShapeMesh>();
         private static ReaderWriterLock MeshesRwLock = new ReaderWriterLock();
         private static string LogHeader = "[BULLETSIM SHAPE MESH]";
+
         public BSShapeMesh(BulletShape pShape)
             : base(pShape)
         {
@@ -1367,6 +1379,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             }
             return ret;
         }
+
         private BulletShape CreatePhysicalMesh(BSScene physicsScene, BSPhysObject prim, System.UInt64 newMeshKey,
                                                 PrimitiveBaseShape pbs, OMV.Vector3 size, float lod)
         {
@@ -1419,6 +1432,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             }
             return ret;
         }
+
         private static BulletShape CreatePhysicalNativeShape(BSScene physicsScene, BSPhysObject prim,
                                                 BSPhysicsShapeType shapeType, FixedShapeKey shapeKey)
         {

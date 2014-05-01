@@ -45,6 +45,7 @@ namespace OpenSim.Region.CoreModules.Agent.Xfer
         private Scene m_scene;
         private Dictionary<string, FileData> NewFiles = new Dictionary<string, FileData>();
         private Dictionary<ulong, XferDownLoad> Transfers = new Dictionary<ulong, XferDownLoad>();
+
         public void AbortXfer(IClientAPI remoteClient, ulong xferID)
         {
             lock (NewFiles)
@@ -177,6 +178,7 @@ namespace OpenSim.Region.CoreModules.Agent.Xfer
         public void Initialise(IConfigSource config)
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -188,6 +190,7 @@ namespace OpenSim.Region.CoreModules.Agent.Xfer
             m_scene.UnregisterModuleInterface<IXfer>(this);
             m_scene = null;
         }
+
         #endregion INonSharedRegionModule Members
 
         #region IXfer Members
@@ -222,6 +225,7 @@ namespace OpenSim.Region.CoreModules.Agent.Xfer
         }
 
         #endregion IXfer Members
+
         #region Nested type: XferDownLoad
 
         public class XferDownLoad
@@ -234,6 +238,7 @@ namespace OpenSim.Region.CoreModules.Agent.Xfer
             public uint Serial = 1;
             public ulong XferID = 0;
             private bool complete;
+
             public XferDownLoad(string fileName, byte[] data, ulong xferID, IClientAPI client)
             {
                 FileName = fileName;

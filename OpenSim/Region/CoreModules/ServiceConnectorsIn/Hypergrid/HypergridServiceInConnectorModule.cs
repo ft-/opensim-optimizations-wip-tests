@@ -97,6 +97,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Hypergrid
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -131,6 +132,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Hypergrid
             if (!m_Enabled)
                 return;
         }
+
         #endregion Region Module interface
     }
 }

@@ -60,6 +60,7 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
     {
         public Point[] pts;
     }
+
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "MapImageModule")]
     public class MapImageModule : IMapImageGenerator, INonSharedRegionModule
     {
@@ -70,6 +71,7 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
         private bool m_Enabled = false;
         private Scene m_scene;
         private IMapTileTerrainRenderer terrainRenderer;
+
         #region IMapImageGenerator Members
 
         public Bitmap CreateMapTile()
@@ -202,6 +204,7 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
 
             m_Enabled = true;
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -209,6 +212,7 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
         public void RemoveRegion(Scene scene)
         {
         }
+
         #endregion Region Module interface
 
         // TODO: unused:
@@ -631,6 +635,7 @@ namespace OpenSim.Region.CoreModules.World.LegacyMap
             }
             return null;
         }
+
         private Point project(ITerrainChannel hm, Vector3 point3d, Vector3 originpos)
         {
             Point returnpt = new Point();

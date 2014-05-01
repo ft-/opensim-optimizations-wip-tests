@@ -31,7 +31,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
     {
         public float dist;
         public float3 normal = new float3();
-         // distance below origin - the D from plane equasion Ax+By+Cz+D=0
+        // distance below origin - the D from plane equasion Ax+By+Cz+D=0
 
         public Plane(float3 n, float d)
         {

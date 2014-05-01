@@ -59,6 +59,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
         protected Dictionary<string, AssetMetadata> m_metadata;
 
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public AssetsDearchiver(IAssetService cache)
         {
             m_cache = cache;
@@ -167,6 +168,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
                 ResolveAssetData(filename, m_assetDataAwaitingMetadata[filename]);
             }
         }
+
         /// <summary>
         /// Metadata for an asset
         /// </summary>

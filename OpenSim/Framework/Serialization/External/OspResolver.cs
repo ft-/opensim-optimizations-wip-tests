@@ -46,6 +46,7 @@ namespace OpenSim.Framework.Serialization
         public const string OSPA_TUPLE_SEPARATOR = "|";
         public static readonly char[] OSPA_TUPLE_SEPARATOR_ARRAY = OSPA_TUPLE_SEPARATOR.ToCharArray();
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         /// <summary>
         /// Hash a profile name into a UUID
         /// </summary>
@@ -145,6 +146,7 @@ namespace OpenSim.Framework.Serialization
 
             return UUID.Zero;
         }
+
         /// <summary>
         /// Resolve an OSPI name by querying existing persistent user profiles.  If there is no persistent user profile
         /// then a temporary user profile is inserted in the cache.

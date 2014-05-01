@@ -85,6 +85,7 @@ namespace OpenSim.Region.Physics.Manager
         {
             // Does nothing right now
         }
+
         public override void RemoveAvatar(PhysicsActor actor)
         {
         }
@@ -109,6 +110,7 @@ namespace OpenSim.Region.Physics.Manager
                     return PhysicsActor.Null;
                 }
         */
+
         public override float Simulate(float timeStep)
         {
             m_workIndicator = (m_workIndicator + 1) % 10;

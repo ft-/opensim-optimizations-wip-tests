@@ -92,6 +92,7 @@ namespace OpenSim.Framework
         int GetPrimsFree();
 
         int GetSimulatorMaxPrimCount();
+
         /// <summary>
         /// Create a square land bitmap.
         /// </summary>
@@ -135,6 +136,7 @@ namespace OpenSim.Framework
         void SendLandProperties(int sequence_id, bool snap_selection, int request_result, IClientAPI remote_client);
 
         void SendLandUpdateToAvatarsOverMe();
+
         void SendLandUpdateToClient(IClientAPI remote_client);
 
         void SendLandUpdateToClient(bool snap_selection, IClientAPI remote_client);
@@ -164,6 +166,7 @@ namespace OpenSim.Framework
         void UpdateLandBitmapByteArray();
 
         void UpdateLandProperties(LandUpdateArgs args, IClientAPI remote_client);
+
         void UpdateLandSold(UUID avatarID, UUID groupID, bool groupOwned, uint AuctionID, int claimprice, int area);
     }
 }

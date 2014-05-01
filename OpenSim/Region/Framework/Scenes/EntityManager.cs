@@ -133,6 +133,7 @@ namespace OpenSim.Region.Framework.Scenes
         {
             return m_entities.Remove(id);
         }
+
         public bool TryGetValue(UUID key, out EntityBase obj)
         {
             return m_entities.TryGetValue(key, out obj);

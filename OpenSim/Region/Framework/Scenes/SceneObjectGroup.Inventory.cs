@@ -187,6 +187,7 @@ namespace OpenSim.Region.Framework.Scenes
             for (int i = 0; i < parts.Length; i++)
                 parts[i].Inventory.ForceInventoryPersistence();
         }
+
         public uint GetEffectivePermissions()
         {
             uint perms = (uint)(PermissionMask.Modify |
@@ -395,6 +396,7 @@ namespace OpenSim.Region.Framework.Scenes
         {
             Array.ForEach<SceneObjectPart>(m_parts.GetArray(), p => p.Inventory.StopScriptInstances());
         }
+
         /// <summary>
         /// Update an existing inventory item.
         /// </summary>

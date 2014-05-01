@@ -86,6 +86,7 @@ namespace OpenSim.Region.OptionalModules
             m_log.DebugFormat("[PRIM LIMITS]: Initialized module");
             m_enabled = true;
         }
+
         public void RegionLoaded(Scene scene)
         {
             m_dialogModule = scene.RequestModuleInterface<IDialogModule>();
@@ -102,6 +103,7 @@ namespace OpenSim.Region.OptionalModules
             scene.Permissions.OnObjectEntry -= CanObjectEnter;
             scene.Permissions.OnDuplicateObject -= CanDuplicateObject;
         }
+
         //OnDuplicateObject
         private bool CanDuplicateObject(int objectCount, UUID objectID, UUID ownerID, Scene scene, Vector3 objectPosition)
         {
@@ -169,6 +171,7 @@ namespace OpenSim.Region.OptionalModules
             }
             return true;
         }
+
         private string DoCommonChecks(int objectCount, UUID ownerID, ILandObject lo, Scene scene)
         {
             string response = null;

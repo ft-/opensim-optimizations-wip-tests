@@ -25,11 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
 using NUnit.Framework;
 using OpenSim.Tests.Common;
+using System;
 
 namespace OpenSim.Framework.Servers.Tests
 {
@@ -39,7 +37,7 @@ namespace OpenSim.Framework.Servers.Tests
         [Test]
         public void TestVersionLength()
         {
-            Assert.AreEqual(VersionInfo.VERSIONINFO_VERSION_LENGTH, VersionInfo.Version.Length," VersionInfo.Version string not " + VersionInfo.VERSIONINFO_VERSION_LENGTH + " chars.");
+            Assert.AreEqual(VersionInfo.VERSIONINFO_VERSION_LENGTH, VersionInfo.Version.Length, " VersionInfo.Version string not " + VersionInfo.VERSIONINFO_VERSION_LENGTH + " chars.");
         }
 
         [Test]

@@ -71,6 +71,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Appearance
         {
             //            m_log.DebugFormat("[APPEARANCE INFO MODULE]: POST INITIALIZED MODULE");
         }
+
         public void RegionLoaded(Scene scene)
         {
             //            m_log.DebugFormat("[APPEARANCE INFO MODULE]: REGION {0} LOADED", scene.RegionInfo.RegionName);
@@ -126,6 +127,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Appearance
             lock (m_scenes)
                 m_scenes.Remove(scene.RegionInfo.RegionID);
         }
+
         protected void HandleFindAppearanceCommand(string module, string[] cmd)
         {
             if (cmd.Length != 3)

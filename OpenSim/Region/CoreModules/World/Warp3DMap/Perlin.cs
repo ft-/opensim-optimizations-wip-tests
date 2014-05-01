@@ -42,10 +42,12 @@ namespace OpenSim.Region.CoreModules.World.Warp3DMap
 
         // We use a hardcoded seed to keep the noise generation consistent between runs
         private const int SEED = 42;
+
         private static readonly float[] g1 = new float[SAMPLE_SIZE + SAMPLE_SIZE + 2];
         private static readonly float[,] g2 = new float[SAMPLE_SIZE + SAMPLE_SIZE + 2, 2];
         private static readonly float[,] g3 = new float[SAMPLE_SIZE + SAMPLE_SIZE + 2, 3];
         private static readonly int[] p = new int[SAMPLE_SIZE + SAMPLE_SIZE + 2];
+
         static Perlin()
         {
             Random rng = new Random(SEED);

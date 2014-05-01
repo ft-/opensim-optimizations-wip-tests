@@ -113,6 +113,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
         public int MaxTransferDistance { get; set; }
 
         public string OutgoingTransferVersionName { get; set; }
+
         public Scene Scene { get; private set; }
 
         /// <summary>
@@ -120,6 +121,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
         /// a callback fails to arrive within a set time then the user is pulled back into the source region.
         /// </summary>
         public bool WaitForAgentArrivedAtDestination { get; set; }
+
         // For performance, we keed a cached of banned regions so we don't keep going
         //    to the grid service.
         private class BannedRegionCache
@@ -129,6 +131,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
 
             private DateTime m_banUntil;
             private ExpiringCache<ulong, DateTime> m_idCache;
+
             public BannedRegionCache()
             {
             }
@@ -160,6 +163,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
                 }
                 return ret;
             }
+
             // Remove the agent from the region's banned list
             public void Remove(ulong pRegionHandle, UUID pAgentID)
             {
@@ -169,6 +173,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
                 }
             }
         }
+
         #region ISharedRegionModule
 
         public virtual string Name
@@ -180,6 +185,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
         {
             get { return null; }
         }
+
         public virtual void AddRegion(Scene scene)
         {
             if (!m_Enabled)
@@ -358,6 +364,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
 
             m_Enabled = true;
         }
+
         protected virtual void OnNewClient(IClientAPI client)
         {
             client.OnTeleportHomeRequest += TriggerTeleportHome;
@@ -368,6 +375,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
 
             client.OnConnectionClosed += OnConnectionClosed;
         }
+
         #endregion ISharedRegionModule
 
         #region Agent Teleports
@@ -809,6 +817,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
                     client.Name, Scene.Name);
             }
         }
+
         /// <summary>
         /// Teleports the agent to a different region.
         /// </summary>
@@ -952,6 +961,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
 
             m_entityTransferStateMachine.UpdateInTransit(sp.UUID, AgentTransferState.CleaningUp);
         }
+
         private void TransferAgent_V1(ScenePresence sp, AgentCircuitData agentCircuit, GridRegion reg, GridRegion finalDestination,
             IPEndPoint endPoint, uint teleportFlags, uint oldRegionX, uint newRegionX, uint oldRegionY, uint newRegionY, string version, out string reason)
         {
@@ -1383,6 +1393,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
                 sp.Reset();
             }
         }
+
         #endregion Agent Teleports
 
         #region Landmark Teleport
@@ -1458,6 +1469,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
         {
             TeleportHome(id, client);
         }
+
         #endregion Teleport Home
 
         #region Agent Crossings
@@ -1738,6 +1750,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
 
             return neighbourRegion;
         }
+
         public void InformClientToInitiateTeleportToLocationAsync(ScenePresence agent, uint regionX, uint regionY, Vector3 position,
             Scene initiatingScene)
         {
@@ -1813,12 +1826,14 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
                           InformClientToInitiateTeleportToLocationCompleted,
                           d);
         }
+
         private void InformClientToInitiateTeleportToLocationCompleted(IAsyncResult iar)
         {
             InformClientToInitiateTeleportToLocationDelegate icon =
                 (InformClientToInitiateTeleportToLocationDelegate)iar.AsyncState;
             icon.EndInvoke(iar);
         }
+
         #endregion Agent Crossings
 
         #region Enable Child Agent
@@ -2210,6 +2225,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
                                 sp.Scene.RegionInfo.WorldLocY - neighbour.RegionLocY,
                                 0f);
         }
+
         #region NotFoundLocationCache class
 
         // A collection of not found locations to make future lookups 'not found' lookups quick.
@@ -2298,6 +2314,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
         }
 
         #endregion NotFoundLocationCache class
+
         /// <summary>
         /// Gets the range considered in view of this megaregion (assuming this is a megaregion).
         /// </summary>
@@ -2393,6 +2410,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
             icon.EndInvoke(iar);
             //m_log.WarnFormat(" --> InformClientOfNeighbourCompleted");
         }
+
         private List<ulong> NeighbourHandles(List<GridRegion> neighbours)
         {
             List<ulong> handles = new List<ulong>();
@@ -2417,6 +2435,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
         {
             return previousNeighbours.FindAll(delegate(ulong handle) { return !currentNeighbours.Contains(handle); });
         }
+
         //        private void Dump(string msg, List<ulong> handles)
         //        {
         //            m_log.InfoFormat("-------------- HANDLE DUMP ({0}) ---------", msg);
@@ -2642,6 +2661,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
 
             return successYN;
         }
+
         #endregion Object Transfers
 
         #region Misc

@@ -85,6 +85,7 @@ namespace OpenSim.Framework.Monitoring
         /// The container.
         /// </value>
         public string Container { get; private set; }
+
         public string Description { get; private set; }
 
         /// <summary>
@@ -100,6 +101,7 @@ namespace OpenSim.Framework.Monitoring
         public string ShortName { get; private set; }
 
         public StatVerbosity Verbosity { get; private set; }
+
         public bool CheckIt()
         {
             return CheckFunc(this);

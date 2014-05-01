@@ -45,6 +45,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Presence
         protected bool m_Enabled;
         protected PresenceDetector m_PresenceDetector;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public Type ReplaceableInterface
         {
             get { return null; }
@@ -85,6 +86,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Presence
 
             m_PresenceDetector.RemoveRegion(scene);
         }
+
         #region IPresenceService
 
         public PresenceInfo GetAgent(UUID sessionID)
@@ -121,6 +123,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Presence
         {
             return m_PresenceService.ReportAgent(sessionID, regionID);
         }
+
         #endregion IPresenceService
     }
 }

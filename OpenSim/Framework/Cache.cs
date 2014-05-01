@@ -36,6 +36,7 @@ namespace OpenSim.Framework
     // The delegate we will use for performing fetch from backing store
     //
     public delegate Object FetchDelegate(string index);
+
     public enum CacheFlags
     {
         CacheMissing = 1,
@@ -62,6 +63,7 @@ namespace OpenSim.Framework
         Balanced = 1,
         Aggressive = 2
     }
+
     // The main cache class. This is the class you instantiate to create
     // a cache
     //
@@ -77,6 +79,7 @@ namespace OpenSim.Framework
         /// Must only be accessed under lock.
         /// </summary>
         private List<CacheItemBase> m_Index = new List<CacheItemBase>();
+
         private ReaderWriterLock m_IndexRwLock = new ReaderWriterLock();
 
         /// <summary>
@@ -88,6 +91,7 @@ namespace OpenSim.Framework
         private CacheMedium m_Medium;
         private int m_Size = 1024;
         private CacheStrategy m_Strategy;
+
         // Convenience constructors
         //
         public Cache()
@@ -134,11 +138,12 @@ namespace OpenSim.Framework
         //
         public int Count
         {
-            get { 
-                m_IndexRwLock.AcquireReaderLock(-1); 
+            get
+            {
+                m_IndexRwLock.AcquireReaderLock(-1);
                 try
-                { 
-                    return m_Index.Count; 
+                {
+                    return m_Index.Count;
                 }
                 finally
                 {
@@ -511,6 +516,7 @@ namespace OpenSim.Framework
         public int hits = 0;
         public DateTime lastUsed;
         public string uuid;
+
         public CacheItemBase(string index)
         {
             uuid = index;

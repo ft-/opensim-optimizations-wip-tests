@@ -139,19 +139,20 @@ namespace OpenSim.Region.Physics.OdePlugin
         {
             get { return m_type; }
         }
-                                                // Used to limit dynamics debug output to
+
+        // Used to limit dynamics debug output to
         // every 100th frame
         //        private IntPtr m_jointGroup = IntPtr.Zero;
         //        private IntPtr m_aMotor = IntPtr.Zero;
 
-                     // If a 'VEHICLE', and what kind
-          // velocity requested by LSL, decayed by time
+        // If a 'VEHICLE', and what kind
+        // velocity requested by LSL, decayed by time
         // private bool m_LinearMotorSetLastFrame = false;
         // private Vector3 m_linearMotorOffset = Vector3.Zero;
 
-         // angular velocity requested by LSL motor
+        // angular velocity requested by LSL motor
 
-           // what was last applied to body
+        // what was last applied to body
         //       private Vector3 m_lastVertAttractor = Vector3.Zero;             // what VA was last applied to body
 
         //Deflection properties
@@ -159,15 +160,15 @@ namespace OpenSim.Region.Physics.OdePlugin
         // private float m_angularDeflectionTimescale = 0;
         // private float m_linearDeflectionEfficiency = 0;
         // private float m_linearDeflectionTimescale = 0;
-             // if <0 then no hover, else its the current target height
-                   //KF: m_VehicleBuoyancy is set by VEHICLE_BUOYANCY for a vehicle.
+        // if <0 then no hover, else its the current target height
+        //KF: m_VehicleBuoyancy is set by VEHICLE_BUOYANCY for a vehicle.
         // Modifies gravity. Slider between -1 (double-gravity) and 1 (full anti-gravity)
         // KF: So far I have found no good method to combine a script-requested .Z velocity and gravity.
         // Therefore only m_VehicleBuoyancy=1 (0g) will use the script-requested .Z velocity.
 
         // damped
 
-                 // Timescale > 300  means no vert attractor.
+        // Timescale > 300  means no vert attractor.
 
         internal void Enable(IntPtr pBody, OdeScene pParentScene)
         {
@@ -1035,6 +1036,6 @@ namespace OpenSim.Region.Physics.OdePlugin
             m_lastLinearVelocityVector -= m_lastLinearVelocityVector * decayamount;
         } // end MoveLinear()
 
-         //end MoveAngular
+        //end MoveAngular
     }
 }

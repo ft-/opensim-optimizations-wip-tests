@@ -64,6 +64,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Simulation
         /// Currently valid versions are "SIMULATION/0.1" and "SIMULATION/0.2"
         /// </remarks>
         public string ServiceVersion { get; set; }
+
         #region Region Module interface
 
         public string Name
@@ -142,6 +143,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Simulation
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -154,6 +156,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Simulation
             RemoveScene(scene);
             scene.UnregisterModuleInterface<ISimulationService>(this);
         }
+
         /// <summary>
         /// Can be called from other modules.
         /// </summary>
@@ -170,6 +173,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Simulation
                         scene.RegionInfo.RegionName);
             }
         }
+
         #endregion Region Module interface
 
         #region ISimulationService
@@ -266,9 +270,11 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Simulation
                 return s;
             }
         }
+
         /**
          * Agent-related communications
          */
+
         public bool QueryAccess(GridRegion destination, UUID agentID, string agentHomeURI, Vector3 position, out string version, out string reason)
         {
             reason = "Communications failure";
@@ -344,9 +350,11 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Simulation
             //m_log.Debug("[LOCAL COMMS]: region not found for ChildAgentUpdate");
             return true;
         }
+
         /**
          * Object-related communications
          */
+
         #endregion ISimulationService
 
         #region Misc

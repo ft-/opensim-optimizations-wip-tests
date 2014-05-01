@@ -56,6 +56,7 @@ namespace OpenSim.Services.Interfaces
         private string m_regionName;
         private string m_surname;
         private string m_userID;
+
         public AuthorizationRequest()
         {
         }
@@ -94,6 +95,7 @@ namespace OpenSim.Services.Interfaces
             get { return m_userID; }
             set { m_userID = value; }
         }
+
         public string RegionID
         {
             get { return m_regionID; }

@@ -100,6 +100,7 @@ namespace OpenSim.Framework
         {
             return X == x && y == Y;
         }
+
         public override int GetHashCode()
         {
             return X.GetHashCode() ^ Y.GetHashCode();

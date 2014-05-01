@@ -42,6 +42,7 @@ namespace OpenSim.Services.Interfaces
         bool ClassifiedInfoRequest(ref UserClassifiedAdd ad, ref string result);
 
         bool ClassifiedUpdate(UserClassifiedAdd ad, ref string result);
+
         #endregion Classifieds
 
         #region Picks
@@ -53,6 +54,7 @@ namespace OpenSim.Services.Interfaces
         bool PicksDelete(UUID pickId);
 
         bool PicksUpdate(ref UserProfilePick pick, ref string result);
+
         #endregion Picks
 
         #region Notes

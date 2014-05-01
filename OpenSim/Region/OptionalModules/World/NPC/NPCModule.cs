@@ -226,6 +226,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC
 
             Enabled = (config != null && config.GetBoolean("Enabled", false));
         }
+
         public bool IsNPC(UUID agentId, Scene scene)
         {
             // FIXME: This implementation could not just use the
@@ -272,10 +273,12 @@ namespace OpenSim.Region.OptionalModules.World.NPC
         public void RegionLoaded(Scene scene)
         {
         }
+
         public void RemoveRegion(Scene scene)
         {
             scene.UnregisterModuleInterface<INPCModule>(this);
         }
+
         public bool Say(UUID agentID, Scene scene, string text)
         {
             return Say(agentID, scene, text, 0);
@@ -327,6 +330,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC
 
             return true;
         }
+
         public bool Shout(UUID agentID, Scene scene, string text, int channel)
         {
             lock (m_avatars)
@@ -399,6 +403,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC
 
             return false;
         }
+
         public bool Touch(UUID agentID, UUID objectID)
         {
             lock (m_avatars)
@@ -425,6 +430,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC
 
             return false;
         }
+
         /// <summary>
         /// Check if the caller has permission to manipulate the given NPC.
         /// </summary>

@@ -75,6 +75,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// A <see cref="IConfigSource"/>
         /// </param>
         void Initialise(IConfigSource source);
+
         /// <summary>
         /// This will be called once for every scene loaded. In a shared module
         /// this will be multiple times in one instance, while a nonshared

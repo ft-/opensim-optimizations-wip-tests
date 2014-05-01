@@ -328,6 +328,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
         {
             return m_rootScene.GetSceneObjectPart(m_localID);
         }
+
         #region OnTouch
 
         private bool _OnTouchActive = false;
@@ -362,6 +363,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
         }
 
         private event OnTouchDelegate _OnTouch;
+
         private void EventManager_OnObjectGrab(uint localID, uint originalID, Vector3 offsetPos, IClientAPI remoteClient, SurfaceTouchEventArgs surfaceArgs)
         {
             if (_OnTouchActive && m_localID == localID)
@@ -383,6 +385,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
         }
 
         #endregion OnTouch
+
         #region Public Functions
 
         public void Dialog(UUID avatar, string message, string[] buttons, int chat_channel)
@@ -442,6 +445,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             SceneObjectPart sop = GetSOP();
             m_rootScene.SimChat(Utils.StringToBytes(msg), ChatTypeEnum.Say, channel, sop.AbsolutePosition, sop.Name, sop.UUID, false);
         }
+
         #endregion Public Functions
 
         #region Supporting Functions
@@ -566,6 +570,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             hasDimple = (shape.ProfileBegin > 0) || (shape.ProfileEnd > 0); // taken from llSetPrimitiveParms
             hasProfileCut = hasDimple; // is it the same thing?
         }
+
         #endregion Supporting Functions
 
         #region IObjectPhysics
@@ -658,6 +663,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
             get { throw new System.NotImplementedException(); }
             set { throw new System.NotImplementedException(); }
         }
+
         public Vector3 RotationalVelocity
         {
             get
@@ -705,6 +711,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
                 GetSOP().PhysActor.Velocity = value;
             }
         }
+
         public void AddAngularForce(Vector3 force, bool pushforce)
         {
             if (!CanEdit())
@@ -720,6 +727,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
 
             GetSOP().PhysActor.AddForce(force, pushforce);
         }
+
         public void SetMomentum(Vector3 momentum)
         {
             if (!CanEdit())
@@ -766,6 +774,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
                 SetPrimitiveSculpted(SculptMap, (byte)SculptType);
             }
         }
+
         public SculptType SculptType
         {
             get { return m_sculptType; }
@@ -778,6 +787,7 @@ namespace OpenSim.Region.OptionalModules.Scripting.Minimodule
                 SetPrimitiveSculpted(SculptMap, (byte)SculptType);
             }
         }
+
         private void SetPrimitiveSculpted(UUID map, byte type)
         {
             ObjectShapePacket.ObjectDataBlock shapeBlock = new ObjectShapePacket.ObjectDataBlock();

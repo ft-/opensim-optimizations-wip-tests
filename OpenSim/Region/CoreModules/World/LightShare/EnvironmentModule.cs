@@ -94,6 +94,7 @@ namespace OpenSim.Region.CoreModules.World.LightShare
 
             m_log.InfoFormat("[{0}]: Module is enabled.", Name);
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!Enabled)

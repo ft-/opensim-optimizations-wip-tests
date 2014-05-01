@@ -351,6 +351,7 @@ namespace OpenSim.Region.CoreModules.World.Warp3DMap
 
             return output;
         }
+
         public static Bitmap SplatSimple(float[] heightmap)
         {
             const float BASE_HSV_H = 93f / 360f;

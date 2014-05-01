@@ -93,6 +93,7 @@ namespace OpenSim.Framework.Monitoring
         private volatile float netFrameTime;
         private volatile float otherFrameTime;
         private volatile float outPacketsPerSecond;
+
         /// <summary>
         /// Retain a dictionary of all packet queues stats reporters
         /// </summary>
@@ -167,10 +168,13 @@ namespace OpenSim.Framework.Monitoring
         public float SimFps { get { return simFps; } }
 
         public float TimeDilation { get { return timeDilation; } }
+
         public float TotalFrameTime { get { return totalFrameTime; } }
 
         public float TotalPrims { get { return totalPrims; } }
+
         public float UnackedBytes { get { return unackedBytes; } }
+
         //        /// <summary>
         //        /// This is the time it took for the last asset request made in response to a cache miss.
         //        /// </summary>
@@ -365,6 +369,7 @@ namespace OpenSim.Framework.Monitoring
                 packetQueueStatsCollectors[uuid] = new PacketQueueStatsCollector(provider);
             }
         }
+
         /// <summary>
         /// Report back collected statistical information.
         /// </summary>

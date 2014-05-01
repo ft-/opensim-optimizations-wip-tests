@@ -26,8 +26,8 @@
  */
 
 using System;
-using System.Threading;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace OpenSim.Region.Physics.BulletSPlugin
 {
@@ -48,6 +48,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         }
 
         private delegate bool ConstraintAction(BSConstraint constrain);
+
         public bool AddConstraint(BSConstraint cons)
         {
             m_constraintsRwLock.AcquireWriterLock(-1);
@@ -87,6 +88,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         {
             this.Clear();
         }
+
         public bool RecalculateAllConstraints()
         {
             bool ret = false;

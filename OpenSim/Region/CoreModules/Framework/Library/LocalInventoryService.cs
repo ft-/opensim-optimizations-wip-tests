@@ -234,6 +234,7 @@ namespace OpenSim.Region.CoreModules.Framework.Library
         {
             return m_Library;
         }
+
         /// <summary>
         /// Does the given user have an inventory structure?
         /// </summary>
@@ -278,6 +279,7 @@ namespace OpenSim.Region.CoreModules.Framework.Library
         {
             return false;
         }
+
         /// <summary>
         /// Update an item in the user's inventory
         /// </summary>

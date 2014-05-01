@@ -101,6 +101,7 @@ namespace OpenSim.Framework
         /// How many operations between time checks.
         /// </summary>
         private const int DefaultOperationsBetweenTimeChecks = 40;
+
         /// <summary>
         /// Synchronization root object, should always be private and exists always
         /// </summary>
@@ -155,6 +156,7 @@ namespace OpenSim.Framework
         /// Operations between time check.
         /// </summary>
         private int m_operationsBetweenTimeChecks = DefaultOperationsBetweenTimeChecks;
+
         /// <summary>
         /// Version of cache.
         /// </summary>
@@ -390,6 +392,7 @@ namespace OpenSim.Framework
             /// Current enumerator.
             /// </summary>
             private int m_currentEnumerator = -1;
+
             /// <summary>
             /// Initializes a new instance of the <see cref="Enumerator"/> class.
             /// </summary>
@@ -538,6 +541,7 @@ namespace OpenSim.Framework
             /// Value indicating whether generation was accessed since last time check.
             /// </summary>
             private bool m_accessedSinceLastTimeCheck;
+
             /// <summary>
             /// Generation's expiration time.
             /// </summary>
@@ -744,6 +748,7 @@ namespace OpenSim.Framework
                 /// Current index.
                 /// </summary>
                 private int m_currentIndex;
+
                 /// <summary>
                 /// Initializes a new instance of the <see cref="Enumerator"/> class.
                 /// </summary>
@@ -1144,6 +1149,7 @@ namespace OpenSim.Framework
                 AccessedSinceLastTimeCheck = true;
                 return true;
             }
+
             #endregion IGeneration Members
         }
 
@@ -1858,6 +1864,7 @@ namespace OpenSim.Framework
             CheckExpired();
             return false;
         }
+
         #endregion ICnmCache<TKey,TValue> Members
     }
 }

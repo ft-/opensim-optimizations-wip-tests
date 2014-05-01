@@ -44,6 +44,7 @@ namespace OpenSim.Framework
         {
             get { return m_cultureInfo.NumberFormat; }
         }
+
         /// <summary>
         /// Set Culture to en-US to make string processing of numbers simpler.
         /// </summary>

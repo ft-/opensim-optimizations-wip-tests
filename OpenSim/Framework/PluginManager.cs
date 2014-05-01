@@ -466,6 +466,7 @@ namespace OpenSim.Framework
             MainConsole.Instance.Output("Uninstall Success - restart to complete operation");
             return;
         }
+
         // Sync to repositories
         /// <summary>
         /// Update this instance.
@@ -476,6 +477,7 @@ namespace OpenSim.Framework
             Repositories.UpdateAllRepositories(ps);
             return "Update";
         }
+
         /// <summary>
         /// Updates the registry.
         /// </summary>
@@ -483,6 +485,7 @@ namespace OpenSim.Framework
         {
             PluginRegistry.Update();
         }
+
         #region Util
 
         private Addin[] GetSortedAddinList(string category)
@@ -547,6 +550,7 @@ namespace OpenSim.Framework
                 MainConsole.Instance.OutputFormat("Addin {0}", addin.Name);
             }
         }
+
         #endregion Util
     }
 }

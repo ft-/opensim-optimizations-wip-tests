@@ -119,6 +119,7 @@ namespace OpenSim.Services.Connectors
         {
             return m_database.LoadEstateSettings(estateID);
         }
+
         public List<EstateSettings> LoadEstateSettingsAll()
         {
             return m_database.LoadEstateSettingsAll();

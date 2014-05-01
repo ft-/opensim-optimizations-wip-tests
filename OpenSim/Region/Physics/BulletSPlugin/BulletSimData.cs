@@ -141,6 +141,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             ID = id;
             collisionType = CollisionType.Static;
         }
+
         // Used for log messages for a unique display of the memory/object allocated to this instance
         public virtual string AddrString
         {
@@ -163,6 +164,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         public virtual void Clear()
         {
         }
+
         public override string ToString()
         {
             StringBuilder buff = new StringBuilder();
@@ -248,6 +250,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             shapeKey = (System.UInt64)FixedShapeKey.KEY_NONE;
             isNativeShape = false;
         }
+
         // Used for log messages for a unique display of the memory/object allocated to this instance
         public virtual string AddrString
         {
@@ -259,6 +262,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         public virtual void Clear()
         {
         }
+
         // Make another reference to this physical object.
         public virtual BulletShape Clone()
         {
@@ -270,6 +274,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         {
             return false;
         }
+
         public override string ToString()
         {
             StringBuilder buff = new StringBuilder();

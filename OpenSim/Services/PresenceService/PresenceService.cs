@@ -40,6 +40,7 @@ namespace OpenSim.Services.PresenceService
     {
         protected bool m_allowDuplicatePresences = false;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public PresenceService(IConfigSource config)
             : base(config)
         {
@@ -173,6 +174,7 @@ namespace OpenSim.Services.PresenceService
                 return false;
             }
         }
+
         private PresenceData[] GetRegionAgents(UUID regionID)
         {
             return m_Database.Get("RegionID", regionID.ToString());

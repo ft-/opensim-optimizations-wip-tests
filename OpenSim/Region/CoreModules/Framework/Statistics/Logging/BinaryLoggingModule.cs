@@ -94,6 +94,7 @@ namespace OpenSim.Region.CoreModules.Framework.Statistics.Logging
                 // if it doesn't work, we don't collect anything
             }
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (m_collectStats)
@@ -103,6 +104,7 @@ namespace OpenSim.Region.CoreModules.Framework.Statistics.Logging
         public void RemoveRegion(Scene scene)
         {
         }
+
         private void LogSimStats(SimStats stats)
         {
             SimStatsPacket pack = new SimStatsPacket();

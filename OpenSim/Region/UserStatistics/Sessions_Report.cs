@@ -277,6 +277,7 @@ TD.align_top { vertical-align: top; }
             public List<ShortSessionData> sessions;
             public UUID user_id;
         }
+
         #endregion IStatsController Members
     }
 }

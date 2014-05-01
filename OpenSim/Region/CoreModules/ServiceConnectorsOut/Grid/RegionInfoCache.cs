@@ -133,6 +133,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
         {
             public string m_name;
             public UUID m_scopeID;
+
             public ScopedRegionName(UUID scopeID, string name)
             {
                 m_scopeID = scopeID;
@@ -144,6 +145,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
         {
             public ulong m_regionHandle;
             public UUID m_scopeID;
+
             public ScopedRegionPosition(UUID scopeID, ulong handle)
             {
                 m_scopeID = scopeID;
@@ -155,6 +157,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Grid
         {
             public UUID m_regionID;
             public UUID m_scopeID;
+
             public ScopedRegionUUID(UUID scopeID, UUID regionID)
             {
                 m_scopeID = scopeID;

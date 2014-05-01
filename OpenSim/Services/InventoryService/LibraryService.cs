@@ -92,6 +92,7 @@ namespace OpenSim.Services.InventoryService
         {
             get { return m_LibraryRootFolder; }
         }
+
         public InventoryItemBase CreateItem(UUID inventoryID, UUID assetID, string name, string description,
                                             int assetType, int invType, UUID parentFolderID)
         {
@@ -266,6 +267,7 @@ namespace OpenSim.Services.InventoryService
                     item.Name, item.ID, item.Folder);
             }
         }
+
         private List<InventoryFolderImpl> TraverseFolder(InventoryFolderImpl node)
         {
             List<InventoryFolderImpl> folders = node.RequestListOfFolderImpls();

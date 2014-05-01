@@ -43,6 +43,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         public readonly UUID RequestID;
         public readonly int RequestTime;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public PollServiceHttpRequest(
             PollServiceEventArgs pPollServiceArgs, IHttpClientContext pHttpContext, IHttpRequest pRequest)
         {

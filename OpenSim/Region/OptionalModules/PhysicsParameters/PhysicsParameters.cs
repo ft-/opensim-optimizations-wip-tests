@@ -51,6 +51,7 @@ namespace OpenSim.Region.OptionalModules.PhysicsParameters
         private const string setInvocation = "physics set <param> [<value>|TRUE|FALSE] [localID|ALL]";
         private static bool m_commandsLoaded = false;
         private List<Scene> m_scenes = new List<Scene>();
+
         #region ISharedRegionModule
 
         public string Name { get { return "Runtime Physics Parameter Module"; } }
@@ -78,6 +79,7 @@ namespace OpenSim.Region.OptionalModules.PhysicsParameters
             // m_log.DebugFormat("[{0}: POST INITIALIZED MODULE", LogHeader);
             InstallInterfaces();
         }
+
         public void RegionLoaded(Scene scene)
         {
             // m_log.DebugFormat("{0}: REGION {1} LOADED", LogHeader, scene.RegionInfo.RegionName);
@@ -89,7 +91,9 @@ namespace OpenSim.Region.OptionalModules.PhysicsParameters
             if (m_scenes.Contains(scene))
                 m_scenes.Remove(scene);
         }
+
         #endregion ISharedRegionModule
+
         private void InstallInterfaces()
         {
             if (!m_commandsLoaded)
@@ -246,6 +250,7 @@ namespace OpenSim.Region.OptionalModules.PhysicsParameters
             }
             return;
         }
+
         private void WriteError(string msg, params object[] args)
         {
             // m_log.ErrorFormat(msg, args);

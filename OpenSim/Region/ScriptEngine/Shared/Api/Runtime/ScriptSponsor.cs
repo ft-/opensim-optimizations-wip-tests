@@ -53,6 +53,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api.Runtime
                 return lease.InitialLeaseTime;
             return TimeSpan.FromTicks(0);
         }
+
 #if DEBUG
 #endif
     }

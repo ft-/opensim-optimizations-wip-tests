@@ -46,6 +46,7 @@ namespace OpenSim.Region.DataSnapshot.Providers
         private static UUID m_DefaultImage = new UUID("89556747-24cb-43ed-920b-47caed15465f");
         private Scene m_scene = null;
         private bool m_stale = true;
+
         public event ProviderStale OnStale;
 
         public Scene GetParentScene
@@ -112,6 +113,7 @@ namespace OpenSim.Region.DataSnapshot.Providers
                 bool RezSelected,
                 bool RemoveItem, UUID fromTaskID) { this.Stale = true; };
         }
+
         public XmlNode RequestSnapshotData(XmlDocument nodeFactory)
         {
             m_log.Debug("[DATASNAPSHOT]: Generating object data for scene " + m_scene.RegionInfo.RegionName);
@@ -193,6 +195,7 @@ namespace OpenSim.Region.DataSnapshot.Providers
             this.Stale = false;
             return parent;
         }
+
         /// <summary>
         /// Guesses the best image, based on a simple heuristic. It guesses only for boxes.
         /// We're optimizing for boxes, because those are the most common objects

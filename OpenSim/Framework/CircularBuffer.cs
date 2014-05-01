@@ -30,10 +30,12 @@ namespace OpenSim.Framework
         private int capacity;
         private int head;
         private int size;
+
         [NonSerialized()]
         private object syncRoot;
 
         private int tail;
+
         public CircularBuffer(int capacity)
             : this(capacity, false)
         {
@@ -108,6 +110,7 @@ namespace OpenSim.Framework
 
             return false;
         }
+
         public void CopyTo(T[] array)
         {
             CopyTo(array, 0);
@@ -225,6 +228,7 @@ namespace OpenSim.Framework
             if (head >= capacity)
                 head -= capacity;
         }
+
         public T[] ToArray()
         {
             var dst = new T[size];

@@ -301,6 +301,7 @@ namespace OpenSim.Region.UserStatistics
             HTMLUtil.OL_C(ref output);
             return output.ToString();
         }
+
         #endregion IStatsController Members
     }
 }

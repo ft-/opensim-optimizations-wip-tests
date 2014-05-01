@@ -85,6 +85,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Authentication
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -105,6 +106,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Authentication
             if (!m_Enabled)
                 return;
         }
+
         #endregion Region Module interface
     }
 }

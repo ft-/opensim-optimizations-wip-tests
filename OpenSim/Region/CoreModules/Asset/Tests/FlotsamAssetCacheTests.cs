@@ -25,19 +25,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using System.Threading;
-using log4net.Config;
 using Nini.Config;
 using NUnit.Framework;
-using OpenMetaverse;
-using OpenMetaverse.Assets;
 using OpenSim.Framework;
-using OpenSim.Region.Framework.Scenes;
-using OpenSim.Region.Framework.Scenes.Serialization;
 using OpenSim.Tests.Common;
 using OpenSim.Tests.Common.Mock;
 
@@ -74,7 +64,7 @@ namespace OpenSim.Region.CoreModules.Asset.Tests
         public void TestCacheAsset()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             AssetBase asset = AssetHelpers.CreateNotecardAsset();
             asset.ID = TestHelpers.ParseTail(0x1).ToString();
@@ -95,7 +85,7 @@ namespace OpenSim.Region.CoreModules.Asset.Tests
         public void TestExpireAsset()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             AssetBase asset = AssetHelpers.CreateNotecardAsset();
             asset.ID = TestHelpers.ParseTail(0x2).ToString();
@@ -112,8 +102,8 @@ namespace OpenSim.Region.CoreModules.Asset.Tests
         public void TestClearCache()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
-            
+            //            log4net.Config.XmlConfigurator.Configure();
+
             AssetBase asset = AssetHelpers.CreateNotecardAsset();
             asset.ID = TestHelpers.ParseTail(0x2).ToString();
 

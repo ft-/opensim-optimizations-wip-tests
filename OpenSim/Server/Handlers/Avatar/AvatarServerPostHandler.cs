@@ -228,6 +228,7 @@ namespace OpenSim.Server.Handlers.Avatar
 
             return FailureResult();
         }
+
         private byte[] SetItems(Dictionary<string, object> request)
         {
             UUID user = UUID.Zero;
@@ -254,6 +255,7 @@ namespace OpenSim.Server.Handlers.Avatar
 
             return FailureResult();
         }
+
         private byte[] SuccessResult()
         {
             XmlDocument doc = new XmlDocument();

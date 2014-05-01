@@ -42,6 +42,7 @@ namespace OpenSim.Services.Connectors
 
         private bool m_ResponseOnFailure = true;
         private string m_ServerURI = String.Empty;
+
         public AuthorizationServicesConnector()
         {
         }

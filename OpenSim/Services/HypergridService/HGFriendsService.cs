@@ -69,7 +69,8 @@ namespace OpenSim.Services.HypergridService
 
         private static string m_ConfigName = "HGFriendsService";
         private static bool m_Initialized = false;
- // grid
+
+        // grid
         public HGFriendsService(IConfigSource config, String configName, IFriendsSimConnector localSimConn)
         {
             if (m_FriendsLocalSimConnector == null)
@@ -205,6 +206,7 @@ namespace OpenSim.Services.HypergridService
             }
             return false;
         }
+
         public List<UUID> StatusNotification(List<string> friends, UUID foreignUserID, bool online)
         {
             if (m_FriendsService == null || m_PresenceService == null)
@@ -299,6 +301,7 @@ namespace OpenSim.Services.HypergridService
             }
             return false;
         }
+
         #endregion IHGFriendsService
 
         #region Aux
@@ -403,6 +406,7 @@ namespace OpenSim.Services.HypergridService
             // OK, we're good!
             ForwardToSim("FriendshipOffered", fromID, fromName, fromUUI, toID, message);
         }
+
         #endregion Aux
     }
 }

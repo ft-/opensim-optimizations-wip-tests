@@ -36,6 +36,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.CodeTools
 
         private static Dictionary<string, string> m_datatypeLSL2OpenSim = null;
         private SYMBOL m_astRoot = null;
+
         /// <summary>
         /// Pass the new CodeTranformer an abstract syntax tree.
         /// </summary>

@@ -51,6 +51,7 @@ namespace OpenSim.Region.Framework.Scenes
     {
         private const long DEFAULT_MAX_TIME_FOR_PERSISTENCE = 600L;
         private const long DEFAULT_MIN_TIME_FOR_PERSISTENCE = 60L;
+
         public delegate void SynchronizeSceneHandler(Scene scene);
 
         #region Fields
@@ -471,6 +472,7 @@ namespace OpenSim.Region.Framework.Scenes
         /// if the scene is being shut down for the final time.
         /// </summary>
         public bool UseBackup { get; set; }
+
         #endregion Fields
 
         #region Properties
@@ -768,6 +770,7 @@ namespace OpenSim.Region.Framework.Scenes
         {
             get { return m_sceneGraph.PhysicsScene.TimeDilation; }
         }
+
         public UpdatePrioritizationSchemes UpdatePrioritizationScheme { get { return m_priorityScheme; } }
 
         public IUserAccountService UserAccountService
@@ -779,7 +782,9 @@ namespace OpenSim.Region.Framework.Scenes
                 return m_UserAccountService;
             }
         }
+
         public IUserManagement UserManagementModule { get; private set; }
+
         #endregion Properties
 
         #region Constructors
@@ -1420,6 +1425,7 @@ namespace OpenSim.Region.Framework.Scenes
 
             m_eventManager.OnSignificantClientMovement += HandleOnSignificantClientMovement;
         }
+
         #endregion Startup / Close Methods
 
         #region Update Methods
@@ -1854,6 +1860,7 @@ namespace OpenSim.Region.Framework.Scenes
 
             Watchdog.RemoveThread();
         }
+
         /// <summary>
         /// Send out simstats data to all clients
         /// </summary>
@@ -1893,6 +1900,7 @@ namespace OpenSim.Region.Framework.Scenes
         {
             EventManager.TriggerTerrainTick();
         }
+
         #endregion Update Methods
 
         #region Load Terrain
@@ -1992,6 +2000,7 @@ namespace OpenSim.Region.Framework.Scenes
             SimulationDataService.StoreRegionWindlightSettings(wl);
             m_eventManager.TriggerOnSaveNewWindlightProfile();
         }
+
         #endregion Load Terrain
 
         #region Load Land
@@ -2636,6 +2645,7 @@ namespace OpenSim.Region.Framework.Scenes
                 return false;
             return PhysicsScene.SupportsRaycastWorldFiltered();
         }
+
         /// <summary>
         /// Unlink the given object from the scene.  Unlike delete, this just removes the record of the object - the
         /// object itself is not destroyed.
@@ -2667,6 +2677,7 @@ namespace OpenSim.Region.Framework.Scenes
 
             return false;
         }
+
         private int GetStateSource(SceneObjectGroup sog)
         {
             ScenePresence sp = GetScenePresence(sog.OwnerID);
@@ -3434,6 +3445,7 @@ namespace OpenSim.Region.Framework.Scenes
 
             return true;
         }
+
         #endregion Add/Remove Avatar Methods
 
         #region Entities
@@ -4424,6 +4436,7 @@ namespace OpenSim.Region.Framework.Scenes
 
             return true;
         }
+
         //        /// <summary>
         //        /// The Grid has requested that we log-off a user.  Log them off.
         //        /// </summary>
@@ -4478,6 +4491,7 @@ namespace OpenSim.Region.Framework.Scenes
 
             return sp;
         }
+
         #endregion RegionComms
 
         #region Other Methods
@@ -4854,6 +4868,7 @@ namespace OpenSim.Region.Framework.Scenes
                 }
             }
         }
+
         #region Script Handling Methods
 
         public LandData GetLandData(float x, float y)
@@ -4885,6 +4900,7 @@ namespace OpenSim.Region.Framework.Scenes
         {
             m_eventManager.TriggerOnPluginConsole(args);
         }
+
         #endregion Script Handling Methods
 
         #region Script Engine
@@ -4962,6 +4978,7 @@ namespace OpenSim.Region.Framework.Scenes
                 return false;
             }
         }
+
         #endregion Script Engine
 
         #region SceneGraph wrapper methods
@@ -5197,6 +5214,7 @@ namespace OpenSim.Region.Framework.Scenes
         {
             m_sceneGraph.SwapRootChildAgent(rootChildChildRootTF);
         }
+
         public bool TryGetAvatarByName(string avatarName, out ScenePresence avatar)
         {
             return m_sceneGraph.TryGetAvatarByName(avatarName, out avatar);
@@ -5223,6 +5241,7 @@ namespace OpenSim.Region.Framework.Scenes
             sog = GetSceneObjectGroup(fullID);
             return sog != null;
         }
+
         /// <summary>
         /// Attempt to get a prim via its UUID
         /// </summary>
@@ -5234,11 +5253,14 @@ namespace OpenSim.Region.Framework.Scenes
             sop = GetSceneObjectPart(fullID);
             return sop != null;
         }
+
         public override bool TryGetScenePresence(UUID agentID, out ScenePresence sp)
         {
             return m_sceneGraph.TryGetScenePresence(agentID, out sp);
         }
+
         #endregion SceneGraph wrapper methods
+
         // This callback allows the PhysicsScene to call back to its caller (the SceneGraph) and
         // update non-physical objects like the joint proxy objects that represent the position
         // of the joints in the scene.
@@ -5679,10 +5701,12 @@ namespace OpenSim.Region.Framework.Scenes
             Vector2 center = GetParcelCenter(parcel);
             return GetPositionAtGround(center.X, center.Y);
         }
+
         private float GetParcelDistancefromPoint(ILandObject parcel, float x, float y)
         {
             return Vector2.Distance(new Vector2(x, y), GetParcelCenter(parcel));
         }
+
         private Vector3 GetPositionAtAvatarHeightOrGroundHeight(ScenePresence avatar, float x, float y)
         {
             Vector3 ground = GetPositionAtGround(x, y);
@@ -5697,6 +5721,7 @@ namespace OpenSim.Region.Framework.Scenes
         {
             return new Vector3(x, y, GetGroundHeight(x, y));
         }
+
         /// <summary>
         /// This method deals with movement when an avatar is automatically moving (but this is distinct from the
         /// autopilot that moves an avatar to a sit target!.
@@ -5771,6 +5796,7 @@ namespace OpenSim.Region.Framework.Scenes
                 ReloadEstateData();
             }
         }
+
         private void PhysicsAssetReceived(string id, Object sender, AssetBase asset)
         {
             AssetReceivedDelegate callback = (AssetReceivedDelegate)sender;

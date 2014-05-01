@@ -48,6 +48,7 @@ namespace OpenSim.Server.Handlers.UserAccounts
         private bool m_AllowCreateUser = false;
         private bool m_AllowSetAccount = false;
         private IUserAccountService m_UserAccountService;
+
         public UserAccountServerPostHandler(IUserAccountService service)
             : this(service, null) { }
 
@@ -331,6 +332,7 @@ namespace OpenSim.Server.Handlers.UserAccounts
 
             return ResultToBytes(result);
         }
+
         private byte[] SuccessResult()
         {
             XmlDocument doc = new XmlDocument();

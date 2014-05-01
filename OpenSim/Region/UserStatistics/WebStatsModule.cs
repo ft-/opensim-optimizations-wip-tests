@@ -168,6 +168,7 @@ namespace OpenSim.Region.UserStatistics
             Array.Sort(arr);
             return arr[0];
         }
+
         public static float ArrayMode_f(float[] arr)
         {
             List<float> mode = new List<float>();
@@ -358,6 +359,7 @@ namespace OpenSim.Region.UserStatistics
         private volatile float m_totalFrameTime;
         private volatile float m_totalPrims;
         private volatile float m_unackedBytes;
+
         public USimStatsData(UUID pRegionID)
         {
             m_regionID = pRegionID;
@@ -402,10 +404,13 @@ namespace OpenSim.Region.UserStatistics
         public int StatsCounter { get { return m_statcounter; } set { m_statcounter = value; } }
 
         public float TimeDilation { get { return m_timeDilation; } }
+
         public float TotalFrameTime { get { return m_totalFrameTime; } }
 
         public float TotalPrims { get { return m_totalPrims; } }
+
         public float UnackedBytes { get { return m_unackedBytes; } }
+
         public void ConsumeSimStats(SimStats stats)
         {
             m_regionID = stats.RegionUUID;
@@ -457,10 +462,12 @@ namespace OpenSim.Region.UserStatistics
         /// User statistics sessions keyed by agent ID
         /// </summary>
         private Dictionary<UUID, UserSession> m_sessions = new Dictionary<UUID, UserSession>();
+
         private Dictionary<UUID, USimStatsData> m_simstatsCounters = new Dictionary<UUID, USimStatsData>();
         private Dictionary<string, IStatsController> reports = new Dictionary<string, IStatsController>();
         private volatile int updateLogCounter = 0;
         private int updateLogMod = 1;
+
         #region ISharedRegionModule
 
         public virtual string Name
@@ -561,6 +568,7 @@ namespace OpenSim.Region.UserStatistics
             MainServer.Instance.AddHTTPHandler("/SStats/", HandleStatsRequest);
             MainServer.Instance.AddHTTPHandler("/CAPS/VS/", HandleUnknownCAPSRequest);
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -577,6 +585,7 @@ namespace OpenSim.Region.UserStatistics
                 m_simstatsCounters.Remove(scene.RegionInfo.RegionID);
             }
         }
+
         #endregion ISharedRegionModule
 
         protected virtual void AddEventHandlers()
@@ -977,6 +986,7 @@ namespace OpenSim.Region.UserStatistics
             {
             }
         }
+
         private void UpdateUserStats(UserSession uid, SqliteConnection db)
         {
             //            m_log.DebugFormat(
@@ -1072,6 +1082,7 @@ namespace OpenSim.Region.UserStatistics
 
             return String.Empty;
         }
+
         #region SQL
 
         private const string SQL_STATS_TABLE_CREATE = @"CREATE TABLE IF NOT EXISTS stats_session_data (
@@ -1143,6 +1154,7 @@ VALUES
 
         #endregion SQL
     }
+
     #region structs
 
     public struct UserSessionData
@@ -1208,5 +1220,6 @@ VALUES
         public UserSessionData session_data;
         public UUID session_id;
     }
+
     #endregion structs
 }

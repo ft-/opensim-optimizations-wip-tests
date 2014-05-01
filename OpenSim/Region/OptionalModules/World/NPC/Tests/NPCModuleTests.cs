@@ -25,25 +25,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using log4net;
 using Nini.Config;
 using NUnit.Framework;
 using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Framework.Communications;
 using OpenSim.Region.CoreModules.Avatar.Attachments;
 using OpenSim.Region.CoreModules.Avatar.AvatarFactory;
 using OpenSim.Region.CoreModules.Framework.InventoryAccess;
 using OpenSim.Region.CoreModules.Framework.UserManagement;
-using OpenSim.Region.CoreModules.ServiceConnectorsOut.Avatar;
-using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Services.AvatarService;
 using OpenSim.Tests.Common;
 using OpenSim.Tests.Common.Mock;
+using System.Collections.Generic;
 
 namespace OpenSim.Region.OptionalModules.World.NPC.Tests
 {
@@ -95,10 +88,10 @@ namespace OpenSim.Region.OptionalModules.World.NPC.Tests
         public void TestCreate()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             ScenePresence sp = SceneHelpers.AddScenePresence(m_scene, TestHelpers.ParseTail(0x1));
-//            ScenePresence originalAvatar = scene.GetScenePresence(originalClient.AgentId);
+            //            ScenePresence originalAvatar = scene.GetScenePresence(originalClient.AgentId);
 
             // 8 is the index of the first baked texture in AvatarAppearance
             UUID originalFace8TextureId = TestHelpers.ParseTail(0x10);
@@ -131,10 +124,10 @@ namespace OpenSim.Region.OptionalModules.World.NPC.Tests
         public void TestRemove()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             ScenePresence sp = SceneHelpers.AddScenePresence(m_scene, TestHelpers.ParseTail(0x1));
-//            ScenePresence originalAvatar = scene.GetScenePresence(originalClient.AgentId);
+            //            ScenePresence originalAvatar = scene.GetScenePresence(originalClient.AgentId);
 
             Vector3 startPos = new Vector3(128, 128, 30);
             UUID npcId = m_npcMod.CreateNPC("John", "Smith", startPos, UUID.Zero, true, m_scene, sp.Appearance);
@@ -155,7 +148,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC.Tests
         public void TestCreateWithAttachments()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             UUID userId = TestHelpers.ParseTail(0x1);
             UserAccountHelpers.CreateUserWithInventory(m_scene, userId);
@@ -181,7 +174,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC.Tests
 
             // Just for now, we won't test the name since this is (wrongly) the asset part name rather than the item
             // name.  TODO: Do need to fix ultimately since the item may be renamed before being passed on to an NPC.
-//            Assert.That(attSo.Name, Is.EqualTo(attName));
+            //            Assert.That(attSo.Name, Is.EqualTo(attName));
 
             Assert.That(attSo.AttachmentPoint, Is.EqualTo((byte)AttachmentPoint.Chest));
             Assert.That(attSo.IsAttachment);
@@ -194,7 +187,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC.Tests
         public void TestLoadAppearance()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             UUID userId = TestHelpers.ParseTail(0x1);
             UserAccountHelpers.CreateUserWithInventory(m_scene, userId);
@@ -224,7 +217,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC.Tests
 
             // Just for now, we won't test the name since this is (wrongly) the asset part name rather than the item
             // name.  TODO: Do need to fix ultimately since the item may be renamed before being passed on to an NPC.
-//            Assert.That(attSo.Name, Is.EqualTo(attName));
+            //            Assert.That(attSo.Name, Is.EqualTo(attName));
 
             Assert.That(attSo.AttachmentPoint, Is.EqualTo((byte)AttachmentPoint.Chest));
             Assert.That(attSo.IsAttachment);
@@ -237,10 +230,10 @@ namespace OpenSim.Region.OptionalModules.World.NPC.Tests
         public void TestMove()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             ScenePresence sp = SceneHelpers.AddScenePresence(m_scene, TestHelpers.ParseTail(0x1));
-//            ScenePresence originalAvatar = scene.GetScenePresence(originalClient.AgentId);
+            //            ScenePresence originalAvatar = scene.GetScenePresence(originalClient.AgentId);
 
             Vector3 startPos = new Vector3(128, 128, 30);
             UUID npcId = m_npcMod.CreateNPC("John", "Smith", startPos, UUID.Zero, true, m_scene, sp.Appearance);
@@ -283,7 +276,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC.Tests
             m_npcMod.MoveToTarget(npc.UUID, m_scene, targetPos, false, false, false);
 
             Assert.That(npc.AbsolutePosition, Is.EqualTo(startPos));
-//            Assert.That(npc.Rotation, Is.EqualTo(new Quaternion(0, 0, 0, 1)));
+            //            Assert.That(npc.Rotation, Is.EqualTo(new Quaternion(0, 0, 0, 1)));
             Assert.That(
                 npc.Rotation, new QuaternionToleranceConstraint(new Quaternion(0, 0, 0, 1), 0.000001));
 
@@ -306,7 +299,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC.Tests
         public void TestSitAndStandWithSitTarget()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             ScenePresence sp = SceneHelpers.AddScenePresence(m_scene, TestHelpers.ParseTail(0x1));
 
@@ -321,9 +314,9 @@ namespace OpenSim.Region.OptionalModules.World.NPC.Tests
 
             Assert.That(part.SitTargetAvatar, Is.EqualTo(npcId));
             Assert.That(npc.ParentID, Is.EqualTo(part.LocalId));
-//            Assert.That(
-//                npc.AbsolutePosition,
-//                Is.EqualTo(part.AbsolutePosition + part.SitTargetPosition + ScenePresence.SIT_TARGET_ADJUSTMENT));
+            //            Assert.That(
+            //                npc.AbsolutePosition,
+            //                Is.EqualTo(part.AbsolutePosition + part.SitTargetPosition + ScenePresence.SIT_TARGET_ADJUSTMENT));
 
             m_npcMod.Stand(npc.UUID, m_scene);
 
@@ -335,7 +328,7 @@ namespace OpenSim.Region.OptionalModules.World.NPC.Tests
         public void TestSitAndStandWithNoSitTarget()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             ScenePresence sp = SceneHelpers.AddScenePresence(m_scene, TestHelpers.ParseTail(0x1));
 

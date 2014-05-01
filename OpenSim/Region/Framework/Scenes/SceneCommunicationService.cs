@@ -46,6 +46,7 @@ namespace OpenSim.Region.Framework.Scenes
         protected RegionInfo m_regionInfo;
         protected Scene m_scene;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public delegate void InformNeighbourThatRegionUpDelegate(INeighbourService nService, RegionInfo region, ulong regionhandle);
 
         public delegate void SendChildAgentDataUpdateDelegate(AgentPosition cAgentData, UUID scopeID, GridRegion dest);
@@ -139,6 +140,7 @@ namespace OpenSim.Region.Framework.Scenes
             m_scene = s;
             m_regionInfo = s.RegionInfo;
         }
+
         /// <summary>
         /// Closes a child agent on a given region
         /// </summary>
@@ -197,6 +199,7 @@ namespace OpenSim.Region.Framework.Scenes
                     m_scene.Name, Util.WorldToRegionLoc(x), Util.WorldToRegionLoc(y));
             }
         }
+
         /// <summary>
         /// This informs all neighboring regions about the settings of it's child agent.
         /// Calls an asynchronous method to do so..  so it doesn't lag the sim.

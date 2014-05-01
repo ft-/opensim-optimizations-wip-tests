@@ -25,13 +25,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.IO;
-using System.CodeDom.Compiler;
-using System.Collections.Generic;
 using Microsoft.CSharp;
 using NUnit.Framework;
-using OpenSim.Region.ScriptEngine.Shared.CodeTools;
 using OpenSim.Tests.Common;
+using System.CodeDom.Compiler;
+using System.Collections.Generic;
+using System.IO;
 
 namespace OpenSim.Region.ScriptEngine.Shared.CodeTools.Tests
 {

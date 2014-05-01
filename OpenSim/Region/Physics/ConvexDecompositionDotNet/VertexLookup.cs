@@ -33,6 +33,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
     {
         private Dictionary<float3, int> mIndices = new Dictionary<float3, int>();
         private List<float3> mVertices = new List<float3>();
+
         public void Clear()
         {
             mVertices.Clear();
@@ -54,6 +55,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
             mIndices.Add(vtx, idx);
             return idx;
         }
+
         public int GetSize()
         {
             return mVertices.Count;

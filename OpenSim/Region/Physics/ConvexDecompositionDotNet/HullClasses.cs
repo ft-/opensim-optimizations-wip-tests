@@ -103,10 +103,12 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
         public uint MaxFaces;
         public uint MaxVertices;
         public float NormalEpsilon;
+
         // the epsilon for removing duplicates. This is a normalized value, if normalized bit is on.
         public float SkinWidth;
 
         public List<float3> Vertices;
+
         // maximum number of vertices to be considered for the hull!
         public HullDesc()
         {
@@ -158,6 +160,7 @@ namespace OpenSim.Region.Physics.ConvexDecompositionDotNet
         public List<int> Indices = new List<int>();
         public List<float3> Vertices = new List<float3>();
     }
+
     public class PlaneFlag
     {
         public byte overmap;

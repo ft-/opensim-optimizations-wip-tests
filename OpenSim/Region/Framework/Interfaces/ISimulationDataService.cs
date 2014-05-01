@@ -106,11 +106,13 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="obj"></param>
         /// <param name="regionUUID"></param>
         void StoreObject(SceneObjectGroup obj, UUID regionUUID);
+
         /// <summary>
         /// Store a prim's inventory
         /// </summary>
         /// <returns></returns>
         void StorePrimInventory(UUID primID, ICollection<TaskInventoryItem> items);
+
         /// <summary>
         /// Store Environment settings into region storage
         /// </summary>

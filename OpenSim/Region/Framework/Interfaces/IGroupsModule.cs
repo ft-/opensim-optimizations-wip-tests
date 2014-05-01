@@ -77,6 +77,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// <param name="GroupID">ID of the group</param>
         /// <returns>The group's data.  Null if there is no such group.</returns>
         GroupRecord GetGroupRecord(UUID GroupID);
+
         string GetGroupTitle(UUID avatarID);
 
         GroupMembershipData[] GetMembershipData(UUID UserID);
@@ -100,6 +101,7 @@ namespace OpenSim.Region.Framework.Interfaces
         void GroupRoleUpdate(IClientAPI remoteClient, UUID GroupID, UUID RoleID, string name, string description, string title, ulong powers, byte updateType);
 
         List<GroupTitlesData> GroupTitlesRequest(IClientAPI remoteClient, UUID groupID);
+
         void GroupTitleUpdate(IClientAPI remoteClient, UUID GroupID, UUID TitleRoleID);
 
         void InviteGroup(IClientAPI remoteClient, UUID agentID, UUID GroupID, UUID InviteeID, UUID RoleID);

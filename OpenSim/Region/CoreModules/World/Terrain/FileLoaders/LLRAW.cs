@@ -78,6 +78,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
                 return Value.CompareTo(val.Value);
             }
         }
+
         #region ITerrainLoader Members
 
         public string FileExtension
@@ -257,6 +258,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
 
             binStream.Close();
         }
+
         #endregion ITerrainLoader Members
     }
 }

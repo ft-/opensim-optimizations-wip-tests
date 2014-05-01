@@ -14,6 +14,7 @@ namespace OpenSim.Framework
 
         private string[] m_AssetTypeNames;
         private bool[] m_DisallowExport, m_DisallowImport;
+
         public AssetPermissions(IConfig config)
         {
             Type enumType = typeof(AssetType);

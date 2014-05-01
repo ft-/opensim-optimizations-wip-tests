@@ -104,6 +104,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Neighbour
 
             //            m_log.Info("[NEIGHBOUR IN CONNECTOR]: Starting...");
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -113,6 +114,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsIn.Neighbour
             if (m_Enabled && m_Scenes.Contains(scene))
                 m_Scenes.Remove(scene);
         }
+
         #endregion Region Module interface
 
         #region INeighbourService

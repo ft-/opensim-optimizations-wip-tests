@@ -704,6 +704,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
         {
             m_OSSL_Functions.osSetRegionWaterHeight(height);
         }
+
         public void osSetSpeed(string UUID, LSL_Float SpeedModifier)
         {
             m_OSSL_Functions.osSetSpeed(UUID, SpeedModifier);
@@ -744,6 +745,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
         {
             return m_OSSL_Functions.osSunGetParam(param);
         }
+
         // Deprecated
         public void osSunSetParam(string param, double value)
         {
@@ -807,6 +809,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
         {
             return m_OSSL_Functions.osWindActiveModelPluginName();
         }
+
         #region Attachment commands
 
         public void osForceAttachToAvatar(int attachmentPoint)
@@ -840,6 +843,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
         }
 
         #endregion Attachment commands
+
         [Serializable]
         public class OSSLPrim
         {
@@ -855,6 +859,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
                 Position = new OSSLPrim_Position(this);
                 Rotation = new OSSLPrim_Rotation(this);
             }
+
             public TextStruct Text
             {
                 get { return _text; }
@@ -879,6 +884,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
         {
             private LSL_Types.Vector3 Position;
             private OSSLPrim prim;
+
             public OSSLPrim_Position(OSSLPrim _prim)
             {
                 prim = _prim;

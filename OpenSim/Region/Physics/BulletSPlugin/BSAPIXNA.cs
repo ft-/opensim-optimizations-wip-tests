@@ -2501,6 +2501,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             }
 
             public RigidBody rigidBody { get { return RigidBody.Upcast(body); } }
+
             public override void Clear()
             {
                 body = null;
@@ -2594,6 +2595,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         private EntityProperties m_properties;
         private BSAPIXNA m_world;
         private IndexedMatrix m_xform;
+
         public SimMotionState(BSAPIXNA pWorld, uint id, IndexedMatrix starTransform, object frameUpdates)
         {
             IndexedQuaternion OrientationQuaterion = starTransform.GetRotation();
@@ -2677,6 +2679,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                 //(*m_updatesThisFrame)[m_properties.ID] = &m_properties;
             }
         }
+
         internal static bool AlmostEqual(ref Vector3 v1, ref Vector3 v2, float nEpsilon)
         {
             return

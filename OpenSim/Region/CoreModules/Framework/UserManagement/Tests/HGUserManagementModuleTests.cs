@@ -25,12 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using Nini.Config;
 using NUnit.Framework;
 using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Region.CoreModules.Framework.UserManagement;
 using OpenSim.Tests.Common;
 using OpenSim.Tests.Common.Mock;
 
@@ -38,7 +36,7 @@ namespace OpenSim.Region.CoreModules.Framework.UserManagement.Tests
 {
     [TestFixture]
     public class HGUserManagementModuleTests : OpenSimTestCase
-    {    
+    {
         /// <summary>
         /// Test that a new HG agent (i.e. one without a user account) has their name cached in the UMM upon creation.
         /// </summary>
@@ -46,7 +44,7 @@ namespace OpenSim.Region.CoreModules.Framework.UserManagement.Tests
         public void TestCachedUserNameForNewAgent()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             HGUserManagementModule hgumm = new HGUserManagementModule();
             UUID userId = TestHelpers.ParseStem("11");

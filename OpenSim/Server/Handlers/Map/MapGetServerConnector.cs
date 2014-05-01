@@ -42,6 +42,7 @@ namespace OpenSim.Server.Handlers.MapImage
 
         private string m_ConfigName = "MapImageService";
         private IMapImageService m_MapService;
+
         public MapGetServiceConnector(IConfigSource config, IHttpServer server, string configName) :
             base(config, server, configName)
         {

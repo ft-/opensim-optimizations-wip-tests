@@ -51,6 +51,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api.Plugins
         {
             get { return m_commsPlugin.ListenerCount; }
         }
+
         public void CheckListeners()
         {
             if (m_CmdManager.m_ScriptEngine.World == null)

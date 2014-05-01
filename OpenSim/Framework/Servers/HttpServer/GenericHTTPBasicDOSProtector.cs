@@ -35,6 +35,7 @@ namespace OpenSim.Framework.Servers.HttpServer
         private readonly GenericHTTPMethod _normalMethod;
         private readonly BasicDosProtectorOptions _options;
         private readonly GenericHTTPMethod _throttledMethod;
+
         public GenericHTTPDOSProtector(GenericHTTPMethod normalMethod, GenericHTTPMethod throttledMethod, BasicDosProtectorOptions options)
         {
             _normalMethod = normalMethod;

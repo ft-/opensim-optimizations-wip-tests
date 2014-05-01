@@ -49,6 +49,7 @@ namespace OpenSim.Region.Framework.Interfaces
         /// Does the given id belong to the root region of a megaregion?
         /// </summary>
         bool IsRootForMegaregion(UUID regionId);
+
         /// <summary>
         /// Tests to see of position (relative to the region) is within the megaregion
         /// </summary>

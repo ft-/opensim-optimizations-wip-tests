@@ -103,6 +103,7 @@ namespace OpenSim.Region.CoreModules.Avatar.UserProfiles
             get;
             private set;
         }
+
         private IProfileModule ProfileModule
         {
             get;
@@ -114,6 +115,7 @@ namespace OpenSim.Region.CoreModules.Avatar.UserProfiles
             get;
             set;
         }
+
         #region IRegionModuleBase implementation
 
         /// <value>
@@ -205,6 +207,7 @@ namespace OpenSim.Region.CoreModules.Avatar.UserProfiles
             ReplaceableInterface = null;
             Enabled = true;
         }
+
         /// <summary>
         ///  This will be called once for every scene loaded. In a shared module this will be multiple times in one
         /// instance, while a nonshared module instance will only be called once. This method is called after AddRegion
@@ -242,6 +245,7 @@ namespace OpenSim.Region.CoreModules.Avatar.UserProfiles
                 GetImageAssets(((IScenePresence)obj).UUID);
             });
         }
+
         #endregion IRegionModuleBase implementation
 
         #region Region Event Handlers
@@ -513,6 +517,7 @@ namespace OpenSim.Region.CoreModules.Avatar.UserProfiles
 
             remoteClient.SendAvatarClassifiedReply(new UUID(args[0]), classifieds);
         }
+
         #endregion Classified
 
         #region Picks
@@ -741,6 +746,7 @@ namespace OpenSim.Region.CoreModules.Avatar.UserProfiles
             }
             remoteClient.SendAvatarPicksReply(new UUID(args[0]), picks);
         }
+
         #endregion Picks
 
         #region Notes
@@ -1050,6 +1056,7 @@ namespace OpenSim.Region.CoreModules.Avatar.UserProfiles
             remoteClient.SendAvatarInterestsReply(props.UserId, (uint)props.WantToMask, props.WantToText, (uint)props.SkillsMask,
                                                   props.SkillsText, props.Language);
         }
+
         /// <summary>
         /// Gets the profile data.
         /// </summary>
@@ -1294,6 +1301,7 @@ namespace OpenSim.Region.CoreModules.Avatar.UserProfiles
                 return false;
             }
         }
+
         #endregion Utils
     }
 }

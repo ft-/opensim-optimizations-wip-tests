@@ -41,6 +41,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
         /// Contains the script to execute functions in.
         /// </summary>
         protected IScript m_Script;
+
         // Cache functions by keeping a reference to them in a dictionary
         private Dictionary<string, MethodInfo> Events = new Dictionary<string, MethodInfo>();
 
@@ -85,6 +86,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
             touch_start = 2097152,
             object_rez = 4194304
         }
+
         public void ExecuteEvent(string state, string FunctionName, object[] args)
         {
             // IMPORTANT: Types and MemberInfo-derived objects require a LOT of memory.
@@ -188,6 +190,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
             //m_log.Debug("Returning {0:x}", eventFlags);
             return (eventFlags);
         }
+
         protected void initEventFlags()
         {
             // Initialize the table if it hasn't already been done

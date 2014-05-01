@@ -98,8 +98,10 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.FreeSwitchVoice
         private IFreeswitchService m_FreeswitchService;
         private uint m_freeSwitchServicePort;
         private string m_openSimWellKnownHTTPAddress;
+
         //        private string m_freeSwitchContext;
         private Dictionary<string, string> m_ParcelAddress = new Dictionary<string, string>();
+
         public string Name
         {
             get { return "FreeSwitchVoiceModule"; }
@@ -718,6 +720,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.FreeSwitchVoice
         public void PostInitialise()
         {
         }
+
         /// <summary>
         /// Callback for a client request for Voice Account Details
         /// </summary>
@@ -804,6 +807,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.FreeSwitchVoice
         public void RemoveRegion(Scene scene)
         {
         }
+
         // <summary>
         // implementation of IVoiceModule, called by osSetParcelSIPAddress script function
         // </summary>
@@ -824,6 +828,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.FreeSwitchVoice
                 }
             }
         }
+
         private static bool CustomCertificateValidation(object sender, X509Certificate cert, X509Chain chain, SslPolicyErrors error)
         {
             return true;

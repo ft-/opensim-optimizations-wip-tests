@@ -54,7 +54,9 @@ namespace OpenSim.Framework.Monitoring
         public int SuccessfulLogins { get { return successfulLogins; } }
 
         public int SuccessfulLoginsToday { get { return successfulLoginsToday; } }
+
         public int SuccessfulLoginsYesterday { get { return successfulLoginsYesterday; } }
+
         public void AddLogout()
         {
             logouts++;

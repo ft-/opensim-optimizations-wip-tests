@@ -52,6 +52,7 @@ namespace OpenSim.Framework.Console
         /// help text displayed
         /// </summary>
         private string m_helpText;
+
         /// <summary>
         /// Construct a new ConsolePluginCommand
         ///

@@ -41,6 +41,7 @@ namespace OpenSim.Region.Framework.Interfaces
         event MessageDelegate OnEstateMessage;
 
         event ChangeDelegate OnRegionInfoChange;
+
         uint GetRegionFlags();
 
         bool IsManager(UUID avatarID);
@@ -58,6 +59,7 @@ namespace OpenSim.Region.Framework.Interfaces
         string SetEstateName(int estateID, string newName);
 
         string SetEstateOwner(int estateID, UserAccount account);
+
         void setEstateTerrainBaseTexture(int level, UUID texture);
 
         void setEstateTerrainTextureHeights(int corner, float lowValue, float highValue);

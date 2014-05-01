@@ -72,6 +72,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments
         /// A value of 0 will apply no pause.  The pause is specified in milliseconds.
         /// </remarks>
         public int ThrottlePer100PrimsRezzed { get; set; }
+
         public void AddRegion(Scene scene)
         {
             m_scene = scene;
@@ -137,6 +138,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments
                 Enabled = true;
             }
         }
+
         public void RegionLoaded(Scene scene)
         {
             m_invAccessModule = m_scene.RequestModuleInterface<IInventoryAccessModule>();
@@ -188,6 +190,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments
 
             MainConsole.Instance.OutputFormat("Usage: debug attachments throttle <ms>");
         }
+
         /// <summary>
         /// Listen for client triggered running state changes so that we can persist the script's object if necessary.
         /// </summary>
@@ -213,6 +216,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments
                 }
             }
         }
+
         #endregion INonSharedRegionModule
 
         #region IAttachmentsModule
@@ -500,6 +504,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments
                 }
             }
         }
+
         public void RezMultipleAttachmentsFromInventory(IScenePresence sp, List<KeyValuePair<UUID, uint>> rezlist)
         {
             if (!Enabled)
@@ -693,6 +698,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments
 
             ShowAttachInUserInventory(sp, attachmentPt, newAttachmentItemID, group, append);
         }
+
         #endregion IAttachmentsModule
 
         #region AttachmentModule private methods
@@ -1081,6 +1087,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments
                     grp.UUID, grp.AttachmentPoint);
             }
         }
+
         #endregion AttachmentModule private methods
 
         #region Client Event Handlers
@@ -1219,6 +1226,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Attachments
 
             return RezSingleAttachmentFromInventory(sp, itemID, AttachmentPt);
         }
+
         #endregion Client Event Handlers
     }
 }

@@ -88,6 +88,7 @@ namespace OpenSim.Framework.Monitoring
                 m_enabled = value;
             }
         }
+
         /// <summary>
         /// Last heap allocation in bytes
         /// </summary>
@@ -95,6 +96,7 @@ namespace OpenSim.Framework.Monitoring
         {
             get { if (m_samples.Count > 0) return m_samples.Last(); else return 0; }
         }
+
         /// <summary>
         /// Memory churn rate per millisecond.
         /// </summary>

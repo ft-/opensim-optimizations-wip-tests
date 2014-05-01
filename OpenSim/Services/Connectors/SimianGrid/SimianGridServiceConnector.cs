@@ -399,6 +399,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
             else
                 return "Region registration for " + regionInfo.RegionName + " failed: " + response["Message"].AsString();
         }
+
         #endregion IGridService
 
         private GridRegion GetNearestRegion(Vector3d position, bool onlyEnabled)

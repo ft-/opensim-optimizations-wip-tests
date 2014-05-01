@@ -207,12 +207,14 @@ namespace OpenSim.Region.Framework.Scenes.Serialization
             EntityBase[] entityList = scene.GetEntities();
             SavePrimListToXml2(entityList, fileName);
         }
+
         // Called by REST Application plugin
         public static void SavePrimsToXml2(Scene scene, TextWriter stream, Vector3 min, Vector3 max)
         {
             EntityBase[] entityList = scene.GetEntities();
             SavePrimListToXml2(entityList, stream, min, max);
         }
+
         #endregion XML2 serialization
 
         #region XML2 deserialization

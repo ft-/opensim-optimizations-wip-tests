@@ -269,6 +269,7 @@ namespace OpenSim.Region.UserStatistics
 
             return output.ToString();
         }
+
         #endregion IStatsController Members
     }
 }

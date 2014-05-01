@@ -51,6 +51,7 @@ namespace OpenSim.Server.Handlers.Inventory
         //private AuthedSessionCache m_session_cache = new AuthedSessionCache(INVENTORY_DEFAULT_SESSION_TIME);
 
         private string m_userserver_url;
+
         public InventoryServiceInConnector(IConfigSource config, IHttpServer server, string configName) :
             base(config, server, configName)
         {
@@ -316,6 +317,7 @@ namespace OpenSim.Server.Handlers.Inventory
             m_log.WarnFormat("[INVENTORY SERVICE]: System folders for {0} not found", userID);
             return new Dictionary<AssetType, InventoryFolderBase>();
         }
+
         #endregion Wrappers for converting the Guid parameter
     }
 }

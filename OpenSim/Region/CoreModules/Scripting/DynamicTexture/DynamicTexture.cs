@@ -58,6 +58,7 @@ namespace OpenSim.Region.CoreModules.Scripting.DynamicTexture
         public string InputParams { get; private set; }
 
         public Uri InputUri { get; private set; }
+
         public bool IsReuseable { get; private set; }
 
         public Size Size { get; private set; }

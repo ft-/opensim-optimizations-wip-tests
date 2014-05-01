@@ -54,6 +54,7 @@ namespace OpenSim.Services.LLLoginService
         protected string m_key;
         protected string m_login;
         protected string m_value;
+
         static LLFailedLoginResponse()
         {
             UserProblem = new LLFailedLoginResponse("key",
@@ -121,6 +122,7 @@ namespace OpenSim.Services.LLLoginService
 
         // Global Textures
         private static string sunTexture = "cce0f112-878f-4586-a2e2-a8f104bba271";
+
         private ArrayList activeGestures;
         private string agentAccess;
         private string agentAccessMax;
@@ -131,15 +133,18 @@ namespace OpenSim.Services.LLLoginService
         private ArrayList classifiedCategories;
         private string classifiedFee;
         private string currency;
+
         // Login Flags
         private string dst;
 
         private string errorMessage;
+
         // Error Flags
         private string errorReason;
 
         private ArrayList eventCategories;
         private string everLoggedIn;
+
         // Login
         private string firstname;
 
@@ -157,6 +162,7 @@ namespace OpenSim.Services.LLLoginService
         private Hashtable loginFlagsHash;
         private string lookAt;
         private BuddyList m_buddyList = null;
+
         // Web map
         private string mapTileURL;
 
@@ -181,6 +187,7 @@ namespace OpenSim.Services.LLLoginService
         private Hashtable uiConfigHash;
         private UserInfo userProfile;
         private string welcomeMessage;
+
         static LLLoginResponse()
         {
             // This is being set, but it's not used
@@ -695,6 +702,7 @@ namespace OpenSim.Services.LLLoginService
                 InventoryLibrary = GetInventoryLibrary(libService);
             }
         }
+
         private void FillOutRegionData(GridRegion destination)
         {
             IPEndPoint endPoint = destination.ExternalEndPoint;
@@ -824,6 +832,7 @@ namespace OpenSim.Services.LLLoginService
             currency = String.Empty;
             ClassifiedFee = "0";
         }
+
         public class BuddyList
         {
             public List<BuddyInfo> Buddies = new List<BuddyInfo>();
@@ -851,6 +860,7 @@ namespace OpenSim.Services.LLLoginService
                 public string BuddyID;
                 public int BuddyRightsGiven = 1;
                 public int BuddyRightsHave = 1;
+
                 public BuddyInfo(string buddyID)
                 {
                     BuddyID = buddyID;
@@ -1035,6 +1045,7 @@ namespace OpenSim.Services.LLLoginService
             get { return login; }
             set { login = value; }
         }
+
         public string LookAt
         {
             get { return lookAt; }
@@ -1140,11 +1151,13 @@ namespace OpenSim.Services.LLLoginService
             get { return stipendSinceLogin; }
             set { stipendSinceLogin = value; }
         }
+
         public string SunTexture
         {
             get { return sunTexture; }
             set { sunTexture = value; }
         }
+
         #endregion Properties
 
         public class UserInfo

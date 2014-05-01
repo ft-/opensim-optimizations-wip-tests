@@ -42,6 +42,7 @@ namespace OpenSim.Server.Handlers.Neighbour
 
         private IAuthenticationService m_AuthenticationService = null;
         private INeighbourService m_NeighbourService;
+
         public NeighbourServiceInConnector(IConfigSource source, IHttpServer server, INeighbourService nService, IScene scene) :
             base(source, server, String.Empty)
         {

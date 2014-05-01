@@ -77,6 +77,7 @@ namespace OpenSim.Region.CoreModules.World.Estate
             m_Scene.RegionInfo.RegionSettings.ClearSpawnPoints();
             m_Scene.RegionInfo.RegionSettings.Save();
         }
+
         // Remove a SpawnPoint from the Telehub
         public void RemoveSpawnPoint(int spawnpoint)
         {

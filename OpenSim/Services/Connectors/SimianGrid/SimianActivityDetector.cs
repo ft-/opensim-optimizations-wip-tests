@@ -86,6 +86,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
             scene.EventManager.OnNewClient -= OnNewClient;
             scene.EventManager.OnAvatarEnteringNewParcel -= OnEnteringNewParcel;
         }
+
         private void OnEnteringNewParcel(ScenePresence sp, int localLandID, UUID regionID)
         {
             // Asynchronously update the position stored in the session table for this agent

@@ -319,6 +319,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
 
             bs.Close();
         }
+
         #endregion ITerrainLoader Members
 
         //Returns true if this extension is supported for terrain save-tile
@@ -331,6 +332,7 @@ namespace OpenSim.Region.CoreModules.World.Terrain.FileLoaders
         {
             return "Terragen";
         }
+
         /// <summary>
         /// terragen SCAL floats need to be written intel ordered regardless of
         /// big or little endian system

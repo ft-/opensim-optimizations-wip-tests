@@ -44,6 +44,7 @@ namespace OpenSim.Services.Connectors
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
+
         public LandServicesConnector()
         {
         }

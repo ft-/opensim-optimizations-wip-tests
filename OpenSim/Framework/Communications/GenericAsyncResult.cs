@@ -74,8 +74,10 @@ namespace OpenSim.Framework.Communications
         /// booleans and VolatileRead as m_completed
         /// </remarks>
         private byte m_completedSynchronously;
+
         private Exception m_exception;
         private ManualResetEvent m_waitHandle;
+
         internal SimpleAsyncResult(AsyncCallback cb, object state)
         {
             m_callback = cb;
@@ -168,12 +170,14 @@ namespace OpenSim.Framework.Communications
 
             SignalCompletion();
         }
+
         private void SignalCompletion()
         {
             if (m_waitHandle != null) m_waitHandle.Set();
 
             if (m_callback != null) m_callback(this);
         }
+
         #endregion class Methods
     }
 }

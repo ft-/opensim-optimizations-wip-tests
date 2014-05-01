@@ -104,6 +104,7 @@ namespace OpenSim.Region.OptionalModules.World.AutoBackup
 
         private readonly AutoBackupModuleState m_defaultState = new AutoBackupModuleState();
         private readonly Dictionary<Guid, IScene> m_pendingSaves = new Dictionary<Guid, IScene>(1);
+
         private readonly Dictionary<IScene, AutoBackupModuleState> m_states =
             new Dictionary<IScene, AutoBackupModuleState>(1);
 
@@ -122,6 +123,7 @@ namespace OpenSim.Region.OptionalModules.World.AutoBackup
         private bool m_enabled;
 
         private delegate T DefaultGetter<T>(string settingName, T defaultValue);
+
         /// <summary>
         /// Required by framework.
         /// </summary>
@@ -208,6 +210,7 @@ namespace OpenSim.Region.OptionalModules.World.AutoBackup
             m_log.Debug("[AUTO BACKUP]: Here is the default config:");
             m_log.Debug(abms.ToString());
         }
+
         /// <summary>
         /// Most interesting/complex code paths in AutoBackup begin here.
         /// We read lots of Nini config, maybe set a timer, add members to state tracking Dictionaries, etc.
@@ -261,6 +264,7 @@ namespace OpenSim.Region.OptionalModules.World.AutoBackup
                 this.m_states.Remove(scene);
             }
         }
+
         /// <summary>
         /// Currently a no-op.
         /// </summary>
@@ -857,6 +861,7 @@ namespace OpenSim.Region.OptionalModules.World.AutoBackup
                 return global.GetString(settingName, defaultValue);
             }
         }
+
         /// <summary>
         /// If the root agent count right at this instant is less than the threshold specified in AutoBackupAgentThreshold (default 10),
         /// then we return false and trip the busy heuristic's "too busy" path (i.e., don't save an OAR).
@@ -913,6 +918,7 @@ namespace OpenSim.Region.OptionalModules.World.AutoBackup
                    this.m_configSource.Configs["AutoBackupModule"].GetFloat(
                        regionName + ".AutoBackupDilationThreshold", 0.5f);
         }
+
         /// <summary>
         /// Quickly stop all timers from firing.
         /// </summary>

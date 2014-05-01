@@ -59,6 +59,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authorization
         {
             get { return null; }
         }
+
         public void AddRegion(Scene scene)
         {
             if (!m_Enabled)
@@ -152,6 +153,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Authorization
         public void PostInitialise()
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)

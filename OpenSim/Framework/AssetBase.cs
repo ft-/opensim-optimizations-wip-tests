@@ -51,6 +51,7 @@ namespace OpenSim.Framework
         public static readonly int MAX_ASSET_DESC = 64;
         public static readonly int MAX_ASSET_NAME = 64;
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         /// <summary>
         /// Data of the Asset
         /// </summary>
@@ -194,6 +195,7 @@ namespace OpenSim.Framework
                 return !IsBinaryAsset;
             }
         }
+
         /// <summary>
         /// Is this a region only asset, or does this exist on the asset server also
         /// </summary>
@@ -215,6 +217,7 @@ namespace OpenSim.Framework
             get { return m_metadata.Name; }
             set { m_metadata.Name = value; }
         }
+
         /// <summary>
         /// Is this asset going to be saved to the asset database?
         /// </summary>
@@ -232,6 +235,7 @@ namespace OpenSim.Framework
             get { return m_metadata.Type; }
             set { m_metadata.Type = value; }
         }
+
         public override string ToString()
         {
             return FullID.ToString();
@@ -253,6 +257,7 @@ namespace OpenSim.Framework
         private byte[] m_sha1;
         private bool m_temporary;
         private sbyte m_type = (sbyte)AssetType.Unknown;
+
         public string ContentType
         {
             get
@@ -338,6 +343,7 @@ namespace OpenSim.Framework
             get { return m_name; }
             set { m_name = value; }
         }
+
         public byte[] SHA1
         {
             get { return m_sha1; }

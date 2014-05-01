@@ -74,6 +74,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
 
         private string m_serverUrl = String.Empty;
         private string m_userServerUrl = String.Empty;
+
         #region ISharedRegionModule
 
         public SimianInventoryServiceConnector()
@@ -100,6 +101,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
         public void RegionLoaded(Scene scene)
         {
         }
+
         public void RemoveRegion(Scene scene)
         {
             if (m_Enabled) { scene.UnregisterModuleInterface<IInventoryService>(this); }
@@ -723,6 +725,7 @@ namespace OpenSim.Services.Connectors.SimianGrid
             else if (String.IsNullOrEmpty(m_userServerUrl))
                 m_log.Info("[SIMIAN INVENTORY CONNECTOR]: No UserAccountServerURI specified, disabling connector");
         }
+
         private OSDArray FetchGestures(UUID userID)
         {
             NameValueCollection requestArgs = new NameValueCollection

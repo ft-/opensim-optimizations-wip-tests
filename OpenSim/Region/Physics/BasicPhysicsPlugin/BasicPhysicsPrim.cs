@@ -202,6 +202,7 @@ namespace OpenSim.Region.Physics.BasicPhysicsPlugin
             get { return false; }
             set { return; }
         }
+
         public override PrimitiveBaseShape Shape
         {
             //            set { _shape = value; }
@@ -228,6 +229,7 @@ namespace OpenSim.Region.Physics.BasicPhysicsPlugin
             get { return false; }
             set { return; }
         }
+
         public override Vector3 Torque
         {
             get { return Vector3.Zero; }
