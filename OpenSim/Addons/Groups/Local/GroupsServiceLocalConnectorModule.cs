@@ -48,6 +48,7 @@ namespace OpenSim.Groups
         private GroupsService m_GroupsService;
         private List<Scene> m_Scenes;
         private IUserManagement m_UserManagement;
+
         #region constructors
 
         public GroupsServiceLocalConnectorModule()
@@ -112,6 +113,7 @@ namespace OpenSim.Groups
 
             m_log.DebugFormat("[Groups]: Initializing {0}", this.Name);
         }
+
         public void PostInitialise()
         {
         }
@@ -136,6 +138,7 @@ namespace OpenSim.Groups
             scene.UnregisterModuleInterface<IGroupsServicesConnector>(this);
             m_Scenes.Remove(scene);
         }
+
         #endregion ISharedRegionModule
 
         #region IGroupsServicesConnector
@@ -303,14 +306,17 @@ namespace OpenSim.Groups
             m_GroupsService.UpdateGroup(RequestingAgentID, groupID, charter, showInList, insigniaID, membershipFee, openEnrollment, allowPublish, maturePublish);
             return true;
         }
+
         public bool UpdateGroupRole(string RequestingAgentID, UUID groupID, UUID roleID, string name, string description, string title, ulong powers)
         {
             return m_GroupsService.UpdateGroupRole(RequestingAgentID, groupID, roleID, name, description, title, powers);
         }
+
         public void UpdateMembership(string RequestingAgentID, string AgentID, UUID GroupID, bool AcceptNotices, bool ListInProfile)
         {
             m_GroupsService.UpdateMembership(RequestingAgentID, AgentID, GroupID, AcceptNotices, ListInProfile);
         }
+
         #endregion IGroupsServicesConnector
     }
 }

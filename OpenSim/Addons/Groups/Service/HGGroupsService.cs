@@ -44,6 +44,7 @@ namespace OpenSim.Groups
         private string m_HomeURI;
         private IOfflineIMService m_OfflineIM;
         private IUserAccountService m_UserAccounts;
+
         public HGGroupsService(IConfigSource config, IOfflineIMService im, IUserAccountService users, string homeURI)
             : base(config, string.Empty)
         {
@@ -249,6 +250,7 @@ namespace OpenSim.Groups
             else
                 m_log.DebugFormat("[Groups.HGGroupsService]: membership not found for {0}", AgentID);
         }
+
         public bool VerifyNotice(UUID noticeID, UUID groupID)
         {
             GroupNoticeInfo notice = GetGroupNotice(string.Empty, noticeID);
@@ -325,6 +327,7 @@ namespace OpenSim.Groups
                 m_OfflineIM.StoreMessage(msg, out reason);
             }
         }
+
         private bool VerifyToken(UUID groupID, string agentID, string token)
         {
             // check the token

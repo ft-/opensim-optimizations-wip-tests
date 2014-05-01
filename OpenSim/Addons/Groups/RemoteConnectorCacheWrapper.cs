@@ -43,6 +43,7 @@ namespace OpenSim.Groups
     public delegate List<ExtendedGroupMembersData> GroupMembersListDelegate();
 
     public delegate ExtendedGroupRecord GroupRecordDelegate();
+
     public delegate List<GroupRolesData> GroupRolesListDelegate();
 
     public delegate GroupNoticeInfo NoticeDelegate();
@@ -50,11 +51,14 @@ namespace OpenSim.Groups
     public delegate List<ExtendedGroupNoticeData> NoticeListDelegate();
 
     public delegate List<ExtendedGroupRoleMembersData> RoleMembersListDelegate();
+
     public delegate void VoidDelegate();
+
     public class RemoteConnectorCacheWrapper
     {
         private const int GROUPS_CACHE_TIMEOUT = 1 * 60;
         private Dictionary<string, bool> m_ActiveRequests = new Dictionary<string, bool>();
+
         // This all important cache cahces objects of different types:
         // group-<GroupID> or group-<Name>          => ExtendedGroupRecord
         // active-<AgentID>                         => GroupMembershipData
@@ -70,7 +74,8 @@ namespace OpenSim.Groups
         private ExpiringCache<string, object> m_Cache = new ExpiringCache<string, object>();
 
         private ForeignImporter m_ForeignImporter;
-         // 1 minutes
+
+        // 1 minutes
         public RemoteConnectorCacheWrapper(IUserManagement uman)
         {
             m_ForeignImporter = new ForeignImporter(uman);
@@ -759,6 +764,7 @@ namespace OpenSim.Groups
                     m_Cache.AddOrUpdate("group-" + group.GroupID.ToString(), group, GROUPS_CACHE_TIMEOUT);
             return true;
         }
+
         public bool UpdateGroupRole(UUID groupID, UUID roleID, string name, string description, string title, ulong powers, BooleanDelegate d)
         {
             if (d())
@@ -792,6 +798,7 @@ namespace OpenSim.Groups
                 return false;
             }
         }
+
         public void UpdateMembership(string AgentID, UUID GroupID, bool AcceptNotices, bool ListInProfile, VoidDelegate d)
         {
             d();

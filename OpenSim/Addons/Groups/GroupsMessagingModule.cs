@@ -50,11 +50,13 @@ namespace OpenSim.Groups
 
         private bool m_debugEnabled = true;
         private IGroupsServicesConnector m_groupData = null;
+
         // Config Options
         private bool m_groupMessagingEnabled = false;
 
         private Dictionary<UUID, List<string>> m_groupsAgentsDroppedFromChatSession = new Dictionary<UUID, List<string>>();
         private Dictionary<UUID, List<string>> m_groupsAgentsInvitedToChatSession = new Dictionary<UUID, List<string>>();
+
         /// <summary>
         /// If enabled, module only tries to send group IMs to online users by querying cached presence information.
         /// </summary>
@@ -64,6 +66,7 @@ namespace OpenSim.Groups
         private IPresenceService m_presenceService;
         private List<Scene> m_sceneList = new List<Scene>();
         private IUserManagement m_UserManagement = null;
+
         /// <summary>
         /// Cache for online users.
         /// </summary>
@@ -79,6 +82,7 @@ namespace OpenSim.Groups
         private ExpiringCache<UUID, PresenceInfo[]> m_usersOnlineCache;
 
         private int m_usersOnlineCacheExpirySeconds = 20;
+
         #region Region Module interfaceBase Members
 
         public string Name
@@ -160,6 +164,7 @@ namespace OpenSim.Groups
                 "[Groups.Messaging]: GroupsMessagingModule enabled with MessageOnlineOnly = {0}, DebugEnabled = {1}",
                 m_messageOnlineAgentsOnly, m_debugEnabled);
         }
+
         public void PostInitialise()
         {
             // NoOp
@@ -219,6 +224,7 @@ namespace OpenSim.Groups
             scene.EventManager.OnClientLogin -= OnClientLogin;
             scene.UnregisterModuleInterface<IGroupsMessagingModule>(this);
         }
+
         #endregion Region Module interfaceBase Members
 
         public void SendMessageToGroup(GridInstantMessage im, UUID groupID)
@@ -372,6 +378,7 @@ namespace OpenSim.Groups
                 return false;
             }
         }
+
         #region SimGridEventHandlers
 
         private void AddAgentToSession(UUID AgentID, UUID GroupID, GridInstantMessage msg)
@@ -537,6 +544,7 @@ namespace OpenSim.Groups
 
             ResetAgentGroupChatSessions(client.AgentId.ToString());
         }
+
         private void ProcessMessageFromGroupSession(GridInstantMessage msg)
         {
             if (m_debugEnabled) m_log.DebugFormat("[Groups.Messaging]: Session message from {0} going to agent {1}", msg.fromAgentName, msg.toAgentID);
@@ -585,6 +593,7 @@ namespace OpenSim.Groups
                     break;
             }
         }
+
         #endregion SimGridEventHandlers
 
         #region ClientEvents
@@ -785,6 +794,7 @@ namespace OpenSim.Groups
             foreach (List<string> agentList in m_groupsAgentsInvitedToChatSession.Values)
                 agentList.Remove(agentID);
         }
+
         private void CreateGroupChatSessionTracking(UUID groupID)
         {
             if (!m_groupsAgentsDroppedFromChatSession.ContainsKey(groupID))

@@ -334,6 +334,7 @@ namespace OpenSim.Groups
             result["RESULT"] = "true";
             return Util.UTF8NoBomEncoding.GetBytes(ServerUtils.BuildXmlResponse(result));
         }
+
         private byte[] HandleVerifyNotice(Dictionary<string, object> request)
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
@@ -377,6 +378,7 @@ namespace OpenSim.Groups
             result["RESULT"] = "NULL";
             result["REASON"] = reason;
         }
+
         #endregion Helpers
     }
 
@@ -386,6 +388,7 @@ namespace OpenSim.Groups
 
         private string m_ConfigName = "Groups";
         private HGGroupsService m_GroupsService;
+
         // Called by Robust shell
         public HGGroupsServiceRobustConnector(IConfigSource config, IHttpServer server, string configName) :
             this(config, server, configName, null, null)

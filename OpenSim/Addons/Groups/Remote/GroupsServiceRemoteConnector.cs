@@ -604,6 +604,7 @@ namespace OpenSim.Groups
 
             return GroupsDataUtils.GroupRecord((Dictionary<string, object>)ret["RESULT"]);
         }
+
         public bool UpdateGroupRole(string RequestingAgentID, UUID groupID, UUID roleID, string name, string description, string title, ulong powers)
         {
             Dictionary<string, object> sendData = new Dictionary<string, object>();
@@ -628,6 +629,7 @@ namespace OpenSim.Groups
 
             return true;
         }
+
         public void UpdateMembership(string RequestingAgentID, string AgentID, UUID GroupID, bool AcceptNotices, bool ListInProfile)
         {
             Dictionary<string, object> sendData = new Dictionary<string, object>();
@@ -638,6 +640,7 @@ namespace OpenSim.Groups
             sendData["RequestingAgentID"] = RequestingAgentID;
             MakeRequest("UPDATEMEMBERSHIP", sendData);
         }
+
         #region Make Request
 
         private Dictionary<string, object> MakeRequest(string method, Dictionary<string, object> sendData)

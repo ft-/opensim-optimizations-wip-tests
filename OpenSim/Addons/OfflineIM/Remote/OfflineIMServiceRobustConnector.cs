@@ -154,6 +154,7 @@ namespace OpenSim.OfflineIM
             //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
             return Util.UTF8NoBomEncoding.GetBytes(xmlString);
         }
+
         #region Helpers
 
         private byte[] BoolResult(bool value)
@@ -199,10 +200,12 @@ namespace OpenSim.OfflineIM
             result["RESULT"] = "NULL";
             result["REASON"] = reason;
         }
+
         private byte[] SuccessResult()
         {
             return BoolResult(true);
         }
+
         #endregion Helpers
     }
 
@@ -212,6 +215,7 @@ namespace OpenSim.OfflineIM
 
         private string m_ConfigName = "Messaging";
         private IOfflineIMService m_OfflineIMService;
+
         public OfflineIMServiceRobustConnector(IConfigSource config, IHttpServer server, string configName) :
             base(config, server, configName)
         {

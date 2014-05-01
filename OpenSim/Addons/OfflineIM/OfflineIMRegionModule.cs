@@ -50,6 +50,7 @@ namespace OpenSim.OfflineIM
         private IOfflineIMService m_OfflineIMService;
         private List<Scene> m_SceneList = new List<Scene>();
         private IMessageTransferModule m_TransferModule = null;
+
         public string Name
         {
             get { return "Offline Message Module V2"; }
@@ -94,6 +95,7 @@ namespace OpenSim.OfflineIM
             m_ForwardOfflineGroupMessages = cnf.GetBoolean("ForwardOfflineGroupMessages", m_ForwardOfflineGroupMessages);
             m_log.DebugFormat("[OfflineIM.V2]: Offline messages enabled by {0}", Name);
         }
+
         public void PostInitialise()
         {
         }
@@ -133,6 +135,7 @@ namespace OpenSim.OfflineIM
                 client.OnMuteListRequest -= OnMuteListRequest;
             });
         }
+
         private IClientAPI FindClient(UUID agentID)
         {
             foreach (Scene s in m_SceneList)
@@ -154,6 +157,7 @@ namespace OpenSim.OfflineIM
             }
             return null;
         }
+
         // Apparently this is needed in order for the viewer to request the IMs.
         private void OnMuteListRequest(IClientAPI client, uint crc)
         {
@@ -202,6 +206,7 @@ namespace OpenSim.OfflineIM
                 }
             }
         }
+
         private void UndeliveredMessage(GridInstantMessage im)
         {
             if (im.dialog != (byte)InstantMessageDialog.MessageFromObject &&
@@ -259,6 +264,7 @@ namespace OpenSim.OfflineIM
         {
             return m_OfflineIMService.StoreMessage(im, out reason);
         }
+
         #endregion IOfflineIM
     }
 }

@@ -43,6 +43,7 @@ namespace OpenSim.Groups
         public UUID NoticeID;
         public string Subject;
         public uint Timestamp;
+
         public GroupNoticeData ToGroupNoticeData()
         {
             GroupNoticeData n = new GroupNoticeData();
@@ -86,6 +87,7 @@ namespace OpenSim.Groups
         public int RoleCount;
         public string ServiceLocation;
     }
+
     public class ExtendedGroupRoleMembersData
     {
         // This is the only difference: this is a string
@@ -93,6 +95,7 @@ namespace OpenSim.Groups
 
         public UUID RoleID;
     }
+
     public class GroupsDataUtils
     {
         public static Dictionary<string, object> DirGroupsReplyData(DirGroupsReplyData g)

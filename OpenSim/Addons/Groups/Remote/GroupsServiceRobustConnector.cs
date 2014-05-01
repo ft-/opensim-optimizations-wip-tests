@@ -373,6 +373,7 @@ namespace OpenSim.Groups
             //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
             return Util.UTF8NoBomEncoding.GetBytes(xmlString);
         }
+
         private byte[] HandleGetGroupMembers(Dictionary<string, object> request)
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
@@ -663,6 +664,7 @@ namespace OpenSim.Groups
             result["RESULT"] = "true";
             return Util.UTF8NoBomEncoding.GetBytes(ServerUtils.BuildXmlResponse(result));
         }
+
         private byte[] HandleRemoveRole(Dictionary<string, object> request)
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
@@ -679,6 +681,7 @@ namespace OpenSim.Groups
             //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
             return Util.UTF8NoBomEncoding.GetBytes(ServerUtils.BuildXmlResponse(result));
         }
+
         private byte[] HandleSetActive(Dictionary<string, object> request)
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
@@ -738,6 +741,7 @@ namespace OpenSim.Groups
             //m_log.DebugFormat("[XXX]: resp string: {0}", xmlString);
             return Util.UTF8NoBomEncoding.GetBytes(ServerUtils.BuildXmlResponse(result));
         }
+
         #region Helpers
 
         private byte[] FailureResult()
@@ -753,6 +757,7 @@ namespace OpenSim.Groups
             result["RESULT"] = "NULL";
             result["REASON"] = reason;
         }
+
         #endregion Helpers
     }
 
@@ -762,6 +767,7 @@ namespace OpenSim.Groups
 
         private string m_ConfigName = "Groups";
         private GroupsService m_GroupsService;
+
         public GroupsServiceRobustConnector(IConfigSource config, IHttpServer server, string configName) :
             base(config, server, configName)
         {

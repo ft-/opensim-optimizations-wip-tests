@@ -48,6 +48,7 @@ namespace OpenSim.Groups
         private GroupsServiceRemoteConnector m_GroupsService;
         private List<Scene> m_Scenes;
         private IUserManagement m_UserManagement;
+
         #region constructors
 
         public GroupsServiceRemoteConnectorModule()
@@ -117,6 +118,7 @@ namespace OpenSim.Groups
             m_Enabled = true;
             m_log.DebugFormat("[Groups.RemoteConnector]: Initializing {0}", this.Name);
         }
+
         public void PostInitialise()
         {
         }
@@ -141,6 +143,7 @@ namespace OpenSim.Groups
             scene.UnregisterModuleInterface<IGroupsServicesConnector>(this);
             m_Scenes.Remove(scene);
         }
+
         #endregion ISharedRegionModule
 
         #region IGroupsServicesConnector
@@ -377,6 +380,7 @@ namespace OpenSim.Groups
             reason = r;
             return success;
         }
+
         public bool UpdateGroupRole(string RequestingAgentID, UUID groupID, UUID roleID, string name, string description, string title, ulong powers)
         {
             return m_CacheWrapper.UpdateGroupRole(groupID, roleID, name, description, title, powers, delegate
@@ -384,6 +388,7 @@ namespace OpenSim.Groups
                 return m_GroupsService.UpdateGroupRole(RequestingAgentID, groupID, roleID, name, description, title, powers);
             });
         }
+
         public void UpdateMembership(string RequestingAgentID, string AgentID, UUID GroupID, bool AcceptNotices, bool ListInProfile)
         {
             m_CacheWrapper.UpdateMembership(AgentID, GroupID, AcceptNotices, ListInProfile, delegate
@@ -391,6 +396,7 @@ namespace OpenSim.Groups
                 m_GroupsService.UpdateMembership(RequestingAgentID, AgentID, GroupID, AcceptNotices, ListInProfile);
             });
         }
+
         #endregion IGroupsServicesConnector
     }
 }

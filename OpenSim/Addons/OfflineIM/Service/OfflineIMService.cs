@@ -45,6 +45,7 @@ namespace OpenSim.OfflineIM
 
         private static bool m_Initialized = false;
         private XmlSerializer m_serializer;
+
         public OfflineIMService(IConfigSource config)
             : base(config)
         {

@@ -59,7 +59,7 @@ namespace OpenSim.Groups
         private List<Scene> m_Scenes;
         private string m_ServiceLocation;
         private IUserManagement m_UserManagement;
-         // for caching info of external group services
+        // for caching info of external group services
 
         #region ISharedRegionModule
 
@@ -110,6 +110,7 @@ namespace OpenSim.Groups
 
             m_log.DebugFormat("[Groups]: Initializing {0} with LocalService {1}", this.Name, m_ServiceLocation);
         }
+
         public void PostInitialise()
         {
         }
@@ -148,6 +149,7 @@ namespace OpenSim.Groups
             scene.UnregisterModuleInterface<IGroupsServicesConnector>(this);
             m_Scenes.Remove(scene);
         }
+
         #endregion ISharedRegionModule
 
         private void OnCompleteMovementToRegion(IClientAPI client, bool arg2)
@@ -174,6 +176,7 @@ namespace OpenSim.Groups
         {
             client.OnCompleteMovementToRegion += OnCompleteMovementToRegion;
         }
+
         #region IGroupsServicesConnector
 
         public bool AddAgentToGroup(string RequestingAgentID, string AgentID, UUID GroupID, UUID RoleID, string token, out string reason)
@@ -566,6 +569,7 @@ namespace OpenSim.Groups
                 return false;
             }
         }
+
         public bool UpdateGroupRole(string RequestingAgentID, UUID groupID, UUID roleID, string name, string description, string title, ulong powers)
         {
             string url = string.Empty, gname = string.Empty;
@@ -577,10 +581,12 @@ namespace OpenSim.Groups
                 return false;
             }
         }
+
         public void UpdateMembership(string RequestingAgentID, string AgentID, UUID GroupID, bool AcceptNotices, bool ListInProfile)
         {
             m_LocalGroupsConnector.UpdateMembership(AgentUUI(RequestingAgentID), AgentUUI(AgentID), GroupID, AcceptNotices, ListInProfile);
         }
+
         #endregion IGroupsServicesConnector
 
         #region hypergrid groups
@@ -692,6 +698,7 @@ namespace OpenSim.Groups
             //m_log.DebugFormat("[XXX]: IsLocal? {0}", isLocal);
             return isLocal;
         }
+
         #endregion hypergrid groups
     }
 }

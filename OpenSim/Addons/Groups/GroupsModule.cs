@@ -50,6 +50,7 @@ namespace OpenSim.Groups
         private bool m_debugEnabled = false;
         private IGroupsServicesConnector m_groupData = null;
         private bool m_groupNoticesEnabled = true;
+
         // Configuration settings
         private bool m_groupsEnabled = false;
 
@@ -58,6 +59,7 @@ namespace OpenSim.Groups
         private List<Scene> m_sceneList = new List<Scene>();
         private ReaderWriterLock m_sceneRwLock = new ReaderWriterLock();
         private IUserManagement m_UserManagement;
+
         #region Region Module interfaceBase Members
 
         public string Name
@@ -124,6 +126,7 @@ namespace OpenSim.Groups
                 m_levelGroupCreate = groupsConfig.GetInt("LevelGroupCreate", 0);
             }
         }
+
         public void PostInitialise()
         {
             // NoOp
@@ -229,6 +232,7 @@ namespace OpenSim.Groups
 
             MainConsole.Instance.OutputFormat("{0} verbose logging set to {1}", Name, m_debugEnabled);
         }
+
         #endregion Region Module interfaceBase Members
 
         #region EventHandlers
@@ -517,6 +521,7 @@ namespace OpenSim.Groups
             client.OnAgentDataUpdateRequest += OnAgentDataUpdateRequest;
             client.OnRequestAvatarProperties += OnRequestAvatarProperties;
         }
+
         private void OnRequestAvatarProperties(IClientAPI remoteClient, UUID avatarID)
         {
             if (m_debugEnabled) m_log.DebugFormat("[Groups]: {0} called", System.Reflection.MethodBase.GetCurrentMethod().Name);
@@ -557,6 +562,7 @@ namespace OpenSim.Groups
             }
         }
         */
+
         #endregion EventHandlers
 
         #region IGroupsModule Members
@@ -814,6 +820,7 @@ namespace OpenSim.Groups
         {
             return m_groupData.GetGroupRecord(UUID.Zero.ToString(), UUID.Zero, name);
         }
+
         /// <summary>
         /// Get the title of the agent's current role.
         /// </summary>
@@ -1044,6 +1051,7 @@ namespace OpenSim.Groups
 
             return titles;
         }
+
         /// <summary>
         /// Change the current Active Group Role for Agent
         /// </summary>
@@ -1174,6 +1182,7 @@ namespace OpenSim.Groups
                 openEnrollment, allowPublish, maturePublish, out reason))
                 remoteClient.SendAgentAlertMessage(reason, false);
         }
+
         #endregion IGroupsModule Members
 
         #region Client/Update Tools
@@ -1411,6 +1420,7 @@ namespace OpenSim.Groups
                 m_sceneRwLock.ReleaseReaderLock();
             }
         }
+
         #endregion Client/Update Tools
 
         #region IM Backed Processes
@@ -1438,6 +1448,7 @@ namespace OpenSim.Groups
                 m_msgTransferModule.SendInstantMessage(msg, delegate(bool success) { if (m_debugEnabled) m_log.DebugFormat("[Groups]: Message Sent: {0}", success ? "Succeeded" : "Failed"); });
             }
         }
+
         #endregion IM Backed Processes
 
         private UUID GetRequestingAgentID(IClientAPI client)

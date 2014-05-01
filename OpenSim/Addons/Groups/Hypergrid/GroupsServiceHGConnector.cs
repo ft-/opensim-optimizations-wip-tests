@@ -228,6 +228,7 @@ namespace OpenSim.Groups
             sendData["AccessToken"] = GroupsDataUtils.Sanitize(token);
             MakeRequest("REMOVEAGENTFROMGROUP", sendData);
         }
+
         public bool VerifyNotice(UUID noticeID, UUID groupID)
         {
             Dictionary<string, object> sendData = new Dictionary<string, object>();

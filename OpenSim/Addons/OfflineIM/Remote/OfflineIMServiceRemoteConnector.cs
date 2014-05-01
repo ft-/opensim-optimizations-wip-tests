@@ -123,6 +123,7 @@ namespace OpenSim.OfflineIM
 
             return true;
         }
+
         #endregion IOfflineIMService
 
         #region Make Request

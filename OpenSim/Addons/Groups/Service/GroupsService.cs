@@ -94,6 +94,7 @@ namespace OpenSim.Groups
                                                 GroupPowers.VoteOnProposal;
 
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         #region Daily Cleanup
 
         private Timer m_CleanupTimer;
@@ -658,6 +659,7 @@ namespace OpenSim.Groups
 
             m_Database.StoreGroup(data);
         }
+
         public bool UpdateGroupRole(string RequestingAgentID, UUID groupID, UUID roleID, string name, string description, string title, ulong powers)
         {
             // check perms
@@ -669,6 +671,7 @@ namespace OpenSim.Groups
 
             return _AddOrUpdateGroupRole(RequestingAgentID, groupID, roleID, name, description, title, powers, false);
         }
+
         public void UpdateMembership(string RequestingAgentID, string AgentID, UUID GroupID, bool AcceptNotices, bool ListInProfile)
         {
             // TODO: check perms
@@ -727,6 +730,7 @@ namespace OpenSim.Groups
 
             return data;
         }
+
         #region Actions without permission checks
 
         protected void _AddAgentToGroup(string RequestingAgentID, string AgentID, UUID GroupID, UUID RoleID)
@@ -925,10 +929,12 @@ namespace OpenSim.Groups
                 m_Database.StorePrincipal(principal);
             }
         }
+
         protected void _RemoveGroupRole(UUID groupID, UUID roleID)
         {
             m_Database.DeleteRole(groupID, roleID);
         }
+
         #endregion Actions without permission checks
 
         #region structure translations
@@ -985,6 +991,7 @@ namespace OpenSim.Groups
 
             return notice;
         }
+
         #endregion structure translations
 
         #region permissions
