@@ -76,6 +76,7 @@ namespace OpenSim.Region.ScriptEngine.XEngine
         private Dictionary<string, Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>>> m_AssemblyLineMaps = 
             new Dictionary<string, Dictionary<KeyValuePair<int, int>, KeyValuePair<int, int>>>();
         private bool m_AppDomainLoading;
+
         private Dictionary<UUID, AppDomain> m_AppDomains =
                 new Dictionary<UUID, AppDomain>();
 
@@ -88,6 +89,7 @@ namespace OpenSim.Region.ScriptEngine.XEngine
         private IConfigSource m_ConfigSource = null;
         private ScriptEngineConsoleCommands m_consoleCommands;
         private IWorkItemResult m_CurrentCompile = null;
+
         private Dictionary<UUID, List<UUID>> m_DomainScripts =
                 new Dictionary<UUID, List<UUID>>();
 
@@ -100,8 +102,10 @@ namespace OpenSim.Region.ScriptEngine.XEngine
         private int m_MaxScriptQueue;
         private int m_MaxThreads;
         private int m_MinThreads;
+
         private Dictionary<uint, List<UUID>> m_PrimObjects =
                 new Dictionary<uint, List<UUID>>();
+
         private ReaderWriterLock m_PrimObjectsRwLock = new ReaderWriterLock();
 
         private ThreadPriority m_Prio;
@@ -111,12 +115,15 @@ namespace OpenSim.Region.ScriptEngine.XEngine
         private IConfig m_ScriptConfig = null;
         private string m_ScriptEnginesPath = null;
         private string m_ScriptErrorMessage;
+
         private Dictionary<UUID, ArrayList> m_ScriptErrors =
                 new Dictionary<UUID, ArrayList>();
 
         private int m_ScriptFailCount;
+
         private Dictionary<UUID, IScriptInstance> m_Scripts =
                 new Dictionary<UUID, IScriptInstance>();
+
         private ReaderWriterLock m_ScriptsRwLock = new ReaderWriterLock();
 
         /// <summary>
@@ -126,18 +133,22 @@ namespace OpenSim.Region.ScriptEngine.XEngine
 
         private int m_SleepTime;
         private int m_StackSize;
+
         /// <summary>
         /// Amount of time to delay before starting.
         /// </summary>
         private int m_StartDelay;
 
         private SmartThreadPool m_ThreadPool;
-         // Number of script fails since compile queue was last empty
+
+        // Number of script fails since compile queue was last empty
         private Dictionary<string, string> m_uniqueScripts = new Dictionary<string, string>();
+
         // disable warning: need to keep a reference to XEngine.EventManager
         // alive to avoid it being garbage collected
 #pragma warning disable 414
 #pragma warning restore 414
+
         /// <summary>
         /// Number of milliseconds we will wait for a script event to complete on script stop before we forcibly abort
         /// its thread.
@@ -156,6 +167,7 @@ namespace OpenSim.Region.ScriptEngine.XEngine
         private int m_WaitForEventCompletionOnScriptStop = 1000;
 
         private IXmlRpcRouter m_XmlRpcRouter;
+
         /// <summary>
         /// Event fired after the script engine has finished removing a script from an object.
         /// </summary>
@@ -206,6 +218,7 @@ namespace OpenSim.Region.ScriptEngine.XEngine
         {
             get { return "XEngine"; }
         }
+
         // private struct RezScriptParms
         // {
         //     uint LocalID;
@@ -228,6 +241,7 @@ namespace OpenSim.Region.ScriptEngine.XEngine
         {
             get { return m_Scene; }
         }
+
         public void AddRegion(Scene scene)
         {
             if (m_ScriptConfig == null)
@@ -890,6 +904,7 @@ namespace OpenSim.Region.ScriptEngine.XEngine
 
             //            Console.WriteLine("ASSEMBLY NAME: {0}", ScriptReferencedAssemblies[0]);
         }
+
         public Assembly OnAssemblyResolve(object sender,
                                           ResolveEventArgs args)
         {
@@ -2257,6 +2272,7 @@ namespace OpenSim.Region.ScriptEngine.XEngine
 
             MainConsole.Instance.Output(GetStatusReport());
         }
+
         private void HandleStartScript(IScriptInstance instance)
         {
             if (!instance.Running)
@@ -2295,6 +2311,7 @@ namespace OpenSim.Region.ScriptEngine.XEngine
                     instance.PrimName, instance.ScriptName, instance.ItemID, instance.ObjectID, sop.AbsolutePosition);
             }
         }
+
         /// <summary>
         /// Process a previously posted script event.
         /// </summary>
