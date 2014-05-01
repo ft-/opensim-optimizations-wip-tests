@@ -67,6 +67,7 @@ namespace OpenSim.Region.ClientStack.Linden
         public void Initialise(IConfigSource source)
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
             m_scene.EventManager.OnRegisterCaps += RegisterCaps;
@@ -77,6 +78,7 @@ namespace OpenSim.Region.ClientStack.Linden
             m_scene.EventManager.OnRegisterCaps -= RegisterCaps;
             m_scene = null;
         }
+
         #endregion Region Module interfaceBase Members
 
         #region Region Module interface
@@ -86,6 +88,7 @@ namespace OpenSim.Region.ClientStack.Linden
         public void Close()
         {
         }
+
         public void RegisterCaps(UUID agentID, Caps caps)
         {
             UUID capID = UUID.Random();

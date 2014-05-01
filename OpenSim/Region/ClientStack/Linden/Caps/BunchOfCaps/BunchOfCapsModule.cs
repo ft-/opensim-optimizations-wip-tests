@@ -65,6 +65,7 @@ namespace OpenSim.Region.ClientStack.Linden
         public void Initialise(IConfigSource source)
         {
         }
+
         public void PostInitialise()
         {
         }
@@ -76,6 +77,7 @@ namespace OpenSim.Region.ClientStack.Linden
         public void RemoveRegion(Scene scene)
         {
         }
+
         #endregion INonSharedRegionModule
 
         private void OnRegisterCaps(UUID agentID, Caps caps)

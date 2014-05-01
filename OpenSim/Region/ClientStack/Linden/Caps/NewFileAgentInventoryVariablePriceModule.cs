@@ -51,6 +51,7 @@ namespace OpenSim.Region.ClientStack.Linden
         private bool m_enabled = true;
         private int m_levelUpload = 0;
         private Scene m_scene;
+
         #region Region Module interfaceBase Members
 
         public Type ReplaceableInterface
@@ -72,6 +73,7 @@ namespace OpenSim.Region.ClientStack.Linden
             m_enabled = meshConfig.GetBoolean("AllowMeshUpload", true);
             m_levelUpload = meshConfig.GetInt("LevelUpload", 0);
         }
+
         public void RegionLoaded(Scene scene)
         {
             //            m_assetService = m_scene.RequestModuleInterface<IAssetService>();
@@ -83,6 +85,7 @@ namespace OpenSim.Region.ClientStack.Linden
             m_scene.EventManager.OnRegisterCaps -= RegisterCaps;
             m_scene = null;
         }
+
         #endregion Region Module interfaceBase Members
 
         #region Region Module interface
@@ -92,6 +95,7 @@ namespace OpenSim.Region.ClientStack.Linden
         public void Close()
         {
         }
+
         public void RegisterCaps(UUID agentID, Caps caps)
         {
             if (!m_enabled)

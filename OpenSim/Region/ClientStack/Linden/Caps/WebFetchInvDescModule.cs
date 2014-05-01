@@ -159,6 +159,7 @@ namespace OpenSim.Region.ClientStack.Linden
             public Hashtable request;
             public PollServiceInventoryEventArgs thepoll;
         }
+
         #region ISharedRegionModule Members
 
         public WebFetchInvDescModule()
@@ -204,6 +205,7 @@ namespace OpenSim.Region.ClientStack.Linden
                 m_Enabled = true;
             }
         }
+
         public void PostInitialise()
         {
         }
@@ -292,6 +294,7 @@ namespace OpenSim.Region.ClientStack.Linden
 
             Scene = null;
         }
+
         #endregion ISharedRegionModule Members
 
         private class PollServiceInventoryEventArgs : PollServiceEventArgs
@@ -302,6 +305,7 @@ namespace OpenSim.Region.ClientStack.Linden
 
             private Dictionary<UUID, Hashtable> responses =
                     new Dictionary<UUID, Hashtable>();
+
             public PollServiceInventoryEventArgs(WebFetchInvDescModule module, string url, UUID pId) :
                 base(null, url, null, null, null, pId, int.MaxValue)
             {
@@ -429,6 +433,7 @@ namespace OpenSim.Region.ClientStack.Linden
                 WebFetchInvDescModule.ProcessedRequestsCount++;
             }
         }
+
         //        private void DeregisterCaps(UUID agentID, Caps caps)
         //        {
         //            string capUrl;

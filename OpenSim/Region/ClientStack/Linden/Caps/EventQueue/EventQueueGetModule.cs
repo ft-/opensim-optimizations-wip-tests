@@ -55,6 +55,7 @@ namespace OpenSim.Region.ClientStack.Linden
     public class EventQueueGetModule : IEventQueue, INonSharedRegionModule
     {
         protected Scene m_scene;
+
         // Just to be safe, we work on a 10 sec shorter cycle
         private const int SERVER_EQ_TIME_NO_EVENTS = VIEWER_TIMEOUT - (10 * 1000);
 
@@ -78,6 +79,7 @@ namespace OpenSim.Region.ClientStack.Linden
         /// Debug level.
         /// </value>
         public int DebugLevel { get; set; }
+
         #region INonSharedRegionModule methods
 
         public virtual string Name
@@ -125,6 +127,7 @@ namespace OpenSim.Region.ClientStack.Linden
         public virtual void Initialise(IConfigSource config)
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -140,6 +143,7 @@ namespace OpenSim.Region.ClientStack.Linden
             scene.UnregisterModuleInterface<IEventQueue>(this);
             m_scene = null;
         }
+
         #endregion INonSharedRegionModule methods
 
         public OSD BuildEvent(string eventName, OSD eventBody)
@@ -664,6 +668,7 @@ namespace OpenSim.Region.ClientStack.Linden
                 return queues[agentId];
             }
         }
+
         #region IEventQueue Members
 
         public bool Enqueue(OSD ev, UUID avatarID)
@@ -701,6 +706,7 @@ namespace OpenSim.Region.ClientStack.Linden
         }
 
         #endregion IEventQueue Members
+
         //        public Hashtable ProcessQueue(Hashtable request, UUID agentID, Caps caps)
         //        {
         //            // TODO: this has to be redone to not busy-wait (and block the thread),

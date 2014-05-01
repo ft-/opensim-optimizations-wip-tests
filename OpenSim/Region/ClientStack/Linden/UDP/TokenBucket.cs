@@ -88,6 +88,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             get { return (m_maxDripRate == 0 ? m_totalDripRequest : m_maxDripRate); }
             set { m_maxDripRate = (value == 0 ? 0 : Math.Max(value, m_minimumFlow)); }
         }
+
         // <summary>
         //
         // </summary>
@@ -147,6 +148,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private static Int32 m_counter = 0;
+
         #region Properties
 
         /// <summary>
@@ -210,11 +212,13 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             get { return m_parent; }
             set { m_parent = value; }
         }
+
         public Int64 RequestedBurstRate
         {
             get { return m_burstRate; }
             set { m_burstRate = (value < 0 ? 0 : value); }
         }
+
         public virtual Int64 RequestedDripRate
         {
             get { return (m_dripRate == 0 ? m_totalDripRequest : m_dripRate); }
@@ -227,6 +231,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
                     m_parent.RegisterRequest(this, m_dripRate);
             }
         }
+
         public Int64 TotalDripRequest
         {
             get { return m_totalDripRequest; }

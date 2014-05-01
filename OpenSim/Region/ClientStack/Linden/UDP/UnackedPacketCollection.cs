@@ -224,6 +224,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
             /// <summary>Sequence number of the packet to remove</summary>
             public uint SequenceNumber;
+
             public PendingAck(uint sequenceNumber, int currentTime, bool fromResend)
             {
                 SequenceNumber = sequenceNumber;

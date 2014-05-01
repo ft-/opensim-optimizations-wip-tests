@@ -40,6 +40,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         private int m_first;
         private HashSet<uint> m_hashSet;
         private int m_next;
+
         public IncomingPacketHistoryCollection(int capacity)
         {
             this.m_capacity = capacity;

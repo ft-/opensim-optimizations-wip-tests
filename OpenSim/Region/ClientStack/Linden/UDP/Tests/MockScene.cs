@@ -25,10 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Net;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Scenes;
+using System.Net;
 using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 
 namespace OpenSim.Region.ClientStack.LindenUDP.Tests
@@ -42,16 +42,23 @@ namespace OpenSim.Region.ClientStack.LindenUDP.Tests
         {
             get { return m_objectNameCallsReceived; }
         }
+
         protected int m_objectNameCallsReceived;
-        
-        public MockScene() : base(new RegionInfo(1000, 1000, null, null))
+
+        public MockScene()
+            : base(new RegionInfo(1000, 1000, null, null))
         {
             m_regStatus = RegionStatus.Up;
         }
-        
-        public override void Update(int frames) {}
-        public override void LoadWorldMap() {}
-        
+
+        public override void Update(int frames)
+        {
+        }
+
+        public override void LoadWorldMap()
+        {
+        }
+
         public override ISceneAgent AddNewAgent(IClientAPI client, PresenceType type)
         {
             client.OnObjectName += RecordObjectNameCall;
@@ -60,14 +67,25 @@ namespace OpenSim.Region.ClientStack.LindenUDP.Tests
             return null;
         }
 
-        public override bool CloseAgent(UUID agentID, bool force) { return true; }
+        public override bool CloseAgent(UUID agentID, bool force)
+        {
+            return true;
+        }
 
-        public override bool CheckClient(UUID clientId, IPEndPoint endPoint) { return true; }
+        public override bool CheckClient(UUID clientId, IPEndPoint endPoint)
+        {
+            return true;
+        }
 
-        public override void OtherRegionUp(GridRegion otherRegion) {  }
+        public override void OtherRegionUp(GridRegion otherRegion)
+        {
+        }
 
-        public override bool TryGetScenePresence(UUID uuid, out ScenePresence sp) { sp = null; return false; }
-            
+        public override bool TryGetScenePresence(UUID uuid, out ScenePresence sp)
+        {
+            sp = null; return false;
+        }
+
         /// <summary>
         /// Doesn't really matter what the call is - we're using this to test that a packet has actually been received
         /// </summary>

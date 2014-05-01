@@ -55,6 +55,7 @@ namespace OpenSim.Region.ClientStack.Linden
         private Scene m_scene;
 
         public bool Enabled { get; private set; }
+
         #region ISharedRegionModule Members
 
         public string Name { get { return "FetchInventory2Module"; } }
@@ -87,6 +88,7 @@ namespace OpenSim.Region.ClientStack.Linden
             if (m_fetchInventory2Url != string.Empty)
                 Enabled = true;
         }
+
         public void PostInitialise()
         {
         }
@@ -113,6 +115,7 @@ namespace OpenSim.Region.ClientStack.Linden
             m_scene.EventManager.OnRegisterCaps -= RegisterCaps;
             m_scene = null;
         }
+
         #endregion ISharedRegionModule Members
 
         private void RegisterCaps(UUID agentID, Caps caps)

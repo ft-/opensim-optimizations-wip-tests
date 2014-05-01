@@ -44,6 +44,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         /// Pool of packets available for reuse.
         /// </summary>
         private readonly Dictionary<PacketType, Stack<Packet>> pool = new Dictionary<PacketType, Stack<Packet>>();
+
         private PacketPool()
         {
             // defaults
@@ -103,6 +104,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         public bool RecycleDataBlocks { get; set; }
 
         public bool RecyclePackets { get; set; }
+
         public T GetDataBlock<T>() where T : new()
         {
             lock (DataBlocks)

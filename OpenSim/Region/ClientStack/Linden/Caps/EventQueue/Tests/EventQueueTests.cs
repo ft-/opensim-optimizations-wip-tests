@@ -25,25 +25,20 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Net;
-using log4net.Config;
 using Nini.Config;
 using NUnit.Framework;
 using OpenMetaverse;
-using OpenMetaverse.Packets;
 using OpenMetaverse.StructuredData;
 using OpenSim.Framework;
 using OpenSim.Framework.Servers;
 using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Region.ClientStack.Linden;
 using OpenSim.Region.CoreModules.Framework;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Region.OptionalModules.World.NPC;
 using OpenSim.Tests.Common;
 using OpenSim.Tests.Common.Mock;
+using System.Collections;
+using System.Net;
 
 namespace OpenSim.Region.ClientStack.Linden.Tests
 {
@@ -90,7 +85,7 @@ namespace OpenSim.Region.ClientStack.Linden.Tests
         public void TestAddForClient()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             SceneHelpers.AddScenePresence(m_scene, TestHelpers.ParseTail(0x1));
 
@@ -102,7 +97,7 @@ namespace OpenSim.Region.ClientStack.Linden.Tests
         public void TestRemoveForClient()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
             UUID spId = TestHelpers.ParseTail(0x1);
 
@@ -117,7 +112,7 @@ namespace OpenSim.Region.ClientStack.Linden.Tests
         public void TestEnqueueMessage()
         {
             TestHelpers.InMethod();
-//            log4net.Config.XmlConfigurator.Configure();
+            //            log4net.Config.XmlConfigurator.Configure();
 
             ScenePresence sp = SceneHelpers.AddScenePresence(m_scene, TestHelpers.ParseTail(0x1));
 
@@ -129,7 +124,7 @@ namespace OpenSim.Region.ClientStack.Linden.Tests
 
             Assert.That((int)eventsResponse["int_response_code"], Is.EqualTo((int)HttpStatusCode.OK));
 
-//            Console.WriteLine("Response [{0}]", (string)eventsResponse["str_response_string"]);
+            //            Console.WriteLine("Response [{0}]", (string)eventsResponse["str_response_string"]);
 
             OSDMap rawOsd = (OSDMap)OSDParser.DeserializeLLSDXml((string)eventsResponse["str_response_string"]);
             OSDArray eventsOsd = (OSDArray)rawOsd["events"];
@@ -171,9 +166,9 @@ namespace OpenSim.Region.ClientStack.Linden.Tests
         public void TestEnqueueMessageToNpc()
         {
             TestHelpers.InMethod();
-//            TestHelpers.EnableLogging();
+            //            TestHelpers.EnableLogging();
 
-            UUID npcId 
+            UUID npcId
                 = m_npcMod.CreateNPC(
                     "John", "Smith", new Vector3(128, 128, 30), UUID.Zero, true, m_scene, new AvatarAppearance());
 

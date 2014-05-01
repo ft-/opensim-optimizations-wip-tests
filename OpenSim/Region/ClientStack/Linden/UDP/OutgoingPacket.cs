@@ -49,13 +49,16 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
         /// <summary>Client this packet is destined for</summary>
         public LLUDPClient Client;
+
         /// <summary>Number of times this packet has been resent</summary>
         public int ResendCount;
 
         /// <summary>Sequence number of the wrapped packet</summary>
         public uint SequenceNumber;
+
         /// <summary>Environment.TickCount when this packet was last sent over the wire</summary>
         public int TickCount;
+
         /// <summary>The delegate to be called if this packet is determined to be unacknowledged</summary>
         public UnackedPacketMethod UnackedMethod;
 

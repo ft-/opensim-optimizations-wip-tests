@@ -72,6 +72,7 @@ namespace OpenSim.Region.ClientStack.Linden
         public void Initialise(IConfigSource pSource)
         {
         }
+
         public void RegionLoaded(Scene scene)
         {
         }
@@ -84,6 +85,7 @@ namespace OpenSim.Region.ClientStack.Linden
                 m_scene = null;
             }
         }
+
         #endregion INonSharedRegionModule Members
 
         public Hashtable ProcessAdd(Hashtable request, UUID AgentId, Caps cap)
@@ -356,6 +358,7 @@ namespace OpenSim.Region.ClientStack.Linden
                     "ObjectAdd",
                     agentID.ToString())); ;
         }
+
         private string ConvertUintToBytes(uint val)
         {
             byte[] resultbytes = Utils.UIntToBytes(val);

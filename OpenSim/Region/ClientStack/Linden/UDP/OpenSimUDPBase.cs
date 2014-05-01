@@ -136,6 +136,7 @@ namespace OpenMetaverse
         /// </summary>
         /// <param name="buffer">Incoming packet buffer</param>
         public abstract void PacketReceived(UDPPacketBuffer buffer);
+
         /// <summary>
         /// Start inbound UDP packet handling.
         /// </summary>
@@ -254,6 +255,7 @@ namespace OpenMetaverse
 
             return false;
         }
+
         private void AsyncBeginReceive()
         {
             UDPPacketBuffer buf;
@@ -400,6 +402,7 @@ namespace OpenMetaverse
                 }
             }
         }
+
         private void AsyncEndSend(IAsyncResult result)
         {
             try

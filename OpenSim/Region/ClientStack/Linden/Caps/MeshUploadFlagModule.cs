@@ -53,6 +53,7 @@ namespace OpenSim.Region.ClientStack.Linden
         /// Is this module enabled?
         /// </summary>
         public bool Enabled { get; private set; }
+
         #region ISharedRegionModule Members
 
         public MeshUploadFlagModule()
@@ -92,6 +93,7 @@ namespace OpenSim.Region.ClientStack.Linden
                 Enabled = config.GetBoolean("AllowMeshUpload", Enabled);
             }
         }
+
         public void PostInitialise()
         {
         }
@@ -107,6 +109,7 @@ namespace OpenSim.Region.ClientStack.Linden
 
             m_scene.EventManager.OnRegisterCaps -= RegisterCaps;
         }
+
         #endregion ISharedRegionModule Members
 
         public void RegisterCaps(UUID agentID, Caps caps)

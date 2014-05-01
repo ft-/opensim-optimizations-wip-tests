@@ -67,6 +67,7 @@ namespace OpenSim.Region.ClientStack.Linden
         private string m_SearchURL = string.Empty;
 
         public event SimulatorFeaturesRequestDelegate OnSimulatorFeaturesRequest;
+
         #region ISharedRegionModule Members
 
         public string Name { get { return "SimulatorFeaturesModule"; } }
@@ -100,6 +101,7 @@ namespace OpenSim.Region.ClientStack.Linden
 
             AddDefaultFeatures();
         }
+
         public void PostInitialise()
         {
         }
@@ -112,6 +114,7 @@ namespace OpenSim.Region.ClientStack.Linden
         {
             m_scene.EventManager.OnRegisterCaps -= RegisterCaps;
         }
+
         #endregion ISharedRegionModule Members
 
         public void AddFeature(string name, OSD value)
@@ -181,6 +184,7 @@ namespace OpenSim.Region.ClientStack.Linden
                     m_features["OpenSimExtras"] = extrasMap;
             }
         }
+
         private OSDMap DeepCopy()
         {
             // This isn't the cheapest way of doing this but the rate

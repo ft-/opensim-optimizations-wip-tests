@@ -74,6 +74,7 @@ namespace OpenSim.Region.ClientStack.Linden
     public delegate void UpLoadedAsset(
     string assetName, string description, UUID assetID, UUID inventoryItem, UUID parentFolder,
     byte[] data, string inventoryType, string assetType);
+
     public class AssetUploader
     {
         private UpLoadedAsset handlerUpLoad = null;
@@ -115,6 +116,7 @@ namespace OpenSim.Region.ClientStack.Linden
         }
 
         public event UpLoadedAsset OnUpLoad;
+
         /// <summary>
         /// Handle raw asset upload data via the capability.
         /// </summary>
@@ -209,6 +211,7 @@ namespace OpenSim.Region.ClientStack.Linden
         private static readonly string m_newInventory = "0002/";
 
         private static readonly string m_notecardTaskUpdatePath = "0005/";
+
         //private static readonly string m_requestTexture = "0003/";
         private static readonly string m_notecardUpdatePath = "0004/";
 
@@ -222,6 +225,7 @@ namespace OpenSim.Region.ClientStack.Linden
         private string m_regionName;
         private Scene m_Scene;
         /* 0102 - 0103 RESERVED */
+
         public BunchOfCaps(Scene scene, Caps caps)
         {
             m_Scene = scene;
@@ -627,6 +631,7 @@ namespace OpenSim.Region.ClientStack.Linden
                 m_log.Error("[CAPS]: " + e.ToString());
             }
         }
+
         /// <summary>
         ///
         /// </summary>
@@ -741,6 +746,7 @@ namespace OpenSim.Region.ClientStack.Linden
 
             return result;
         }
+
         /// <summary>
         /// Called when new asset data for an agent inventory item update has been uploaded.
         /// </summary>
@@ -757,6 +763,7 @@ namespace OpenSim.Region.ClientStack.Linden
                     errors.Add(item);
             }
         }
+
         public string UpdateAgentInformation(string request, string path,
                         string param, IOSHttpRequest httpRequest,
                         IOSHttpResponse httpResponse)
@@ -1022,6 +1029,7 @@ namespace OpenSim.Region.ClientStack.Linden
                 AddNewInventoryItem(m_HostCapsObj.AgentID, item);
             }
         }
+
         /// <summary>
         ///
         /// </summary>
@@ -1036,6 +1044,7 @@ namespace OpenSim.Region.ClientStack.Linden
             return mapLayer;
         }
     }
+
     /// <summary>
     /// This class is a callback invoked when a client sends asset data to
     /// an agent inventory notecard update url
@@ -1062,6 +1071,7 @@ namespace OpenSim.Region.ClientStack.Linden
         }
 
         public event UpdateItem OnUpLoad;
+
         /// <summary>
         /// Handle raw uploaded asset data.
         /// </summary>
@@ -1161,6 +1171,7 @@ namespace OpenSim.Region.ClientStack.Linden
         }
 
         public event UpdateTaskScript OnUpLoad;
+
         /// <summary>
         ///
         /// </summary>

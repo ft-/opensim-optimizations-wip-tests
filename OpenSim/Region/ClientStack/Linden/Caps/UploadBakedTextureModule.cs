@@ -55,6 +55,7 @@ namespace OpenSim.Region.ClientStack.Linden
         private IBakedTextureModule m_BakedTextureModule;
         private bool m_persistBakedTextures;
         private Scene m_scene;
+
         public string Name { get { return "UploadBakedTextureModule"; } }
 
         public Type ReplaceableInterface
@@ -77,6 +78,7 @@ namespace OpenSim.Region.ClientStack.Linden
             if (appearanceConfig != null)
                 m_persistBakedTextures = appearanceConfig.GetBoolean("PersistBakedTextures", m_persistBakedTextures);
         }
+
         public void PostInitialise()
         {
         }
@@ -111,6 +113,7 @@ namespace OpenSim.Region.ClientStack.Linden
             m_BakedTextureModule = null;
             m_scene = null;
         }
+
         private void CaptureAppearanceSettings(IClientAPI remoteClient, Primitive.TextureEntry textureEntry, byte[] visualParams, Vector3 avSize, WearableCacheItem[] cacheItems)
         {
             int maxCacheitemsLoop = cacheItems.Length;

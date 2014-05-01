@@ -251,6 +251,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         /// Default packet debug level given to new clients
         /// </summary>
         public int DefaultClientPacketDebugLevel { get; set; }
+
         /// <summary>
         /// Record how many inbound packets could not be recognized as LLUDP packets.
         /// </summary>
@@ -265,6 +266,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
         /// <summary>Bandwidth throttle rates for this UDP server</summary>
         public ThrottleRates ThrottleRates { get; private set; }
+
         /// <summary>
         /// Record how many incoming packets are indicated as resends by clients.
         /// </summary>
@@ -279,6 +281,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         /// Record how many packets have been sent
         /// </summary>
         internal int PacketsSentCount { get; set; }
+
         public void AddScene(IScene scene)
         {
             if (m_scene != null)
@@ -1926,6 +1929,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
                 GetWatchdogOutgoingAlarmData,
                 Watchdog.DEFAULT_WATCHDOG_TIMEOUT_MS);
         }
+
         #region BinaryStats
 
         public static PacketLogger PacketLog;
@@ -2037,7 +2041,9 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             public string Path = null;
             public DateTime StartTime;
         }
+
         #endregion BinaryStats
+
         #region Emergency Monitoring
 
         private float avgDequeueTicks = 0;
@@ -2067,6 +2073,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         private Stopwatch watch1 = new Stopwatch();
 
         private Stopwatch watch2 = new Stopwatch();
+
         /// <summary>
         /// Number of inbound packets processed since startup.
         /// </summary>
@@ -2310,6 +2317,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         {
             m_udpServer = new LLUDPServer(listenIP, ref port, proxyPortOffsetParm, allow_alternate_port, configSource, circuitManager);
         }
+
         public void Start()
         {
             m_udpServer.Start();

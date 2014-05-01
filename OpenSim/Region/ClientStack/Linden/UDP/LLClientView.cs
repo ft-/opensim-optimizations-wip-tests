@@ -337,6 +337,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         public event ObjectOwner OnObjectOwner;
 
         public event ObjectPermissions OnObjectPermissions;
+
         public event ObjectRequest OnObjectRequest;
 
         public event ObjectSaleInfo OnObjectSaleInfo;
@@ -562,7 +563,9 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         public event UUIDNameRequest OnUUIDGroupNameRequest;
 
         public event ViewerEffectEventHandler OnViewerEffect;
+
         public event XferReceive OnXferReceive;
+
 #pragma warning disable 0067
 #pragma warning restore 0067
 
@@ -675,12 +678,14 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
         // LLClientView Only
         public delegate void BinaryGenericMessage(Object sender, string method, byte[][] args);
-         //Global/static handlers for all clients
+
+        //Global/static handlers for all clients
 
         /// <summary>
         /// Handles UDP texture download.
         /// </summary>
         public LLImageManager ImageManager { get; private set; }
+
         #endregion Class Members
 
         #region Properties
@@ -757,16 +762,19 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         public LLUDPClient UDPClient { get { return m_udpClient; } }
 
         public LLUDPServer UDPServer { get { return m_udpServer; } }
+
         public bool IsGroupMember(UUID groupID)
         {
             return m_groupPowers.ContainsKey(groupID);
         }
+
         #endregion Properties
 
         //        ~LLClientView()
         //        {
         //            m_log.DebugFormat("{0} Destructor called for {1}, circuit code {2}", LogHeader, Name, CircuitCode);
         //        }
+
         #region Client Methods
 
         public void Close()
@@ -956,6 +964,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
                 handlerNetworkStatsUpdate(inPackets, outPackets, unAckedBytes);
             }
         }
+
         public void ProcessSpecificPacketAsync(object state)
         {
             AsyncPacketProcess packetObject = (AsyncPacketProcess)state;
@@ -1032,6 +1041,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             }
             return result;
         }
+
         #endregion Packet Handling
 
         # region Setup
@@ -1723,6 +1733,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         }
 
         # endregion
+
         #region Scene/Avatar to Client
 
         /// <summary>
@@ -3720,6 +3731,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
             OutPacket(handshake, ThrottleOutPacketType.Unknown);
         }
+
         public virtual void SendRegionTeleport(ulong regionHandle, byte simAccess, IPEndPoint newRegionEndPoint, uint locationID,
                                                uint flags, string capsURL)
         {
@@ -4513,6 +4525,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             if (x2 - x1 > 0 && y2 - y1 > 0)
                 SendLayerBottomLeft(map, x1, y1 + 1, x2 - 1, y2);
         }
+
         #endregion Scene/Avatar to Client
 
         // Gesture
@@ -4607,6 +4620,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
             OutPacket(aw, ThrottleOutPacketType.Task);
         }
+
         #endregion Appearance/ Wearables Methods
 
         #region Avatar Packet/Data Sending Methods
@@ -5084,7 +5098,9 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
             return false;
         }
+
         #endregion Primitive Packet/Data Sending Methods
+
         public string XReport(string uptime, string version)
         {
             return String.Empty;
@@ -6146,6 +6162,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             if ((categories & ThrottleOutPacketTypeFlags.Texture) != 0)
                 ImageManager.ProcessImageQueue(m_udpServer.TextureSendLimit);
         }
+
         private void ProcessEntityPropertyRequests(int maxUpdates)
         {
             OpenSim.Framework.Lazy<List<ObjectPropertiesFamilyPacket.ObjectDataBlock>> objectFamilyBlocks =
@@ -6297,6 +6314,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             public readonly PacketMethod Method = null;
             public readonly Packet Pack = null;
             public bool result = false;
+
             public AsyncPacketProcess(LLClientView pClientview, PacketMethod pMethod, Packet pPack)
             {
                 ClientView = pClientview;
@@ -6325,6 +6343,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
                 base.Update(update);
             }
         }
+
         #region Estate Data Sending Methods
 
         public void SendBannedUserList(UUID invoice, EstateBan[] bl, uint estateID)
@@ -6536,6 +6555,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             }
             return false;
         }
+
         #endregion Estate Data Sending Methods
 
         #region Land Data Sending Methods
@@ -6781,6 +6801,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
                 m_log.Error("[LLCLIENTVIEW]: Unable to send parcel data via eventqueue - exception: " + ex.ToString());
             }
         }
+
         #endregion Land Data Sending Methods
 
         #region Helper Methods
@@ -7039,6 +7060,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
             return block;
         }
+
         protected ObjectUpdatePacket.ObjectDataBlock CreatePrimUpdateBlock(SceneObjectPart data, UUID recipientID)
         {
             byte[] objectData = new byte[60];
@@ -7163,7 +7185,9 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
             return update;
         }
+
         #endregion Helper Methods
+
         #region Packet Handlers
 
         public int TotalAgentUpdates { get; set; }
@@ -7307,6 +7331,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             //}
             return movementSignificant;
         }
+
         private bool HandleAgentAnimation(IClientAPI sender, Packet Pack)
         {
             AgentAnimationPacket AgentAni = (AgentAnimationPacket)Pack;
@@ -7862,6 +7887,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             }
             return false;
         }
+
         private bool HandlerAcceptFriendship(IClientAPI sender, Packet Pack)
         {
             AcceptFriendshipPacket afriendpack = (AcceptFriendshipPacket)Pack;
@@ -8484,6 +8510,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
             return true;
         }
+
         private bool HandleViewerEffect(IClientAPI sender, Packet Pack)
         {
             ViewerEffectPacket viewer = (ViewerEffectPacket)Pack;
@@ -8511,6 +8538,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
             return true;
         }
+
         /// <summary>
         /// Used when a child agent gets a sit response which should not be fulfilled.
         /// </summary>
@@ -8518,6 +8546,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         {
             SendAlertMessage("Try moving closer.  Can't sit on object because it is not in the same region as you.");
         }
+
         #endregion Scene/Avatar
 
         #region Objects/m_sceneObjects
@@ -9043,6 +9072,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             }
             return true;
         }
+
         private bool HandleObjectMaterial(IClientAPI sender, Packet Pack)
         {
             ObjectMaterialPacket ompacket = (ObjectMaterialPacket)Pack;
@@ -9306,6 +9336,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             }
             return true;
         }
+
         private bool HandleObjectSpinStart(IClientAPI sender, Packet Pack)
         {
             //m_log.Warn("[CLIENT]: unhandled ObjectSpinStart packet");
@@ -9440,6 +9471,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             }
             return true;
         }
+
         private bool HandleRequestObjectPropertiesFamily(IClientAPI sender, Packet Pack)
         {
             //This powers the little tooltip that appears when you move your mouse over an object
@@ -9521,6 +9553,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             }
             return true;
         }
+
         #endregion Objects/m_sceneObjects
 
         #region Inventory/Asset/Other related packets
@@ -10493,6 +10526,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
             return true;
         }
+
         private bool HandleUpdateInventoryFolder(IClientAPI sender, Packet Pack)
         {
             if (OnUpdateInventoryFolder != null)
@@ -10526,6 +10560,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             }
             return true;
         }
+
         private bool HandleUpdateInventoryItem(IClientAPI sender, Packet Pack)
         {
             UpdateInventoryItemPacket inventoryItemUpdate = (UpdateInventoryItemPacket)Pack;
@@ -10574,6 +10609,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             }
             return true;
         }
+
         private bool HandleUpdateTaskInventory(IClientAPI sender, Packet Pack)
         {
             UpdateTaskInventoryPacket updatetask = (UpdateTaskInventoryPacket)Pack;
@@ -10627,6 +10663,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
             return true;
         }
+
         #endregion Inventory/Asset/Other related packets
 
         private bool HandleAgentFOV(IClientAPI sender, Packet Pack)
@@ -11542,6 +11579,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             }
             return true;
         }
+
         #endregion Parcel related packets
 
         #region Estate Packets
@@ -11947,6 +11985,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             }
             return true;
         }
+
         #endregion Estate Packets
 
         #region GodPackets
@@ -12036,6 +12075,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
             return true;
         }
+
         private bool HandleSaveStatePacket(IClientAPI client, Packet Packet)
         {
             StateSavePacket SaveStateMessage =
@@ -12061,6 +12101,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             }
             return false;
         }
+
         #endregion GodPackets
 
         #region Economy/Transaction Packets
@@ -12099,6 +12140,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
             return true;
         }
+
         private bool HandleObjectBuy(IClientAPI sender, Packet Pack)
         {
             ObjectBuyPacket objectBuyPacket = (ObjectBuyPacket)Pack;
@@ -12177,6 +12219,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             }
             return true;
         }
+
         #endregion Economy/Transaction Packets
 
         #region Script Packets
@@ -12238,6 +12281,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             }
             return true;
         }
+
         #endregion Script Packets
 
         #region Gesture Managment
@@ -12321,6 +12365,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         }
 
         #endregion Gesture Managment
+
         #region unimplemented handlers
 
         private bool HandleAgentHeightWidth(IClientAPI sender, Packet Pack)
@@ -12473,6 +12518,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             //m_log.Warn("[CLIENT]: unhandled ViewerStats packet");
             return true;
         }
+
         #endregion unimplemented handlers
 
         #region Dir handlers
@@ -12594,6 +12640,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             }
             return true;
         }
+
         private bool HandleDirPopularQuery(IClientAPI sender, Packet Pack)
         {
             DirPopularQueryPacket dirPopularQueryPacket = (DirPopularQueryPacket)Pack;
@@ -12618,6 +12665,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             }
             return true;
         }
+
         private bool HandleEventInfoRequest(IClientAPI sender, Packet Pack)
         {
             EventInfoRequestPacket eventInfoRequestPacket = (EventInfoRequestPacket)Pack;
@@ -12716,6 +12764,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             }
             return true;
         }
+
         #endregion Calling Card
 
         #region Groups
@@ -13356,6 +13405,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             }
             return false;
         }
+
         private bool HandleInviteGroupRequest(IClientAPI sender, Packet Pack)
         {
             InviteGroupRequestPacket inviteGroupRequest =
@@ -13507,8 +13557,11 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
             return true;
         }
+
         #endregion Groups
+
         #endregion Packet Handlers
+
         #region Media Parcel Members
 
         public void SendParcelMediaCommand(uint flags, ParcelMediaCommandEnum command, float time)
@@ -13567,7 +13620,9 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             packet.CameraProperty = camPropBlock;
             OutPacket(packet, ThrottleOutPacketType.Task);
         }
+
         #endregion Camera
+
         #region IClientCore
 
         private readonly Dictionary<Type, object> m_clientInterfaces = new Dictionary<Type, object>();
@@ -13615,6 +13670,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
                 }
             }
         }
+
         #endregion IClientCore
     }
 }

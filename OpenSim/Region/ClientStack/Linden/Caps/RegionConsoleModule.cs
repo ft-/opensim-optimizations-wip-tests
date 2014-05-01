@@ -51,6 +51,7 @@ namespace OpenSim.Region.ClientStack.Linden
         private RegionConsoleModule m_consoleModule;
         private bool m_isGod;
         private Scene m_scene;
+
         public ConsoleHandler(string path, string name, UUID agentID, RegionConsoleModule module, Scene scene)
             : base("POST", path, name, agentID.ToString())
         {
@@ -126,6 +127,7 @@ namespace OpenSim.Region.ClientStack.Linden
         private Commands m_commands = new Commands();
         private IEventQueue m_eventQueue;
         private Scene m_scene;
+
         public ICommands Commands { get { return m_commands; } }
 
         public string Name { get { return "RegionConsoleModule"; } }
@@ -154,6 +156,7 @@ namespace OpenSim.Region.ClientStack.Linden
         {
             m_commands.AddCommand("Help", false, "help", "help [<item>]", "Display help on a particular command or on a list of commands in a category", Help);
         }
+
         public void PostInitialise()
         {
         }
@@ -182,6 +185,7 @@ namespace OpenSim.Region.ClientStack.Linden
             m_scene.EventManager.OnRegisterCaps -= RegisterCaps;
             m_scene = null;
         }
+
         public bool RunCommand(string command, UUID invokerID)
         {
             string[] parts = Parser.Parse(command);
@@ -200,6 +204,7 @@ namespace OpenSim.Region.ClientStack.Linden
 
             m_eventQueue.Enqueue(EventQueueHelper.BuildEvent("SimConsoleResponse", osd), agentID);
         }
+
         private void Help(string module, string[] cmd)
         {
             UUID agentID = new UUID(cmd[cmd.Length - 1]);

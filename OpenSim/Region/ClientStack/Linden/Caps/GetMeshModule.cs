@@ -81,6 +81,7 @@ namespace OpenSim.Region.ClientStack.Linden
             if (m_URL != string.Empty)
                 m_Enabled = true;
         }
+
         public void RegionLoaded(Scene scene)
         {
             if (!m_Enabled)
@@ -98,6 +99,7 @@ namespace OpenSim.Region.ClientStack.Linden
             m_scene.EventManager.OnRegisterCaps -= RegisterCaps;
             m_scene = null;
         }
+
         #endregion Region Module interfaceBase Members
 
         public void RegisterCaps(UUID agentID, Caps caps)

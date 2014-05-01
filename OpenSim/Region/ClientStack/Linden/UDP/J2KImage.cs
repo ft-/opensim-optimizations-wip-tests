@@ -51,6 +51,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         public C5.IPriorityQueueHandle<J2KImage> PriorityQueueHandle;
         public uint StartPacket;
         public UUID TextureID;
+
         /// <summary>
         /// If we've requested an asset but not received it in this ticks timeframe, then allow a duplicate
         /// request from the client to trigger a fresh asset request.
@@ -93,6 +94,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         /// Has this request decoded the asset data?
         /// </summary>
         public bool IsDecoded { get; private set; }
+
         /// <summary>
         /// This is where we decide what we need to update
         /// and assign the real discardLevel and packetNumber
@@ -235,6 +237,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
             return (m_currentPacket > m_stopPacket);
         }
+
         private void AssetDataCallback(UUID AssetID, AssetBase asset)
         {
             HasAsset = true;

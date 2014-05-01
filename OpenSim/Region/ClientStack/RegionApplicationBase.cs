@@ -56,12 +56,15 @@ namespace OpenSim.Region.ClientStack
 
         private static readonly ILog m_log
             = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public IEstateDataService EstateDataService { get { return m_estateDataService; } }
 
         public NetworkServersInfo NetServersInfo { get { return m_networkServersInfo; } }
 
         public SceneManager SceneManager { get; protected set; }
+
         public ISimulationDataService SimulationDataService { get { return m_simulationDataService; } }
+
         protected abstract ClientStackManager CreateClientStackManager();
 
         protected abstract Scene CreateScene(RegionInfo regionInfo, ISimulationDataService simDataService, IEstateDataService estateDataService, AgentCircuitManager circuitManager);
@@ -97,6 +100,7 @@ namespace OpenSim.Region.ClientStack
         }
 
         protected abstract void Initialize();
+
         protected override void StartupSpecific()
         {
             SceneManager = SceneManager.Instance;

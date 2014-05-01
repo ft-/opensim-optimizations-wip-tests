@@ -55,6 +55,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
         /// <summary>Drip rate for resent packets</summary>
         public int Resend;
+
         /// <summary>Drip rate for task packets</summary>
         public int Task;
 
@@ -66,6 +67,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
         /// <summary>Drip rate for wind packets</summary>
         public int Wind;
+
         /// <summary>
         /// Default constructor
         /// </summary>
