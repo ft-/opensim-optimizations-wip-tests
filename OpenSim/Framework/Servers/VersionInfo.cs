@@ -48,7 +48,7 @@ namespace OpenSim
         public readonly static int MajorInterfaceVersion = 7;
 
         private const Flavour VERSION_FLAVOUR = Flavour.Dev;
-        private const string VERSION_NUMBER = "0.8.0";
+        private const string VERSION_NUMBER = "Arriba";
 
         public enum Flavour
         {
@@ -68,7 +68,7 @@ namespace OpenSim
 
         public static string GetVersionString(string versionNumber, Flavour flavour)
         {
-            string versionString = "OpenSim " + versionNumber + " " + flavour;
+            string versionString = "OpenSim " + versionNumber + " (Codename: That is Not True) " + flavour;
             return versionString.PadRight(VERSIONINFO_VERSION_LENGTH);
         }
     }
