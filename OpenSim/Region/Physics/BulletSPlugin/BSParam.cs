@@ -261,6 +261,8 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             (float)BSTerrainPhys.TerrainImplementation.Heightmap ),
         new ParameterDefn<int>("TerrainMeshMagnification", "Number of times the 256x256 heightmap is multiplied to create the terrain mesh" ,
             2 ),
+        new ParameterDefn<float>("TerrainGroundPlane", "Altitude of ground plane", 
+            -500.0f),
         new ParameterDefn<float>("TerrainFriction", "Factor to reduce movement against terrain surface" ,
             0.3f ),
         new ParameterDefn<float>("TerrainHitFraction", "Distance to measure hit collisions" ,
@@ -684,6 +686,8 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
         // cause scuplted prims to get meshed
         public static int TerrainMeshMagnification { get; private set; }
+
+        public static float TerrainGroundPlane { get; private set; }
 
         public static float TerrainRestitution { get; private set; }
 
