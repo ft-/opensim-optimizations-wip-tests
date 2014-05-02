@@ -422,14 +422,12 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         }
 
         /// <summary>
-        /// Remove a specific script (and all its pending commands)
+        /// Unregister a specific script from facilities (and all its pending commands)
         /// </summary>
         /// <param name="localID"></param>
         /// <param name="itemID"></param>
-        public static void RemoveScript(IScriptEngine engine, uint localID, UUID itemID)
+        public static void UnregisterScriptFacilities(IScriptEngine engine, uint localID, UUID itemID)
         {
-            //            m_log.DebugFormat("[ASYNC COMMAND MANAGER]: Removing facilities for script {0}", itemID);
-
             staticLock.AcquireReaderLock(-1);
             try
             {

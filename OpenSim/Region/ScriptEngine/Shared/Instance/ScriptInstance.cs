@@ -247,7 +247,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Instance
             m_Script.ResetVars();
             Part.Inventory.GetInventoryItem(ItemID).PermsMask = 0;
             Part.Inventory.GetInventoryItem(ItemID).PermsGranter = UUID.Zero;
-            AsyncCommandManager.RemoveScript(Engine, LocalID, ItemID);
+            AsyncCommandManager.UnregisterScriptFacilities(Engine, LocalID, ItemID);
 
             EventQueue.Clear();
             m_Script.ResetVars();
@@ -274,7 +274,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Instance
         public void DestroyScriptInstance()
         {
             ReleaseControls();
-            AsyncCommandManager.RemoveScript(Engine, LocalID, ItemID);
+            AsyncCommandManager.UnregisterScriptFacilities(Engine, LocalID, ItemID);
         }
 
         /// <summary>
@@ -353,7 +353,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Instance
                             Part.AbsolutePosition,
                             Part.ParentGroup.Scene.Name);
 
-                    AsyncCommandManager.RemoveScript(Engine,
+                    AsyncCommandManager.UnregisterScriptFacilities(Engine,
                         LocalID, ItemID);
 
                     Part.SetScriptEvents(ItemID, (int)m_Script.GetStateEventFlags(State));
@@ -912,7 +912,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Instance
             Stop(timeout);
             Part.Inventory.GetInventoryItem(ItemID).PermsMask = 0;
             Part.Inventory.GetInventoryItem(ItemID).PermsGranter = UUID.Zero;
-            AsyncCommandManager.RemoveScript(Engine, LocalID, ItemID);
+            AsyncCommandManager.UnregisterScriptFacilities(Engine, LocalID, ItemID);
             EventQueue.Clear();
             m_Script.ResetVars();
             State = "default";
